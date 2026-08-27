@@ -187,9 +187,16 @@ mod imp {
                 true,
                 move |obj| {
                     // Hide the timeline start item if we have the `m.room.create` event too.
-                    obj.downcast_ref::<VirtualItem>().is_none_or(|item| {
-                        !(imp.has_room_create.get()
-                            && item.kind() == VirtualItemKind::TimelineStart)
+                    if let Some(item) = obj.downcast_ref::<VirtualItem>() {
+                        return !(imp.has_room_create.get()
+                            && item.kind() == VirtualItemKind::TimelineStart);
+                    }
+
+                    // Unparsable events arrive because an invalid
+                    // `m.room.policy` is the unset gesture and draws as such;
+                    // any other parse failure has nothing to say.
+                    obj.downcast_ref::<Event>().is_none_or(|event| {
+                        !event.failed_to_parse() || event.is_unparsed_policy_server_change()
                     })
                 }
             ));
@@ -278,10 +285,14 @@ mod imp {
             let is_pinned = self.pinned.get();
             let thread_root = self.thread_root().cloned();
             let handle = spawn_tokio!(async move {
+                // Unparsable events are requested from the SDK because one of
+                // them means something: an invalid or empty `m.room.policy`
+                // content unsets the room's policy server, per the spec, and
+                // deserves its sentence. The GTK-side filter hides the rest.
                 let mut builder = matrix_room
                     .timeline_builder()
                     .event_filter(filter)
-                    .add_failed_to_parse(false);
+                    .add_failed_to_parse(true);
 
                 // Threaded events are hidden from the live and focused
                 // timelines: since a thread can be opened from its root, they
