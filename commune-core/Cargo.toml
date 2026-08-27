@@ -1,0 +1,23 @@
+# The headless core shared between the GTK UI and the Kotlin UI.
+# See doc/kotlin-plan.md. Deliberately detached from the application's
+# build ([workspace] below) until Track 3 points the GTK app at it.
+
+[package]
+name = "commune-core"
+version = "0.1.0"
+license = "GPL-3.0-or-later"
+edition = "2024"
+rust-version = "1.95"
+publish = false
+
+[lib]
+# `lib` for the GTK application, `cdylib` for the Android .so the Kotlin
+# bindings load, `staticlib` kept for parity with how Android links today.
+crate-type = ["lib", "cdylib", "staticlib"]
+
+# The same uniffi revision the pinned matrix-rust-sdk workspace uses, so the
+# facade and matrix-sdk-ffi stay on one FFI runtime.
+[dependencies]
+uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", rev = "e5f4821410bea19e71984ea5e06a7bc8b11ed9e5", version = "0.31.0", default-features = false, features = ["cargo-metadata"] }
+
+[workspace]
