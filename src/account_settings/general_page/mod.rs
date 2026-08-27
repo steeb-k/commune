@@ -26,7 +26,8 @@ use crate::{
     gettext_f,
     prelude::*,
     session::{
-        IdentityServerChoice, Session, identity_server_choice, set_identity_server_preference,
+        IdentityServerChoice, Session, identity_server_choice,
+        identity_server_choice_for_preference, set_identity_server_preference,
     },
     spawn, spawn_tokio, toast,
     utils::{OngoingAsyncAction, TemplateCallbacks, klipy, media::FileInfo},
@@ -257,7 +258,13 @@ mod imp {
                 return;
             };
 
-            let subtitle = match identity_server_choice(&session).await {
+            let choice = identity_server_choice(&session).await;
+            self.set_identity_server_subtitle(choice);
+        }
+
+        /// Write the identity server row's subtitle for the given choice.
+        fn set_identity_server_subtitle(&self, choice: IdentityServerChoice) {
+            let subtitle = match choice {
                 IdentityServerChoice::Account(base_url) => gettext_f(
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
@@ -324,9 +331,13 @@ mod imp {
                 _ => return,
             };
 
-            match set_identity_server_preference(&session, preference).await {
+            match set_identity_server_preference(&session, preference.clone()).await {
                 Ok(()) => {
-                    self.update_identity_server_row().await;
+                    // The SDK's cached account data lags this write until the
+                    // next sync, so the row is told what was written instead
+                    // of asking the cache and reading yesterday's answer.
+                    let choice = identity_server_choice_for_preference(&session, preference).await;
+                    self.set_identity_server_subtitle(choice);
                 }
                 Err(crate::session::IdentityServerError::NoServer) => {
                     toast!(
