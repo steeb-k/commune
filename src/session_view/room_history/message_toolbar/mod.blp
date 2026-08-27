@@ -78,7 +78,18 @@ template $MessageToolbar: Adw.Bin {
           }
         }
 
-        Gtk.Box {
+        // Android only: the auxiliary buttons move up here at construction,
+        // because six widgets do not fit beside a typing area on a phone.
+        // See `MessageToolbar::constructed()`.
+        Gtk.Box action_row {
+          visible: false;
+
+          styles [
+            "toolbar",
+          ]
+        }
+
+        Gtk.Box toolbar_row {
           styles [
             "toolbar",
           ]
@@ -90,7 +101,7 @@ template $MessageToolbar: Adw.Bin {
             clicked => $select_file() swapped;
           }
 
-          Gtk.Button {
+          Gtk.Button emoji_button {
             valign: end;
             icon-name: "emoji-symbolic";
             tooltip-text: _("Insert an Emoji");
@@ -148,7 +159,7 @@ template $MessageToolbar: Adw.Bin {
             }
           }
 
-          Gtk.MenuButton {
+          Gtk.MenuButton more_button {
             valign: end;
             direction: up;
             icon-name: "more-symbolic";
