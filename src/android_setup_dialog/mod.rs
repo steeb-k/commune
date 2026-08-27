@@ -26,18 +26,12 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{CompositeTemplate, glib};
-use tracing::{debug, error, warn};
+use tracing::error;
 
 use crate::{
     Application,
-    utils::{android, android_notifications, android_push},
+    utils::{android_notifications, android_push},
 };
-
-/// Where to get ntfy, asked of whatever store the device has.
-const NTFY_MARKET_URI: &str = "market://details?id=io.heckel.ntfy";
-
-/// The fallback when no store answers: F-Droid's page, in the browser.
-const NTFY_WEB_URI: &str = "https://f-droid.org/packages/io.heckel.ntfy/";
 
 mod imp {
     use std::sync::atomic::AtomicBool;
@@ -150,15 +144,8 @@ mod imp {
 
         /// Open ntfy's page in a store, or in the browser when there is none.
         fn open_store(&self) {
-            let Some(window) = self.obj().root().and_downcast::<gtk::Window>() else {
-                return;
-            };
-
-            if let Err(error) = android::launch_uri(&window, NTFY_MARKET_URI) {
-                debug!("No store answered for ntfy; opening the F-Droid page: {error}");
-                if let Err(error) = android::launch_uri(&window, NTFY_WEB_URI) {
-                    warn!("Could not open a page to get ntfy: {error}");
-                }
+            if let Some(window) = self.obj().root().and_downcast::<gtk::Window>() {
+                android_push::open_ntfy_store(&window);
             }
         }
     }

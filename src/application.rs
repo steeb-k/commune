@@ -90,6 +90,25 @@ mod imp {
                 }
             ));
 
+            // A delivery mode change must act where it is made: the settings
+            // page writes the key, this starts or stops the service to match.
+            // The read before connecting is not decoration — GSettings only
+            // notifies about keys it has been asked for at least once.
+            #[cfg(target_os = "android")]
+            {
+                let _ = self.settings.string("background-delivery");
+                self.settings.connect_changed(
+                    Some("background-delivery"),
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_, _| {
+                            imp.update_sync_service();
+                        }
+                    ),
+                );
+            }
+
             // Listen to errors in the session list.
             self.session_list.connect_error_notify(clone!(
                 #[weak(rename_to = imp)]
