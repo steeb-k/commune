@@ -1241,6 +1241,38 @@ mod imp {
                 return;
             };
 
+            // Ask the homeserver's upload limit before sending, rather than
+            // uploading the whole file to be told no at the end. The answer
+            // is cached after the first ask; when it cannot be had, the
+            // upload proceeds and the server stays the judge.
+            let size = match &source {
+                AttachmentSource::Data { bytes, .. } => u64::try_from(bytes.len()).ok(),
+                AttachmentSource::File(path) => {
+                    std::fs::metadata(path).ok().map(|metadata| metadata.len())
+                }
+            };
+            if let Some(size) = size
+                && let Some(session) = timeline.room().session()
+            {
+                let client = session.client();
+                let handle =
+                    spawn_tokio!(async move { client.load_or_fetch_max_upload_size().await });
+                if let Ok(max_upload_size) = handle.await.expect("task was not aborted")
+                    && size > u64::from(max_upload_size)
+                {
+                    toast!(
+                        self.obj(),
+                        gettext(
+                            // Translators: Do NOT translate the content between '{' and '}', this
+                            // is a variable name.
+                            "This file is too large, the homeserver takes up to {max}",
+                        ),
+                        max = glib::format_size(u64::from(max_upload_size)).as_str(),
+                    );
+                    return;
+                }
+            }
+
             let config = AttachmentConfig {
                 info: Some(info),
                 thumbnail,

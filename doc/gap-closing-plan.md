@@ -444,9 +444,22 @@ partial, honestly. `doc/policy-lists.md`. Also in this stretch, on the
 user's word: the bubble header clusters who and when (`9b860e19`), with
 the agreed order recorded in `doc/chat-bubbles.md`.
 
-**Next: the audit's smaller wins** (`is_last_device()` before logout,
-`get_dm_room()` before creating a DM, a storage settings page) — or 2.0,
-which is sliding sync, per the decided rounds below.
+**The audit's smaller wins are built, 26 August 2026, one commit.** A
+duplicate direct chat is not created (`get_dm_room()` asked after the
+local heuristic, before creating); logging out the last device says
+plainly what it costs (`is_last_device()` turns the hedged sentence into
+the data-loss warning, and an error keeps the hedge rather than soften
+it); a too-large file is refused before the upload
+(`load_or_fetch_max_upload_size()`, the limit named in the toast). Two of
+the audit's entries were declined with reasons in `doc/guardrails.md`,
+the ledger: merging the receipt requests would change when each fires to
+save one round trip, and the storage settings page is deferred whole
+rather than shipped as a stub. Also in this stretch, the user's third
+bubble correction: the state column moved to the line's far left for own
+bubbles, so the bubble sits flush on the avatar line (`061a9493`).
+
+**Next: the storage settings page, or 2.0 — sliding sync**, per the
+decided rounds below.
 
 **Decided 26 August 2026 — what follows round 4.** The rest of the board was
 walked and the next rounds settled, so they are not re-derived later:
