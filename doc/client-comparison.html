@@ -615,7 +615,7 @@
   <header class="masthead">
     <div class="eyebrow">
       <span>Commune 1.0.0-rc1</span>
-      <span>main @ b7c48b55</span>
+      <span>main @ 9b860e19</span>
       <span>10 clients</span>
       <span>Checked 23 August 2026</span>
     </div>
@@ -864,7 +864,7 @@
         <li>NeoChat source tree — <code>src/messagecontent</code>, <code>src/timeline</code>, README (KDE/neochat, master)</li>
         <li>Cinny release notes v4.10–v4.12 and <code>src/app/features</code> (cinnyapp/cinny, dev)</li>
         <li>Element X feature-status issues in element-hq/element-meta and element-x-android</li>
-        <li>Commune: this tree at <code>b7c48b55</code>, plus the ledgers under <code>doc/</code></li>
+        <li>Commune: this tree at <code>9b860e19</code>, plus the ledgers under <code>doc/</code></li>
       </ul>
     </div>
   </section>
@@ -997,13 +997,13 @@
 
     { f: "Moderation policy lists", g: "Rooms", kind: "spec", tag: "Policy lists",
       note: "Subscribing to a ban list, or authoring one.",
-      c: { commune:0, fractal:0, ew:0.5, ex:0, ec:0, sc:0, fc:0, nh:-1, nc:-1, ci:0 },
-      cn: { commune:"m.policy.rule.* is never parsed. Ignoring users is manual, one at a time.",
+      c: { commune:0.5, fractal:0, ew:0.5, ex:0, ec:0, sc:0, fc:0, nh:-1, nc:-1, ci:0 },
+      cn: { commune:"Since 26 August 2026 a policy room's rules read as sentences — who recommended banning what, and why; a withdrawn rule reads as the removal. Subscribing and client-side enforcement are left to server-side tooling, by decision.",
             ew:"Behind Labs." } },
 
     { f: "Arbitrary room tags, and tag order", g: "Rooms", kind: "spec", tag: "Room tagging",
       c: { commune:0.5, fractal:0.5, ew:0.5, ex:0.5, ec:0.5, sc:0.5, fc:0.5, nh:0.5, nc:0.5, ci:0.5 },
-      cn: { commune:"Hard-wired to m.favourite and m.lowpriority; the order field is neither read nor written.",
+      cn: { commune:"Hard-wired to m.favourite and m.lowpriority, but since 26 August 2026 the order field is read: the favorites keep the manual order another client gave them, ordered rooms first. Writing it, and u.* tags, stay out.",
             ew:"Favourites and low priority only — the whole field treats tags as two fixed buckets." } },
 
     { f: "Guest access", g: "Rooms", kind: "spec", tag: "Guest access",

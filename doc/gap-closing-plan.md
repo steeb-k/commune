@@ -424,8 +424,29 @@ device announces the same knocks again, by the SDK's contract. Ledgers:
 audit's riders (captions, upload progress, the outbox listing) stayed
 out, recorded in the failed-sends ledger.
 
-**Next: round 9, optional — tag order and moderation policy lists**, or
-the audit's smaller wins, per the decided rounds below.
+**Round 9 is built, 26 August 2026 — the optional round, both items, each
+repriced against reality on the way in.** Tag `order` is read: `Room`
+carries a `tag-order` property refreshed beside the category, and the
+sidebar sorts by it before activity, so the favorites keep the order
+another client gave them. **Arbitrary `u.*` tags stayed out and the
+reprice is the reason:** a user tag wants a sidebar section of its own,
+and the sections are a fixed enum with hand-written offsets — a sidebar
+rework, not a tack-on. Writing `order` also stayed out; nothing offers
+drag-to-reorder, and an order nobody chose is noise. `doc/room-tags.md`.
+The moderation policy rules are read and said: the three
+`m.policy.rule.*` types joined the timeline allow-list and each renders
+as a sentence — who recommended banning what, and why; a withdrawn rule
+reads as the removal. **Subscribing to and applying a list stayed out on
+purpose**: hiding messages on a glob match is a moderation action with
+teeth that the field does server-side, and a client should make its user
+able to read a policy room, not half-enforce one. The row moves absent →
+partial, honestly. `doc/policy-lists.md`. Also in this stretch, on the
+user's word: the bubble header clusters who and when (`9b860e19`), with
+the agreed order recorded in `doc/chat-bubbles.md`.
+
+**Next: the audit's smaller wins** (`is_last_device()` before logout,
+`get_dm_room()` before creating a DM, a storage settings page) — or 2.0,
+which is sliding sync, per the decided rounds below.
 
 **Decided 26 August 2026 — what follows round 4.** The rest of the board was
 walked and the next rounds settled, so they are not re-derived later:

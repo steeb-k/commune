@@ -9,6 +9,7 @@ use ruma::{
     UserId,
     events::{
         StateEventContentChange, StateEventType,
+        policy::rule::{PolicyRuleEventContent, Recommendation},
         room::{
             member::MembershipState, policy::RoomPolicyEventContent,
             server_acl::RoomServerAclEventContent,
@@ -164,6 +165,39 @@ mod imp {
                 // name is read from the raw event instead.
                 _ if other_state.content().event_type() == StateEventType::RoomPolicy => {
                     WidgetType::Text(policy_server_message(event, &sender.disambiguated_name()))
+                }
+                AnyOtherStateEventContentChange::PolicyRuleUser(change) => {
+                    let rule = match change {
+                        StateEventContentChange::Original { content, .. } => Some(&content.0),
+                        StateEventContentChange::Redacted(_) => None,
+                    };
+                    WidgetType::Text(policy_rule_message(
+                        rule,
+                        &sender.disambiguated_name(),
+                        PolicyRuleScope::User,
+                    ))
+                }
+                AnyOtherStateEventContentChange::PolicyRuleRoom(change) => {
+                    let rule = match change {
+                        StateEventContentChange::Original { content, .. } => Some(&content.0),
+                        StateEventContentChange::Redacted(_) => None,
+                    };
+                    WidgetType::Text(policy_rule_message(
+                        rule,
+                        &sender.disambiguated_name(),
+                        PolicyRuleScope::Room,
+                    ))
+                }
+                AnyOtherStateEventContentChange::PolicyRuleServer(change) => {
+                    let rule = match change {
+                        StateEventContentChange::Original { content, .. } => Some(&content.0),
+                        StateEventContentChange::Redacted(_) => None,
+                    };
+                    WidgetType::Text(policy_rule_message(
+                        rule,
+                        &sender.disambiguated_name(),
+                        PolicyRuleScope::Server,
+                    ))
                 }
                 _ => {
                     warn!(
@@ -528,6 +562,103 @@ fn server_acl_message(
             &[("sender", sender_name), ("servers", &unblocked.join(", "))],
         ),
         _ => generic(),
+    }
+}
+
+/// What a moderation policy rule is about.
+#[derive(Debug, Clone, Copy)]
+enum PolicyRuleScope {
+    /// A rule about users.
+    User,
+    /// A rule about rooms.
+    Room,
+    /// A rule about servers.
+    Server,
+}
+
+/// The sentence for a moderation policy rule event.
+///
+/// A rule the sender wrote reads with its entity, its recommendation and
+/// its reason; a redacted one — which is how a rule is withdrawn — reads
+/// as the removal. The only recommendation the specification defines is
+/// `m.ban`; anything else is named a rule without claiming to know what
+/// it asks for.
+fn policy_rule_message(
+    rule: Option<&PolicyRuleEventContent>,
+    sender_name: &str,
+    scope: PolicyRuleScope,
+) -> String {
+    let Some(rule) = rule else {
+        return match scope {
+            PolicyRuleScope::User => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "{sender} removed a moderation rule about users.",
+                &[("sender", sender_name)],
+            ),
+            PolicyRuleScope::Room => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "{sender} removed a moderation rule about rooms.",
+                &[("sender", sender_name)],
+            ),
+            PolicyRuleScope::Server => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "{sender} removed a moderation rule about servers.",
+                &[("sender", sender_name)],
+            ),
+        };
+    };
+
+    let vars: &[(&str, &str)] = &[
+        ("sender", sender_name),
+        ("entity", &rule.entity),
+        ("reason", &rule.reason),
+    ];
+
+    if rule.recommendation == Recommendation::Ban {
+        match scope {
+            PolicyRuleScope::User => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names. The entity can use glob characters, like @spammer*:example.org.
+                "{sender} recommended banning the users matching {entity}: {reason}",
+                vars,
+            ),
+            PolicyRuleScope::Room => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names. The entity can use glob characters.
+                "{sender} recommended banning the rooms matching {entity}: {reason}",
+                vars,
+            ),
+            PolicyRuleScope::Server => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names. The entity can use glob characters.
+                "{sender} recommended banning the servers matching {entity}: {reason}",
+                vars,
+            ),
+        }
+    } else {
+        match scope {
+            PolicyRuleScope::User => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names.
+                "{sender} set a moderation rule for the users matching {entity}: {reason}",
+                vars,
+            ),
+            PolicyRuleScope::Room => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names.
+                "{sender} set a moderation rule for the rooms matching {entity}: {reason}",
+                vars,
+            ),
+            PolicyRuleScope::Server => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names.
+                "{sender} set a moderation rule for the servers matching {entity}: {reason}",
+                vars,
+            ),
+        }
     }
 }
 
