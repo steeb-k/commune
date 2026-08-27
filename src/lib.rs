@@ -22,6 +22,8 @@
 
 mod account_chooser_dialog;
 mod account_switcher;
+#[cfg(target_os = "android")]
+mod android_setup_dialog;
 mod application;
 mod components;
 #[rustfmt::skip]

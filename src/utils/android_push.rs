@@ -117,11 +117,37 @@ struct State {
     /// may have failed. The foreground service keeps running until this is
     /// true — see [`service_needed()`].
     pusher_ok: bool,
+    /// Whether the one-time setup dialog has been shown.
+    ///
+    /// Here rather than in the settings because this file survives a reinstall
+    /// (`no_backup`), and being asked the same first-run question again on
+    /// every reinstall is nagging, not onboarding.
+    setup_shown: bool,
 }
 
 impl State {
     fn path() -> std::path::PathBuf {
         DataType::Persistent.dir_path().join(STATE_FILE)
+    }
+
+    /// Change the state under a lock, and save it.
+    ///
+    /// Every mutation goes through here. The writers live on three different
+    /// threads — the GTK thread, tokio workers, and whatever thread Android
+    /// delivers broadcasts on — and two bare load-modify-save cycles racing
+    /// lose one of the writes. Measured: the setup dialog's closed handler
+    /// saved its flag in the same moment the `NEW_ENDPOINT` that the dialog's
+    /// own choice had triggered saved the endpoint, and the flag was gone
+    /// again. Readers that only want a look may still [`Self::load()`]
+    /// freely; a stale read is harmless where a lost write is not.
+    fn update<R>(change: impl FnOnce(&mut Self) -> R) -> R {
+        static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let _held = LOCK.lock().expect("state lock should not be poisoned");
+
+        let mut state = Self::load();
+        let result = change(&mut state);
+        state.save();
+        result
     }
 
     fn load() -> Self {
@@ -142,6 +168,7 @@ impl State {
             endpoint: string("endpoint"),
             previous_endpoint: string("previous_endpoint"),
             pusher_ok: keyfile.boolean(STATE_GROUP, "pusher_ok").unwrap_or(false),
+            setup_shown: keyfile.boolean(STATE_GROUP, "setup_shown").unwrap_or(false),
         }
     }
 
@@ -158,6 +185,7 @@ impl State {
             }
         }
         keyfile.set_boolean(STATE_GROUP, "pusher_ok", self.pusher_ok);
+        keyfile.set_boolean(STATE_GROUP, "setup_shown", self.setup_shown);
 
         let path = Self::path();
         if let Some(parent) = path.parent() {
@@ -184,9 +212,59 @@ pub(crate) fn init() {
         return;
     }
 
+    // "service" is the user saying push should not be relied on; registering
+    // anyway would put delivery back on a road they turned off of. The other
+    // modes register — including "auto" before any endpoint exists, which is
+    // what makes a freshly installed distributor picked up on the next run.
+    if Application::default()
+        .settings()
+        .string("background-delivery")
+        == "service"
+    {
+        debug!("Background delivery is set to the foreground service; not registering for push");
+        return;
+    }
+
     if let Err(error) = register() {
         warn!("Could not register with a UnifiedPush distributor: {error}");
     }
+}
+
+/// Register with a distributor now, regardless of what this run already did.
+///
+/// The setup dialog's path: choosing push after [`init()`] has already run —
+/// possibly with registration skipped by the mode, possibly before the
+/// distributor was installed — has to be able to register on the spot.
+pub(crate) fn ensure_registered() {
+    REGISTERED.store(true, Ordering::Relaxed);
+
+    if let Err(error) = register() {
+        warn!("Could not register with a UnifiedPush distributor: {error}");
+    }
+}
+
+/// Whether a UnifiedPush distributor is installed.
+///
+/// Must be called with the application on screen — the `Context` behind the
+/// `PackageManager` query needs a window the first time.
+pub(crate) fn has_distributor() -> bool {
+    match distributors() {
+        Ok(found) => !found.is_empty(),
+        Err(error) => {
+            warn!("Could not look for UnifiedPush distributors: {error}");
+            false
+        }
+    }
+}
+
+/// Whether the one-time setup dialog still has to be shown.
+pub(crate) fn should_present_setup() -> bool {
+    !State::load().setup_shown
+}
+
+/// Record that the one-time setup dialog was shown.
+pub(crate) fn mark_setup_shown() {
+    State::update(|state| state.setup_shown = true);
 }
 
 /// Whether the foreground service is needed for delivery.
@@ -228,9 +306,16 @@ fn register() -> Result<(), AndroidJniError> {
             // The distributor this registration lived on was uninstalled. The
             // token is unreachable and the endpoint is dead; the pusher on the
             // homeserver cleans itself up through the gateway's pushkey
-            // rejection, measured in step 0 of the plan.
+            // rejection, measured in step 0 of the plan. The setup flag is
+            // not registration state, and losing a distributor is not a
+            // reason to be onboarded again.
             info!("The UnifiedPush distributor is gone; back to the foreground service");
-            State::default().save();
+            State::update(|state| {
+                *state = State {
+                    setup_shown: state.setup_shown,
+                    ..State::default()
+                };
+            });
             notify_delivery_changed();
         } else {
             info!(
@@ -241,21 +326,21 @@ fn register() -> Result<(), AndroidJniError> {
     };
     info!("UnifiedPush distributors: {distributors:?}, registering with {distributor}");
 
-    let mut state = State::load();
-    if state.distributor.as_deref() != Some(distributor.as_str()) {
-        // A new distributor means a new registration; a token is its identity,
-        // so it must not be reused across them.
-        state.token = None;
-    }
-    let token = state
-        .token
-        .get_or_insert_with(|| glib::uuid_string_random().into())
-        .clone();
-    state.distributor = Some(distributor.clone());
     // Saved before the broadcast goes out: the answer can arrive in a process
     // this one knows nothing about, and the token is what that process
     // validates it with.
-    state.save();
+    let token = State::update(|state| {
+        if state.distributor.as_deref() != Some(distributor.as_str()) {
+            // A new distributor means a new registration; a token is its
+            // identity, so it must not be reused across them.
+            state.token = None;
+        }
+        state.distributor = Some(distributor.clone());
+        state
+            .token
+            .get_or_insert_with(|| glib::uuid_string_random().into())
+            .clone()
+    });
 
     let context = android::application_context()?;
 
@@ -442,11 +527,15 @@ pub(crate) async fn ensure_pusher(client: Client) {
 
     // What the delivery mode reads. Only meaningful with an endpoint — a
     // no-op run against no endpoint proves nothing either way — and only
-    // worth a save and a re-evaluation when it changes.
-    let mut state = State::load();
-    if state.endpoint.is_some() && state.pusher_ok != ok {
-        state.pusher_ok = ok;
-        state.save();
+    // worth a re-evaluation when it changes.
+    let changed = State::update(|state| {
+        let changed = state.endpoint.is_some() && state.pusher_ok != ok;
+        if changed {
+            state.pusher_ok = ok;
+        }
+        changed
+    });
+    if changed {
         notify_delivery_changed();
     }
 }
@@ -923,7 +1012,7 @@ pub extern "system" fn Java_org_gtk_android_PushReceiver_nativeReceive(
     let token = jstring(&mut env, &token);
     let id = jstring(&mut env, &id);
 
-    let mut state = State::load();
+    let state = State::load();
 
     // The proof the broadcast is from the distributor the token went to, and
     // the first thing checked — see the module comment. `REGISTRATION_FAILED`
@@ -946,16 +1035,17 @@ pub extern "system" fn Java_org_gtk_android_PushReceiver_nativeReceive(
                 return;
             };
             info!("UnifiedPush endpoint: {endpoint}");
-            if state.endpoint.as_deref() != Some(endpoint.as_str()) {
-                // The old endpoint's pusher has to be found and removed later,
-                // and this is the last moment its address is known. The new
-                // one is not registered anywhere yet; the reconciliation below
-                // flips this back.
-                state.previous_endpoint = state.endpoint.take();
-                state.pusher_ok = false;
-            }
-            state.endpoint = Some(endpoint);
-            state.save();
+            State::update(|state| {
+                if state.endpoint.as_deref() != Some(endpoint.as_str()) {
+                    // The old endpoint's pusher has to be found and removed
+                    // later, and this is the last moment its address is
+                    // known. The new one is not registered anywhere yet; the
+                    // reconciliation below flips this back.
+                    state.previous_endpoint = state.endpoint.take();
+                    state.pusher_ok = false;
+                }
+                state.endpoint = Some(endpoint);
+            });
             ensure_pushers_of_sessions();
         }
         ACTION_MESSAGE => {
@@ -971,20 +1061,22 @@ pub extern "system" fn Java_org_gtk_android_PushReceiver_nativeReceive(
         ACTION_REGISTRATION_FAILED => {
             let reason = jstring(&mut env, &reason);
             warn!(?reason, "UnifiedPush registration failed");
-            // The spec wants a different token for the next attempt.
-            state.token = None;
-            state.endpoint = None;
-            state.pusher_ok = false;
-            state.save();
+            State::update(|state| {
+                // The spec wants a different token for the next attempt.
+                state.token = None;
+                state.endpoint = None;
+                state.pusher_ok = false;
+            });
             notify_delivery_changed();
         }
         ACTION_UNREGISTERED => {
             let replacement = jstring(&mut env, &use_distributor);
             info!(?replacement, "The UnifiedPush distributor unregistered us");
-            state.token = None;
-            state.endpoint = None;
-            state.pusher_ok = false;
-            state.save();
+            State::update(|state| {
+                state.token = None;
+                state.endpoint = None;
+                state.pusher_ok = false;
+            });
             notify_delivery_changed();
         }
         ACTION_TEMP_UNAVAILABLE => {

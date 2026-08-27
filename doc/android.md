@@ -41,7 +41,7 @@ whole route hung on.
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
 | S3 — Commune login on the emulator | **done** — a password login against a homeserver completes and the session opens, which puts `matrix-sdk`, the bundled SQLite store, the crypto stack, the Keystore-sealed secrets and the device trust roots all on one exercised path |
 | S4 — GStreamer | **steps 0, 1 and 2 done, 25 August 2026** — GStreamer 1.28.6 links statically out of the upstream Android binaries against pixiewood's GLib, 28 plugins are registered, and **audio and video both play on the emulator** through the same code every other platform runs. A voice message plays through OpenSL ES; an mp4 previews, sends and plays in the timeline, as does one that was already in the room. GTK's own `media-gstreamer` turned out not to be needed: `GstMediaStream`, written for macOS, covers Android too. Still missing: hardware decode via `androidmedia`, and calls. The plan and every measurement are in `doc/android-media-plan.md` |
-| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; **real push works as S5b, steps 0–3 done, 26 August 2026** — the plan is `doc/android-push-plan.md`: a UnifiedPush endpoint registers itself as a pusher, and a real message at a **dead** Commune posts a real notification whose tap opens the conversation. Remaining: step 4 (one delivery mode at a time) and step 5 (the first-time-setup screen); decryption-on-wake and the E2EE body ride with the hardware retest |
+| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; **real push works as S5b, the whole ladder, steps 0–5, done 26 August 2026** — the plan is `doc/android-push-plan.md`: a UnifiedPush endpoint registers itself as a pusher, a real message at a **dead** Commune posts a real notification whose tap opens the conversation, the foreground service runs only when push does not deliver, and a one-time setup dialog onboards the choice. Remaining threads: the permanent settings home for the mode, and the hardware retest that carries decryption-on-wake |
 | S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
 | S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. **Run on real hardware 24 August 2026** — a Pixel 9a on GrapheneOS, Android 17: installs, launches, renders with no GL errors, soft keyboard works |
 | S8 — input handling | **the URL keyboard and plaintext passwords are fixed and confirmed on a Pixel 9a**, and were one bug: the Android IM context read a struct field nothing had assigned since `_init` |
@@ -1894,6 +1894,38 @@ having survived under `no_backup`, ntfy matched its existing subscription and re
 same endpoint** instead of minting a second registration. That is the plan's
 "survives a reinstall via `NEW_ENDPOINT`" measurement, made exactly as hoped.
 
+**Measured, all against ntfy 1.25.2 from F-Droid on the emulator:** discovery finds
+`["io.heckel.ntfy"]` through the `unifiedpush://link` query; the endpoint —
+`https://ntfy.sh/upeOjmM0pSDm0r?up=1`, the `up` + 12 naming the plan documents — arrives at
+`nativeReceive` and is logged from Rust; and a synthetic Matrix notify POSTed at ntfy's gateway
+reaches the running application as a `MESSAGE` broadcast about five seconds later, most of it
+ntfy's own delivery latency.
+
+### The push at a dead process, measured a step early
+
+`am stop-app` (which kills without the stopped state that `am force-stop` would set), then the
+same gateway POST. Everything below is one logcat:
+
+* ntfy held the message and sent the broadcast; Android logged
+  `Start proc … for broadcast {…PushReceiver}` — the process exists again because of us.
+* `RuntimeApplication.onCreate` ran `main`, exactly as step 0 read in the source: GStreamer
+  registered its plugins, the application constructed itself, and **no `Activity` appeared and
+  nothing crashed** — `activate` never fired, so nothing tried to present a window.
+* `nativeReceive` logged the message **771 ms after process start**.
+* **Session restore runs without a window.** `Restoring previous session … @fakeguy` — the
+  Keystore unseals from a background process, and the ordinary sync loop started.
+* That restore reached `android_sync_service::update()`, and the API 31 exception the module had
+  written off as unreachable was thrown for real — `Background started FGS: Disallowed` — and
+  absorbed by the error arm built for other failures. The module comment now tells the truth.
+* **The freezer closed the window ten seconds in.** `ActivityManager: freezing` came 10.6 s after
+  process start, while the sync loop's 30-second long-poll was still in flight. That is the
+  budget: the accidental full-app wake fits a session restore but not a classic sync, which is
+  the measured version of why step 3 plans on `NotificationClient` fetching one event rather
+  than syncing.
+* One emulator artifact worth not chasing later: the woken process's syncs failed with DNS errors
+  against a homeserver the same emulator resolves when foregrounded. Noted, unexplained, and to be
+  retested on hardware before it is believed.
+
 ### Step 2 — the endpoint becomes a pusher
 
 **Done, 26 August 2026, on the emulator.** When a session reaches `Ready` — and for every session
@@ -2025,37 +2057,42 @@ which re-evaluates anyway. And a mode parked at "service" by a transient failure
 until the next trigger (an endpoint announcement, a session reaching ready, the next launch)
 rather than retrying on its own: wasteful for at most a day's six-hour budget, never silent.
 
-**Measured, all against ntfy 1.25.2 from F-Droid on the emulator:** discovery finds
-`["io.heckel.ntfy"]` through the `unifiedpush://link` query; the endpoint —
-`https://ntfy.sh/upeOjmM0pSDm0r?up=1`, the `up` + 12 naming the plan documents — arrives at
-`nativeReceive` and is logged from Rust; and a synthetic Matrix notify POSTed at ntfy's gateway
-reaches the running application as a `MESSAGE` broadcast about five seconds later, most of it
-ntfy's own delivery latency.
+### Step 5 — the first-time setup
 
-### The push at a dead process, measured a step early
+**Done, 26 August 2026, measured on the emulator through every branch.** `AndroidSetupDialog`
+(`src/android_setup_dialog/`) is shown once, the first time the window is presented with a
+session in it, and does what the plan asked: says why notifications matter — the
+`POST_NOTIFICATIONS` request moved out of `android_notifications::init()` and into the dialog's
+choices, so the system prompt arrives with its reason on screen — offers push in one tap when a
+distributor is installed, recommends getting ntfy when none is, and offers "Keep Commune Running"
+with the six-hour cap named in its subtitle. Dismissing it is a decision: the defaults stay, and
+the question is never asked again. The asked-once flag lives in the push state file rather than
+GSettings because `no_backup` survives a reinstall, and being onboarded again on every reinstall
+is nagging.
 
-`am stop-app` (which kills without the stopped state that `am force-stop` would set), then the
-same gateway POST. Everything below is one logcat:
+Choosing push writes `auto`, not `push`, on purpose — the person chose the better delivery, not a
+promise to never fall back when their distributor breaks. The ntfy link goes to
+`market://details?id=io.heckel.ntfy`, which any installed store answers, with F-Droid's web page
+as the fallback; on the store-less emulator the refusal and the Chrome fallback were both
+measured, exactly one log line apart. Coming back from the store and tapping the row again
+re-detects and completes — measured across an uninstall and reinstall of ntfy mid-dialog, which
+also exercised step 4's distributor-gone cleanup and, once more, the stopped-state `REGISTER`
+flag against the freshly installed, never-opened ntfy.
 
-* ntfy held the message and sent the broadcast; Android logged
-  `Start proc … for broadcast {…PushReceiver}` — the process exists again because of us.
-* `RuntimeApplication.onCreate` ran `main`, exactly as step 0 read in the source: GStreamer
-  registered its plugins, the application constructed itself, and **no `Activity` appeared and
-  nothing crashed** — `activate` never fired, so nothing tried to present a window.
-* `nativeReceive` logged the message **771 ms after process start**.
-* **Session restore runs without a window.** `Restoring previous session … @fakeguy` — the
-  Keystore unseals from a background process, and the ordinary sync loop started.
-* That restore reached `android_sync_service::update()`, and the API 31 exception the module had
-  written off as unreachable was thrown for real — `Background started FGS: Disallowed` — and
-  absorbed by the error arm built for other failures. The module comment now tells the truth.
-* **The freezer closed the window ten seconds in.** `ActivityManager: freezing` came 10.6 s after
-  process start, while the sync loop's 30-second long-poll was still in flight. That is the
-  budget: the accidental full-app wake fits a session restore but not a classic sync, which is
-  the measured version of why step 3 plans on `NotificationClient` fetching one event rather
-  than syncing.
-* One emulator artifact worth not chasing later: the woken process's syncs failed with DNS errors
-  against a homeserver the same emulator resolves when foregrounded. Noted, unexplained, and to be
-  retested on hardware before it is believed.
+**One real bug came out of the measuring, and it is why the state file grew a lock.** The first
+completed setup lost its asked-once flag: the dialog's closed handler saved it in the same moment
+the `NEW_ENDPOINT` that the dialog's own choice had triggered did its own load-modify-save on the
+broadcast thread, and the second save won. Every mutation now goes through `State::update()`, a
+lock around the load-modify-save cycle; plain reads stay free, because a stale read is harmless
+where a lost write is not. Re-measured through the identical racing sequence: the flag survives.
+
+**What step 5 leaves for later:** the permanent settings home — the plan wants the same choices
+reachable in settings afterwards, so that installing ntfy later is a toggle rather than a
+reinstall; today the dialog is the only door, and the `background-delivery` key can otherwise
+only be changed by hand. The `service` row's write and the two mode overrides also remain
+unexercised on a device — three-line branches identical in shape to the measured one. And the
+dialog's strings are English-only, like everything else on the port, until the missing
+translations are fixed port-wide.
 
 ## S6 — The formats that would not draw
 
