@@ -208,9 +208,11 @@ the sender's name and the body, and tapping it opens the conversation at the eve
 measured: the body of an _encrypted_ pushed event — the seeded DM's sender is `curl` — which
 rides with the hardware retest under the ledger's _Before this ships_.
 
-**Step 4 — one mode at a time.** Push mode and service mode become an explicit setting: with a
-working pusher the foreground service does not run; losing the pusher falls back. The setting
-lives in GSettings, per the Android build.
+**Step 4 — one mode at a time. Done, 26 August 2026** — the ledger's S5b section has the
+measurements: the service stops when the pusher confirms, restarts when a reconciliation fails or
+the distributor unregisters us, and the `background-delivery` GSettings key (`auto`/`push`/
+`service`) is in place for step 5's screen to steer. Fallback that arrives in the background takes
+effect at the next present, because only a foregrounded app may start the service.
 
 **Step 5 — the first-time-setup screen.** A person installing Commune should not have to know any
 of the above. An Android-only setup page, shown once after the first session exists (the natural

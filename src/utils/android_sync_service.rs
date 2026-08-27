@@ -76,26 +76,28 @@ const EXTRA_ICON: &str = "commune.icon";
 /// is here to keep the log honest rather than to keep Android happy.
 static RUNNING: AtomicBool = AtomicBool::new(false);
 
-/// Start or stop the service to match whether there is anything to sync.
+/// Start or stop the service to match whether it is needed.
 ///
-/// Called when the window is presented and whenever the session list changes.
-/// With no session there is nothing to keep alive and an ongoing notification
-/// would be a lie, so the service is stopped — which is also what makes logging
-/// out of the last session tidy up after itself.
+/// Called when the window is presented, whenever the session list changes, and
+/// when push delivery becomes available or stops being. Whether it is needed
+/// is the caller's judgement — `Application::update_sync_service()` weighs the
+/// session count and the delivery mode — and stopping is what makes both
+/// logging out of the last session and push taking over tidy up after
+/// themselves.
 ///
-/// Must be called on the GTK thread, and with the application on screen: see
-/// the note on API 31 above.
-pub(crate) fn update(has_sessions: bool) {
-    if has_sessions == RUNNING.load(Ordering::Relaxed) {
+/// Must be called on the GTK thread, and (to start) with the application on
+/// screen: see the note on API 31 above.
+pub(crate) fn update(needed: bool) {
+    if needed == RUNNING.load(Ordering::Relaxed) {
         return;
     }
 
-    let result = if has_sessions { start() } else { stop() };
+    let result = if needed { start() } else { stop() };
 
     match result {
         Ok(()) => {
-            RUNNING.store(has_sessions, Ordering::Relaxed);
-            if has_sessions {
+            RUNNING.store(needed, Ordering::Relaxed);
+            if needed {
                 debug!("Started syncing in the background");
             } else {
                 debug!("Stopped syncing in the background");

@@ -2002,6 +2002,29 @@ through `curl` — so the fetched event needed no room key, and `retry_decryptio
 `/context` path ran with nothing to do. That measurement needs a real E2EE message from a real
 second account, and it belongs to the hardware retest already filed under _Before this ships_.
 
+### Step 4 — one delivery mode at a time
+
+**Done, 26 August 2026.** The foreground service now runs exactly when push does not deliver.
+"Delivers" is written down in the state file as `pusher_ok` — the distributor answering is not
+enough; the homeserver has to have accepted the pusher — and the decision lives in
+`android_push::service_needed()`, read by `Application::update_sync_service()` at every present,
+session-list change, and delivery transition. A `background-delivery` GSettings key (`auto`,
+`push`, `service`) sits above it for step 5's setup screen to steer; `auto` is the behavior below,
+and the two overrides are three lines that have not been exercised on a device.
+
+**Measured, all three transitions in one emulator session:** at present the service starts —
+`pusher_ok` starts out false — and stops ten seconds later when the first session's
+reconciliation confirms the pusher; a _failed_ reconciliation moments later (early-boot network
+flapping, as it happens) flips it straight back on; and a synthetic `UNREGISTERED` carrying the
+real token clears the registration — token and endpoint gone, `pusher_ok=false`, the distributor
+kept for the next attempt — and re-evaluates on the spot.
+
+Two honest edges, both in the safe direction. A transition that arrives while the app is
+backgrounded cannot start the service — API 31 again — so it takes effect at the next present,
+which re-evaluates anyway. And a mode parked at "service" by a transient failure stays there
+until the next trigger (an endpoint announcement, a session reaching ready, the next launch)
+rather than retrying on its own: wasteful for at most a day's six-hour budget, never silent.
+
 **Measured, all against ntfy 1.25.2 from F-Droid on the emulator:** discovery finds
 `["io.heckel.ntfy"]` through the `unifiedpush://link` query; the endpoint —
 `https://ntfy.sh/upeOjmM0pSDm0r?up=1`, the `up` + 12 naming the plan documents — arrives at

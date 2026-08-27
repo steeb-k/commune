@@ -110,6 +110,13 @@ struct State {
     /// is the same for every Commune on Android, so "everything under our
     /// `app_id`" on the homeserver includes the user's other devices.
     previous_endpoint: Option<String>,
+    /// Whether the endpoint's pusher registration last succeeded.
+    ///
+    /// What separates "a distributor answered" from "the homeserver will
+    /// POST": the endpoint may have no Matrix gateway, or the registration
+    /// may have failed. The foreground service keeps running until this is
+    /// true — see [`service_needed()`].
+    pusher_ok: bool,
 }
 
 impl State {
@@ -134,6 +141,7 @@ impl State {
             distributor: string("distributor"),
             endpoint: string("endpoint"),
             previous_endpoint: string("previous_endpoint"),
+            pusher_ok: keyfile.boolean(STATE_GROUP, "pusher_ok").unwrap_or(false),
         }
     }
 
@@ -149,6 +157,7 @@ impl State {
                 keyfile.set_string(STATE_GROUP, key, value);
             }
         }
+        keyfile.set_boolean(STATE_GROUP, "pusher_ok", self.pusher_ok);
 
         let path = Self::path();
         if let Some(parent) = path.parent() {
@@ -180,12 +189,54 @@ pub(crate) fn init() {
     }
 }
 
+/// Whether the foreground service is needed for delivery.
+///
+/// The mode setting decides ("service" and "push" are the user's overrides,
+/// step 5 of the plan); on "auto", the service runs exactly when push does not
+/// deliver — no endpoint, or an endpoint whose pusher registration has not
+/// succeeded. Callers re-evaluate on present and whenever
+/// [`notify_delivery_changed()`] fires; a transition that happens in the
+/// background takes effect on the next present, because the service may only
+/// be started from the foreground.
+pub(crate) fn service_needed(settings: &gtk::gio::Settings) -> bool {
+    match settings.string("background-delivery").as_str() {
+        "service" => true,
+        "push" => false,
+        _ => {
+            let state = State::load();
+            !(state.endpoint.is_some() && state.pusher_ok)
+        }
+    }
+}
+
+/// Have the application re-evaluate how background delivery happens.
+///
+/// Callable from any thread; the decision belongs to the main context.
+fn notify_delivery_changed() {
+    glib::MainContext::default().invoke(|| {
+        Application::default().update_background_delivery();
+    });
+}
+
 /// The body of [`init()`], so that one place reports what went wrong.
 fn register() -> Result<(), AndroidJniError> {
     let distributors = distributors()?;
 
     let Some(distributor) = distributors.first() else {
-        info!("No UnifiedPush distributor is installed; only the foreground service can deliver");
+        let state = State::load();
+        if state.distributor.is_some() || state.endpoint.is_some() {
+            // The distributor this registration lived on was uninstalled. The
+            // token is unreachable and the endpoint is dead; the pusher on the
+            // homeserver cleans itself up through the gateway's pushkey
+            // rejection, measured in step 0 of the plan.
+            info!("The UnifiedPush distributor is gone; back to the foreground service");
+            State::default().save();
+            notify_delivery_changed();
+        } else {
+            info!(
+                "No UnifiedPush distributor is installed; only the foreground service can deliver"
+            );
+        }
         return Ok(());
     };
     info!("UnifiedPush distributors: {distributors:?}, registering with {distributor}");
@@ -381,8 +432,22 @@ pub(crate) async fn ensure_pusher(client: Client) {
     static ONE_AT_A_TIME: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
     let _serialized = ONE_AT_A_TIME.lock().await;
 
-    if let Err(error) = try_ensure_pusher(&client).await {
-        warn!("Could not keep the push endpoint registered as a pusher: {error}");
+    let ok = match try_ensure_pusher(&client).await {
+        Ok(()) => true,
+        Err(error) => {
+            warn!("Could not keep the push endpoint registered as a pusher: {error}");
+            false
+        }
+    };
+
+    // What the delivery mode reads. Only meaningful with an endpoint — a
+    // no-op run against no endpoint proves nothing either way — and only
+    // worth a save and a re-evaluation when it changes.
+    let mut state = State::load();
+    if state.endpoint.is_some() && state.pusher_ok != ok {
+        state.pusher_ok = ok;
+        state.save();
+        notify_delivery_changed();
     }
 }
 
@@ -883,8 +948,11 @@ pub extern "system" fn Java_org_gtk_android_PushReceiver_nativeReceive(
             info!("UnifiedPush endpoint: {endpoint}");
             if state.endpoint.as_deref() != Some(endpoint.as_str()) {
                 // The old endpoint's pusher has to be found and removed later,
-                // and this is the last moment its address is known.
+                // and this is the last moment its address is known. The new
+                // one is not registered anywhere yet; the reconciliation below
+                // flips this back.
                 state.previous_endpoint = state.endpoint.take();
+                state.pusher_ok = false;
             }
             state.endpoint = Some(endpoint);
             state.save();
@@ -906,14 +974,18 @@ pub extern "system" fn Java_org_gtk_android_PushReceiver_nativeReceive(
             // The spec wants a different token for the next attempt.
             state.token = None;
             state.endpoint = None;
+            state.pusher_ok = false;
             state.save();
+            notify_delivery_changed();
         }
         ACTION_UNREGISTERED => {
             let replacement = jstring(&mut env, &use_distributor);
             info!(?replacement, "The UnifiedPush distributor unregistered us");
             state.token = None;
             state.endpoint = None;
+            state.pusher_ok = false;
             state.save();
+            notify_delivery_changed();
         }
         ACTION_TEMP_UNAVAILABLE => {
             debug!("The UnifiedPush distributor reports its push server unavailable");
