@@ -198,14 +198,15 @@ are all in; measured against the emulator session's real homeserver. The frozen-
 message-to-broadcast measurement is deliberately deferred into step 3's headline measurement,
 where the posted notification proves the whole chain at once.
 
-**Step 3 — the wake.** Its first measurements came a step early — the broadcast-only start idles
-usably, restores the session, and gets ten seconds; see the wake section. What remains is the
-work itself: a "started for push" path inside the ordinary application — strategy (B) with (A)
-held in reserve, the `NotificationProcessSetup` question answered, and the receiver handing
-`room_id`/`event_id` across JNI to the running main loop instead of only logging arrival.
-Measured when: with Commune dead, a real message posts a real notification with the sender's name
-and the decrypted body, and tapping it opens the conversation — the S5 measurement, repeated with
-the process dead the whole time.
+**Step 3 — the wake. Done, 26 August 2026** — the ledger's S5b section carries the full account,
+including the four silent failures it took to get there (the freezer mid-fetch and the
+`RAISE_TO_FOREGROUND` service that answers it, the sliding-sync detour, the idle-priority room
+wait that `show_pushed_item()` sidesteps, and the notification settings whose unloaded default is
+"no"). Strategy (B) won in its `/context` form; `NotificationProcessSetup` is
+`MultipleProcesses`. Measured: with Commune dead, a real message posts a real notification with
+the sender's name and the body, and tapping it opens the conversation at the event. Not yet
+measured: the body of an _encrypted_ pushed event — the seeded DM's sender is `curl` — which
+rides with the hardware retest under the ledger's _Before this ships_.
 
 **Step 4 — one mode at a time.** Push mode and service mode become an explicit setting: with a
 working pusher the foreground service does not run; losing the pusher falls back. The setting
@@ -257,13 +258,14 @@ spec's multiple-registrations design. Answered by step 1: the window-less start 
 `activate` and no crash, session restore runs from startup without a window, and the freezer
 allows about ten seconds — the wake section carries the numbers. Still open:
 
-* Whether ten unfrozen seconds cover a cold `/context` query plus a decryption retry on a slow
-  network, or step 3 needs the `RAISE_TO_FOREGROUND` service or a platform `JobService`.
-* The woken process's syncs failed with DNS errors on the emulator, against a homeserver the same
-  emulator resolves when foregrounded — unexplained, retest on hardware before believing it.
-* What `NotificationClient` does about an undecryptable event against a homeserver without
-  simplified sliding sync — the (A)/(B) fork.
+Answered by step 3: ten seconds do **not** cover the wake unaided — the `RAISE_TO_FOREGROUND`
+service is built and ntfy binds it; the (A)/(B) fork resolved to (B) in its `/context`-only form,
+so sliding sync is not involved at all; and ntfy 1.25.2 speaks enough of `AND_3` for discovery,
+shared identity and the raise service. Still open:
+
+* Decryption on wake — unexercised, the test sender cannot encrypt; the hardware retest carries
+  it (ledger, _Before this ships_).
+* The emulator's degrading networking (ledger, _Before this ships_).
 * Whether the six-hour service and push mode ever need to coexist (a distributor that flakes), or
-  whether fallback-on-`UNREGISTERED` plus the gateway's own pushkey rejection is enough.
-* Which spec versions the ntfy distributor app actually speaks on-device — the AND_3.1.0 `LINK`
-  discovery against the shipping ntfy APK is a step 1 measurement.
+  whether fallback-on-`UNREGISTERED` plus the gateway's own pushkey rejection is enough — step 4's
+  question.

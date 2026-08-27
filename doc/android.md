@@ -41,7 +41,7 @@ whole route hung on.
 | S2 — Commune `cargo check` for Android | **done** — clean, with two small Android arms added |
 | S3 — Commune login on the emulator | **done** — a password login against a homeserver completes and the session opens, which puts `matrix-sdk`, the bundled SQLite store, the crypto stack, the Keystore-sealed secrets and the device trust roots all on one exercised path |
 | S4 — GStreamer | **steps 0, 1 and 2 done, 25 August 2026** — GStreamer 1.28.6 links statically out of the upstream Android binaries against pixiewood's GLib, 28 plugins are registered, and **audio and video both play on the emulator** through the same code every other platform runs. A voice message plays through OpenSL ES; an mp4 previews, sends and plays in the timeline, as does one that was already in the room. GTK's own `media-gstreamer` turned out not to be needed: `GstMediaStream`, written for macOS, covers Android too. Still missing: hardware decode via `androidmedia`, and calls. The plan and every measurement are in `doc/android-media-plan.md` |
-| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; **real push is under way as S5b** — the plan is `doc/android-push-plan.md`, its step 0 (server chain, with `curl` alone) and step 1 (UnifiedPush registration; a real endpoint reaches Rust, and a push at a dead process starts the process) are **done, 26 August 2026**; next is step 2, the pusher |
+| S5 — keystore, notifications, SSO, push | keystore **done**, brought forward into S3 because logging in should not come first; SSO **done** and confirmed against `matrix.org`; notifications **done** — a real message posts a real notification and tapping it opens the conversation; background delivery **done** via a foreground service, capped at six hours a day by Android 15; **real push works as S5b, steps 0–3 done, 26 August 2026** — the plan is `doc/android-push-plan.md`: a UnifiedPush endpoint registers itself as a pusher, and a real message at a **dead** Commune posts a real notification whose tap opens the conversation. Remaining: step 4 (one delivery mode at a time) and step 5 (the first-time-setup screen); decryption-on-wake and the E2EE body ride with the hardware retest |
 | S6 — image formats | **done and confirmed on the emulator** — HEIC, HEIF and AVIF through gdk-pixbuf's Android loaders and SVG through GTK's own renderer, both of which were already in the APK. JXL is still unreadable |
 | S7 — aarch64 | **builds and runs** — linked first time, and the emulator's ARM64 translation runs the arm64 APK, so a phone is needed once rather than every iteration. **Run on real hardware 24 August 2026** — a Pixel 9a on GrapheneOS, Android 17: installs, launches, renders with no GL errors, soft keyboard works |
 | S8 — input handling | **the URL keyboard and plaintext passwords are fixed and confirmed on a Pixel 9a**, and were one bug: the Android IM context read a struct field nothing had assigned since `_init` |
@@ -1207,6 +1207,14 @@ Gradle then packs a 334 MB APK and a 660 MB universal one; that I/O dominates a 
 `build` does every whitelisted architecture, so since aarch64 was added it is all paid twice —
 which is the right default, but not when only the phone is about to be reinstalled.
 
+For a long emulator-only iteration loop, the Gradle half of that cost can be cut by hand
+(learned during S5b, when the disk filled twice): in the **generated**
+`.pixiewood/android/app/build.gradle`, set `ndk { abiFilters 'x86_64' }` and `splits { abi {
+enable = false } }` — AGP refuses `abiFilters` alongside enabled splits — and Gradle packs one
+440 MB `app-debug.apk` instead of three totalling 2.5 GB. The edit survives `pixiewood build`
+and is undone by the next `generate`, which is exactly the lifetime it should have. The ninja
+half still builds both arches; that part is incremental and cheap.
+
 `build-aux/android/io.github.steeb_k.Commune.xml` is the pixiewood manifest. Two things in it are
 worth knowing. The `xi:include` reads the **built** metainfo, so the architecture it names has to
 match the whitelist or it points into a directory that was never created. And pixiewood copies one
@@ -1924,6 +1932,75 @@ One scheduling fact from the same session, not a bug of ours but worth knowing w
 looks like a failure: right after a device boot, the broadcast queue deferred the `REGISTER` by a
 full hundred seconds between enqueue and dispatch (`dumpsys activity broadcasts history` shows
 both timestamps). A `NEW_ENDPOINT` that seems to never come may merely not have been sent yet.
+
+### Step 3 — the wake posts the notification
+
+**Done, measured end to end, 26 August 2026, on the emulator** — the S5 measurement repeated
+with the process dead the whole time, against the throwaway Synapse and the real ntfy: bob (via
+`curl`, so no real account anywhere) speaks in the alice DM; Synapse POSTs ntfy's gateway; ntfy
+starts Commune's process; the wake fetches the one event and posts a notification with the
+sender's name and the message body; expanding the shade and tapping it opens the conversation,
+scrolled to that event. The alice session itself went in through the ordinary login UI — which
+exercised add-account, the recovery-setup flow, and multi-account with one endpoint and one
+pusher per homeserver on the way.
+
+The path, in one sentence: `nativeReceive` parses the plaintext notify JSON (a badge-only push —
+no event — is recognized and dropped), hands `room_id`/`event_id` to the main context, waits
+bounded for a session whose client knows the room (they are still restoring in a fresh process),
+fetches with `NotificationClient::get_notification_with_context()` under a 25-second timeout, and
+posts through `Notifications::show_pushed_item()`.
+
+**It took four defects to get there, and each was found by the measurement failing silently.**
+This section is mostly their record, because every one is a shape the next platform will meet
+again:
+
+* **The freezer, mid-flight.** The first dead-process attempt fetched nothing: the freezer stopped
+  the process 11 seconds in with the fetch's request in flight, and a frozen socket does not
+  error — it dies, and a request with no timeout of its own then waits on it forever. Two fixes:
+  a `tokio` timeout around the fetch, and `PushRaiseService.java` — the spec's
+  `RAISE_TO_FOREGROUND` service, which ntfy binds around every delivery
+  (`Start proc … for service`: the process is started for the _bind_, before the broadcast
+  arrives) and which holds Commune out of the freezer while the work runs. ntfy had logged
+  `targetHasService=false` on every earlier delivery; the service is nothing but an empty
+  `Binder`, and the elevation is the whole point.
+* **The sliding-sync detour.** `get_notification()` tries a short-lived sliding sync first, and
+  against a homeserver without sliding sync it errors rather than falling through. `/context`
+  directly is one request, still retries decryption, and measured 300–500 ms against the local
+  homeserver.
+* **The idle-priority wait.** With the fetch fixed, `show_push()` hung instead: it waits for the
+  room model's info, which initializes at `DEFAULT_IDLE` priority — and a restoring session's
+  main loop never goes idle inside the freezer's budget. The wait outlived the process, silently.
+  `show_pushed_item()` is the answer: same suppression, same body formatting, same notification
+  ID — so the push path and the sync path still replace rather than duplicate — but everything
+  shown comes out of the fetched `NotificationItem`, and nothing waits on the models. What that
+  trades away: the room avatar.
+* **The settings that default to "no".** With the waits fixed, `enabled()` dropped the
+  notification anyway: `NotificationsSettings` load from the homeserver after the session is
+  built, and their unloaded default is _disabled_ — which also retroactively explains the earlier
+  wake where the sync path processed the event and posted nothing. The fix gives the load a
+  bounded moment (up to five seconds) before believing "no"; a genuinely disabled setting still
+  wins, because the re-check reads the loaded value.
+
+Two supporting decisions from the same round: `NotificationProcessSetup::MultipleProcesses` is
+the constructible truth for the SDK's notification client — `SingleProcess` wants the SDK's own
+`SyncService`, which Commune does not run — and its cross-process store lock is uncontended
+because wake and application share one process. And **Android debug builds now default the log
+filter to `commune=debug`**: there is no environment to override `RUST_LOG` with (even the
+`wrap.<package>` property is refused on current emulator images), and every defect above was
+invisible at info.
+
+**Tap, measured, with one shade behavior worth knowing.** The tap travels as the S5 URI and
+arrives through `onCreate` — a fresh `Activity` in a live process, a combination no earlier
+round had produced — and opens the conversation at the event. But when the shade _groups_ the
+message under one Commune heading with the sync service's ongoing notification, tapping the
+collapsed group card fires the sync notification's plain open-the-app intent, not the message's —
+the app opens on the room list and the URI never arrives. Expanded, each row taps true. Filed
+under Known gaps: the message notifications likely want a group key of their own.
+
+**What step 3 does not claim:** decryption on wake. The seeded DM is unencrypted — bob speaks
+through `curl` — so the fetched event needed no room key, and `retry_decryption` inside the
+`/context` path ran with nothing to do. That measurement needs a real E2EE message from a real
+second account, and it belongs to the hardware retest already filed under _Before this ships_.
 
 **Measured, all against ntfy 1.25.2 from F-Droid on the emulator:** discovery finds
 `["io.heckel.ntfy"]` through the `unifiedpush://link` query; the endpoint —
@@ -2722,9 +2799,9 @@ all of it blocks calling the port finished.
   This does not block Commune shipping. It is on the list because carrying six downstream patches
   against a moving `main` branch is a standing cost, and because the fixes are worth more to other
   GTK-on-Android applications than they are here.
-* **Two loose ends from the push round (S5b), to be revisited once the push implementation is
-  complete** — parked deliberately, because both were seen exactly once and chasing them
-  mid-implementation would be debugging a moving target:
+* **Loose ends from the push round (S5b), to be revisited once the push implementation is
+  complete** — parked deliberately, because chasing them mid-implementation would be debugging a
+  moving target:
   * **The woken process's syncs failed with DNS errors on the emulator** — `failed to lookup
     address information` against a homeserver the same emulator resolves when foregrounded, in the
     process a push had started in the background. Possibly emulator DNS flakiness, possibly
@@ -2737,6 +2814,9 @@ all of it blocks calling the port finished.
     emulator had been up all day — and an emulator reboot cured it completely. So it is not
     specific to background-started processes; "long-running emulator's networking degrades" is
     now the leading theory, and the hardware retest is what settles it.
+  * **Decryption on wake is unmeasured** — step 3's end-to-end ran against the seeded unencrypted
+    DM, because its sender is `curl`. The same hardware retest covers it: a real E2EE message from
+    a real second account at a dead Commune, and the notification must carry the decrypted body.
   * **One launch died silently at the splash screen**, right after a reinstall, on 26 August 2026
     — no crash-buffer entry, no `GTK Runtime` line, `binderDied` about 24 seconds after process
     start — and the identical launch a minute later worked. Seen once, unexplained. If it recurs,
@@ -2746,6 +2826,20 @@ all of it blocks calling the port finished.
 
 ## Known gaps
 
+* **A collapsed notification group answers with the wrong tap.** When the shade groups a message
+  notification under one Commune heading with the sync service's ongoing one, tapping the
+  collapsed card fires the sync notification's plain open-the-app intent — the app opens on the
+  room list and the message's URI never arrives. Expanded, each row taps true (measured, S5b
+  step 3). The likely fix is a group key of the message notifications' own, so the ongoing
+  notification never collapses into them.
+* **The account switcher popover can open invisibly.** Its `GdkAndroidPopup` surface was created
+  and later hidden without ever becoming visible — taps toggled a popover nobody could see, and
+  blind keyboard navigation through it is how an Account Settings dialog got opened by accident
+  (S5b, while adding the second account). After a fresh app start the same tap opened it drawn
+  and correct, so it is a first-map race of some kind, seen repeatedly earlier in one process and
+  never after the restart. The menu-button popover never misbehaved. Worth chasing when popovers
+  get their pass; for now, worth knowing that "the avatar does nothing" may mean "the popover is
+  open where you cannot see it".
 * ~~**Room Details wedges the application, and it is a second toplevel that does it.**~~ **Fixed on
   25 August 2026**, the same day it was found, by making it stop being a toplevel. Kept here because
   the diagnosis is the useful part and the trap is still set for the next widget that wants a window.

@@ -37,7 +37,10 @@
 //! `no_backup`, out of reach of both the system backup and the directory
 //! GTK's glue wipes (see `doc/android.md`).
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::{
+    sync::atomic::{AtomicBool, Ordering},
+    time::Duration,
+};
 
 use gtk::{
     glib::{self, GString},
@@ -48,7 +51,11 @@ use jni::{
     objects::{JByteArray, JClass, JObject, JString, JValue},
 };
 use matrix_sdk::{Client, reqwest::Url};
+use matrix_sdk_ui::notification_client::{
+    NotificationClient, NotificationItem, NotificationProcessSetup, NotificationStatus,
+};
 use ruma::{
+    OwnedEventId, OwnedRoomId,
     api::client::push::{PusherIds, PusherInit, PusherKind, get_pushers},
     push::{HttpPusherData, PushFormat},
 };
@@ -59,7 +66,7 @@ use super::{
     android::{self, AndroidJniError},
     http::{self, HttpError},
 };
-use crate::{Application, session::Session, spawn_tokio};
+use crate::{Application, session::Session, session_list::SessionInfoExt, spawn, spawn_tokio};
 
 /// The actions a connector sends a distributor.
 const ACTION_REGISTER: &str = "org.unifiedpush.android.distributor.REGISTER";
@@ -647,6 +654,171 @@ fn send_ack(
     Ok(())
 }
 
+/// The body of a Matrix push, as the gateway POSTs it and the distributor
+/// hands it over.
+///
+/// This is the plaintext arm only — ntfy's gateway forwards the notify JSON
+/// as it is, measured in step 0 of the plan. A gateway that encrypts
+/// (RFC 8291, `aes128gcm`) would need a decryption arm here that nothing
+/// currently exercises; such a payload fails the parse and is logged.
+#[derive(Debug, serde::Deserialize)]
+struct PushPayload {
+    notification: PushNotification,
+}
+
+/// The half of the notify body the wake needs.
+///
+/// Both fields are absent on a badge-only push — the unread count changing,
+/// typically because the events were read elsewhere. `event_id_only` means
+/// there is nothing else worth naming here.
+#[derive(Debug, serde::Deserialize)]
+struct PushNotification {
+    event_id: Option<OwnedEventId>,
+    room_id: Option<OwnedRoomId>,
+}
+
+/// Act on the payload of one push message.
+fn receive_message(bytes: &[u8]) {
+    match serde_json::from_slice::<PushPayload>(bytes) {
+        Ok(payload) => match (payload.notification.room_id, payload.notification.event_id) {
+            (Some(room_id), Some(event_id)) => {
+                info!("A push message arrived");
+                debug!("Pushed event {event_id} in room {room_id}");
+                deliver_pushed_event(room_id, event_id);
+            }
+            _ => {
+                // Nothing to fetch and nothing to show; the unread counts on
+                // the notifications already posted are not re-rendered.
+                debug!("A badge-only push arrived");
+            }
+        },
+        Err(error) => warn!("Could not parse a push message payload: {error}"),
+    }
+}
+
+/// Turn a pushed event into a posted notification, through the same
+/// `Notifications::show_push()` a synced event takes — one formatter, one tap
+/// path, and the same deterministic tag, so whichever of the push and the
+/// sync arrives second replaces rather than duplicates.
+///
+/// Callable from any thread; the work starts on the main context because the
+/// session list lives there.
+fn deliver_pushed_event(room_id: OwnedRoomId, event_id: OwnedEventId) {
+    glib::MainContext::default().invoke(move || {
+        spawn!(async move {
+            show_pushed_event(room_id, event_id).await;
+        });
+    });
+}
+
+/// The main-context half of delivering a pushed event.
+async fn show_pushed_event(room_id: OwnedRoomId, event_id: OwnedEventId) {
+    // Find the session that knows the room. In a process the push itself
+    // started — the ordinary case — the sessions are still restoring, so this
+    // waits for them, bounded well inside the ten seconds the freezer allows
+    // a woken process (measured; see `doc/android.md` S5b).
+    let mut found = None;
+    for _ in 0..16 {
+        for object in Application::default().session_list().snapshot() {
+            let Ok(session) = object.downcast::<Session>() else {
+                continue;
+            };
+            if let Some(room) = session.client().get_room(&room_id) {
+                found = Some((session, room));
+                break;
+            }
+        }
+        if found.is_some() {
+            break;
+        }
+        glib::timeout_future(Duration::from_millis(500)).await;
+    }
+
+    let Some((session, matrix_room)) = found else {
+        warn!("No session knows the room of a pushed event");
+        return;
+    };
+    debug!(
+        session = session.session_id(),
+        "Fetching a pushed event for a session"
+    );
+
+    let client = session.client();
+    let fetch_room_id = room_id.clone();
+    // Bounded, and not generously: a process frozen mid-fetch comes back with
+    // its sockets dead, and a request on a dead socket that has no timeout of
+    // its own hangs forever — measured, silently, before this was one. The
+    // timeout turns that into a warning on thaw.
+    let handle = spawn_tokio!(async move {
+        tokio::time::timeout(
+            Duration::from_secs(25),
+            fetch_pushed_event(client, fetch_room_id, event_id),
+        )
+        .await
+    });
+
+    // The room was only needed as proof this session is the right one; what
+    // is shown comes from the fetched item, which is what keeps the wake off
+    // the room models and their idle-priority initialization.
+    drop(matrix_room);
+
+    match handle.await.expect("task was not aborted") {
+        Ok(Ok(Some(item))) => {
+            debug!("A pushed event was fetched; showing it");
+            session
+                .notifications()
+                .show_pushed_item(room_id, item)
+                .await;
+        }
+        Ok(Ok(None)) => {}
+        Ok(Err(error)) => warn!("Could not fetch a pushed event: {error}"),
+        Err(_) => warn!("Fetching a pushed event timed out"),
+    }
+}
+
+/// Fetch, and where needed decrypt, the one event a push names.
+///
+/// Must be called from the tokio runtime. `None` means the event should not
+/// become a notification — filtered out by push rules, redacted, or gone.
+///
+/// On the process setup: `SingleProcess` wants the SDK's own `SyncService`,
+/// which Commune does not run — it has its own sync loop. `MultipleProcesses`
+/// is the constructible truth: a cross-process store lock that nothing here
+/// ever contends, since the push wake and the application share one process.
+async fn fetch_pushed_event(
+    client: Client,
+    room_id: OwnedRoomId,
+    event_id: OwnedEventId,
+) -> Result<Option<NotificationItem>, matrix_sdk_ui::notification_client::Error> {
+    let notification_client =
+        NotificationClient::new(client, NotificationProcessSetup::MultipleProcesses).await?;
+
+    // Not `get_notification()`: that tries a short-lived sliding sync first,
+    // which is more requests and more machinery than the freezer's budget
+    // likes, and against a homeserver without sliding sync it errors rather
+    // than falling through. `/context` is one request, still retries
+    // decryption, and is where the full path falls back to anyway.
+    let status = notification_client
+        .get_notification_with_context(&room_id, &event_id)
+        .await?;
+
+    match status {
+        NotificationStatus::Event(item) => Ok(Some(*item)),
+        NotificationStatus::EventFilteredOut => {
+            debug!("The push rules filtered a pushed event out");
+            Ok(None)
+        }
+        NotificationStatus::EventRedacted => {
+            debug!("A pushed event was redacted");
+            Ok(None)
+        }
+        NotificationStatus::EventNotFound => {
+            warn!("A pushed event could not be found on the homeserver");
+            Ok(None)
+        }
+    }
+}
+
 /// The string behind a possibly-null Java string.
 fn jstring(env: &mut JNIEnv, string: &JString) -> Option<String> {
     if string.is_null() {
@@ -674,7 +846,7 @@ pub extern "system" fn Java_org_gtk_android_PushReceiver_nativeReceive(
     reason: JString,
     use_distributor: JString,
     id: JString,
-    _message: JByteArray,
+    message: JByteArray,
 ) {
     if let Err(error) = android::seed_from_jni(&mut env, &context) {
         warn!("Could not capture the Java side from a push broadcast: {error}");
@@ -719,9 +891,14 @@ pub extern "system" fn Java_org_gtk_android_PushReceiver_nativeReceive(
             ensure_pushers_of_sessions();
         }
         ACTION_MESSAGE => {
-            // Step 3 turns this into a notification; today it is only proof of
-            // arrival.
-            info!("A push message arrived");
+            if message.is_null() {
+                warn!("A push message arrived with no payload");
+                return;
+            }
+            match env.convert_byte_array(&message) {
+                Ok(bytes) => receive_message(&bytes),
+                Err(error) => warn!("Could not read a push message payload: {error}"),
+            }
         }
         ACTION_REGISTRATION_FAILED => {
             let reason = jstring(&mut env, &reason);

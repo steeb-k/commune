@@ -21,18 +21,18 @@
 set -eu
 
 GLUE=${1:-.pixiewood/android/app/src/main/java/org/gtk/android}
-SOURCE=$(dirname "$0")/PushReceiver.java
-
 if [ ! -d "$GLUE" ]; then
     printf 'no glue java directory at %s -- run `pixiewood generate` first\n' "$GLUE" >&2
     exit 1
 fi
 
-cp "$SOURCE" "$GLUE/PushReceiver.java"
+for file in PushReceiver.java PushRaiseService.java; do
+    cp "$(dirname "$0")/$file" "$GLUE/$file"
 
-if [ ! -f "$GLUE/PushReceiver.java" ]; then
-    printf 'copying PushReceiver.java into %s did not take\n' "$GLUE" >&2
-    exit 1
-fi
+    if [ ! -f "$GLUE/$file" ]; then
+        printf 'copying %s into %s did not take\n' "$file" "$GLUE" >&2
+        exit 1
+    fi
+done
 
-printf 'copied PushReceiver.java into %s\n' "$GLUE"
+printf 'copied PushReceiver.java and PushRaiseService.java into %s\n' "$GLUE"
