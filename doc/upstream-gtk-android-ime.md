@@ -195,7 +195,9 @@ public-API question for the maintainers, which is why this half is offered as a 
 as a patch.
 
 Carried downstream as
-[`patch-gtk-ime-selection.sh`](../build-aux/android/patch-gtk-ime-selection.sh).
+`patch-gtk-ime-selection.sh`, since superseded by
+[`patch-gtk-ime-mirror.sh`](../build-aux/android/patch-gtk-ime-mirror.sh), which backs the whole
+`InputConnection` with a mirror of the document instead of answering query by query.
 
 ### Three traps for whoever implements this
 
@@ -269,7 +271,9 @@ backwards from the cursor, so `gtk_text_view_retrieve_surrounding_handler`'s win
 whenever the sentence began inside it. A sentence carried across a hard line break is reported as a
 fresh one.
 
-Carried downstream as [`patch-gtk-ime-caps.sh`](../build-aux/android/patch-gtk-ime-caps.sh).
+Carried downstream as `patch-gtk-ime-caps.sh`, since superseded by
+[`patch-gtk-ime-mirror.sh`](../build-aux/android/patch-gtk-ime-mirror.sh) — with a truthful
+`Editable` behind the connection, `BaseInputConnection`'s own `getCursorCapsMode` is correct.
 
 ---
 
