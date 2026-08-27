@@ -179,14 +179,17 @@ demonstrable. Order matters only within a track; the two tracks interleave.
 
 0. ✅ _(this session)_ Branch, worktree, this plan, reference screenshots,
    `commune-core` skeleton crate pinned to the SDK's uniffi rev.
-1. Lift the trivial tier: `secret/` (minus the Boxed derive),
+1. ✅ _(27 Aug)_ Lift the trivial tier: `secret/` (minus the Boxed derive),
    `image_packs/events.rs`, Matrix URI parsing, `tls.rs`, `http.rs`,
    `url_preview`, password validation. Bring their tests. `cargo test` in
    the core, msys2 toolchain as for SDK tests.
-2. Foundations: the watch/notify abstraction, the dispatcher seam, error
+2. ✅ _(27 Aug)_ Foundations — the watch/notify abstraction turned out to
+   already exist: the core adopted `eyeball`/`eyeball-im`, the SDK's own
+   reactive primitives, at the workspace-pinned versions. Plus the
+   `SettingsStore` seam (GSettings vs a JSON-file default), error
    types, `client_setup()` and the store layout, `StoredSession` +
    `session_list/` (multi-account discovery and ordering).
-3. Sync: the sync loop with backoff and offline detection out of
+3. ✅ _(27 Aug)_ Sync: the sync loop with backoff and offline detection out of
    `session/mod.rs`; session-change/token watching; a headless `Session`.
 4. Rooms: `Room` minus GObject (43 properties → fields + watch), category
    and sidebar sectioning rules as pure functions over room state.
