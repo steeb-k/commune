@@ -75,7 +75,18 @@ mod imp {
                 move |_, _, _, _| {
                     imp.update_preferences_action();
                     #[cfg(target_os = "android")]
-                    imp.update_sync_service();
+                    {
+                        imp.update_sync_service();
+
+                        // The first session appearing is the moment the
+                        // one-time setup becomes worth showing; the login
+                        // flow presented the window long before.
+                        if imp.session_list.n_items() > 0
+                            && let Some(window) = imp.obj().active_window()
+                        {
+                            crate::android_setup_dialog::AndroidSetupDialog::maybe_present(&window);
+                        }
+                    }
                 }
             ));
 
@@ -200,10 +211,18 @@ mod imp {
                 self.update_sync_service();
 
                 // Register with a UnifiedPush distributor, if one is
-                // installed. Step 1 scaffolding — see
-                // `utils::android_push::init()` for what is deliberately not
-                // decided here yet.
+                // installed and the mode does not say otherwise.
                 crate::utils::android_push::init();
+
+                // The one-time background-delivery setup, once there is a
+                // session to deliver for. Someone who just logged in reaches
+                // this through the session-list watcher instead, since their
+                // window was presented while the greeter was up.
+                if self.session_list.n_items() > 0 {
+                    crate::android_setup_dialog::AndroidSetupDialog::maybe_present(
+                        window.upcast_ref::<gtk::Window>(),
+                    );
+                }
             }
 
             window

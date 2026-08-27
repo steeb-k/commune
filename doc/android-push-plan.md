@@ -214,10 +214,9 @@ the distributor unregisters us, and the `background-delivery` GSettings key (`au
 `service`) is in place for step 5's screen to steer. Fallback that arrives in the background takes
 effect at the next present, because only a foregrounded app may start the service.
 
-**Step 5 — the first-time-setup screen.** A person installing Commune should not have to know any
-of the above. An Android-only setup page, shown once after the first session exists (the natural
-hook is where `present_main_window()` already calls `android_notifications::init()`), that does
-three things in order:
+**Step 5 — the first-time-setup screen. Done, 26 August 2026, except the permanent settings
+home** — the ledger's S5b section has the branches and the state-file race the measuring found.
+What was planned, for the record:
 
 1. Says why notifications matter for a chat app and lets the `POST_NOTIFICATIONS` prompt make
    sense instead of arriving cold — the request moves here from `init()`.
@@ -229,11 +228,10 @@ three things in order:
 3. Offers "just keep Commune running" (the foreground service) as the no-extra-app choice, so
    declining ntfy is a decision rather than a dead end.
 
-The same choices live permanently in notification settings, because the person who taps through a
-setup screen is not the person who later installs ntfy — re-detection on return to settings makes
-switching modes a toggle, not a reinstall. Measured when: a fresh install with no distributor
-recommends ntfy and lands in service mode; installing ntfy and revisiting settings flips to push
-mode and step 3's measurement passes.
+The same choices should also live permanently in notification settings, because the person who
+taps through a setup screen is not the person who later installs ntfy — re-detection on return to
+settings makes switching modes a toggle, not a reinstall. **That settings home is the one piece
+step 5 did not build**; today the dialog is the only door, and it opens once.
 
 ## The Play store, later
 

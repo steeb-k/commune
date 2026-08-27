@@ -142,15 +142,13 @@ const NOTIFICATION_ID: i32 = 0;
 /// those on a request that was already made and answered.
 static PERMISSION_REQUESTED: AtomicBool = AtomicBool::new(false);
 
-/// Create the notification channel, and ask for permission to post.
-///
-/// Takes the window because that is where the `Activity` comes from, and the
-/// `Activity` is what `requestPermissions()` needs — the application `Context`
-/// can only be asked whether permission is held, not for permission itself.
+/// Create the notification channel.
 ///
 /// Called every time the main window is presented, and cheap after the first
 /// time: creating a channel that already exists is documented as leaving the
-/// existing one alone, and the permission is only asked for once.
+/// existing one alone. Permission is only checked here, not asked for —
+/// asking is [`request_permission()`]'s job, from the setup dialog, where the
+/// prompt arrives with its reason on screen instead of cold.
 pub(crate) fn init(window: &gtk::Window) {
     if let Err(error) = set_up(window) {
         warn!("Could not set notifications up: {error}");
@@ -159,7 +157,9 @@ pub(crate) fn init(window: &gtk::Window) {
 
 /// The body of [`init()`], so that one place reports what went wrong.
 fn set_up(window: &gtk::Window) -> Result<(), AndroidJniError> {
-    let activity = android::activity(window)?;
+    // Not used here, but this is the first moment there is an `Activity` to
+    // capture the application `Context` from, and everything below needs it.
+    let _ = android::activity(window)?;
     let context = android::application_context()?;
 
     android::with_env(|env| {
@@ -187,6 +187,34 @@ fn set_up(window: &gtk::Window) -> Result<(), AndroidJniError> {
 
         if has_permission(env, context.as_obj())? {
             debug!("Allowed to show notifications");
+        } else {
+            debug!("Not allowed to show notifications, or not asked yet");
+        }
+
+        Ok(())
+    })
+}
+
+/// Ask for permission to post notifications, once per run.
+///
+/// Takes the window because that is where the `Activity` comes from, and the
+/// `Activity` is what `requestPermissions()` needs — the application `Context`
+/// can only be asked whether permission is held, not for permission itself.
+pub(crate) fn request_permission(window: &gtk::Window) {
+    if let Err(error) = ask_permission(window) {
+        warn!("Could not ask for permission to show notifications: {error}");
+    }
+}
+
+/// The body of [`request_permission()`], so that one place reports what went
+/// wrong.
+fn ask_permission(window: &gtk::Window) -> Result<(), AndroidJniError> {
+    let activity = android::activity(window)?;
+    let context = android::application_context()?;
+
+    android::with_env(|env| {
+        if has_permission(env, context.as_obj())? {
+            debug!("Already allowed to show notifications");
             return Ok(());
         }
 

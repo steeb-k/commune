@@ -34,6 +34,8 @@ src/account_settings/user_session/user_session_subpage.rs
 src/account_switcher/account_switcher_button.blp
 src/account_switcher/account_switcher_popover.blp
 src/account_switcher/session_item.blp
+src/android_setup_dialog/mod.blp
+src/android_setup_dialog/mod.rs
 src/application.rs
 src/components/action_button.blp
 src/components/avatar/editable.blp
