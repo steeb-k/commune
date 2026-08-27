@@ -28,8 +28,15 @@ states, the sender — so the feature is a presentation pass over
   `bubble-own` when the sender `is_own_user()`; the content hugs its
   natural width (`halign` start, or end for own messages) instead of
   filling the line, and the reactions and thread chip follow to the same
-  side. `update_header()` hides the avatar and the name of an own bubble —
-  the side of the window says whose it is — while the timestamp stays.
+  side. The header is the sender's whole cluster, corrected twice on the
+  user's word (26 August 2026): an own bubble keeps its avatar — moved to
+  the far grid column, its side of the line — **and its name**, so it is
+  clear which account sent it, and the timestamp sits beside the name
+  instead of in the far corner. The name is always the innermost piece,
+  against the avatar; the timestamp always on the outside — "Alice 14:32"
+  after the avatar on the left, "14:32 steeb" before it on the right, the
+  children reordered in `update_bubbles()`. The flat view keeps its two
+  corners untouched.
 * `data/resources/stylesheet/_room_history.scss` draws the bubble:
   padding, a 12px radius, `currentColor` at 8% for everybody else so it
   reads in both themes, the accent at 25% for your own — the same borrowing
@@ -42,9 +49,12 @@ and search lists use widgets of their own and are untouched.
 
 ## Decisions worth keeping
 
-* **An own bubble keeps its timestamp and its state.** The delivery
-  checkmark (`MessageStateStack`) already sat at the line's end and now
-  reads as belonging to the bubble beside it.
+* **An own bubble keeps its name, timestamp and state.** The first pass
+  hid the name and left the timestamp in the far corner; the user asked
+  for the sender's data in one cluster, and for the exact order — time,
+  name, avatar — before it was built, so this is settled, not up for
+  re-derivation. The delivery checkmark (`MessageStateStack`) already sat
+  at the line's end and reads as belonging to the bubble beside it.
 * **A sticker gets a bubble too**, and so does an emoticon sent alone.
   Element strips the bubble from stickers; this fork does not yet — one
   rule for every content keeps the pass small, and the eyeball run will

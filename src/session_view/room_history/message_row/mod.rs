@@ -59,6 +59,8 @@ mod imp {
         #[template_child]
         display_name: TemplateChild<MessageSenderName>,
         #[template_child]
+        timestamp: TemplateChild<EventTimestamp>,
+        #[template_child]
         content: TemplateChild<MessageContent>,
         #[template_child]
         message_state: TemplateChild<MessageStateStack>,
@@ -233,15 +235,11 @@ mod imp {
             };
 
             let header_state = event.header_state();
-            // An own bubble keeps its avatar — moved to its side of the
-            // line by `update_bubbles` — but needs no name: the side and
-            // the face say whose it is. The timestamp stays too.
             let avatar_visible = header_state == EventHeaderState::Full;
-            let name_visible = avatar_visible && !self.is_own_bubble();
             let header_visible = header_state != EventHeaderState::Hidden;
 
             self.avatar_button.set_visible(avatar_visible);
-            self.display_name.set_visible(name_visible);
+            self.display_name.set_visible(avatar_visible);
             self.header.set_visible(header_visible);
 
             if let Some(row) = self.obj().parent() {
@@ -301,6 +299,26 @@ mod imp {
             self.reactions
                 .set_halign(if enabled { trailing } else { gtk::Align::Fill });
             self.thread_chip.set_halign(trailing);
+
+            // In bubbles, everything about a sender clusters on the
+            // message's side of the line: the name and the timestamp stop
+            // spanning the row and sit together over the bubble's edge,
+            // beside the avatar. The flat view keeps its two corners.
+            self.header
+                .set_halign(if enabled { trailing } else { gtk::Align::Fill });
+            self.display_name.set_hexpand(!enabled);
+            self.timestamp.set_hexpand(!enabled);
+
+            // The name is always the innermost piece, against the avatar,
+            // and the timestamp always on the outside — which on an own
+            // bubble means the time comes first.
+            if enabled && own {
+                self.header
+                    .reorder_child_after(&*self.timestamp, gtk::Widget::NONE);
+            } else {
+                self.header
+                    .reorder_child_after(&*self.display_name, gtk::Widget::NONE);
+            }
 
             // The avatar of an own bubble sits on the bubble's side of the
             // line: the far column of the grid instead of the first.
