@@ -1,6 +1,10 @@
 # The headless core shared between the GTK UI and the Kotlin UI.
 # See doc/kotlin-plan.md. Deliberately detached from the application's
 # build ([workspace] below) until Track 3 points the GTK app at it.
+#
+# The matrix-sdk and ruma revisions and feature lists MUST stay identical to
+# the application's Cargo.toml, so the two variants have one behavior and one
+# store format between them.
 
 [package]
 name = "commune-core"
@@ -10,14 +14,143 @@ edition = "2024"
 rust-version = "1.95"
 publish = false
 
+[package.metadata.cargo-machete]
+ignored = [
+    # Never called; present on Android only, to turn on `bundled` for the
+    # `rusqlite` that `matrix-sdk-sqlite` depends on, exactly as in the
+    # application's Cargo.toml.
+    "rusqlite",
+    # Used by the SecretFile API through a serde attribute.
+    "serde_bytes",
+]
+
 [lib]
 # `lib` for the GTK application, `cdylib` for the Android .so the Kotlin
 # bindings load, `staticlib` kept for parity with how Android links today.
 crate-type = ["lib", "cdylib", "staticlib"]
 
+# Please keep dependencies sorted.
+[dependencies]
+cfg-if = "1"
+futures-util = "0.3"
+linkify = "0.11"
+rand = "0.10"
+rmp-serde = "1"
+serde = "1"
+serde_bytes = "0.11"
+serde_json = "1"
+thiserror = "2"
+tld = "2"
+tokio = { version = "1", features = ["fs", "rt", "rt-multi-thread", "sync"] }
+tracing = "0.1"
+url = "2"
+zeroize = "1"
+
 # The same uniffi revision the pinned matrix-rust-sdk workspace uses, so the
 # facade and matrix-sdk-ffi stay on one FFI runtime.
-[dependencies]
 uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", rev = "e5f4821410bea19e71984ea5e06a7bc8b11ed9e5", version = "0.31.0", default-features = false, features = ["cargo-metadata"] }
+
+[dependencies.matrix-sdk]
+# version = "0.18"
+git = "https://github.com/matrix-org/matrix-rust-sdk.git"
+rev = "db02d6ce8e8d91ab5ab1fd726e45d53263f8132c"
+default-features = false
+features = [
+    "automatic-room-key-forwarding",
+    "e2e-encryption",
+    "experimental-search",
+    "markdown",
+    "qrcode",
+    "rustls-aws-lc-rs",
+    "socks",
+    "sqlite",
+    "sso-login",
+]
+
+[dependencies.matrix-sdk-store-encryption]
+# version = "0.18"
+git = "https://github.com/matrix-org/matrix-rust-sdk.git"
+rev = "db02d6ce8e8d91ab5ab1fd726e45d53263f8132c"
+
+[dependencies.ruma]
+# version = "0.16"
+git = "https://github.com/ruma/ruma.git"
+rev = "db24422e03aea7c7974230098fe9aeb5481cddc6"
+features = [
+    "client-api-c",
+    "identity-service-api-c",
+    "markdown",
+    "html-matrix",
+    "compat-arbitrary-length-ids",
+    "compat-server-signing-key-version",
+    "compat-empty-string-null",
+    "compat-null",
+    "compat-optional",
+    "compat-unset-avatar",
+    "compat-lax-room-create-deser",
+    "compat-lax-room-topic-deser",
+]
+
+# Android-only dependencies.
+[target.'cfg(target_os = "android")'.dependencies]
+# The Android Keystore is a Java API and there is no other way to reach it: the
+# keys are non-extractable by design, so the encryption has to happen on the
+# other side of JNI rather than with key material handed back to us.
+jni = "0.21"
+# Never used directly. It is here to turn on `bundled` for the `rusqlite` that
+# `matrix-sdk-sqlite` pulls in; see the application's Cargo.toml for the whole
+# story.
+rusqlite = { version = "0.40", features = ["bundled"] }
+# `reqwest`'s rustls feature always brings `rustls-platform-verifier`, which
+# panics on Android until a Kotlin component that is not published anywhere is
+# built into the APK. `src/tls.rs` configures the TLS itself instead, from the
+# device's own trust store, which needs rustls directly.
+rustls = "0.23"
+rustls-pemfile = "2"
+
+# Linux-only dependencies.
+[target.'cfg(target_os = "linux")'.dependencies]
+ashpd = { version = "0.13.9", default-features = false, features = [
+    "tokio",
+    "tracing",
+] }
+oo7 = { version = "0.7.0-alpha", default-features = false, features = [
+    "native_crypto",
+    "tokio",
+    "tracing",
+] }
+
+# macOS-only dependencies.
+[target.'cfg(target_os = "macos")'.dependencies]
+security-framework = "3"
+
+# Windows-only dependencies.
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_Security_Credentials",
+] }
+
+[lints.rust]
+# ruma's `EventContent` derive emits this cfg; it is ruma's to set, not ours.
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(ruma_unstable_exhaustive_types)',
+] }
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+cast_possible_truncation = "allow"
+cast_precision_loss = "allow"
+default_trait_access = "allow"
+# The application's items are pub(crate), where these doc lints do not fire;
+# the same code exported pub would demand boilerplate sections the doc
+# comments already convey. Revisit when the facade gets a real API pass.
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+new_without_default = "allow"
+struct_field_names = "allow"
+unsafe_derive_deserialize = "allow"
+wildcard_imports = "allow"
 
 [workspace]

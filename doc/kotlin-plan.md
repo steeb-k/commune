@@ -120,6 +120,18 @@ Decisions:
 * **SQLite store:** `bundled` rusqlite, same as the GTK Android build. Same
   store schema, same pinned SDK — a debugging session on one variant
   reproduces on the other.
+* **App identity: the same `io.github.steeb_k.commune`** (decided 27 Aug
+  2026). Installing the Kotlin APK replaces the GTK build on a device, and
+  **adopting the existing logged-in session in place is an explicit goal**:
+  the store schema, the sealed-secrets format under
+  `no_backup/commune/secrets.d/`, the Keystore alias
+  (`commune.secrets.v1`) and the signing key must all stay compatible, so
+  `install -r` upgrades from the GTK build straight into the Kotlin one
+  without a login. On-device side-by-side comparison is traded away;
+  compare via the emulator (which keeps the GTK build) against the device,
+  or two AVDs.
+* **`minSdk = 29`** (Android 10, decided 27 Aug 2026): scoped storage is
+  the baseline, which simplifies every attachment/media path.
 
 ## The UI contract
 
