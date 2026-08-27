@@ -94,10 +94,13 @@
 
     <!--
       The same rule, and the same consequence for leaving it out: a voice call
-      opens the microphone through autoaudiosrc, so without this key placing
-      one kills the application rather than showing a permission prompt.
+      or a voice message opens the microphone through autoaudiosrc, so without
+      this key doing either kills the application rather than showing a
+      permission prompt. This key is only half of microphone access -- the
+      hardened runtime additionally requires the audio-input entitlement in
+      entitlements.plist, or the granted permission yields silence.
     -->
     <key>NSMicrophoneUsageDescription</key>
-    <string>@APP_NAME@ uses the microphone for voice and video calls.</string>
+    <string>@APP_NAME@ uses the microphone for voice and video calls, and to record voice messages.</string>
 </dict>
 </plist>

@@ -74,6 +74,14 @@ capture device (`doc/windows.md` records the same limit for calls).
 Real-microphone recording needs a console session or RDP audio-capture
 redirection, and is on the eyeball list.
 
+On macOS the first real-microphone test recorded silence in the signed
+build while the timer ticked and the file grew: the hardened runtime denies
+audio input unless the signature carries the audio-input entitlement, and
+the denial sits beneath the TCC permission the user grants, so nothing in
+the pipeline errors — CoreAudio just delivers zeroes. Fixed by
+`build-aux/macos/entitlements.plist`; the story lives in `doc/macos.md`
+under "Signing".
+
 ## Rebase guide
 
 * `voice_recorder.rs` is new and upstream-agnostic; it only touches GStreamer

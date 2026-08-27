@@ -527,11 +527,20 @@ note "signing with identity '$IDENTITY'"
 # codesign's stderr: a timestamp-server failure leaves the file's previous
 # signature in place, which the verify below cannot tell from success, and
 # notarization would reject the bundle much later with much less to go on.
+#
+# The hardened runtime also denies the microphone and the camera unless the
+# main executable's signature carries the device entitlements -- denied at
+# the CoreAudio layer, beneath TCC, so the user grants the permission and
+# records silence anyway. The entitlements go on the bundle-level sign only:
+# that is the call that signs the main executable, and they mean nothing on
+# a dylib.
 if [ "$IDENTITY" = '-' ]; then
     SIGN_FLAGS='--timestamp=none'
+    APP_SIGN_FLAGS="$SIGN_FLAGS"
     SIGN_ERR='/dev/null'
 else
     SIGN_FLAGS='--timestamp --options runtime'
+    APP_SIGN_FLAGS="$SIGN_FLAGS --entitlements $HERE/entitlements.plist"
     SIGN_ERR="$OUT_DIR/.codesign-err"
 fi
 
@@ -547,7 +556,7 @@ while read -r f; do
     }
 done <"$ALL_BINARIES"
 # shellcheck disable=SC2086
-codesign --force $SIGN_FLAGS --sign "$IDENTITY" "$APP" 2>"$SIGN_ERR" || {
+codesign --force $APP_SIGN_FLAGS --sign "$IDENTITY" "$APP" 2>"$SIGN_ERR" || {
     echo "bundle: signing failed for $APP:" >&2
     [ "$SIGN_ERR" != '/dev/null' ] && sed 's/^/  /' "$SIGN_ERR" >&2
     exit 1
