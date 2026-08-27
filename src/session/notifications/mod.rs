@@ -1,10 +1,12 @@
 use std::{borrow::Cow, time::Duration};
 
 use gettextrs::gettext;
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(not(any(target_os = "macos", target_os = "android", target_os = "windows")))]
 use gtk::gio;
 use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{Room as MatrixRoom, sync::Notification};
+#[cfg(target_os = "android")]
+use matrix_sdk_ui::notification_client::{NotificationEvent, NotificationItem};
 use ruma::{
     OwnedRoomId, RoomId, UserId,
     api::client::device::get_device,
@@ -24,14 +26,20 @@ pub(crate) use self::notifications_settings::{
     NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
     NotificationsSpecialRule,
 };
-use super::{Call, CallState, IdentityVerification, Session, VerificationKey};
+#[cfg(not(target_os = "android"))]
+use super::{Call, CallState};
+use super::{IdentityVerification, Session, VerificationKey};
+#[cfg(not(target_os = "android"))]
+use crate::intent::{CallAction, CallActionKind};
+#[cfg(target_os = "android")]
+use crate::utils::android_notifications;
 #[cfg(target_os = "macos")]
 use crate::utils::macos_notifications;
 #[cfg(target_os = "windows")]
 use crate::utils::windows_notifications;
 use crate::{
     Application, Window, gettext_f,
-    intent::{CallAction, CallActionKind, SessionIntent},
+    intent::SessionIntent,
     prelude::*,
     spawn_tokio,
     utils::{
@@ -146,23 +154,37 @@ impl Notifications {
             SessionIntent,
         )],
     ) {
-        // Truncate the body if necessary.
-        let body = if let Some((end, _)) = body.char_indices().nth(MAX_BODY_CHARS) {
-            let mut body = body[..end].trim_end().to_owned();
-            if !body.ends_with('…') {
-                body.push('…');
-            }
-            Cow::Owned(body)
-        } else {
-            Cow::Borrowed(body)
-        };
-
+        let body = truncate_body(body);
         let action = intent.app_action_name();
         let target_value = intent.to_variant_with_session_id(session_id.to_owned());
 
         cfg_if::cfg_if! {
             if #[cfg(target_os = "macos")] {
                 macos_notifications::send(id, title, &body, action, &target_value, icon);
+            } else if #[cfg(target_os = "android")] {
+                // `Notification.Action` takes the same shape of payload as the
+                // notification itself does, so the intents are flattened into
+                // it here rather than `SessionIntent` reaching that far down.
+                let buttons = buttons
+                    .iter()
+                    .map(|(label, intent)| {
+                        (
+                            label.clone(),
+                            intent.app_action_name().to_owned(),
+                            intent.to_variant_with_session_id(session_id.to_owned()),
+                        )
+                    })
+                    .collect::<Vec<_>>();
+
+                android_notifications::send(
+                    id,
+                    title,
+                    &body,
+                    action,
+                    &target_value,
+                    icon,
+                    &buttons,
+                );
             } else if #[cfg(target_os = "windows")] {
                 let buttons = buttons
                     .iter()
@@ -208,11 +230,52 @@ impl Notifications {
         }
     }
 
+    /// Helper method to create a notification for a message, stacked into its
+    /// room's conversation.
+    ///
+    /// The Android counterpart of [`Self::send_notification()`] for messages:
+    /// the notification is keyed by the room rather than the event, and the
+    /// platform accumulates the messages of one room into one notification —
+    /// see `android_notifications::send_message()`.
+    #[cfg(target_os = "android")]
+    #[allow(clippy::too_many_arguments)]
+    fn send_message_notification(
+        tag: &str,
+        conversation_title: &str,
+        self_name: &str,
+        sender_name: &str,
+        body: &str,
+        timestamp_ms: i64,
+        is_group_conversation: bool,
+        session_id: &str,
+        intent: &SessionIntent,
+        icon: Option<&gdk::Texture>,
+    ) {
+        let body = truncate_body(body);
+        let action = intent.app_action_name();
+        let target_value = intent.to_variant_with_session_id(session_id.to_owned());
+
+        android_notifications::send_message(
+            tag,
+            conversation_title,
+            self_name,
+            sender_name,
+            &body,
+            timestamp_ms,
+            is_group_conversation,
+            action,
+            &target_value,
+            icon,
+        );
+    }
+
     /// Ask the system to remove the notification with the given ID.
     fn withdraw_notification(id: &str) {
         cfg_if::cfg_if! {
             if #[cfg(target_os = "macos")] {
                 macos_notifications::withdraw(id);
+            } else if #[cfg(target_os = "android")] {
+                android_notifications::withdraw(id);
             } else if #[cfg(target_os = "windows")] {
                 windows_notifications::withdraw(id);
             } else {
@@ -325,11 +388,18 @@ impl Notifications {
             },
         );
 
+        // On Android the sender travels as the message's `Person`, so the body
+        // must not name them a second time.
+        #[cfg(target_os = "android")]
+        let show_sender = false;
+        #[cfg(not(target_os = "android"))]
+        let show_sender = !is_direct;
+
         let (body, is_invite) =
             // These are ordered by the likelihood of an event being of the type to reduce checking
             // in the common case.
             if let Some(body) =
-                message_notification_body(&event, &sender_name, !is_direct)
+                message_notification_body(&event, &sender_name, show_sender)
             {
                 (body, false)
             } else if let Some(body) =
@@ -352,6 +422,45 @@ impl Notifications {
             id: room_id.clone().into(),
             via: vec![],
         };
+
+        // Messages stack into one notification per room; only an invite —
+        // whose room has no conversation yet — takes the one-per-event path
+        // below.
+        #[cfg(target_os = "android")]
+        if !is_invite {
+            let timestamp_ms = match &event {
+                AnySyncOrStrippedTimelineEvent::Sync(ev) => {
+                    i64::try_from(u64::from(ev.origin_server_ts().0)).unwrap_or_default()
+                }
+                AnySyncOrStrippedTimelineEvent::Stripped(_) => 0,
+            };
+
+            let matrix_uri = MatrixIdUri::Room(room_uri);
+            let tag = format!("{session_id}//{matrix_uri}");
+            let icon = room.avatar_data().as_notification_icon(false).await;
+
+            Self::send_message_notification(
+                &tag,
+                &room.display_name(),
+                &session.user().display_name(),
+                &sender_name,
+                &body,
+                timestamp_ms,
+                !is_direct,
+                session_id,
+                &SessionIntent::ShowMatrixId(matrix_uri),
+                icon.as_ref(),
+            );
+
+            self.imp()
+                .push
+                .borrow_mut()
+                .entry(room_id)
+                .or_default()
+                .insert(tag);
+            return;
+        }
+
         let matrix_uri = if let Some(event_id) = event_id {
             MatrixIdUri::Event(MatrixEventIdUri {
                 event_id: event_id.to_owned(),
@@ -388,6 +497,180 @@ impl Notifications {
             .insert(id);
     }
 
+    /// Ask the system to show a notification for a pushed event, if
+    /// applicable.
+    ///
+    /// The wake counterpart of [`Self::show_push()`]: the same suppression,
+    /// the same body, and the same conversation tag and timestamp — so
+    /// whichever of the push and the sync arrives second is recognized as
+    /// already shown instead of alerting twice — but everything shown
+    /// comes out of the [`NotificationItem`] the fetch returned, and nothing
+    /// waits on the room models. That is the point: a push-started process
+    /// has about ten seconds before the freezer (`doc/android.md`, S5b), and
+    /// the room-info initialization [`Self::show_push()`] waits on runs at
+    /// idle priority, which a restoring session starves — measured, the wait
+    /// outlived the freezer, silently.
+    ///
+    /// What that trades away is the room avatar: its `AvatarData` hangs off
+    /// the room model, so this notification posts without a large icon.
+    #[cfg(target_os = "android")]
+    pub(crate) async fn show_pushed_item(&self, room_id: OwnedRoomId, item: NotificationItem) {
+        // The settings load from the homeserver after the session is built,
+        // and their unloaded default is "disabled". A wake asks within about
+        // two seconds of the session existing, so an unbounded trust in that
+        // default drops every notification a wake fetches — measured. Give
+        // the load a bounded moment; the homeserver only pushed because the
+        // account-level rules said notify, so "no" here is almost always
+        // "not loaded yet". A genuinely disabled setting still wins: the
+        // re-check below is the loaded value.
+        let settings = self.settings();
+        for _ in 0..20 {
+            if settings.account_enabled() && settings.session_enabled() {
+                break;
+            }
+            glib::timeout_future(Duration::from_millis(250)).await;
+        }
+        if !self.enabled() {
+            debug!("Notifications are disabled; dropping a pushed event");
+            return;
+        }
+
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let app = Application::default();
+        let window = app.active_window().and_downcast::<Window>();
+        let session_id = session.session_id();
+
+        // Do not show notifications for the current room in the current
+        // session if the window is active — as in `show_push()`.
+        if window.is_some_and(|w| {
+            w.is_active()
+                && w.current_session_id().as_deref() == Some(session_id)
+                && w.session_view()
+                    .selected_room()
+                    .is_some_and(|r| r.room_id() == room_id)
+        }) {
+            return;
+        }
+
+        let event = match item.event {
+            NotificationEvent::Timeline(event) => AnySyncOrStrippedTimelineEvent::Sync(event),
+            NotificationEvent::Invite(event) => AnySyncOrStrippedTimelineEvent::Stripped(Box::new(
+                AnyStrippedStateEvent::RoomMember(*event),
+            )),
+        };
+
+        if is_call_invite(&event) {
+            // Same reasoning as in `show_push()`: the calls module is the one
+            // that rings, notifies and withdraws.
+            return;
+        }
+
+        let sender_id = event.sender();
+        let sender_name = match &item.sender_display_name {
+            Some(name) if item.is_sender_name_ambiguous => format!("{name} ({sender_id})"),
+            Some(name) => name.clone(),
+            None => sender_id.localpart().to_owned(),
+        };
+        let is_direct = item.is_direct_message_room;
+
+        // As in `show_push()`: the sender travels as the message's `Person`,
+        // so the body must not name them a second time.
+        let (body, is_invite) = if let Some(body) =
+            message_notification_body(&event, &sender_name, false)
+        {
+            (body, false)
+        } else if let Some(body) = incoming_call_notification_body(&event, &sender_name, is_direct)
+        {
+            (body, false)
+        } else if let Some(body) =
+            own_invite_notification_body(&event, &sender_name, session.user_id())
+        {
+            (body, true)
+        } else {
+            debug!("Received push for event of unexpected type {event:?}");
+            return;
+        };
+
+        let event_id = event.event_id();
+
+        let room_uri = MatrixRoomIdUri {
+            id: room_id.clone().into(),
+            via: vec![],
+        };
+
+        // Messages stack into the room's conversation notification. The tag,
+        // the timestamp and the body match `show_push()`'s exactly, which is
+        // what lets whichever of the wake and the sync arrives second be
+        // recognized as already shown instead of alerting twice.
+        if !is_invite {
+            let timestamp_ms = match &event {
+                AnySyncOrStrippedTimelineEvent::Sync(ev) => {
+                    i64::try_from(u64::from(ev.origin_server_ts().0)).unwrap_or_default()
+                }
+                AnySyncOrStrippedTimelineEvent::Stripped(_) => 0,
+            };
+
+            let matrix_uri = MatrixIdUri::Room(room_uri);
+            let tag = format!("{session_id}//{matrix_uri}");
+
+            Self::send_message_notification(
+                &tag,
+                &item.room_computed_display_name,
+                &session.user().display_name(),
+                &sender_name,
+                &body,
+                timestamp_ms,
+                !is_direct,
+                session_id,
+                &SessionIntent::ShowMatrixId(matrix_uri),
+                None,
+            );
+
+            self.imp()
+                .push
+                .borrow_mut()
+                .entry(room_id)
+                .or_default()
+                .insert(tag);
+            return;
+        }
+
+        let matrix_uri = if let Some(event_id) = event_id {
+            MatrixIdUri::Event(MatrixEventIdUri {
+                event_id: event_id.to_owned(),
+                room_uri,
+            })
+        } else {
+            MatrixIdUri::Room(room_uri)
+        };
+
+        let id = if event_id.is_some() {
+            format!("{session_id}//{matrix_uri}")
+        } else {
+            let random_id = glib::uuid_string_random();
+            format!("{session_id}//{matrix_uri}//{random_id}")
+        };
+
+        Self::send_notification(
+            &id,
+            &item.room_computed_display_name,
+            &body,
+            session_id,
+            &SessionIntent::ShowMatrixId(matrix_uri),
+            None,
+        );
+
+        self.imp()
+            .push
+            .borrow_mut()
+            .entry(room_id)
+            .or_default()
+            .insert(id);
+    }
+
     /// Show a notification for a call that is ringing.
     ///
     /// Not the push path, though the homeserver's push rules fire for the same
@@ -395,6 +678,7 @@ impl Notifications {
     /// stops ringing, and it carries the two buttons that make it worth
     /// having. The push path's own handling of call invites defers to this
     /// one, so that a ringing call is one notification and not two.
+    #[cfg(not(target_os = "android"))]
     pub(crate) async fn show_incoming_call(&self, call: &Call) {
         if !self.enabled() {
             return;
@@ -455,6 +739,7 @@ impl Notifications {
     }
 
     /// Withdraw the notification for the given call, if it has one.
+    #[cfg(not(target_os = "android"))]
     pub(crate) fn withdraw_incoming_call(&self, call: &Call) {
         let Some(session) = self.session() else {
             return;
@@ -472,6 +757,7 @@ impl Notifications {
     ///
     /// The call ID and not the event ID of the invite: the notification is
     /// withdrawn from the call, which knows the one and not the other.
+    #[cfg(not(target_os = "android"))]
     fn call_notification_id(session_id: &str, call: &Call) -> String {
         format!("{session_id}//call//{}", call.call_id())
     }
@@ -672,6 +958,19 @@ impl Notifications {
 impl Default for Notifications {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Truncate the given body to what a notification can be expected to display.
+fn truncate_body(body: &str) -> Cow<'_, str> {
+    if let Some((end, _)) = body.char_indices().nth(MAX_BODY_CHARS) {
+        let mut body = body[..end].trim_end().to_owned();
+        if !body.ends_with('…') {
+            body.push('…');
+        }
+        Cow::Owned(body)
+    } else {
+        Cow::Borrowed(body)
     }
 }
 

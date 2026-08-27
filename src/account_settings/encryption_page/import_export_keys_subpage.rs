@@ -1,10 +1,18 @@
+use std::path::{Path, PathBuf};
+
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext};
 use gtk::{gio, glib};
 use matrix_sdk::encryption::{KeyExportError, RoomKeyImportError};
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
-use crate::{components::LoadingButtonRow, session::Session, spawn_tokio, toast};
+use crate::{
+    RUNTIME,
+    components::LoadingButtonRow,
+    session::Session,
+    spawn_tokio, toast,
+    utils::{File, local_path, save_data_to_tmp_file, tmp_file_path},
+};
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
@@ -257,14 +265,10 @@ mod imp {
 
         /// Whether we can proceed to the import/export.
         fn can_proceed(&self) -> bool {
-            let has_file_path = self
-                .file_path
-                .borrow()
-                .as_ref()
-                .is_some_and(|file| file.path().is_some());
+            let has_file = self.file_path.borrow().is_some();
             let passphrase = self.passphrase.text();
 
-            let mut can_proceed = has_file_path && !passphrase.is_empty();
+            let mut can_proceed = has_file && !passphrase.is_empty();
 
             if self.is_export() {
                 let confirmation = self.confirm_passphrase.text();
@@ -274,6 +278,115 @@ mod imp {
             can_proceed
         }
 
+        /// Set whether the import/export is in progress.
+        fn set_proceeding(&self, in_progress: bool) {
+            self.proceed_button.set_is_loading(in_progress);
+            self.file_button.set_sensitive(!in_progress);
+            self.passphrase.set_sensitive(!in_progress);
+            self.confirm_passphrase.set_sensitive(!in_progress);
+        }
+
+        /// Resolve a local path to hand to `matrix-sdk` for the import/export,
+        /// showing an error toast and returning `None` if that is not possible.
+        ///
+        /// Both directions of this dialog hand `matrix-sdk` a `PathBuf`, and on
+        /// Android the chosen file may have none: `local_path` cannot tell a
+        /// save destination apart from a `content://` file, since neither
+        /// exists yet. So export always writes through a temporary file of its
+        /// own, which the caller reads back afterwards to copy into the file
+        /// the user chose. Import reuses the chosen file's real path when it
+        /// has one, and copies it to a temporary file otherwise -- the
+        /// composer's problem again, see `doc/android-attachments-plan.md`.
+        ///
+        /// The two guards in the result are kept alive by the caller until the
+        /// import/export using the path is done: dropping either deletes the
+        /// file it names.
+        async fn resolve_source_path(
+            &self,
+            chosen_file: &gio::File,
+            is_export: bool,
+        ) -> Option<(PathBuf, Option<tempfile::TempPath>, Option<File>)> {
+            let obj = self.obj();
+
+            if is_export {
+                match tmp_file_path().await {
+                    Ok(temp_path) => {
+                        let path = temp_path.to_path_buf();
+                        Some((path, Some(temp_path), None))
+                    }
+                    Err(error) => {
+                        error!("Could not create a temporary file: {error}");
+                        toast!(obj, gettext("Could not export the keys"));
+                        None
+                    }
+                }
+            } else if let Some(path) = local_path(chosen_file) {
+                Some((path, None, None))
+            } else {
+                let data = match chosen_file.load_contents_future().await {
+                    Ok((data, _)) => data.to_vec(),
+                    Err(error) => {
+                        warn!("Could not read file: {error}");
+                        toast!(obj, gettext("Could not import the keys"));
+                        return None;
+                    }
+                };
+
+                match save_data_to_tmp_file(data).await {
+                    Ok(file) => {
+                        let path = file.as_gfile().path().expect("temporary file has a path");
+                        Some((path, None, Some(file)))
+                    }
+                    Err(error) => {
+                        warn!("Could not copy the file to a temporary file: {error}");
+                        toast!(obj, gettext("Could not import the keys"));
+                        None
+                    }
+                }
+            }
+        }
+
+        /// Copy the just-exported keys from the temporary file at `temp_path`
+        /// into `chosen_file`, showing an error toast on failure.
+        ///
+        /// Returns whether it succeeded.
+        async fn finish_export(&self, chosen_file: &gio::File, temp_path: &Path) -> bool {
+            let obj = self.obj();
+
+            // `tokio::fs::read` needs an ambient runtime, which this template
+            // callback -- running on the GLib main context, not inside
+            // `spawn_tokio!` -- does not have. `RUNTIME.spawn_blocking` carries
+            // its own runtime handle, so it works from here the same way
+            // `save_data_to_tmp_file`/`tmp_file_path` already do.
+            let temp_path = temp_path.to_path_buf();
+            let data = match RUNTIME
+                .spawn_blocking(move || std::fs::read(temp_path))
+                .await
+                .expect("task was not aborted")
+            {
+                Ok(data) => data,
+                Err(error) => {
+                    error!("Could not read the exported keys: {error}");
+                    toast!(obj, gettext("Could not export the keys"));
+                    return false;
+                }
+            };
+
+            if let Err(error) = chosen_file.replace_contents(
+                &data,
+                None,
+                false,
+                gio::FileCreateFlags::REPLACE_DESTINATION,
+                gio::Cancellable::NONE,
+            ) {
+                error!("Could not save the keys: {error}");
+                toast!(obj, gettext("Could not export the keys"));
+                return false;
+            }
+
+            true
+        }
+
         /// Proceed to the import/export.
         #[template_callback]
         async fn proceed(&self) {
@@ -281,7 +394,7 @@ mod imp {
                 return;
             }
 
-            let Some(file_path) = self.file_path.borrow().as_ref().and_then(gio::File::path) else {
+            let Some(chosen_file) = self.file_path.borrow().clone() else {
                 return;
             };
             let Some(session) = self.session.upgrade() else {
@@ -292,23 +405,32 @@ mod imp {
             let passphrase = self.passphrase.text();
             let is_export = self.is_export();
 
-            self.proceed_button.set_is_loading(true);
-            self.file_button.set_sensitive(false);
-            self.passphrase.set_sensitive(false);
-            self.confirm_passphrase.set_sensitive(false);
+            self.set_proceeding(true);
+
+            // `temp_path`/`_temp_file` are held for the rest of this function:
+            // dropping either deletes the file it names, and the path is still
+            // needed below, first by `export_room_keys`/`import_room_keys`, and
+            // for export, again by `finish_export` once the temporary file has
+            // been written. `_temp_file` itself is never read again.
+            let Some((path, temp_path, _temp_file)) =
+                self.resolve_source_path(&chosen_file, is_export).await
+            else {
+                self.set_proceeding(false);
+                return;
+            };
 
             let encryption = session.client().encryption();
 
             let handle = spawn_tokio!(async move {
                 if is_export {
                     encryption
-                        .export_room_keys(file_path, passphrase.as_str(), |_| true)
+                        .export_room_keys(path, passphrase.as_str(), |_| true)
                         .await
                         .map(|()| 0usize)
                         .map_err::<Box<dyn std::error::Error + Send>, _>(|error| Box::new(error))
                 } else {
                     encryption
-                        .import_room_keys(file_path, passphrase.as_str())
+                        .import_room_keys(path, passphrase.as_str())
                         .await
                         .map(|res| res.imported_count)
                         .map_err::<Box<dyn std::error::Error + Send>, _>(|error| Box::new(error))
@@ -318,6 +440,15 @@ mod imp {
             match handle.await.expect("task was not aborted") {
                 Ok(nb) => {
                     if is_export {
+                        let temp_path = temp_path
+                            .as_deref()
+                            .expect("export always writes to a temporary file");
+
+                        if !self.finish_export(&chosen_file, temp_path).await {
+                            self.set_proceeding(false);
+                            return;
+                        }
+
                         toast!(obj, gettext("Room encryption keys exported successfully"));
                     } else {
                         let n = nb.try_into().unwrap_or(u32::MAX);
@@ -361,10 +492,7 @@ mod imp {
                 }
             }
 
-            self.proceed_button.set_is_loading(false);
-            self.file_button.set_sensitive(true);
-            self.passphrase.set_sensitive(true);
-            self.confirm_passphrase.set_sensitive(true);
+            self.set_proceeding(false);
         }
     }
 }

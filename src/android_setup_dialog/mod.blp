@@ -1,0 +1,102 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $AndroidSetupDialog: Adw.Dialog {
+  title: _("Notifications");
+  content-width: 440;
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-title: false;
+    }
+
+    content: Gtk.ScrolledWindow {
+      propagate-natural-width: true;
+      propagate-natural-height: true;
+      hscrollbar-policy: never;
+
+      child: Adw.Clamp {
+        maximum-size: 400;
+
+        child: Gtk.Box {
+          orientation: vertical;
+          spacing: 12;
+          margin-start: 24;
+          margin-end: 24;
+          margin-bottom: 24;
+
+          Gtk.Image {
+            icon-name: "notifications-symbolic";
+            pixel-size: 64;
+            accessible-role: presentation;
+
+            styles [
+              "dim-label",
+            ]
+          }
+
+          Gtk.Label {
+            wrap: true;
+            wrap-mode: word_char;
+            justify: center;
+            label: _("Stay in the Loop");
+
+            styles [
+              "title-1",
+            ]
+          }
+
+          Gtk.Label {
+            wrap: true;
+            wrap-mode: word_char;
+            justify: center;
+            label: _("Android pauses applications that are not on screen, so hearing about new messages when Commune is closed needs one of these two ways.");
+
+            styles [
+              "body",
+            ]
+          }
+
+          Gtk.ListBox {
+            margin-top: 12;
+            selection-mode: none;
+            accessible-role: group;
+
+            styles [
+              "boxed-list",
+            ]
+
+            Adw.ActionRow push_row {
+              title: _("Push Notifications");
+              // The subtitle is set from code, from what is installed.
+              subtitle-lines: 4;
+              activatable: true;
+              activated => $push_activated() swapped;
+
+              [suffix]
+              Gtk.Image {
+                icon-name: "go-next-symbolic";
+                accessible-role: presentation;
+              }
+            }
+
+            Adw.ActionRow service_row {
+              title: _("Keep Commune Running");
+              subtitle: _("Commune stays awake in the background and watches for messages itself. Android allows this for six hours a day; opening the app starts them anew.");
+              subtitle-lines: 4;
+              activatable: true;
+              activated => $service_activated() swapped;
+
+              [suffix]
+              Gtk.Image {
+                icon-name: "go-next-symbolic";
+                accessible-role: presentation;
+              }
+            }
+          }
+        };
+      };
+    };
+  };
+}

@@ -4,10 +4,15 @@
 //! prefix into [`RESOURCES_FILE`], [`UI_RESOURCES_FILE`] and [`LOCALEDIR`],
 //! and the app is only ever run from that prefix.
 //!
+//! Everywhere else that cannot work, for three different reasons: a macOS
+//! `.app` has a prefix that cannot be known when it is built, Windows installs
+//! per-user rather than to a fixed system prefix, and an Android package has
+//! one that is known and wrong. Each arm is below.
+//!
 //! macOS and Windows are both relocatable — a `.app` gets dragged wherever
-//! the user likes, and `bundle.sh`'s folder gets installed per-user rather
-//! than to a fixed system prefix — so on both, everything is found relative
-//! to the executable instead of trusting what Meson baked in. Windows is the
+//! the user likes, and `bundle.sh`'s folder gets installed per-user — so on
+//! both, everything is found relative to the executable instead of trusting
+//! what Meson baked in. Windows is the
 //! simpler of the two: `bundle.sh` lays out `bin\commune.exe` beside
 //! `share\commune\*.gresource` and `share\locale`, which is the same shape
 //! `meson install` gives the MSYS2 prefix, so one relative computation
@@ -94,13 +99,83 @@ pub(crate) fn init() -> RuntimePaths {
     {
         self::macos::init()
     }
+    #[cfg(target_os = "android")]
+    {
+        self::android::init()
+    }
     #[cfg(target_os = "windows")]
     {
         self::windows::init()
     }
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    #[cfg(not(any(target_os = "macos", target_os = "android", target_os = "windows")))]
     {
         RuntimePaths::from_config()
+    }
+}
+
+/// Where an Android package keeps the files Meson installed.
+///
+/// Meson's absolutes are useless here. pixiewood configures the build with
+/// `prefix = '/'` and installs into a staging directory, so [`RESOURCES_FILE`]
+/// is baked in as `/share/commune/resources.gresource` — which on a device
+/// names the root of the filesystem, where nothing of ours has ever been.
+///
+/// What actually happens is that everything under that staging directory is
+/// packed into the APK's `assets/`, and GTK's Java glue extracts it to
+/// `Context.getFilesDir()` before calling `main`. The glue then tells `GLib`
+/// where that is, so the directory is already known — it only has to be asked
+/// for.
+///
+/// It has to be asked of **`GLib`**, not the environment. The glue calls
+/// `g_set_user_dirs()` (`gdk/android/gdkandroidruntime.c:277`), which sets
+/// `GLib`'s own idea of the XDG directories and never touches `environ`, so
+/// `std::env::var("XDG_DATA_DIRS")` sees nothing at all.
+///
+/// And it has to be `XDG_DATA_DIRS`, not `XDG_DATA_HOME`. The glue points the
+/// two at different places: `XDG_DATA_DIRS` is `getFilesDir()/share`, where the
+/// assets were extracted, while `XDG_DATA_HOME` is
+/// `getExternalFilesDir(null)/share` — external storage, which never receives
+/// them.
+///
+/// Nothing here sets an environment variable, unlike the macOS arm: `GLib`
+/// finds the `GSettings` schemas under `XDG_DATA_DIRS/glib-2.0/schemas` by
+/// itself, and that is exactly where pixiewood compiles them to.
+#[cfg(target_os = "android")]
+mod android {
+    use gtk::glib;
+    use tracing::{debug, warn};
+
+    use super::RuntimePaths;
+
+    /// The name of the directory holding the application's own data, within a
+    /// data directory. This is the last component of Meson's `pkgdatadir`.
+    const PKGDATA_NAME: &str = "commune";
+
+    pub(super) fn init() -> RuntimePaths {
+        // There is only ever one of these on Android, but taking the first that
+        // actually holds our gresource is cheap and self-checking: if the assets
+        // were not extracted, the warning below says so, instead of
+        // `gio::Resource::load` failing later on a path nobody can account for.
+        let data_dirs = glib::system_data_dirs();
+        let data_dir = data_dirs
+            .iter()
+            .find(|dir| dir.join(PKGDATA_NAME).join("resources.gresource").exists());
+
+        let Some(data_dir) = data_dir else {
+            warn!(
+                "Found no extracted assets in {data_dirs:?}, falling back to the paths Meson \
+                 baked in, which do not exist on Android"
+            );
+            return RuntimePaths::from_config();
+        };
+        debug!("Running from extracted assets in {}", data_dir.display());
+
+        let pkgdata_dir = data_dir.join(PKGDATA_NAME);
+        RuntimePaths {
+            resources_file: pkgdata_dir.join("resources.gresource"),
+            ui_resources_file: pkgdata_dir.join("ui-resources.gresource"),
+            localedir: data_dir.join("locale"),
+        }
     }
 }
 

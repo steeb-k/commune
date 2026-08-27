@@ -78,7 +78,18 @@ template $MessageToolbar: Adw.Bin {
           }
         }
 
-        Gtk.Box {
+        // Android only: the auxiliary buttons move up here at construction,
+        // because six widgets do not fit beside a typing area on a phone.
+        // See `MessageToolbar::constructed()`.
+        Gtk.Box action_row {
+          visible: false;
+
+          styles [
+            "toolbar",
+          ]
+        }
+
+        Gtk.Box toolbar_row {
           styles [
             "toolbar",
           ]
@@ -90,7 +101,7 @@ template $MessageToolbar: Adw.Bin {
             clicked => $select_file() swapped;
           }
 
-          Gtk.Button {
+          Gtk.Button emoji_button {
             valign: end;
             icon-name: "emoji-symbolic";
             tooltip-text: _("Insert an Emoji");
@@ -128,6 +139,13 @@ template $MessageToolbar: Adw.Bin {
               child: GtkSource.View message_entry {
                 hexpand: true;
                 accepts-tab: false;
+
+                // What a phone keyboard needs to behave like one: capitalise
+                // the first letter of every sentence, and autocorrect. GTK
+                // turns these into Android's `TYPE_TEXT_FLAG_CAP_SENTENCES`
+                // and `TYPE_TEXT_FLAG_AUTO_CORRECT`; nothing else in the app
+                // is prose, so nothing else needs them. See doc/android.md.
+                input-hints: spellcheck | uppercase_sentences;
                 top-margin: 7;
                 bottom-margin: 7;
                 wrap-mode: word;
@@ -148,7 +166,7 @@ template $MessageToolbar: Adw.Bin {
             }
           }
 
-          Gtk.MenuButton {
+          Gtk.MenuButton more_button {
             valign: end;
             direction: up;
             icon-name: "more-symbolic";

@@ -52,5 +52,15 @@
       <default>""</default>
       <summary>Current session</summary>
     </key>
+    <key name="background-delivery" type="s">
+      <choices>
+        <choice value="auto"/>
+        <choice value="push"/>
+        <choice value="service"/>
+      </choices>
+      <default>'auto'</default>
+      <summary>How messages arrive while the app is not on screen</summary>
+      <description>Only read on Android. With "auto", push is used when a UnifiedPush distributor has provided a working endpoint and the foreground service covers the rest; "push" never runs the service; "service" never relies on push. See doc/android-push-plan.md</description>
+    </key>
   </schema>
 </schemalist>

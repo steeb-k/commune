@@ -3,9 +3,11 @@ use geo_uri::GeoUri;
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib};
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+#[cfg(not(target_os = "android"))]
+use super::LocationViewer;
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "android"))]
 use super::gst_media_stream::GstMediaStream;
-use super::{AnimatedImagePaintable, AudioPlayer, AudioPlayerSource, LocationViewer};
+use super::{AnimatedImagePaintable, AudioPlayer, AudioPlayerSource};
 use crate::{
     MEDIA_FILE_NOTIFIER,
     components::ContextMenuBin,
@@ -14,7 +16,7 @@ use crate::{
 };
 
 /// Play the given file in the given video widget.
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "android")))]
 fn set_video_file(video: &gtk::Video, file: &gio::File) {
     video.set_file(Some(file));
 }
@@ -22,23 +24,36 @@ fn set_video_file(video: &gtk::Video, file: &gio::File) {
 /// Play the given file in the given video widget.
 ///
 /// `GtkVideo` plays a file with `GtkMediaFile`, which has no backend at all in
-/// the GTK builds we use on macOS and Windows, so it is given a stream of ours
-/// instead.
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+/// the GTK builds we use on macOS, Windows and Android, so it is given a
+/// stream of ours instead.
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "android"))]
 fn set_video_file(video: &gtk::Video, file: &gio::File) {
     video.set_media_stream(Some(&GstMediaStream::new(file)));
 }
 
 /// Stop the given video widget and drop what it was playing.
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "android")))]
 fn clear_video(video: &gtk::Video) {
     video.set_file(None::<&gio::File>);
 }
 
 /// Stop the given video widget and drop what it was playing.
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+///
+/// The last reference is let go of on an idle rather than here, because here
+/// deadlocks. Detaching the stream tears down the paintable the video sink
+/// owns, and this thread holds the sink's lock while it does; dropping the
+/// stream in the middle of that disposes `GstPlay`, whose dispose joins its
+/// own thread -- and that thread is inside `gst_play_sink_change_state`
+/// waiting for the very lock this one is holding. Neither ever moves again.
+/// Measured on Android; see `doc/android.md`.
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "android"))]
 fn clear_video(video: &gtk::Video) {
+    let stream = video.media_stream();
     video.set_media_stream(None::<&gtk::MediaStream>);
+
+    if let Some(stream) = stream {
+        glib::idle_add_local_once(move || drop(stream));
+    }
 }
 
 /// The types of content supported by the [`MediaContentViewer`].
@@ -269,12 +284,23 @@ mod imp {
         }
 
         /// View the given location as a geo URI.
+        #[cfg(not(target_os = "android"))]
         pub(super) fn view_location(&self, geo_uri: &GeoUri) {
             let location = self.viewer.child_or_default::<LocationViewer>();
 
             location.set_location(geo_uri);
             self.set_visible_child("viewer");
             self.clear();
+        }
+
+        /// View the given location as a geo URI.
+        ///
+        /// Drawing a map needs libshumate, which is not cross-built for
+        /// Android, so this takes the same fallback as any other content the
+        /// viewer cannot display. See `doc/android.md`.
+        #[cfg(target_os = "android")]
+        pub(super) fn view_location(&self, _geo_uri: &GeoUri) {
+            self.show_fallback(ContentType::Other);
         }
 
         /// Update the state of the animated paintable, if any.

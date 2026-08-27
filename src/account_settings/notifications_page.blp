@@ -20,6 +20,33 @@ template $NotificationsPage: Adw.PreferencesPage {
     }
   }
 
+  // Android only: hidden everywhere else, shown and filled from the Rust
+  // side. Blueprint has no conditionals, and every other platform delivers
+  // through the running application.
+  Adw.PreferencesGroup delivery_group {
+    visible: false;
+    title: _("While the App Is Closed");
+    description: _("How new messages reach this device when Commune is not on screen");
+
+    Adw.ComboRow delivery_row {
+      title: _("Delivery");
+      notify::selected => $delivery_changed() swapped;
+    }
+
+    Adw.ActionRow push_status_row {
+      title: _("Push");
+      subtitle-lines: 3;
+      activated => $push_status_activated() swapped;
+
+      [suffix]
+      Gtk.Image push_status_next {
+        icon-name: "go-next-symbolic";
+        visible: false;
+        accessible-role: presentation;
+      }
+    }
+  }
+
   Adw.PreferencesGroup global {
     title: _("Global");
     description: _("Which messages trigger notifications in rooms that do not have more specific rules");

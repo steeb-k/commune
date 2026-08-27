@@ -1431,3 +1431,39 @@ Three small guards; each check is a mistake the app used to allow.
       homeserver's limit (Synapse defaults to 50M; the harness accepts a
       dd-made 60M file): the toast names the limit immediately, with no
       long upload first. A file under the limit sends as always.
+
+## The Android merge, seen from the desktop — 27 August 2026
+
+The merge that brought the Android port and main back together resolved
+conflicts in shared code, and a few of those resolutions change what desktop
+draws or does. The Android half of the same merge has its own sheet,
+`doc/eyeball-android.md`; these are the desktop-visible seams.
+
+* [ ] **Room details is a dialog now.** The port converted `RoomDetails` from
+      `Adw.PreferencesWindow` to `Adw.PreferencesDialog`, and the merge brings
+      that to desktop: it opens as a sheet over the window rather than as a
+      window of its own. Open it from a room's header and from a space's menu
+      — the space path is the merge's own wiring — and check both open, both
+      close, and nothing modal is left stuck.
+* [ ] **The composer looks exactly as it did.** The port rebuilt the
+      composer's blueprint around a second, phone-only button row, and on
+      desktop that row must stay invisible and everything else must stay
+      put: attach, emoji, sticker, voice, More and Send all beside the
+      entry, and a voice recording still counts its elapsed seconds where
+      it always did.
+* [ ] **A file with no local path sends instead of erroring.** The resolution
+      removed the up-front "file does not have a path" bail from the send
+      path: such a file is now read through GIO and sent, which is what
+      Android's pickers need and desktop should never notice. Attach an
+      ordinary file (unchanged), and on macOS paste a file copied from Finder
+      — the pasteboard repair still runs first.
+* [ ] **The homeserver entry names itself a URL.** `input-purpose: url` rode
+      along from the port onto the redesigned first page. On-screen keyboards
+      and input methods that read it change layout; a hardware keyboard should
+      notice nothing.
+* [ ] **Image fallbacks still fall back.** The pixbuf path gained a named-MIME
+      second try for HEIC/HEIF/AVIF containers whose loaders declare no
+      sniffing signature. On Windows, where MSYS2 ships those loaders with
+      signatures, the second try should never fire: an SVG, an AVIF and a HEIC
+      all still draw, and a corrupt file still reads as unsupported rather
+      than looping.
