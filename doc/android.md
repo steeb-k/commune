@@ -30,6 +30,7 @@ whole route hung on.
 * [S10 — The keyboard that would not capitalise, and the gesture that left](#s10--the-keyboard-that-would-not-capitalise-and-the-gesture-that-left)
 * [One bubble per conversation, and a banner that stops guessing](#one-bubble-per-conversation-and-a-banner-that-stops-guessing)
 * [Before this ships](#before-this-ships)
+* [S11 — The InputConnection is backed by the document](#s11--the-inputconnection-is-backed-by-the-document)
 * [Known gaps](#known-gaps)
 <!-- /toc -->
 
@@ -48,6 +49,7 @@ whole route hung on.
 | S8 — input handling | **the URL keyboard and plaintext passwords are fixed and confirmed on a Pixel 9a**, and were one bug: the Android IM context read a struct field nothing had assigned since `_init` |
 | S9 — the space-bar cursor slide | **fixed, and confirmed on a Pixel 9a on 25 August 2026**. Three parts: the keyboard could not read the text, `GtkIMContext` cannot move a cursor so the move is spelled in arrow keys, and — the actual cause — every cursor movement was calling `InputMethodManager.restartInput` and cancelling the gesture. Also: the emulator **can** be used to test keyboards, which unblocks every input measurement in this ledger |
 | S10 — auto-capitalisation and the back gesture | **fixed, 25 August 2026, on the emulator.** Two unrelated things that both made the app feel unlike an Android app: the composer never asked for sentence capitalisation, and every back gesture closed the application from wherever you were, media viewer included |
+| S11 — the IME mirror | **done, 27 August 2026, on the emulator; Pixel verification pending.** The scratch-buffer `InputConnection` and its three per-method patches are replaced wholesale by one backed by a real `Editable` mirroring the document — see [S11](#s11--the-inputconnection-is-backed-by-the-document). Fixes the held-backspace word duplication and the composer hidden behind the keyboard on room open, and retires the stale-cursor seed |
 
 ## Where things are
 
@@ -1014,13 +1016,14 @@ sh build-aux/android/patch-gtk-ime.sh       # likewise; see "The IME" below
 sh build-aux/android/patch-gtk-intent.sh    # likewise; see the SSO section
 sh build-aux/android/patch-gtk-service.sh   # likewise; see the foreground service
 sh build-aux/android/patch-gtk-input-purpose.sh  # likewise; see the input purpose
-sh build-aux/android/patch-gtk-ime-selection.sh  # likewise; see S9
 sh build-aux/android/patch-gtk-ime-reset.sh      # likewise; see S9
-sh build-aux/android/patch-gtk-ime-caps.sh       # likewise, and after the one above; see S10
 sh build-aux/android/patch-gtk-caps-sentences.sh  # likewise; see S10
 sh build-aux/android/patch-gtk-jni-attach.sh     # likewise; see the attachment crash below
 sh build-aux/android/patch-notification-icon.sh  # likewise; see the small icon below
-sh build-aux/android/patch-gtk-ime-composing-region.sh  # likewise; see "Before this ships"
+sh build-aux/android/patch-gtk-ime-move-cursor.sh   # before the mirror; see S11
+sh build-aux/android/patch-gtk-ime-cursor-notify.sh # likewise; see S11
+sh build-aux/android/patch-gtk-ime-mirror.sh        # after move-cursor; see S11
+sh build-aux/android/patch-gtk-ime-insets.sh        # likewise; see S11
 $PW build
 ```
 
@@ -2984,15 +2987,70 @@ all of it blocks calling the port finished.
     panic in a tokio task. Check it has not become reproducible before shipping — a first launch
     after install is exactly the launch a new user sees.
 
+## S11 — The InputConnection is backed by the document
+
+Two reports from the Pixel started this round: holding backspace on a drafted word duplicated its
+first letter — `Testing` became `TTesting` before deleting — and opening a room popped the
+keyboard without resizing the window, leaving the composer hidden behind it. The first was another
+corner of the composing-region defect the previous two rounds had each patched one corner of, and
+that was the deciding fact: upstream's `ImeConnection` extends `BaseInputConnection` over a scratch
+`Editable` that the glue clears after every commit, so every question the keyboard asks is answered
+from an empty document, and every keyboard behaviour not yet met punches through whichever methods
+have not been hand-taught the truth yet. Rather than teach a fourth method, the connection is now
+backed by the right document.
+
+**The mirror.** `build-aux/android/ImContext.java`, installed wholesale over the upstream file by
+`patch-gtk-ime-mirror.sh`, keeps a `SpannableStringBuilder` mirroring the text GTK reports around
+the cursor — committed text and preedit both, the preedit under a `SPAN_COMPOSING` span, exactly a
+`TextView`'s shape. `BaseInputConnection`'s stock method implementations edit it; each finished
+batch is diffed into GTK's verbs — `deleteSurrounding`, `commit`, `updatePreedit` — inside one
+GLib-thread closure; and the same closure re-reads the surrounding text, from which the mirror is
+rebuilt. Drift survives at most one transaction, and `GtkTextView`'s sliding surrounding window is
+harmless because offsets are never carried across a rebuild. A transaction whose baseline no longer
+matches the widget is dropped unapplied — the failure mode is one lost keystroke and a resync,
+never a wrong edit. This retires `patch-gtk-ime-selection.sh`, `patch-gtk-ime-caps.sh` and
+`patch-gtk-ime-composing-region.sh`.
+
+**The cursor, both directions.** Two new C patches close the gaps that kept every previous round
+honest work but whack-a-mole:
+
+* `patch-gtk-ime-cursor-notify.sh` — `gtk_im_context_android_reset` runs after every GTK-side
+  cursor movement (that is what S9 measured), so it now calls `onGtkCursorMoved`, and the Java side
+  answers with `InputMethodManager.updateSelection`. The keyboard's model finally follows taps and
+  arrow keys, which also retires the stale-seed gap below at its root.
+* `patch-gtk-ime-move-cursor.sh` — a `moveCursor(delta, anchor_delta)` native that places the
+  cursor through the widget (`GtkEditable` for `GtkText`, the buffer for `GtkTextView`),
+  synchronously, on the GLib thread. The arrow-key spelling of cursor moves is gone with it, and
+  with it the race that sank two intermediate designs: key events drain from GDK's event queue in a
+  different main-loop phase than an invoked closure, so no queueing order can sequence arrows
+  before a transaction. Measured as selection-replace refusing to apply until the closure placed
+  the cursor itself.
+
+**The window.** `patch-gtk-ime-insets.sh` answers the hidden composer: the resize plumbing was
+complete (`onApplyWindowInsets` reads `ime()` insets, `onMeasure` subtracts them), but a keyboard
+shown while the room transition was mid-layout could miss its inset application. A
+`WindowInsetsAnimation.Callback` re-applies insets when the keyboard's animation ends, and the show
+path calls `requestApplyInsets()` for the no-animation case.
+
+**Measured on the emulator, 27 August 2026** — the adb-driven Gboard technique from S9: room open
+lands with the composer above the keyboard and the draft's cursor seeded correctly; typing,
+sentence auto-capitalisation and live suggestions; held backspace eats a word cleanly (the original
+repro shape, 18 deletes, no duplication); the space-bar slide tracks continuously and an insertion
+lands at the slid-to position; tap-to-move is followed by the suggestion strip; shift+arrow
+selections replaced by typed text in place, in the composer and in the search entry both. Machine-
+speed input can still race a transaction into the dropped-and-resynced path — logged with a
+diagnostic when it happens. Not measurable on the emulator, so still owed to the Pixel: the
+composing word-resume itself (the emulator's Gboard never composes), autocorrect and swipe-typing.
+
 ## Known gaps
 
-* **`onCreateInputConnection` can seed the keyboard a stale cursor.** Refocusing a restored
+* ~~**`onCreateInputConnection` can seed the keyboard a stale cursor.**~~ **Retired by S11 on
+  27 August 2026**: the seed now comes from the connection's own mirror, and even a wrong first
+  guess is corrected by the `updateSelection` that `patch-gtk-ime-cursor-notify.sh` sends on the
+  next cursor movement. Kept because the diagnosis explains why emulator measurements of the
+  composing-region bug kept disagreeing with the Pixel. Original entry: refocusing a restored
   draft on the emulator produced `initialSelStart=0, initialSelEnd=0` for a seven-character
-  draft — `getSurrounding()` answered from before the restore placed the cursor. On that run it
-  _masked_ the composing-region bug (Gboard believed nothing preceded the cursor, so it never
-  resumed the word); on a device where the seed is correct, the resume happens and the
-  composing-region patch is what answers it. The seed race itself is unfixed and small: worst
-  case, the keyboard's first guess about the cursor is wrong until the next selection update.
+  draft — `getSurrounding()` answered from before the restore placed the cursor.
 * **A long unbroken word in the composer scrolls sideways instead of breaking.** The message
   entry wraps at `word`, and a token with no break point — a pasted URL, most days — makes the
   entry scroll horizontally inside itself rather than wrap like the timeline (which breaks
