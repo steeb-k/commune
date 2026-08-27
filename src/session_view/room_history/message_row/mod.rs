@@ -394,6 +394,14 @@ mod imp {
                 return;
             };
 
+            // Inside the thread's own view the chip would open what is
+            // already open, and the thread-focused timeline does not keep the
+            // summary current: the chip belongs to the room's history.
+            if event.timeline().is_thread() {
+                self.thread_chip.set_visible(false);
+                return;
+            }
+
             // The chip is also the way into the thread, so it needs the
             // root's event ID as the action target.
             let event_id = event.event_id();
