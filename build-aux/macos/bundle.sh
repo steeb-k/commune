@@ -77,7 +77,7 @@ fi
 }
 
 [ -n "$APP_ID" ] || APP_ID='io.github.steeb_k.Commune'
-[ -n "$VERSION" ] || VERSION='14.1'
+[ -n "$VERSION" ] || VERSION='1.rc1'
 [ -n "$PROFILE" ] || PROFILE='Stable'
 # A stable and a development build have to be able to sit in /Applications at
 # the same time, and two bundles cannot share a directory name. On Linux the
@@ -463,11 +463,32 @@ esac
 note "icon $(basename "$ICON_SRC")"
 "$HERE/make-icns.sh" "$ICON_SRC" "$RES/$EXECUTABLE.icns" >/dev/null
 
+# CFBundleVersion and CFBundleShortVersionString only accept period-separated
+# numbers, so a pre-release version like "1.rc1" cannot go into them as-is:
+# LaunchServices shrugs today, but notarization and the App Store validate.
+# The plist gets the longest numeric prefix -- "1.rc1" becomes "1", a final
+# "1.0" passes through whole -- and the full string stays everywhere else:
+# the artefact names, and the About dialog, which is where a human looks.
+PLIST_VERSION=$(printf '%s' "$VERSION" | sed -E 's/^([0-9]+(\.[0-9]+)*).*$/\1/')
+printf '%s' "$PLIST_VERSION" | grep -qE '^[0-9]+(\.[0-9]+)*$' || PLIST_VERSION=0
+
+# CFBundleVersion is not a version but a build number: Apple's model wants a
+# monotonic counter there, so that two builds can be told apart and ordered --
+# by LaunchServices when two copies are installed today, and by any updater or
+# TestFlight upload later. The commit count is exactly that counter, is
+# already tracked as one in doc/pages.state, and costs nothing at release
+# time. Outside a git checkout it falls back to the numeric prefix, which
+# stays valid, merely unordered between release candidates.
+BUILD_NUMBER=$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || true)
+[ -n "$BUILD_NUMBER" ] || BUILD_NUMBER="$PLIST_VERSION"
+
 sed -e "s|@APP_ID@|$APP_ID|g" \
     -e "s|@APP_NAME@|$APP_NAME|g" \
     -e "s|@EXECUTABLE@|$EXECUTABLE|g" \
     -e "s|@ICON@|$EXECUTABLE.icns|g" \
     -e "s|@VERSION@|$VERSION|g" \
+    -e "s|@PLIST_VERSION@|$PLIST_VERSION|g" \
+    -e "s|@BUILD_NUMBER@|$BUILD_NUMBER|g" \
     -e "s|@MIN_OS@|$MIN_OS|g" \
     "$HERE/Info.plist.in" >"$CONTENTS/Info.plist"
 
@@ -499,13 +520,48 @@ fi
 IDENTITY="${CODESIGN_IDENTITY:--}"
 note "signing with identity '$IDENTITY'"
 
+# An ad-hoc signature cannot carry a timestamp, and the hardened runtime buys
+# nothing without notarization -- but a real identity gets both, because a
+# secure timestamp and the hardened runtime are exactly what notarization
+# checks beyond the signature itself. A real identity also stops discarding
+# codesign's stderr: a timestamp-server failure leaves the file's previous
+# signature in place, which the verify below cannot tell from success, and
+# notarization would reject the bundle much later with much less to go on.
+#
+# The hardened runtime also denies the microphone and the camera unless the
+# main executable's signature carries the device entitlements -- denied at
+# the CoreAudio layer, beneath TCC, so the user grants the permission and
+# records silence anyway. The entitlements go on the bundle-level sign only:
+# that is the call that signs the main executable, and they mean nothing on
+# a dylib.
+if [ "$IDENTITY" = '-' ]; then
+    SIGN_FLAGS='--timestamp=none'
+    APP_SIGN_FLAGS="$SIGN_FLAGS"
+    SIGN_ERR='/dev/null'
+else
+    SIGN_FLAGS='--timestamp --options runtime'
+    APP_SIGN_FLAGS="$SIGN_FLAGS --entitlements $HERE/entitlements.plist"
+    SIGN_ERR="$OUT_DIR/.codesign-err"
+fi
+
 # Nested code first, the bundle last. `--deep` would do this in one call but is
 # deprecated, and it signs in an order codesign itself warns about.
 while read -r f; do
     file "$f" | grep -q 'Mach-O' || continue
-    codesign --force --timestamp=none --sign "$IDENTITY" "$f" 2>/dev/null
+    # shellcheck disable=SC2086 -- SIGN_FLAGS is a flag list on purpose
+    codesign --force $SIGN_FLAGS --sign "$IDENTITY" "$f" 2>"$SIGN_ERR" || {
+        echo "bundle: signing failed for $f:" >&2
+        [ "$SIGN_ERR" != '/dev/null' ] && sed 's/^/  /' "$SIGN_ERR" >&2
+        exit 1
+    }
 done <"$ALL_BINARIES"
-codesign --force --timestamp=none --sign "$IDENTITY" "$APP" 2>/dev/null
+# shellcheck disable=SC2086
+codesign --force $APP_SIGN_FLAGS --sign "$IDENTITY" "$APP" 2>"$SIGN_ERR" || {
+    echo "bundle: signing failed for $APP:" >&2
+    [ "$SIGN_ERR" != '/dev/null' ] && sed 's/^/  /' "$SIGN_ERR" >&2
+    exit 1
+}
+[ "$SIGN_ERR" != '/dev/null' ] && rm -f "$SIGN_ERR"
 codesign --verify --deep --strict "$APP"
 
 # ---------------------------------------------------------------------------

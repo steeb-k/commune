@@ -20,6 +20,7 @@ use matrix_sdk_ui::{
 };
 use ruma::{
     OwnedEventId, UserId,
+    api::client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
     events::{
         AnySyncMessageLikeEvent, AnySyncStateEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
         SyncStateEvent, room::message::MessageType, tag::TagName,
@@ -40,7 +41,7 @@ pub(crate) use self::{
     timeline_item::{TimelineItem, TimelineItemExt, TimelineItemImpl},
     virtual_item::{VirtualItem, VirtualItemKind},
 };
-use super::{Room, RoomCategory};
+use super::{ReceiptPosition, Room, RoomCategory};
 use crate::{
     prelude::*,
     spawn, spawn_tokio,
@@ -115,6 +116,24 @@ mod imp {
         /// Whether this timeline is focused on a single event.
         #[property(get = Self::is_focused)]
         is_focused: PhantomData<bool>,
+        /// Whether this timeline shows the events pinned in the room.
+        pinned: Cell<bool>,
+        /// Whether this timeline shows the events pinned in the room.
+        ///
+        /// Such a timeline is not live, and the SDK refuses to paginate it:
+        /// the pinned events are the whole of it.
+        #[property(get = Self::is_pinned)]
+        is_pinned: PhantomData<bool>,
+        /// The root event of the thread this timeline shows, if any.
+        ///
+        /// Such a timeline holds only the events of that thread, starting at
+        /// its root. It receives new thread events from sync and can be
+        /// paginated backwards, but its bottom is the present, so it never
+        /// paginates forwards.
+        thread_root: OnceCell<Option<OwnedEventId>>,
+        /// Whether this timeline shows a single thread.
+        #[property(get = Self::is_thread)]
+        is_thread: PhantomData<bool>,
         /// Whether we are loading events at the start of the timeline.
         #[property(get)]
         is_loading_start: Cell<bool>,
@@ -168,9 +187,16 @@ mod imp {
                 true,
                 move |obj| {
                     // Hide the timeline start item if we have the `m.room.create` event too.
-                    obj.downcast_ref::<VirtualItem>().is_none_or(|item| {
-                        !(imp.has_room_create.get()
-                            && item.kind() == VirtualItemKind::TimelineStart)
+                    if let Some(item) = obj.downcast_ref::<VirtualItem>() {
+                        return !(imp.has_room_create.get()
+                            && item.kind() == VirtualItemKind::TimelineStart);
+                    }
+
+                    // Unparsable events arrive because an invalid
+                    // `m.room.policy` is the unset gesture and draws as such;
+                    // any other parse failure has nothing to say.
+                    obj.downcast_ref::<Event>().is_none_or(|event| {
+                        !event.failed_to_parse() || event.is_unparsed_policy_server_change()
                     })
                 }
             ));
@@ -223,6 +249,7 @@ mod imp {
         }
 
         /// Initialize the underlying SDK timeline.
+        #[allow(clippy::too_many_lines)]
         pub(super) async fn init_matrix_timeline(&self) {
             let room = self.room();
 
@@ -255,19 +282,36 @@ mod imp {
                 }
             };
             let focused_event_id = self.focused_event_id().cloned();
+            let is_pinned = self.pinned.get();
+            let thread_root = self.thread_root().cloned();
             let handle = spawn_tokio!(async move {
+                // Unparsable events are requested from the SDK because one of
+                // them means something: an invalid or empty `m.room.policy`
+                // content unsets the room's policy server, per the spec, and
+                // deserves its sentence. The GTK-side filter hides the rest.
                 let mut builder = matrix_room
                     .timeline_builder()
                     .event_filter(filter)
-                    .add_failed_to_parse(false);
+                    .add_failed_to_parse(true);
 
-                if let Some(target) = focused_event_id {
+                // Threaded events are hidden from the live and focused
+                // timelines: since a thread can be opened from its root, they
+                // have somewhere better to be read.
+                if is_pinned {
+                    builder = builder.with_focus(TimelineFocus::PinnedEvents);
+                } else if let Some(root_event_id) = thread_root {
+                    builder = builder.with_focus(TimelineFocus::Thread { root_event_id });
+                } else if let Some(target) = focused_event_id {
                     builder = builder.with_focus(TimelineFocus::Event {
                         target,
                         num_context_events: MAX_BATCH_SIZE,
                         thread_mode: TimelineEventFocusThreadMode::Automatic {
-                            hide_threaded_events: false,
+                            hide_threaded_events: true,
                         },
+                    });
+                } else {
+                    builder = builder.with_focus(TimelineFocus::Live {
+                        hide_threaded_events: true,
                     });
                 }
 
@@ -291,6 +335,11 @@ mod imp {
             if !self.is_focused() {
                 // The live timeline is always at the end of the room's history.
                 self.set_has_reached_end(true);
+            }
+            if self.pinned.get() {
+                // The pinned events are the whole of this timeline. The SDK
+                // refuses to paginate it, so never ask.
+                self.set_has_reached_start(true);
             }
 
             let (values, timeline_stream) = matrix_timeline.subscribe().await;
@@ -334,13 +383,14 @@ mod imp {
                 .set(diff_handle.abort_handle())
                 .expect("handle should be uninitialized");
 
-            if !self.is_focused() {
-                // A focused timeline never gets new events and must not move the
-                // read receipt of the user, so it does not need any of this.
+            if self.is_live() {
+                // A timeline that is not live never gets new events and must not
+                // move the read receipt of the user, so it does not need any of
+                // this.
                 self.watch_read_receipts().await;
             }
 
-            if !self.is_focused() && self.preload.get() {
+            if self.is_live() && self.preload.get() {
                 self.preload().await;
             }
 
@@ -362,6 +412,43 @@ mod imp {
         /// Whether this timeline is focused on a single event.
         fn is_focused(&self) -> bool {
             self.focused_event_id().is_some()
+        }
+
+        /// Set whether this timeline shows the events pinned in the room.
+        pub(super) fn set_pinned(&self, pinned: bool) {
+            self.pinned.set(pinned);
+        }
+
+        /// Whether this timeline shows the events pinned in the room.
+        fn is_pinned(&self) -> bool {
+            self.pinned.get()
+        }
+
+        /// Set the root event of the thread this timeline shows.
+        pub(super) fn set_thread_root(&self, thread_root: Option<OwnedEventId>) {
+            self.thread_root
+                .set(thread_root)
+                .expect("thread root should be uninitialized");
+        }
+
+        /// The root event of the thread this timeline shows, if any.
+        pub(super) fn thread_root(&self) -> Option<&OwnedEventId> {
+            self.thread_root.get().and_then(Option::as_ref)
+        }
+
+        /// Whether this timeline shows a single thread.
+        fn is_thread(&self) -> bool {
+            self.thread_root().is_some()
+        }
+
+        /// Whether this is the live timeline of the room.
+        ///
+        /// A live timeline is the only one that tracks the room's own read
+        /// receipts, shows who is typing, or is preloaded. A thread timeline
+        /// receives new events from sync too, but its receipts are the
+        /// thread's, not the room's.
+        fn is_live(&self) -> bool {
+            !self.is_focused() && !self.pinned.get() && !self.is_thread()
         }
 
         /// The underlying SDK timeline.
@@ -522,7 +609,9 @@ mod imp {
         /// optimized by the caller of the function.
         fn clear(&self) {
             self.event_map.borrow_mut().clear();
-            self.set_has_reached_start(false);
+            if !self.pinned.get() {
+                self.set_has_reached_start(false);
+            }
             if self.is_focused() {
                 // The live timeline is always at the end of the room's history.
                 self.set_has_reached_end(false);
@@ -919,8 +1008,8 @@ mod imp {
 
         /// Add the typing row to the timeline, if it isn't present already.
         fn add_typing_row(&self) {
-            if self.is_focused() {
-                // A focused timeline does not show the typing status.
+            if !self.is_live() {
+                // Only the live timeline shows the typing status.
                 return;
             }
 
@@ -1151,7 +1240,7 @@ glib::wrapper! {
 impl Timeline {
     /// Construct a new `Timeline` for the given room.
     pub(crate) fn new(room: &Room) -> Self {
-        Self::construct(room, None)
+        Self::construct(room, None, false, None)
     }
 
     /// Construct a new `Timeline` for the given room, focused on the event with
@@ -1161,18 +1250,48 @@ impl Timeline {
     /// both directions, but it never receives new events from sync, so it
     /// cannot replace the live timeline of the room.
     pub(crate) fn new_focused(room: &Room, event_id: OwnedEventId) -> Self {
-        Self::construct(room, Some(event_id))
+        Self::construct(room, Some(event_id), false, None)
+    }
+
+    /// Construct a new `Timeline` showing the events pinned in the given room.
+    ///
+    /// The SDK builds this one from the room's `m.room.pinned_events`, so it
+    /// follows that state event as it changes. It cannot be paginated — the
+    /// pinned events are the whole of it — and it never receives new events
+    /// from sync.
+    pub(crate) fn new_pinned(room: &Room) -> Self {
+        Self::construct(room, None, true, None)
+    }
+
+    /// Construct a new `Timeline` showing the thread rooted at the event with
+    /// the given ID.
+    ///
+    /// Such a timeline holds the thread and nothing else, starting at its
+    /// root. It receives new thread events from sync, so its bottom is the
+    /// present; older thread events are loaded by paginating backwards.
+    /// Anything sent through it carries the thread relation, and a read
+    /// receipt sent through it is the thread's, not the room's.
+    pub(crate) fn new_threaded(room: &Room, root_event_id: OwnedEventId) -> Self {
+        Self::construct(room, None, false, Some(root_event_id))
     }
 
     /// Construct a new `Timeline` for the given room, optionally focused on the
-    /// event with the given ID.
-    fn construct(room: &Room, focused_event_id: Option<OwnedEventId>) -> Self {
+    /// event with the given ID, showing the room's pinned events, or showing a
+    /// single thread.
+    fn construct(
+        room: &Room,
+        focused_event_id: Option<OwnedEventId>,
+        pinned: bool,
+        thread_root: Option<OwnedEventId>,
+    ) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
             .build();
 
         let imp = obj.imp();
         imp.set_focused_event_id(focused_event_id);
+        imp.set_pinned(pinned);
+        imp.set_thread_root(thread_root);
 
         spawn!(clone!(
             #[weak]
@@ -1188,6 +1307,47 @@ impl Timeline {
     /// The event this timeline is focused on, if any.
     pub(crate) fn focused_event_id(&self) -> Option<OwnedEventId> {
         self.imp().focused_event_id().cloned()
+    }
+
+    /// The root event of the thread this timeline shows, if any.
+    pub(crate) fn thread_root(&self) -> Option<OwnedEventId> {
+        self.imp().thread_root().cloned()
+    }
+
+    /// Send the given receipt through this timeline.
+    ///
+    /// The SDK scopes the receipt to what the timeline shows: sent through a
+    /// thread timeline, it is a receipt for that thread, not for the room.
+    pub(crate) async fn send_receipt(
+        &self,
+        receipt_type: ApiReceiptType,
+        position: ReceiptPosition,
+    ) {
+        let Some(session) = self.room().session() else {
+            return;
+        };
+        let send_public_receipt = session.settings().public_read_receipts_enabled();
+
+        let receipt_type = match receipt_type {
+            ApiReceiptType::Read if !send_public_receipt => ApiReceiptType::ReadPrivate,
+            t => t,
+        };
+
+        let matrix_timeline = self.matrix_timeline();
+        let handle = spawn_tokio!(async move {
+            match position {
+                ReceiptPosition::End => matrix_timeline.mark_as_read(receipt_type).await,
+                ReceiptPosition::Event(event_id) => {
+                    matrix_timeline
+                        .send_single_receipt(receipt_type, event_id)
+                        .await
+                }
+            }
+        });
+
+        if let Err(error) = handle.await.expect("task was not aborted") {
+            error!("Could not send read receipt: {error}");
+        }
     }
 
     /// The underlying SDK timeline.
@@ -1414,6 +1574,21 @@ fn show_in_timeline(
                 | AnySyncStateEvent::RoomCreate(_)
                 | AnySyncStateEvent::RoomEncryption(_)
                 | AnySyncStateEvent::RoomThirdPartyInvite(_)
+                // Pinning is an act of moderation and the pinned messages view
+                // does not say who did it, so the room says so instead.
+                | AnySyncStateEvent::RoomPinnedEvents(_)
+                // `update_with_other_state` has written the sentence for this
+                // one since the ACL editor landed, and this list is what kept
+                // it from ever being drawn.
+                | AnySyncStateEvent::RoomServerAcl(_)
+                // Which server checks this room's messages is an act of
+                // moderation too, and one worth a sentence.
+                | AnySyncStateEvent::RoomPolicy(_)
+                // The moderation policy rules: who wrote which rule, about
+                // whom, and why, is the whole history of a policy room.
+                | AnySyncStateEvent::PolicyRuleUser(_)
+                | AnySyncStateEvent::PolicyRuleRoom(_)
+                | AnySyncStateEvent::PolicyRuleServer(_)
         ),
     }
 }

@@ -113,17 +113,29 @@ mod imp {
         /// The images of a pack are the size of a sticker, which the
         /// specification asks to be at least 512 pixels, so presenting one at
         /// its own size would take over the message.
-        fn measure(&self, orientation: gtk::Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
+        fn measure(&self, orientation: gtk::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
             let (width, height) = self.size();
-            let size = if orientation == gtk::Orientation::Vertical {
-                height
-            } else {
-                width
-            };
 
-            // The minimum and the natural size are the same, so that the
-            // emoticon takes exactly the room that was computed for it.
-            (size, size, -1, -1)
+            if orientation == gtk::Orientation::Horizontal {
+                // A large emoticon can be wider than the view, which must
+                // shrink it rather than let it overflow, so only an emoticon
+                // among words claims its width as a minimum.
+                let min = if self.is_large.get() { 0 } else { width };
+                (min, width, -1, -1)
+            } else {
+                // When the width shrank, the height follows the aspect ratio
+                // of the image.
+                let height = if for_size >= 0 && for_size < width {
+                    (f64::from(height) * f64::from(for_size) / f64::from(width)).round() as i32
+                } else {
+                    height
+                };
+                (height, height, -1, -1)
+            }
+        }
+
+        fn request_mode(&self) -> gtk::SizeRequestMode {
+            gtk::SizeRequestMode::HeightForWidth
         }
 
         fn snapshot(&self, snapshot: &gtk::Snapshot) {

@@ -485,14 +485,14 @@
 
   <header class="masthead">
     <div class="eyebrow">
-      <span>Commune 14.1.0</span>
+      <span>Commune 1.0.0-rc1</span>
       <span>vs. Matrix Client-Server API v1.19</span>
-      <span>main @ 4eb53e53</span>
+      <span>main @ ca459461</span>
     </div>
     <h1>What Commune doesn't speak yet</h1>
     <p class="standfirst">
-      Every module in the v1.19 Client-Server API, checked against the tree. Fourteen gaps:
-      ten with no implementation at all, four implemented partly. Effort is measured in UI
+      Every module in the v1.19 Client-Server API, checked against the tree. Six gaps:
+      one with no implementation at all, five implemented partly. Effort is measured in UI
       work, since the Rust SDK already carries most of the protocol. A second pass, further down,
       grades what the fork has <em>added</em> since it split from Fractal. Reporting content,
       server ACLs, recently used emoji and link previews were closed on 22 August, server notices
@@ -500,25 +500,69 @@
       on one network and between two, and left the partial column when the last event of the
       module — <code>m.call.negotiate</code> — was answered and then watched working: a camera
       added to a live voice call, and Element for Android accepting it 850&nbsp;ms later. The
-      note below says which parts of that evening's work are still unwatched.
+      note below says which parts of that evening's work are still unwatched. Presence left
+      Absent on 23 August too, and Pinned Events — a module this page had never listed in either
+      direction — was built the same day and joins the implemented column. Signing up followed
+      it, and the password reset that was the other half of that row landed the same day, so the
+      row is closed rather than halved. Spaces moved out of Absent on 24 August 2026 and took two
+      of its three slices the same day: a space is visible, openable and leavable, the directory
+      lists it, and its page now lists the rooms inside it, each of which can be opened or
+      joined. Writing <code>m.space.child</code> — putting a room <em>into</em> a space — is what
+      keeps the module in the partial column. Room Previews closed the same day, on top of the
+      <code>world_readable</code> flag that came with it: the last twenty messages of a room
+      that says anybody may read them are now read, without joining. And Restricting Room
+      Membership closed with the space picker the third slice of spaces begins with: a
+      restriction could be kept before and can be created now. The third slice finished the
+      same day with <code>m.space.child</code>, and then the rest of the module went with it:
+      a space can be made, a room can be taken back out of one, and a room says which spaces
+      hold it. Spaces leaves the partial column entirely. Threads left Absent on
+      26 August 2026 and took its second slice the same day: a thread root announces itself
+      with a reply count, opening it shows the thread in place with the composer, receipts
+      and drafts scoped to it, threaded replies have left the main timeline, and the third
+      slice — the thread list, off the <code>/threads</code> endpoint — landed the same day,
+      which moves Threads into the implemented column. The last whole module this client did
+      not speak is spoken. Round 5 followed the same day: the predefined notification rules
+      got their switches, and the identifiers on the account became visible on a
+      password-auth homeserver — an email address can be added and removed, a phone number
+      only seen and removed, the stance that keeps that row partial. Round 6, still the same
+      day, took two rows out of the absent column: Mutual Rooms is implemented — a
+      profile page now lists the rooms in common, off the stable v1.19 endpoint with the
+      unstable path as fallback for a homeserver that has not caught up — and Policy Servers
+      moved to the partial column, the timeline saying what <code>m.room.policy</code> means
+      while setting it stays unoffered. Voice messages, the one proposal this fork admitted
+      past its no-MSC stance, got their recording half the same round; that row lives on the
+      comparison page rather than here, being an MSC. And round 7, the same day again, closed
+      the gap this page ranked highest since threads: inviting by email. An identity-server
+      module resolves (account data first, its explicit null honored), registers (the OpenID
+      response body is exactly the register body) and handles the terms of service, filtered
+      against <code>m.accepted_terms</code>; the invite subpage offers the invitation the
+      moment the search text is an email address; and a settings row names the identity server
+      in use, on whose word, and lets the account set, decline or defer the choice. The
+      build-first shortlist below is empty for the first time. Round 8 closed the day out by
+      finishing what was already claimed: the trust verdict the SDK computed for every message
+      of an encrypted room is drawn, an undecryptable message names its actual cause, a failed
+      send can be retried, and the knock banner remembers what was reviewed. Round 9 — the
+      plan's optional one — followed: the favorites keep the manual order another client gave
+      them, and a policy room's rules read as sentences, which moves Moderation Policy Lists
+      to the partial column and leaves exactly one module absent, OpenID, valued at none.
     </p>
   </header>
 
   <div class="score">
     <div class="score-cell gone">
-      <div class="score-num">10</div>
+      <div class="score-num">1</div>
       <div class="score-label">Absent</div>
       <div class="score-note">Spec module with no corresponding code in the tree.</div>
     </div>
     <div class="score-cell part">
-      <div class="score-num">4</div>
+      <div class="score-num">5</div>
       <div class="score-label">Partial or off-spec</div>
       <div class="score-note">Present, but narrower than the spec says.</div>
     </div>
     <div class="score-cell have">
-      <div class="score-num">33</div>
+      <div class="score-num">42</div>
       <div class="score-label">Implemented</div>
-      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices and one-to-one calls.</div>
+      <div class="score-note">Including all of encryption, verification, push, reporting, server ACLs, link previews, server notices, pinned events, presence, signing up, room previews, restricted membership, spaces, threads, mutual rooms and one-to-one calls.</div>
     </div>
   </div>
 
@@ -528,33 +572,29 @@
       <p class="sec-sub">
         Ranked by value against effort, not by spec order. Everything that stood above these has
         been built — reporting a room or a user, the knock rule, server ACLs, the recently used
-        emoji, link previews and now server notices — and the notes further down say what the
+        emoji, link previews, server notices, and on 23 August 2026 pinned messages,
+        presence and both halves of signing up — and the notes further down say what the
         knock one actually turned out to be, what the ACL editor refuses to do, what the emoji
         list cannot reach, why the preview switch had to be a local one, and what the notices
         room cannot tell you until you have joined it.
+        <strong>Reordered on 23 August 2026</strong>, after two of these were measured against
+        the code rather than estimated: registration is cheaper than it looked and peeking is
+        dearer. Both notes are further down. The reordering held — signing up and resetting a
+        password, which went to the top of this list that morning, were both built by the end of
+        the day, and so was every slice of spaces, which stood above everything until it was
+        done. Threads stood above everything from 25 August 2026 and went in three slices on
+        26 August 2026 — chip, view, list — so the top of this list is inherited by the
+        runner-up.
       </p>
     </div>
     <div class="shortlist">
-      <ol>
-        <li>
-          <span class="pick-name">Peek a public room before joining</span>
-          <span class="pick-why">The preview dialog shows a name, a topic and a member count. <em>The timeline of a <code>world_readable</code> room is one call away</em>, and the decision to join stops being blind.</span>
-        </li>
-        <li>
-          <span class="pick-name">Invite by email</span>
-          <span class="pick-why">The invite page takes Matrix user IDs and nothing else. <em>Nobody can be invited who has not signed up yet</em>, which is the moment onboarding usually fails.</span>
-        </li>
-        <li>
-          <span class="pick-name">Spaces</span>
-          <span class="pick-why">The large one worth paying for, and now the blocker on two other rows. Spaces are recognised, then hidden — <em>anyone organised around spaces cannot use this client</em>.</span>
-        </li>
-      </ol>
+      <p class="sec-sub"><strong>Empty since 26 August 2026.</strong> Invite by email was the last row standing, and round 7 built it: an identity-server module (resolution, registration, terms), a card on the invite subpage when the search text is an email address, and a settings row for the account’s identity-server preference. What remains on this page is remains by decision — low value, or waiting on infrastructure no homeserver has.</p>
     </div>
   </section>
 
   <section>
     <div class="sec-head">
-      <h2>Absent <span class="tick gone">10 modules</span></h2>
+      <h2>Absent <span class="tick gone">1 module</span></h2>
       <p class="sec-sub">Nothing in the tree reads, writes or renders these.</p>
     </div>
     <div class="tscroll">
@@ -570,69 +610,6 @@
         </thead>
         <tbody>
           <tr>
-            <td><span class="feat">Threads</span></td>
-            <td class="mod">Threading</td>
-            <td class="state">No thread anywhere. Threaded messages land in the main timeline as ordinary events; a reply into a thread is sent as a plain rich reply. Needs a thread list, a thread view, per-thread receipts and composer routing.</td>
-            <td><div class="meter"><span class="meter-label">XL</span><div class="bars eff"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">High</span><div class="bars val"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Spaces</span></td>
-            <td class="mod">Spaces</td>
-            <td class="state"><code>RoomCategory::Space</code> exists and maps to no sidebar section, so spaces are silently hidden. The hierarchy endpoint is called only to fill in a room preview and to walk image-pack inheritance. No space tree, no adding rooms to a space.</td>
-            <td><div class="meter"><span class="meter-label">L</span><div class="bars eff"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">High</span><div class="bars val"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Invite by email</span></td>
-            <td class="mod">Third-party invites</td>
-            <td class="state">The invite subpage takes Matrix user IDs only. No identity-server flow, so nobody can be invited who hasn't got an account yet — a real gap when onboarding people.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Medium</span><div class="bars val"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Account registration</span></td>
-            <td class="mod">Client-Server API</td>
-            <td class="state">Login handles password, SSO and the in-browser OAuth flow. There is no sign-up path and no password reset: a new user has to create the account elsewhere first.</td>
-            <td><div class="meter"><span class="meter-label">L</span><div class="bars eff"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Medium</span><div class="bars val"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Email and phone on the account</span></td>
-            <td class="mod">Client-Server API</td>
-            <td class="state">Account settings shows the user ID, display name, avatar and homeserver. Third-party identifiers can't be added, seen or removed — the page defers to "Manage Account" in a browser.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Moderation policy lists</span></td>
-            <td class="mod">Moderation policy lists</td>
-            <td class="state">No subscribing to a ban list, no authoring one. <code>m.policy.rule.*</code> events are never parsed. Ignoring users is per-account and manual, one user at a time.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Presence</span></td>
-            <td class="mod">Presence</td>
-            <td class="state">Not read, not published, not shown. No online dot, no last-active, no status message. Most homeservers keep it switched off anyway.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Mutual rooms</span></td>
-            <td class="mod">Mutual Rooms</td>
-            <td class="state">The user profile dialog doesn't offer "rooms in common". <code>GET /_matrix/client/v1/mutual_rooms</code> is never called.</td>
-            <td><div class="meter"><span class="meter-label">S</span><div class="bars eff"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
-            <td><span class="feat">Policy servers</span></td>
-            <td class="mod">Policy Servers</td>
-            <td class="state">The <code>m.room.policy</code> state event isn't read or settable, and spam-checked events aren't distinguished in the timeline.</td>
-            <td><div class="meter"><span class="meter-label">S</span><div class="bars eff"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
             <td><span class="feat">OpenID</span></td>
             <td class="mod">OpenID</td>
             <td class="state">No OpenID token request. Only matters for proving your identity to an integration manager or a widget, and Commune hosts neither.</td>
@@ -646,13 +623,22 @@
 
   <section>
     <div class="sec-head">
-      <h2>Partial or off-spec <span class="tick part">4 modules</span></h2>
+      <h2>Partial or off-spec <span class="tick part">5 modules</span></h2>
       <p class="sec-sub">
-        Something is there, but it is narrower than the spec says. Every one of these is a
-        gap in coverage rather than a choice: the last deliberate departure, image packs
-        writing unstable names, was closed on 22 August 2026. Two of them are waiting on the
-        same thing — a way to pick a space. Voice over IP was the fifth of these until
-        23 August 2026, and the row it left behind is now a note further down.
+        Something is there, but it is narrower than the spec says. Two are gaps in coverage;
+        the account's identifiers are narrower by decision, since adding a phone
+        number takes SMS infrastructure almost no homeserver runs; policy servers arrived
+        here from the absent column on 26 August 2026 — the timeline says what
+        <code>m.room.policy</code> means, and setting it is what remains — and moderation
+        policy lists followed the same day, their rules read and said, with client-side
+        enforcement left to server-side tooling by decision. The last deliberate
+        departure before it, image packs
+        writing unstable names, was closed on 22 August 2026. Spaces passed through this column
+        and out of it in August 2026; threads passed through it in a single day, arriving from
+        the absent side on 26 August 2026 with its first slice and leaving with its third.
+        Voice over IP left this column on 23 August 2026 and
+        the row it left behind is now a note further down; account registration passed through it
+        the same day, halved into a password reset and then closed by it.
       </p>
     </div>
     <div class="tscroll">
@@ -668,23 +654,60 @@
         </thead>
         <tbody>
           <tr>
-            <td><span class="feat">Restricted join rule</span></td>
-            <td class="mod">Restricting room membership</td>
-            <td class="state">A room restricted to a space can now be edited: the rule is shown as a choice, and knocking can be turned on or off over it, carrying the allow list across. What is still missing is authoring one — a restriction needs a room to point at, and picking one needs a space picker, which is the Spaces row. So a restriction can be kept and never created.</td>
+            <td><span class="feat">Saying what the SDK already knew</span></td>
+            <td class="mod">End-to-End Encryption<br>Knocking</td>
+            <td class="state">Round 8, three answers the SDK computed on every item and nothing repeated. Every message of an encrypted room now carries its trust verdict — a red shield and a sentence for an unverified or mismatched sender, an unsigned or unknown device, or a message sent in the clear; a grey one for a caveat; nothing for the ordinary case, which is what keeps the others readable. An undecryptable message names its cause instead of promising a retry it cannot keep: sent before the account joined, withheld by the sender (with or without this device’s verification being the reason), history gated on key backup being on or on this session being verified — only the unknown cause still says the keys may arrive. A message that failed to send offers <em>Try Sending Again</em> over the send queue’s own unwedge, beside the Discard that always existed. And the pending-knocks banner counts only requests not yet reviewed on this device — viewing them marks them seen, in the SDK’s local store by its contract.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen; the shield checks need a second account with an unverified session.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Inviting somebody by email</span></td>
+            <td class="mod">Third-party invites<br>Identity Service API</td>
+            <td class="state">The invite subpage offers "Invite {address} by email" the moment the search text is an address. Behind it, a module of the session talks to an identity server the way the two specifications lay out: the server is resolved from the <code>m.identity_server</code> account data — whose explicit null is honored as "none, and stop asking" — or the <code>.well-known</code> of the account’s server name, and must answer the status endpoint before it is believed; registration exchanges the homeserver’s OpenID token for the identity server’s own; the terms of service are fetched, filtered against <code>m.accepted_terms</code>, presented in the interface’s language with links to the documents, and recorded back on acceptance. The invitation itself is <code>POST /invite</code> with the 3PID block, which the SDK carries. A settings row edits the whole tri-state of the preference, validating a named server before writing it.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen; the terms flow needs an identity server that has terms, which vector.im does.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Recording a voice message</span></td>
+            <td class="mod">MSC3245</td>
+            <td class="state">The sending half of the one proposal admitted past the fork’s no-MSC stance, playback having shipped from the start. A microphone button in the toolbar records through GStreamer — Opus in Ogg, the encoding every peer’s voice implementation reads — and the finished take is analyzed by the same code the attachment dialog uses, so the duration and the 30–120-sample normalized waveform the proposal asks for are measured from what was actually recorded. The SDK writes the wire format, both the stable-intended and unstable field names. A recording is dropped, never sent, when the room, the thread or the permission changes under it; a machine without a microphone gets a toast, not a broken page.</td>
+            <td><span class="chip out">Outside</span><span class="chip-note">An MSC, not yet a module — graded here because every maintained peer ships it. Recording needs a real capture device, which a remote desktop has not got: unwatched.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Rooms in common with a user</span></td>
+            <td class="mod">Mutual Rooms</td>
+            <td class="state">A Shared Rooms section on the profile page, drawn from <code>GET /_matrix/client/v1/mutual_rooms</code> — stable since v1.19 but absent from the pinned ruma, whose request macros refuse to expand outside their own tree, so the request is spelled out over the SDK’s own HTTP client. The unstable MSC2666 path is the fallback on a 404, for a homeserver that has not caught up; a server answering neither gets no section at all, since the endpoint’s absence should look like nothing rather than an error. The section never asks about the account’s own user, which the spec makes an error, and only draws rooms the local store can resolve.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">No client on the comparison page offers this. Nothing here has been watched on screen.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Saying what m.room.policy means</span></td>
+            <td class="mod">Policy Servers</td>
+            <td class="state">The state event joined the timeline’s allow-list and reads as a sentence: who made which server check the room’s messages, and when the checking stopped — an act of moderation worth saying, like the ACL and join-rule changes beside it. The plan’s original scope, “mark spam-checked events”, was cut for the best reason: the spec has no such thing. Clients never talk to the policy server; flagged events are redacted or rejected between homeservers before a client sees them. Setting the event is not offered yet, which is what keeps the module in the partial column above.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Email and phone on the account</span></td>
+            <td class="mod">Client-Server API</td>
+            <td class="state">Since 26 August 2026, a subpage off the account settings lists every identifier on the account; an email address can be added — the request-token flow, then <code>/account/3pid/add</code> through the UIAA dialog — and any identifier can be removed behind a confirmation that says what is lost. What keeps the row here: a phone number can only be seen and removed, never added, because validating one takes a text message and the infrastructure to send one is not something a client can assume — a stance, not a backlog. On a homeserver whose account management is in the browser (matrix.org included) the whole page defers there, which is the spec's own delegation.</td>
+            <td><div class="meter"><span class="meter-label">S</span><div class="bars eff"><i class="on"></i><i></i><i></i><i></i></div></div></td>
+            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Policy servers</span></td>
+            <td class="mod">Policy Servers</td>
+            <td class="state">Since 26 August 2026 the timeline reads <code>m.room.policy</code> and says it plainly: who made which server check the room's messages, and when the checking stopped. That is most of the client role — the spec is explicit that clients never talk to the policy server itself, and events it flags are dealt with between homeservers before a client sees them. What keeps the row here: setting the event is not offered, so appointing a policy server still takes another client. A moderation control for a later round.</td>
+            <td><div class="meter"><span class="meter-label">S</span><div class="bars eff"><i class="on"></i><i></i><i></i><i></i></div></div></td>
+            <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Moderation policy lists</span></td>
+            <td class="mod">Moderation policy lists</td>
+            <td class="state">Since 26 August 2026 the <code>m.policy.rule.*</code> events are read and said: a policy room’s timeline renders each rule as a sentence — who recommended banning the users, rooms or servers matching which entity, and why; a withdrawn rule reads as the removal. What keeps the row here, by decision: subscribing to a list and applying it client-side is a moderation action with teeth that the field does through server-side tooling, and authoring rules is the same story — a client owes its user legibility, not half an enforcement engine.</td>
             <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
             <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
           </tr>
           <tr>
-            <td><span class="feat">Room previews</span></td>
-            <td class="mod">Room Previews</td>
-            <td class="state">The preview dialog gets name, topic and member count from the summary and hierarchy endpoints. It never peeks the timeline of a <code>world_readable</code> room, so you decide whether to join without reading a word of what's in there.</td>
-            <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-            <td><div class="meter"><span class="meter-label">Medium</span><div class="bars val"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
-          </tr>
-          <tr>
             <td><span class="feat">Room tagging</span></td>
             <td class="mod">Room Tagging</td>
-            <td class="state">Tags are hard-wired to <code>m.favourite</code> and <code>m.lowpriority</code> as a three-way category. Arbitrary user tags aren't supported and the <code>order</code> field is neither read nor written, so manual ordering is lost across clients.</td>
+            <td class="state">Tags are hard-wired to <code>m.favourite</code> and <code>m.lowpriority</code> as a three-way category. Since 26 August 2026 the <code>order</code> field is read — the favorites keep the manual order another client gave them, ordered rooms first and the rest by activity — but not written, since nothing here offers reordering yet. Arbitrary user tags stay unsupported: a <code>u.*</code> tag wants a sidebar section of its own, and the sidebar’s sections are a fixed enum — a rework, not a tack-on.</td>
             <td><div class="meter"><span class="meter-label">M</span><div class="bars eff"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></td>
             <td><div class="meter"><span class="meter-label">Low</span><div class="bars val"><i class="on"></i><i></i><i></i><i></i></div></div></td>
           </tr>
@@ -702,14 +725,16 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">13 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">31 touch the protocol</span></h2>
       <p class="sec-sub">
-169 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
+285 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
-        rebrand, which the spec has no opinion about. Thirteen additions do touch the protocol,
+        rebrand, which the spec has no opinion about. The additions below do touch the protocol,
         and this is how each of them sits against it. Since 22 August none of them is off spec:
-        the eleven that a module covers follow it, and the other two are in space the standard
-        leaves empty.
+        those a module covers follow it, and the rest are in space the standard
+        leaves empty. Two of them — the server access list and the quick reactions — were closed
+        on 22 August and left out of this table until 23 August; the notes further down had them
+        all along, which is how they went unmissed and uncounted at the same time.
       </p>
       <div class="legend">
         <div><span class="chip on">On spec</span> follows the module as written</div>
@@ -728,6 +753,72 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><span class="feat">Email and phone on the account</span></td>
+            <td class="mod">Client-Server API</td>
+            <td class="state">A subpage off the account settings lists the identifiers from <code>GET /account/3pid</code>. An email address is added the way the standard lays it out: <code>requestToken</code> with a generated client secret, the link in the email, then <code>/account/3pid/add</code> through the UIAA dialog — pressing continue before opening the link is answered as a "not yet", not a failure, and asking again for the same address bumps <code>send_attempt</code> so the homeserver resends rather than starting over. Removal is <code>/account/3pid/delete</code> behind a confirmation naming what is lost. The <code>m.3pid_changes</code> capability gates the affordances; a homeserver that forbids changes still gets the list. Identity-server binding is untouched — the identifiers are only between the account and its homeserver.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Only reachable on a password-auth homeserver; matrix.org manages this in the browser.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">The predefined notification rules</span></td>
+            <td class="mod">Push Notifications</td>
+            <td class="state">Upstream carried the account and session switches, the global defaults, keyword rules and per-room modes; what it never exposed were the predefined rules that apply across every room. Four switches on the notifications page now toggle them: mentions of you (<code>.m.rule.is_user_mention</code>), messages addressing the whole room (<code>.m.rule.is_room_mention</code>), room invites (<code>.m.rule.invite_for_me</code>) and incoming calls (<code>.m.rule.call</code>). The two mention rules are set through the SDK, which keeps their deprecated Matrix&nbsp;1.6 predecessors in step so older clients read the same answer. Raw rule editing — custom conditions, tweak actions, sounds — is offered nowhere in the field as UI and not here either.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Threads</span></td>
+            <td class="mod">Threading</td>
+            <td class="state">The whole module, in three slices on 26 August 2026. A thread root carries an "N replies" chip drawn from the server's bundled <code>m.thread</code> aggregation and kept current by the event cache. The chip — or <em>View Thread</em> in the context menu — swaps the room history's displayed timeline for a <code>TimelineFocus::Thread</code> one, the way a focused timeline already swapped in and out, so every row is the real one and reactions, edits and context menus work unchanged; a banner names the state and offers the way back. The composer is pointed at the displayed timeline while it is a thread, and the SDK attaches the <code>m.thread</code> relation to whatever is sent. Read receipts travel through the displayed timeline too, so the SDK stamps them with the thread; the room's fully-read marker is never moved from a thread, because a thread event may sit far back in room order. Drafts are per-thread and server-side, under the thread root's own key. With somewhere to read them, threaded replies are hidden from the live timeline — <code>hide_threaded_events</code>, the flag the SDK reserves for exactly this moment. And the threads button lists every thread of the room off <code>GET /rooms/{id}/threads</code>, most recent activity first, paginated, each row updated in place as thread events arrive. Thread subscriptions (MSC4306) are out — off spec.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">The spaces somebody is already in</span></td>
+            <td class="mod">Spaces</td>
+            <td class="state">Upstream produces <code>RoomCategory::Space</code> and then discards it: the category maps to no sidebar section, so a joined space is never drawn; selecting one anyway falls through to the room history and draws a live timeline for a room that has no messages; and the public directory is queried with <code>room_types: [Default]</code>, which asks for everything <em>except</em> spaces. A space now has its own sidebar section and a page of its own, and the directory lists and labels them. It can be left, which is the only membership change that applies to it — none of the room tags do — so the Spaces section takes no drops and a space can be dropped only on Historical. <strong>The second slice, the same day</strong>, gave that page the rooms inside: <code>GET /rooms/{id}/hierarchy</code> at <code>max_depth: 1</code>, the space's own chunk skipped but read first for the <code>via</code> servers its <code>m.space.child</code> events carry, and each child drawn with the row the public directory already used — <em>View</em> if it has been joined, <em>Join</em> if not, <em>Request an Invite</em> if it only takes knocks. A subspace is a row that opens its own page; there is no tree widget, so there is no deeper nesting. What is still absent is the writing half: nothing writes <code>m.space.child</code>, so no room can be put into a space from here, which is why the module stays in the partial column.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen beyond the section appearing.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Reading a room without joining it</span></td>
+            <td class="mod">Room Previews<br>Room History Visibility</td>
+            <td class="state">A room whose <code>m.room.history_visibility</code> is <code>world_readable</code> says anybody may read it, and until 24 August 2026 nothing here took it up: the preview dialog showed a name, a topic and a member count, and you decided whether to join without reading a word. The last twenty messages are now fetched with <code>GET /rooms/{roomId}/messages</code> sent raw, since every timeline in this client is built from an SDK room and there is no SDK room for a room nobody has joined. Not the endpoints the peeking section is named after: <code>/initialSync</code> is deprecated and <code>/events</code> is for watching rather than reading, while <code>/messages</code> is what Synapse actually answers for a non-member. Senders are named from the <code>state</code> block that <code>lazy_load_members</code> fills, and a display name two people share is dropped for both, as the spec requires — in a room whose member list cannot be read, the user ID is what tells them apart. Offered only for a room that is not encrypted and not already joined. <strong>Nothing on the preview fetches media</strong>: no avatars, no images, plain text only, because the safety setting that exists for exactly this worry takes a <code>Room</code> and there is none.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Usually answers with an error: Synapse will not peek a room it does not already have.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Choosing a space, and restricting a room to one</span></td>
+            <td class="mod">Spaces<br>Restricting room membership</td>
+            <td class="state">A restricted join rule points at a space, and until 24 August 2026 this client could keep one and never make one: the choice was hidden unless the room was already restricted, because building an allow list means picking a space and nothing here could ask which. <code>SpacePickerDialog</code> asks — the session's room list filtered to <code>RoomCategory::Space</code> by the sidebar's own <code>RoomCategoryFilter</code>, with the room being edited left out, since a room restricted to itself admits nobody new. The choice is now offered to any room whose version carries the rule, which is version 8 and up, and knocking over it is gated separately on version 10, where <code>knock_restricted</code> arrived. <strong>An allow list of several spaces is carried over whole</strong> when only the knock switch moves — dropping one would quietly lock people out — and replaced entirely when a space is picked, which the ledger records rather than the interface pretending otherwise. The computation returns no rule at all for the membership choice with nothing chosen, rather than falling back to a rule the person did not pick.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Putting a room into a space</span></td>
+            <td class="mod">Spaces</td>
+            <td class="state">Nothing in this tree wrote <code>m.space.child</code> or <code>m.space.parent</code> before 24 August 2026, so a space could be read and never built. Both are written now, and they are not treated as equals: the child, in the space, is what <code>/hierarchy</code> is built from and what decides whether the space contains the room, so it is allowed to fail loudly; the parent, in the room, needs power <em>in the room</em> rather than in the space — a different permission and often a different person — so a failure there is logged and the operation still succeeds. <code>canonical</code> is left false on the parent, because it claims to be the room's main space and nothing here knows whether the room already has one. The two <code>via</code> lists are not interchangeable and are not shared: the child's names servers that reach the room, the parent's names servers that reach the space, both from the SDK's <code>route()</code>, which already drops what a room's ACL excludes. The picker only offers spaces this account may write state in, which is a different question from the one the join rule editor asks.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Only joined spaces can be listed — the protocol allows no more.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Making a space, and taking a room out of one</span></td>
+            <td class="mod">Spaces</td>
+            <td class="state">The rest of the module, the same day. <strong>Making one</strong> is <code>creation_content: {"type": "m.space"}</code> and two things the specification does not ask for: the encryption switch is hidden, because a space has no timeline anybody reads and encrypting it would only stop its name reaching the people it is for; and <code>events_default</code> is raised to 100 with <code>m.space.child</code>, name, topic and avatar at 50, because a room where nobody raised the bar is a room anybody can post to, and a space's timeline is never drawn. <strong>Taking a room out</strong> writes <code>m.space.child</code> with nothing in it — Matrix has no way to delete a state event, and a child with no <code>via</code> is not a child. <strong>Asking which spaces hold a room</strong> follows the specification's own asymmetry: a space naming a room as its child settles it, while a room naming a space as its parent counts only when whoever wrote the claim could also have written the child event in that space, checked against that space's power levels — otherwise any room could announce itself as part of anywhere. Only joined spaces can answer at all, since the state of a space nobody here is in is not ours to read. <code>suggested</code> is read and drawn, and <code>order</code> is applied here rather than left to the server: the <code>rooms</code> array comes back sorted, but <code>children_state</code> is a set, so the children of each space are sorted by <code>order</code>, then the time the event was sent, then the room ID — the algorithm the specification gives. A subspace opens in place, as deep as the space goes, with no request per level: <code>/hierarchy</code> is asked without <code>max_depth</code>, so one walk carries the whole tree. Each row remembers the spaces walked through to reach it, because a hierarchy is a graph and nothing forbids a loop.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Creating an account, and getting back into one</span></td>
+            <td class="mod">Client-Server API<br>OAuth 2.0 API</td>
+            <td class="state">Upstream ships a hidden <em>Create Account</em> button wired to an action that exists nowhere. Both halves of the standard are answered now. On a native homeserver: <code>POST /register</code> driven through the user-interactive authentication dialog, so <code>m.login.dummy</code> passes without asking anything, a registration token and a set of policy documents to agree to are drawn as pages of their own, a captcha or an emailed token goes to <code>GET /auth/{type}/fallback/web</code> — the spec's own page, not an invented UI — and <code>GET /register/available</code> is asked as the username is typed, advisory only, since the endpoint is rate-limited and optional. On an OAuth 2.0 homeserver: the same in-browser flow logging in uses, with OpenID Connect's <code>prompt=create</code>, refused up front unless the server lists <code>create</code> in <code>prompt_values_supported</code>. Resetting a forgotten password is the same row's other half: <code>POST /account/password/email/requestToken</code> and then <code>POST /account/password</code> with <code>m.login.email.identity</code>, tied together by one <code>client_secret</code>, both unauthenticated because the point is that the person cannot log in. Until the emailed link is opened the second call answers 401 with a UIAA body, which is a "not yet" and is said as one rather than as a failure.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Nothing here has been watched on screen yet.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Pinned messages in every room</span></td>
+            <td class="mod">Pinned Events</td>
+            <td class="state">Upstream reads <code>m.room.pinned_events</code> in one place — the server notices room, to find which notice is still active — and offers nothing anywhere else. Any message can now be pinned and unpinned from its context menu, subject to the power level the state event needs, and the list of them is a <code>PinnedEvents</code>-focused timeline rather than a hand-rolled list, so it decrypts, follows edits and redactions and resolves senders like any other. The notices room keeps the separate UI the Server Notices module asks for and never appears in the ordinary list. A change to the event is a sentence in the timeline now — who pinned, unpinned or reordered — where before it drew nothing.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">The pinned focus cannot be paginated; the SDK refuses it.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Who is around, and whether you say so</span></td>
+            <td class="mod">Presence</td>
+            <td class="state">A badge on the avatar in the member list, on a profile and on a direct chat's sidebar row, and the status message on the profile. Read from the top-level <code>presence</code> field of <code>/sync</code>, and from the state store for anybody who has not moved since this client started — sync only sends presence when it changes. A server that publishes nothing draws nothing, which is not the same as offline and is kept apart in the model. The publishing half was never optional: <code>set_presence</code> is a query parameter on <code>/sync</code> that marks the client online when it is omitted, so every sync this fork has ever made has published presence. The switch in Privacy is therefore an off switch, and it defaults to on because that is what the client has always done.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note"><code>last_active_ago</code> is read and not drawn.</span></td>
+          </tr>
           <tr>
             <td><span class="feat">One-to-one voice and video calls</span></td>
             <td class="mod">Voice over IP</td>
@@ -751,6 +842,18 @@
             <td class="mod">Server Notices</td>
             <td class="state">The room is now found by its <code>m.server_notice</code> tag rather than ignored, and sits in a section of its own above every ordinary room. The notices that are still <em>active</em> — the pinned ones — raise a banner over the timeline, which is the module's "special UI, and not the normal pinned events interface". The half that matters most is the one that removes something: an <code>m.server_notice</code> msgtype outside that room is now dropped by the timeline filter, as the spec requires, so an ordinary user can no longer put an official-looking warning in a room.</td>
             <td><span class="chip on">On spec</span><span class="chip-note">The invite carries no tag; nothing to be done about that.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Editing which servers can take part</span></td>
+            <td class="mod">Server ACLs</td>
+            <td class="state">Upstream exposed exactly one thing about <code>m.room.server_acl</code>: the power level needed to send one. The event itself was invisible and unreachable. A subpage under room details now shows and edits the allow list, the deny list and <code>allow_ip_literals</code>, and sends them as one event, because one event is what an ACL is — the draft is checked whole before it goes out, since a half-saved ACL would be a live one. The spec's trap is guarded: an empty allow list denies every server, including the one that would have to send the fix, so it cannot be saved. Since 23 August the event also draws a sentence in the timeline, which it never had — <code>show_in_timeline</code>'s state allow-list dropped it, so the editor had been writing an event nobody could see.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">No other client in the field offers an editor for it.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">The quick reactions</span></td>
+            <td class="mod">Recently used emoji</td>
+            <td class="state">The seven buttons in a message's context menu were a constant in the widget. They come from the <code>m.recent_emoji</code> global account data event now, so the list is the one every other client on the account is already keeping, and ruma owns the bookkeeping — incrementing, the recommended truncation at 100, and the two orderings. Sorted by use count rather than recency, so a button does not move out from under somebody who has just learned where it is; a fresh account still looks exactly like the old build, because the old defaults are the tail of the list rather than the whole of it.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">GTK's own emoji chooser keeps its recents in GSettings, out of reach.</span></td>
           </tr>
           <tr>
             <td><span class="feat">Link previews</span></td>
@@ -810,7 +913,7 @@
       </table>
     </div>
     <p class="sec-sub">
-      The rest of the 107 commits stay clear of the protocol: the macOS port — its own
+      The rest of the 285 commits stay clear of the protocol: the macOS port — its own
       <code style="font-family:var(--f-mono);font-size:0.875em">GtkMediaStream</code> for audio and
       video, an image-decoder API with a pure-Rust backend, Keychain storage, the menu bar, the
       bundle, icons and fonts — plus the rebrand to Commune, the media history viewer's age
@@ -821,9 +924,48 @@
 
   <section>
     <div class="sec-head">
-      <h2>Three corrections, five things now closed, a departure, and two that are not what they look like</h2>
+      <h2>Five corrections, seven things now closed, a departure, and two that are not what they look like</h2>
     </div>
     <div class="notes">
+      <div class="note closed">
+        <h3>Closed: a pinned message, in a module this page had missed</h3>
+        <p>
+          Pinned Events appeared in neither column of this page until 23 August 2026 — not
+          absent, not implemented, simply uncounted — while <code>m.room.pinned_events</code> was
+          being read the whole time, in the one room where the spec asks for a different
+          interface entirely. That is the census error worth naming: a module can be half-built
+          by accident and go unmeasured because the half that exists belongs to another module's
+          requirements.
+        </p>
+        <p>
+          The two readers are siblings now and neither is a generalisation of the other. The
+          notices room collapses its pinned events to one banner, because the module says active
+          notices must be shown "through a special UI, and not the normal pinned events
+          interface"; every other room gets the ordinary list, and the notices room is hard-coded
+          out of it. Merging them would put a notice into the ordinary list, which is the one
+          thing the spec forbids here.
+        </p>
+      </div>
+      <div class="note closed">
+        <h3>Closed: presence, and the switch that turned out to be an off switch</h3>
+        <p>
+          The plan for this said the publishing half would go behind a setting defaulting to off,
+          on the grounds that it is a wasted request on a server with the module disabled. It is
+          not a request. <code>set_presence</code> is a query parameter on <code>/sync</code>, and
+          the spec says omitting it marks the client online — the SDK's sync presence starts at
+          <code>Online</code> and every sync carries it. So this fork, and upstream Fractal
+          before it, has published presence on every sync either has ever made. Defaulting the
+          switch off would have silently taken users offline for everybody watching them.
+        </p>
+        <p>
+          On the read side the interesting decision is that unknown is not offline. A server
+          running the module says <code>offline</code> out loud; a server without it says nothing,
+          and the two are different facts. They are drawn the same — no badge — because asking a
+          person to tell those apart from a dot is asking them to diagnose a homeserver. The
+          distinction is kept in the model, where it is cheap, for a profile page that might one
+          day say it in words.
+        </p>
+      </div>
       <div class="note closed">
         <h3>Closed: the call module answers every event it defines</h3>
         <p>
@@ -893,6 +1035,69 @@
           two buttons and the fullscreen window were all exercised and behave — the ringback
           going the other way was exercised too, and removed.
           <code>doc/calls.md</code> carries the same list at the top, where it cannot be missed.
+        </p>
+      </div>
+      <div class="note closed">
+        <h3>Correction: a thread reply already carries the thread</h3>
+        <p>
+          An earlier version of this page said that a reply into a thread is sent as a plain
+          rich reply. That was true once and is not true against the SDK this client is pinned
+          to. <code>Timeline::send_reply</code> asks <code>infer_reply</code> what kind of reply
+          to build, and outside a thread-focused timeline it answers
+          <code>EnforceThread::MaybeThreaded</code> — which <em>forwards</em> a thread relation
+          the replied-to event already has rather than dropping it. Replying to a message that
+          lives in a thread puts the reply in that thread, today, with no code of ours involved.
+        </p>
+        <p>
+          The correction matters because it changes what kind of gap threading is. Nothing this
+          client sends is malformed and nothing another client sees is broken by it; the whole
+          of the difference is that this end cannot <em>see</em> a thread. When this was
+          written, threaded events sat inline in the main timeline looking like ordinary
+          messages, no thread could be listed, and none could be opened — all three gone on
+          26 August 2026, when the module went in whole. That was an argument for doing
+          threads carefully rather than
+          urgently — and it moves the row out of the "we are getting this wrong" column, where
+          this page had wrongly put it.
+        </p>
+        <p>
+          The effort estimate moved with it, from XL to L. The protocol half is already carried:
+          a thread-focused timeline, a thread list service with live updates and pagination, a
+          thread summary with its reply count and its own read receipts on every message, and a
+          flag on the live timeline for hiding threaded events once there is somewhere else to
+          read them. <strong>Threading is a stable module of the standard, not a proposal</strong>,
+          and what is left of it here is interface work.
+        </p>
+      </div>
+      <div class="note">
+        <h3>Correction: peeking is not the cheap one</h3>
+        <p>
+          This page listed peeking a <code>world_readable</code> room first under what to build
+          next, on the grounds that the timeline is "one call away". The call is one call away.
+          The timeline is not.
+        </p>
+        <p>
+          Every timeline in this client is built from a room object, and a room object is built
+          from an SDK room — which exists only for rooms sync knows about, meaning rooms already
+          joined, invited to, knocked on or left. A room nobody here has joined has no SDK room,
+          so it can have no timeline, no event objects and none of the message rows that render
+          them. Peeking cannot reuse the stack; it needs a second, smaller one: a model over raw
+          events straight off <code>/messages</code>, and a cut-down row to draw them. The SDK
+          offers no <code>peek</code> to shortcut any of that.
+        </p>
+        <p>
+          <strong>Built on 24 August 2026, and the correction held.</strong> It came to a model
+          over raw events, a row of its own and a page on the preview dialog — a second, smaller
+          stack, exactly as this said. The one thing the correction did not see coming: most
+          previews fail anyway, because Synapse will not peek a room it does not already have,
+          and that is the protocol rather than the code.
+        </p>
+        <p>
+          The Absent table had this right at <em>M</em> all along — it is the ranked list above
+          that oversold it, and the companion page's framing of it as a near miss that repeated
+          the mistake. It is still worth building. It is not the thing to reach for on an
+          afternoon, and it belongs next to browsing a space, because both are "look at a room
+          you are not in" and both hang off the same summary the client already fetches and
+          currently throws half of away.
         </p>
       </div>
       <div class="note closed">
@@ -1027,7 +1232,8 @@
           name, not who created it — and it is checked before <code>m.favourite</code> and
           <code>m.lowpriority</code>, because putting the room above every ordinary one is the
           whole point. Active notices are the pinned ones, so those raise a banner over the
-          timeline instead of going into a pinned events list the client does not have.
+          timeline instead of going into the ordinary pinned messages list — which this client
+          does have since 23 August 2026, and which that room is kept out of.
         </p>
         <p>
           The second: <em>"Events with a <code>m.server_notice</code> msgtype outside of the
@@ -1095,7 +1301,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Already conformant <span class="tick have">33 modules</span></h2>
+      <h2>Already conformant <span class="tick have">40 modules</span></h2>
       <p class="sec-sub">
         For context on where the effort has gone. Encryption in particular is complete: cross-signing,
         SAS and QR verification, recovery through secret storage, and key import/export.
@@ -1115,6 +1321,9 @@
       <span>End-to-End Encryption</span>
       <span>Secrets</span>
       <span>Room History Visibility</span>
+      <span>Room Previews</span>
+      <span>Restricting Room Membership</span>
+      <span>Spaces</span>
       <span>Push Notifications</span>
       <span>Guest Access (room side)</span>
       <span>Client Config</span>
@@ -1135,6 +1344,10 @@
       <span>Recently used emoji</span>
       <span>Server Notices</span>
       <span>Voice over IP</span>
+      <span>Pinned Events</span>
+      <span>Presence</span>
+      <span>Threads</span>
+      <span>Account registration and password reset</span>
     </div>
   </section>
 
@@ -1151,19 +1364,30 @@
 
   <footer>
     Checked against <code>main</code> at <code>66b0b570</code> and the work that has since landed
-    on top of it, up to <code>4eb53e53</code>, with nothing left uncommitted: message search
+    on top of it, up to <code>ca459461</code>, with nothing left uncommitted: message search
     landed, image packs moved onto the specified event names, reporting a
     room and a user added, the restricted join rule made editable, the server access list made
     visible and editable, the quick reactions taken from <code>m.recent_emoji</code>, link
     previews added against the stable endpoint only, the server notices room given a section, a
     banner and a filter, the Voice over IP module carried from nothing to every event it
-    defines — the last of them, <code>m.call.negotiate</code>, on 23 August — every local
+    defines — the last of them, <code>m.call.negotiate</code>, on 23 August — a message made
+    pinnable in every room and the Pinned Events module counted for the first time, presence read
+    and shown and its publishing given an off switch, an account made creatable from the greeter and
+    recoverable from an email, the spaces somebody is already in given a sidebar section and a
+    page that lists what is inside them instead of being hidden, a room that says anybody may
+    read it finally read without joining, a restricted join rule made creatable rather than only
+    preservable, a room put into a space for the first time and taken back out of one, a space made
+    rather than only found, a thread root given its reply count and then the thread behind it
+    opened, read, written in place and listed with every other thread of its room, the
+    predefined notification rules given their switches, the account's email addresses made
+    visible, addable and removable where the homeserver does not manage them in the browser,
+    every local
     branch merged, and no unreachable
     work left in the object store. Spec is the
     Client-Server API at <code>spec.matrix.org/v1.19</code>, and module names follow its own section
     headings. Effort estimates assume the pinned <code>matrix-sdk</code> already exposes the
-    endpoint, which holds for everything above except threads, where the SDK work is real
-    but the UI work dominates. The fork point is <code>1e5c1cab</code>, 18 August 2026.
+    endpoint, which holds for everything above. The fork point is <code>1e5c1cab</code>,
+    18 August 2026.
   </footer>
 
 </div>

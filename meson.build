@@ -1,6 +1,6 @@
 project(
     'commune',
-    version: '14.1',
+    version: '1.rc1',
     license: 'GPL-3.0-or-later',
     meson_version: '>= 1.4',
 )
@@ -32,8 +32,8 @@ i18n = import('i18n')
 base_id = 'io.github.steeb_k.Commune'
 application_id = base_id
 
-major_version = '14.1'
-pre_release_version = ''
+major_version = '1'
+pre_release_version = 'rc1'
 
 version = major_version
 if pre_release_version != ''
@@ -305,10 +305,7 @@ endif
 cargo_target_dir = meson.project_build_root() / 'cargo-target'
 cargo_home = meson.project_build_root() / 'cargo-home'
 
-cargo_env = [
-    'CARGO_HOME=' + cargo_home,
-    'CARGO_TARGET_DIR=' + cargo_target_dir,
-]
+cargo_env = ['CARGO_TARGET_DIR=' + cargo_target_dir]
 
 if is_android
     # Meson knows how to cross-compile and Cargo does not know that Meson is
@@ -369,7 +366,20 @@ if is_android
     ]
 endif
 
-if host_machine.system() == 'darwin'
+# Keeping the registry and the git checkouts inside the build directory makes a
+# build self-contained, which is worth having — but not at the cost of not
+# building at all. Windows still limits a path to 260 characters for anything
+# that has not opted out, and the libgit2 that cargo checks git dependencies out
+# with is one of those: `matrix-rust-sdk` has a test fixture whose name alone is
+# 96 characters, and rooting the checkout three directories deeper than the
+# default pushes it over. `core.longpaths` does not help, and neither does
+# `net.git-fetch-with-cli`, which changes how cargo fetches but not how it
+# checks out. So Windows uses the user's own `CARGO_HOME`.
+if host_machine.system() != 'windows'
+    cargo_env += 'CARGO_HOME=' + cargo_home
+endif
+
+if host_machine.system() == 'darwin' or host_machine.system() == 'windows'
     # Without these, `gettext-sys` compiles and statically links its own vendored
     # copy of libintl. Point it at the one in the prefix instead, so the binary
     # links the same libintl as everything else it loads.
@@ -383,6 +393,33 @@ if host_machine.system() == 'darwin'
             'No libintl.h in ' + gettext_prefix + ', gettext-rs will build its vendored copy',
         )
     endif
+endif
+
+if host_machine.system() == 'windows'
+    # The name a user reads in the Properties dialog and in Task Manager, and
+    # the icon Explorer, the taskbar and Alt-Tab draw. Windows keeps both inside
+    # the executable, so `build.rs` compiles them in and this is where it is
+    # told what to compile — the profile decides which of the two icons it is,
+    # and only Meson knows the profile.
+    if profile == 'Stable'
+        windows_app_name = 'Commune'
+        windows_appicon = 'assets/appicon.svg'
+    else
+        windows_app_name = 'Commune ' + profile
+        windows_appicon = 'assets/appicon-devel.svg'
+    endif
+
+    windows_icon = meson.project_build_root() / 'windows' / 'commune.ico'
+    run_command(
+        'bash',
+        meson.project_source_root() / 'build-aux' / 'windows' / 'make-ico.sh',
+        meson.project_source_root() / windows_appicon,
+        windows_icon,
+        check: true,
+    )
+
+    cargo_env += 'COMMUNE_WINDOWS_ICON=' + windows_icon
+    cargo_env += 'COMMUNE_WINDOWS_NAME=' + windows_app_name
 endif
 
 if profile == 'Devel'
@@ -474,10 +511,29 @@ if host_machine.system() == 'darwin'
     run_target('macos-tarball', command: macos_bundle_command + ['--tarball'])
 endif
 
+# Windows packaging. Same reasoning as the darwin block above: the folder is
+# assembled out of a staged `meson install` of whatever this build directory was
+# configured as, and `bundle.sh` names the result after the profile.
+if host_machine.system() == 'windows'
+    windows_bundle_command = [
+        'bash',
+        meson.project_source_root() / 'build-aux' / 'windows' / 'bundle.sh',
+        '--build-dir', meson.project_build_root(),
+        '--app-id', application_id,
+        '--app-name', 'Commune',
+        '--version', version,
+        '--profile', profile,
+        '--executable', meson.project_name(),
+    ]
+
+    run_target('windows-bundle', command: windows_bundle_command)
+    run_target('windows-zip', command: windows_bundle_command + ['--zip'])
+endif
+
 gnome.post_install(
     gtk_update_icon_cache: true,
     glib_compile_schemas: true,
-    # There is no desktop file to register on macOS, and no
+    # Only Linux installs a desktop file, and only Linux has an
     # update-desktop-database to register it with.
-    update_desktop_database: host_machine.system() != 'darwin',
+    update_desktop_database: host_machine.system() == 'linux',
 )

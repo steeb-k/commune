@@ -12,17 +12,23 @@ use tracing::error;
 mod change_password_subpage;
 mod deactivate_account_subpage;
 mod log_out_subpage;
+mod third_party_ids_subpage;
 
 pub use self::{
     change_password_subpage::ChangePasswordSubpage,
     deactivate_account_subpage::DeactivateAccountSubpage, log_out_subpage::LogOutSubpage,
+    third_party_ids_subpage::ThirdPartyIdsSubpage,
 };
 use super::AccountSettings;
 use crate::{
     Application,
     components::{ActionButton, ActionState, ButtonCountRow, CopyableRow, EditableAvatar},
+    gettext_f,
     prelude::*,
-    session::Session,
+    session::{
+        IdentityServerChoice, Session, identity_server_choice,
+        identity_server_choice_for_preference, set_identity_server_preference,
+    },
     spawn, spawn_tokio, toast,
     utils::{OngoingAsyncAction, TemplateCallbacks, klipy, media::FileInfo},
 };
@@ -51,6 +57,8 @@ mod imp {
         #[template_child]
         change_password_row: TemplateChild<adw::ButtonRow>,
         #[template_child]
+        third_party_ids_row: TemplateChild<adw::ButtonRow>,
+        #[template_child]
         manage_account_row: TemplateChild<adw::ButtonRow>,
         #[template_child]
         homeserver: TemplateChild<CopyableRow>,
@@ -65,7 +73,13 @@ mod imp {
         #[template_child]
         dark_mode_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
+        chat_bubbles_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
         url_previews_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        share_presence_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        identity_server_row: TemplateChild<adw::ActionRow>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: glib::WeakRef<Session>,
@@ -112,7 +126,17 @@ mod imp {
 
             Application::default()
                 .settings()
+                .bind("chat-bubbles-enabled", &*self.chat_bubbles_row, "active")
+                .build();
+
+            Application::default()
+                .settings()
                 .bind("url-previews-enabled", &*self.url_previews_row, "active")
+                .build();
+
+            Application::default()
+                .settings()
+                .bind("share-presence", &*self.share_presence_row, "active")
                 .build();
 
             // There is nothing to turn on when this build has no API key.
@@ -215,6 +239,119 @@ mod imp {
                     }
                 )
             );
+
+            spawn!(
+                glib::Priority::LOW,
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    async move {
+                        imp.update_identity_server_row().await;
+                    }
+                )
+            );
+        }
+
+        /// Say which identity server would be used, and on whose word.
+        async fn update_identity_server_row(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let choice = identity_server_choice(&session).await;
+            self.set_identity_server_subtitle(choice);
+        }
+
+        /// Write the identity server row's subtitle for the given choice.
+        fn set_identity_server_subtitle(&self, choice: IdentityServerChoice) {
+            let subtitle = match choice {
+                IdentityServerChoice::Account(base_url) => gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    "{server}, set on this account",
+                    &[("server", &base_url)],
+                ),
+                IdentityServerChoice::Declined => gettext("None, by choice on this account"),
+                IdentityServerChoice::Homeserver(base_url) => gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    "{server}, suggested by the homeserver",
+                    &[("server", &base_url)],
+                ),
+                IdentityServerChoice::None => gettext("None"),
+            };
+            self.identity_server_row.set_subtitle(&subtitle);
+        }
+
+        /// Ask which identity server to use.
+        #[template_callback]
+        async fn edit_identity_server(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let dialog = adw::AlertDialog::builder()
+                .heading(gettext("Identity Server"))
+                .body(gettext(
+                    "An identity server is only used to invite somebody by email address. Leave the field empty to use none at all.",
+                ))
+                .build();
+
+            let entry = gtk::Entry::builder()
+                .placeholder_text("https://…")
+                .activates_default(true)
+                .build();
+            if let IdentityServerChoice::Account(base_url) = identity_server_choice(&session).await
+            {
+                entry.set_text(&base_url);
+            }
+            dialog.set_extra_child(Some(&entry));
+
+            dialog.add_responses(&[
+                ("cancel", &gettext("Cancel")),
+                ("default", &gettext("Use the Homeserver’s")),
+                ("save", &gettext("Save")),
+            ]);
+            dialog.set_response_appearance("save", adw::ResponseAppearance::Suggested);
+            dialog.set_default_response(Some("save"));
+            dialog.set_close_response("cancel");
+
+            let preference = match dialog.choose_future(Some(&*self.obj())).await.as_str() {
+                "save" => {
+                    let text = entry.text();
+                    let text = text.trim();
+                    if text.is_empty() {
+                        // An empty field is a choice: no identity server.
+                        ruma::JsOption::Null
+                    } else {
+                        ruma::JsOption::Some(text.to_owned())
+                    }
+                }
+                "default" => ruma::JsOption::Undefined,
+                _ => return,
+            };
+
+            match set_identity_server_preference(&session, preference.clone()).await {
+                Ok(()) => {
+                    // The SDK's cached account data lags this write until the
+                    // next sync, so the row is told what was written instead
+                    // of asking the cache and reading yesterday's answer.
+                    let choice = identity_server_choice_for_preference(&session, preference).await;
+                    self.set_identity_server_subtitle(choice);
+                }
+                Err(crate::session::IdentityServerError::NoServer) => {
+                    toast!(
+                        self.obj(),
+                        gettext("That server does not answer as an identity server")
+                    );
+                }
+                Err(crate::session::IdentityServerError::Other) => {
+                    toast!(
+                        self.obj(),
+                        gettext("Could not save the identity server preference")
+                    );
+                }
+            }
         }
 
         /// Set the ancestor [`AccountSettings`].
@@ -294,6 +431,11 @@ mod imp {
                 .set_editable(capabilities_data.can_change_displayname);
             self.change_password_row
                 .set_visible(!has_account_management_url && capabilities_data.can_change_password);
+            // On a homeserver whose account management is in the browser, the
+            // identifiers are managed there — the same page the row below
+            // opens.
+            self.third_party_ids_row
+                .set_visible(!has_account_management_url);
             self.manage_account_row
                 .set_visible(has_account_management_url);
             self.deactivate_account_button

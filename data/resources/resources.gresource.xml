@@ -33,6 +33,7 @@
     <file preprocess="xml-stripblanks">icons/scalable/actions/settings-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/sticker-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/system-search-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/thread-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/user-add-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/apps/org.gnome.Fractal.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/audio-symbolic.svg</file>

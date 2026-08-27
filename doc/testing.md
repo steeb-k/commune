@@ -31,6 +31,9 @@ None of them is a thing to try on other people.
 ./testing/local-homeserver.sh notice   # send alice a server notice
 ./testing/local-homeserver.sh limit on # cross the MAU limit, so Synapse pins one
 ./testing/local-homeserver.sh limit off
+./testing/local-homeserver.sh signup token # make signing up ask for a token
+./testing/local-homeserver.sh signup open  # back to nothing to answer
+./testing/local-homeserver.sh signup off   # refuse registration altogether
 ./testing/local-homeserver.sh check    # confirm the server accepts what we send
 ./testing/local-homeserver.sh reports  # show every report that arrived
 ./testing/local-homeserver.sh down     # stop, keep the data
@@ -55,7 +58,11 @@ what fetches the page.
 
 | Room | Why |
 | --- | --- |
-| Test Space | the space the restricted rooms point at |
+| Test Space | the space the restricted rooms point at, and the one with rooms in it |
+| Sub Space | a space inside Test Space, which is where the one-level nesting limit shows |
+| Readable Room | `world_readable`, with a message in it, but **alice's own** — so the client offers her the room and not a preview |
+| Peekable Room | `world_readable` and **bob's**, with two messages — the case peeking is actually for |
+| Bobs Room | inside the space and **not** joined by alice, so its row offers to join rather than to view |
 | Restricted Room | `restricted` to the space — the case the join rule row is for |
 | Knock Restricted Room | the same with `knock_restricted`, so both switch positions are visible without changing anything first |
 | Invite Room | plain `invite`, for comparison, with a message in it to report |
@@ -66,13 +73,125 @@ what fetches the page.
 | Server Notices | created by the homeserver on `notice`, and tagged `m.server_notice` |
 | (a direct chat) | alice and bob, in `m.direct` on both sides — where the call buttons are |
 
-Three accounts: `alice` owns the rooms, `bob` is a second member to report and
-be reported, `admin` is a Synapse admin so reports can be read back.
+Four accounts. `alice` owns the rooms. `bob` is a second member to report and
+be reported, and is inside both spaces so that alice leaving one cannot destroy
+it — which means **he can never be invited to them**, and the invite subpage
+correctly refuses to offer somebody who is already a member. `carol` exists and
+has joined nothing, and is who the invite checks are for. `admin` is a Synapse
+admin so reports can be read back.
 
-The direct chat is made outside the `seeded.json` gate, so a homeserver that
-was seeded before it existed gets one on the next `up`. It is not needed for
+**Naming a space in a join rule is not the same as being in it.** Until
+24 August 2026 nothing wrote `m.space.child`, so Test Space existed and was
+empty, and the restricted rooms only referred to it. `seed_space_children()`
+now puts five rooms in it — Public Room and Restricted Room, which alice has
+joined, plus Sub Space, Readable Room and Bobs Room — which is the set a space
+browser has to draw: somewhere to view, somewhere to join, a subspace, and
+something readable without joining. `seed_peekable_room()` adds a sixth,
+Peekable Room, because **a room alice made is a room alice is in**: previewing
+one is pointless, so the only room that exercises peeking is one she has
+nothing to do with.
+
+The direct chat, the space's children and the peekable room are each made
+outside the `seeded.json` gate and behind a marker of their own, so a
+homeserver seeded before any of them existed gets them on the next `up`.
+
+### Two things about the directory that cost an evening
+
+**`preset: public_chat` does not publish a room.** It sets the join rule.
+Whether a room appears in the directory is `visibility`, a different field on
+the same request, defaulting to `private` — so every room here was joinable by
+alias and none was ever listed, and **Explore had nothing to show on this
+homeserver from the day the script was written**. That is not something the
+client can be tested for, and the checks that ask you to find a space in
+Explore were untestable as written.
+
+**Synapse refuses to publish anything unless a rule says otherwise.** With no
+`room_list_publication_rules`, `PUT /directory/list/room/{id}` answers
+`Not allowed to publish room` whoever asks. `ensure_publication_config` adds
+the rule and restarts, the way the TURN and server-notices repairs do.
+
+`seed_directory` publishes the six rooms that should be findable, and rejoins
+alice to everything she owns on the way past — the checks ask for rooms to be
+left, and the seed step only ever creates. It writes its marker only when
+every call succeeded, so a partial run is tried again rather than remembered
+as finished.
+
+### `verify` before a session
+
+```sh
+./testing/local-homeserver.sh verify
+```
+
+It reports and never repairs — `up` repairs. It checks every account can log
+in, every room has the join rule and the directory visibility the checks
+assume, that both spaces hold bob as well as alice, that carol is in no space,
+and that `Test Space` still holds its six rooms.
+
+It exists because the faults arrived one at a time in the middle of somebody
+else's testing session — rooms never published, a space with nobody left in it,
+no account free to be invited — each a minute to fix and an hour of patience.
+Run it first and they all arrive at once.
+
+**A room has to be published to be found, and finding it is half the point.**
+The first pass published the six rooms whose join rule was public and stopped
+there, which left out the two knock rooms and the restricted one. Those exist
+to be found and then knocked on, or refused — a knock room the directory will
+not admit to cannot be knocked on by anybody.
+
+### Leaving a room you are alone in destroys it
+
+There is no way back into a room whose last member has left: not by alias, not
+by ID, not through the admin API, because no server is in it to ask. The
+eyeball checks ask for spaces to be left, and `Sub Space` had one member, so
+the first run through them took it for good.
+
+Bob is seeded into both spaces now, which is what stops it. `repair_sub_space`
+handles a server that has already lost it: it notices the room cannot be
+joined, releases the alias — which still points at the room nobody is in —
+builds it again and puts it back inside `Test Space`. It is not needed for
 the call buttons — those go by the member count, so every room alice and bob
 share has them — but it is where anybody testing calls looks first.
+
+## What the hooks check, and what they cannot
+
+`hooks/checks-bin` is upstream's fifteen checks: formatting, spelling,
+dependencies, the two `POTFILES` lists, the blueprint resource list. It knows
+nothing about whether the code works.
+
+`hooks/doc-freshness` warns when a commit touches `src/` and no `doc/`, and
+when the HTML mastheads have fallen behind. It never blocks.
+
+`hooks/template-checks` is the fork's own, added on 24 August 2026 after the
+fourth bug in two days that none of the above could see. A `.blp` and the `.rs`
+that loads it are two halves of one class joined by nothing: the compiler sees
+the template as a string, and a disagreement lands at runtime, on the widget's
+first construction, as an abort or a panic. It looks for four:
+
+* a `=> $handler()` with no `#[template_callback] fn handler`;
+* a template with handlers whose `class_init` never calls
+  `Self::bind_template_callbacks` — either spelling;
+* a template using one of `TemplateCallbacks`' global closures whose
+  `class_init` never calls `TemplateCallbacks::bind_template_callbacks`;
+* a `#[template_child]` naming an object the template does not declare.
+
+The third of those is what stopped `ContentSpace` being drawn at all, and it
+passed clippy, the tests and all fifteen checks on the way in. The script was
+tested by putting each of the four faults back and confirming it says so.
+
+The `.blp` is paired with its `.rs` through the resource path each declares,
+rather than through the file name, because several templates are loaded by a
+file of another name. A `.blp` with no `template` block — a bare menu — is
+skipped.
+
+`doc/eyeball-page.py` turns `doc/eyeball-tests.md` into a run sheet with
+checkboxes, ordered newest first. The ledger is the source and the page only
+draws it, so a result is not recorded until it is struck in the markdown. The
+page keeps its marks in the browser it was ticked in; it can hand back a report
+and the screenshots attached to failures, and nothing else leaves that browser.
+
+**It still cannot tell you a widget looks right.** It answers "will this
+construct", not "is this correct", and the eyeball ledger is still the only
+answer to the second.
 
 ## `check` versus the app
 
@@ -113,6 +232,30 @@ unpins the notice the next time it looks at the account, so the banner goes a
 beat later rather than at once.
 
 See `server-notices.md` for what the client does with all of it.
+
+## `signup`, and the stages a new account has to pass
+
+`up` leaves registration open and unverified, which is the friendliest thing for
+the rest of the harness and the least interesting thing for testing sign-up: the
+only stage Synapse asks for is `m.login.dummy`, and the authentication dialog
+answers that without drawing anything at all. The whole of what Commune shows
+during registration is therefore invisible on a server in that state.
+
+`signup token` turns on `registration_requires_token` and mints a token through
+the admin API, printing it — good for three accounts, because getting a token
+wrong is one of the things worth watching. That is the stage Commune draws
+itself, and the only way to see it without a public homeserver.
+
+`signup off` refuses registration. Synapse answers `POST /register` with
+`M_FORBIDDEN`, which everywhere else in this app means bad credentials and here
+means the door is shut; the register page says so in its own words, and that
+sentence is what this mode is for.
+
+The terms stage, `m.login.terms`, is deliberately absent. Synapse only asks for
+it when `user_consent` is configured with template files it renders itself,
+which is more homeserver configuration than anything else here needs. Commune
+draws that stage — a check button per policy document, with a link to each — and
+it has never been seen against a real server. `registration.md` says so too.
 
 ## `reports`
 

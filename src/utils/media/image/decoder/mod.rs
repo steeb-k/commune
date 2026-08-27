@@ -18,8 +18,10 @@
 //!   the one case the UI distinguishes.
 //!
 //! The backends are not identical in what they can decode. glycin handles SVG,
-//! HEIC, AVIF and JXL; the `image` backend does not. See
-//! [`image_rs`](self::image_rs) for the current list.
+//! HEIC, AVIF and JXL natively; the `image` backend covers the common raster
+//! formats itself and hands the rest to `GdkPixbuf`, so its reach depends on
+//! which loaders the platform ships. See [`image_rs`](self::image_rs) for the
+//! current list.
 //!
 //! [glycin]: https://gitlab.gnome.org/GNOME/glycin
 

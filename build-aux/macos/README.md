@@ -36,7 +36,7 @@ the last two then wrap it.
 Or directly, which is the same thing with the values spelled out:
 
 ```sh
-build-aux/macos/bundle.sh --build-dir _build --profile Stable --version 14.1 \
+build-aux/macos/bundle.sh --build-dir _build --profile Stable --version 1.rc1 \
     --app-id io.github.steeb_k.Commune --tarball
 ```
 

@@ -10,7 +10,7 @@ use matrix_sdk::{
 };
 use ruma::{
     OwnedRoomId, RoomId,
-    push::{PredefinedOverrideRuleId, RuleKind},
+    push::{PredefinedOverrideRuleId, PredefinedUnderrideRuleId, RuleKind},
 };
 use tokio::task::AbortHandle;
 use tokio_stream::wrappers::BroadcastStream;
@@ -53,6 +53,50 @@ impl NotificationsGlobalSetting {
             "direct-and-mentions" => Self::DirectAndMentions,
             "mentions-only" => Self::MentionsOnly,
             _ => panic!("Unknown NotificationsGlobalSetting: {s}"),
+        }
+    }
+}
+
+/// The predefined push rules that apply across all rooms and can be toggled
+/// on their own.
+///
+/// Each maps to a well-known rule of the push module. The user-mention and
+/// room-mention rules are set through the SDK, which keeps the deprecated
+/// rules they replaced (`.m.rule.contains_display_name`,
+/// `.m.rule.contains_user_name` and `.m.rule.roomnotif`) in step for older
+/// clients.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NotificationsSpecialRule {
+    /// Mentions of the user, `.m.rule.is_user_mention`.
+    UserMention,
+    /// Mentions of the whole room, `.m.rule.is_room_mention`.
+    RoomMention,
+    /// Invites to a room, `.m.rule.invite_for_me`.
+    Invite,
+    /// Incoming calls, `.m.rule.call`.
+    Call,
+}
+
+impl NotificationsSpecialRule {
+    /// The kind and ID of the push rule.
+    fn kind_and_id(self) -> (RuleKind, String) {
+        match self {
+            Self::UserMention => (
+                RuleKind::Override,
+                PredefinedOverrideRuleId::IsUserMention.to_string(),
+            ),
+            Self::RoomMention => (
+                RuleKind::Override,
+                PredefinedOverrideRuleId::IsRoomMention.to_string(),
+            ),
+            Self::Invite => (
+                RuleKind::Override,
+                PredefinedOverrideRuleId::InviteForMe.to_string(),
+            ),
+            Self::Call => (
+                RuleKind::Underride,
+                PredefinedUnderrideRuleId::Call.to_string(),
+            ),
         }
     }
 }
@@ -119,6 +163,18 @@ mod imp {
         /// The list of keywords that trigger notifications.
         #[property(get)]
         keywords_list: gtk::StringList,
+        /// Whether mentions of the user trigger notifications.
+        #[property(get)]
+        mention_rule_enabled: Cell<bool>,
+        /// Whether mentions of the whole room trigger notifications.
+        #[property(get)]
+        room_mention_rule_enabled: Cell<bool>,
+        /// Whether invites trigger notifications.
+        #[property(get)]
+        invite_rule_enabled: Cell<bool>,
+        /// Whether incoming calls trigger notifications.
+        #[property(get)]
+        call_rule_enabled: Cell<bool>,
         /// The map of room ID to per-room notification setting.
         ///
         /// Any room not in this map uses the global setting.
@@ -286,7 +342,60 @@ mod imp {
             }
 
             self.update_keywords_list().await;
+            self.update_special_rules().await;
             self.update_per_room_settings().await;
+        }
+
+        /// Update the state of the special push rules from the SDK API.
+        async fn update_special_rules(&self) {
+            for rule in [
+                NotificationsSpecialRule::UserMention,
+                NotificationsSpecialRule::RoomMention,
+                NotificationsSpecialRule::Invite,
+                NotificationsSpecialRule::Call,
+            ] {
+                let Some(api) = self.api() else {
+                    return;
+                };
+
+                let (kind, rule_id) = rule.kind_and_id();
+                let handle =
+                    spawn_tokio!(async move { api.is_push_rule_enabled(kind, rule_id).await });
+
+                match handle.await.expect("task was not aborted") {
+                    Ok(enabled) => self.set_special_rule_enabled(rule, enabled),
+                    Err(error) => {
+                        error!("Could not get the state of the {rule:?} push rule: {error}");
+                    }
+                }
+            }
+        }
+
+        /// Set whether the given special push rule is enabled.
+        pub(super) fn set_special_rule_enabled(
+            &self,
+            rule: NotificationsSpecialRule,
+            enabled: bool,
+        ) {
+            let cell = match rule {
+                NotificationsSpecialRule::UserMention => &self.mention_rule_enabled,
+                NotificationsSpecialRule::RoomMention => &self.room_mention_rule_enabled,
+                NotificationsSpecialRule::Invite => &self.invite_rule_enabled,
+                NotificationsSpecialRule::Call => &self.call_rule_enabled,
+            };
+
+            if cell.get() == enabled {
+                return;
+            }
+            cell.set(enabled);
+
+            let obj = self.obj();
+            match rule {
+                NotificationsSpecialRule::UserMention => obj.notify_mention_rule_enabled(),
+                NotificationsSpecialRule::RoomMention => obj.notify_room_mention_rule_enabled(),
+                NotificationsSpecialRule::Invite => obj.notify_invite_rule_enabled(),
+                NotificationsSpecialRule::Call => obj.notify_call_rule_enabled(),
+            }
         }
 
         /// Set whether notifications are enabled for this session.
@@ -541,6 +650,45 @@ impl NotificationsSettings {
         imp.update_keywords_list().await;
 
         Ok(())
+    }
+
+    /// The state of the given special push rule.
+    pub(crate) fn special_rule_enabled(&self, rule: NotificationsSpecialRule) -> bool {
+        match rule {
+            NotificationsSpecialRule::UserMention => self.mention_rule_enabled(),
+            NotificationsSpecialRule::RoomMention => self.room_mention_rule_enabled(),
+            NotificationsSpecialRule::Invite => self.invite_rule_enabled(),
+            NotificationsSpecialRule::Call => self.call_rule_enabled(),
+        }
+    }
+
+    /// Set whether the given special push rule is enabled.
+    pub(crate) async fn set_special_rule_enabled(
+        &self,
+        rule: NotificationsSpecialRule,
+        enabled: bool,
+    ) -> Result<(), NotificationSettingsError> {
+        let imp = self.imp();
+
+        let Some(api) = imp.api() else {
+            error!("Cannot update notifications settings when API is not initialized");
+            return Err(NotificationSettingsError::UnableToUpdatePushRule);
+        };
+
+        let (kind, rule_id) = rule.kind_and_id();
+        let handle =
+            spawn_tokio!(async move { api.set_push_rule_enabled(kind, rule_id, enabled).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(()) => {
+                imp.set_special_rule_enabled(rule, enabled);
+                Ok(())
+            }
+            Err(error) => {
+                error!("Could not change the state of the {rule:?} push rule: {error}");
+                Err(error)
+            }
+        }
     }
 
     /// Set the notification setting for the room with the given ID.

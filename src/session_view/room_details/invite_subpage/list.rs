@@ -255,11 +255,13 @@ mod imp {
             for result in results {
                 let member = member_list.get(&result.user_id);
 
-                // 'Disable' users that can't be invited.
+                // Why this person cannot be invited. The row has no checkbox
+                // when this is set, so it is the only thing that says why —
+                // which is worth a sentence rather than a word.
                 let invite_exception = member.as_ref().and_then(|m| match m.membership() {
-                    Membership::Join => Some(gettext("Member")),
-                    Membership::Ban => Some(gettext("Banned")),
-                    Membership::Invite => Some(gettext("Invited")),
+                    Membership::Join => Some(gettext("Already a member")),
+                    Membership::Ban => Some(gettext("Banned from this room")),
+                    Membership::Invite => Some(gettext("Already invited")),
                     _ => None,
                 });
 

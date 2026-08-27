@@ -1,7 +1,7 @@
 use std::{borrow::Cow, time::Duration};
 
 use gettextrs::gettext;
-#[cfg(not(any(target_os = "macos", target_os = "android")))]
+#[cfg(not(any(target_os = "macos", target_os = "android", target_os = "windows")))]
 use gtk::gio;
 use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{Room as MatrixRoom, sync::Notification};
@@ -24,6 +24,7 @@ mod notifications_settings;
 
 pub(crate) use self::notifications_settings::{
     NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
+    NotificationsSpecialRule,
 };
 #[cfg(not(target_os = "android"))]
 use super::{Call, CallState};
@@ -34,6 +35,8 @@ use crate::intent::{CallAction, CallActionKind};
 use crate::utils::android_notifications;
 #[cfg(target_os = "macos")]
 use crate::utils::macos_notifications;
+#[cfg(target_os = "windows")]
+use crate::utils::windows_notifications;
 use crate::{
     Application, Window, gettext_f,
     intent::SessionIntent,
@@ -182,6 +185,27 @@ impl Notifications {
                     icon,
                     &buttons,
                 );
+            } else if #[cfg(target_os = "windows")] {
+                let buttons = buttons
+                    .iter()
+                    .map(|(label, intent)| {
+                        (
+                            label.clone(),
+                            intent.to_variant_with_session_id(session_id.to_owned()),
+                            intent.app_action_name().to_owned(),
+                        )
+                    })
+                    .collect::<Vec<_>>();
+
+                windows_notifications::send(
+                    id,
+                    title,
+                    &body,
+                    action,
+                    &target_value,
+                    icon,
+                    &buttons,
+                );
             } else {
                 let notification = gio::Notification::new(title);
                 notification.set_category(Some("im.received"));
@@ -252,6 +276,8 @@ impl Notifications {
                 macos_notifications::withdraw(id);
             } else if #[cfg(target_os = "android")] {
                 android_notifications::withdraw(id);
+            } else if #[cfg(target_os = "windows")] {
+                windows_notifications::withdraw(id);
             } else {
                 Application::default().withdraw_notification(id);
             }

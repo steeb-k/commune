@@ -23,10 +23,20 @@
       <summary>Always use the dark theme</summary>
       <description>Whether to use the dark theme whatever the system is set to. When this is off, the system decides</description>
     </key>
+    <key name="chat-bubbles-enabled" type="b">
+      <default>false</default>
+      <summary>Present messages as chat bubbles</summary>
+      <description>Whether each message in the timeline is drawn inside a bubble, with your own messages on the right</description>
+    </key>
     <key name="url-previews-enabled" type="b">
       <default>true</default>
       <summary>Show a preview of links</summary>
       <description>Whether a card describing the first link of a message is shown under it. Building the card asks the homeserver about the link, so it is never done for a message in an encrypted room</description>
+    </key>
+    <key name="share-presence" type="b">
+      <default>true</default>
+      <summary>Let others see when you are online</summary>
+      <description>Whether the homeserver is told that you are here while this application is syncing. Turning this off does not hide anything already published and has no effect on a homeserver that keeps the Presence module switched off, which most of them do</description>
     </key>
     <key name="gif-search-enabled" type="b">
       <default>false</default>

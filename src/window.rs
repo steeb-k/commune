@@ -1,9 +1,13 @@
 use std::cell::Cell;
 
 use adw::{prelude::*, subclass::prelude::*};
+#[cfg(target_os = "windows")]
+use gettextrs::gettext;
 use gtk::{gdk, gio, glib, glib::clone};
 use tracing::{error, warn};
 
+#[cfg(target_os = "windows")]
+use crate::utils::windows_frame;
 use crate::{
     APP_ID, Application, PROFILE, SETTINGS_KEY_CURRENT_SESSION,
     account_chooser_dialog::AccountChooserDialog,
@@ -91,7 +95,14 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/window.ui")]
+    #[cfg_attr(
+        not(target_os = "windows"),
+        template(resource = "/org/gnome/Fractal/ui/window.ui")
+    )]
+    #[cfg_attr(
+        target_os = "windows",
+        template(resource = "/org/gnome/Fractal/ui/window-windows.ui")
+    )]
     #[properties(wrapper_type = super::Window)]
     pub struct Window {
         #[template_child]
@@ -119,13 +130,25 @@ mod imp {
         session_selection: FixedSelection,
         /// The account switcher popover.
         pub(super) account_switcher: AccountSwitcherPopover,
+        /// The native frame subclass that stands in for CSD.
+        ///
+        /// See `doc/windows-snapping-plan.md`. Kept only to be dropped with
+        /// the window, which removes the subclass.
+        #[cfg(target_os = "windows")]
+        frame: RefCell<Option<windows_frame::NativeFrame>>,
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for Window {
         const NAME: &'static str = "Window";
         type Type = super::Window;
+        // See `doc/windows-snapping-plan.md`: `AdwApplicationWindow` cannot
+        // be given server-side decoration, so Windows gets a plain
+        // `gtk::ApplicationWindow` and a native frame subclass instead.
+        #[cfg(not(target_os = "windows"))]
         type ParentType = adw::ApplicationWindow;
+        #[cfg(target_os = "windows")]
+        type ParentType = gtk::ApplicationWindow;
 
         fn class_init(klass: &mut Self::Class) {
             AccountSwitcherButton::ensure_type();
@@ -199,6 +222,22 @@ mod imp {
             if PROFILE.should_use_devel_class() {
                 self.obj().add_css_class("devel");
             }
+
+            // Windows draws its own window controls in a way libadwaita's
+            // stylesheet does not describe, so the stylesheet says what they
+            // should look like here and this is what turns those rules on.
+            #[cfg(target_os = "windows")]
+            self.obj().add_css_class("windows");
+
+            // The native frame needs an HWND, which does not exist until
+            // realize -- and has to be installed before the window is shown,
+            // so the native caption never appears.
+            #[cfg(target_os = "windows")]
+            self.obj().connect_realize(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_window| imp.install_native_frame()
+            ));
 
             self.load_window_size();
             self.update_forwarded_session_actions();
@@ -319,6 +358,7 @@ mod imp {
     }
 
     impl ApplicationWindowImpl for Window {}
+    #[cfg(not(target_os = "windows"))]
     impl AdwApplicationWindowImpl for Window {}
 
     impl Window {
@@ -674,13 +714,238 @@ mod imp {
             dialog.show_image_packs_tab();
             dialog.present(Some(&*self.obj()));
         }
+
+        /// Install the native Win32 frame subclass that stands in for CSD.
+        ///
+        /// See `doc/windows-snapping-plan.md`. Called from `realize`, once
+        /// the window has an `HWND` and before it is shown, so the native
+        /// caption never appears.
+        #[cfg(target_os = "windows")]
+        fn install_native_frame(&self) {
+            let obj = self.obj();
+            let Some(surface) = obj.surface() else {
+                warn!("Could not install the native window frame: no surface yet");
+                return;
+            };
+            let hwnd = gdk4_win32::Win32Surface::impl_hwnd(&surface);
+            if hwnd.0.is_null() {
+                warn!("Could not install the native window frame: no HWND yet");
+                return;
+            }
+
+            // The button `frame_hit` last resolved a point to, so
+            // `show_maximize_state` can light up (or clear) the one the
+            // pointer is actually over. Every page of `main_stack` has its
+            // own header bar, and so its own maximize button; searching the
+            // whole window for `.maximize` -- as this used to -- can find a
+            // hidden page's button instead of the visible one.
+            let hovered_button: Rc<RefCell<Option<gtk::Button>>> = Rc::default();
+
+            let hit_test_window = obj.downgrade();
+            let hit_test_button = Rc::clone(&hovered_button);
+            let hit_test: windows_frame::HitTester = Box::new(move |x, y| {
+                hit_test_window
+                    .upgrade()
+                    .map_or(windows_frame::FrameHit::Client, |window| {
+                        frame_hit(&window, x, y, &hit_test_button)
+                    })
+            });
+
+            let maximize: windows_frame::MaximizeWatcher = Box::new(move |state| {
+                show_maximize_state(&hovered_button, state);
+            });
+
+            let Some(frame) = windows_frame::install(hwnd, hit_test, maximize) else {
+                warn!("Could not install the native window frame");
+                return;
+            };
+            self.frame.replace(Some(frame));
+
+            // `GtkWindowControls` is supposed to swap the maximize button's
+            // icon and tooltip on its own when `maximized` changes, but
+            // that only holds for a window it drew the decoration of --
+            // untested, and not to be trusted, on a server-side-decorated
+            // toplevel. Done by hand instead, and once now for a window
+            // restored already maximized, since `load_window_size` set
+            // that before this handler existed to hear about it.
+            self.obj().connect_maximized_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |window| imp.update_maximize_icon(window.is_maximized())
+            ));
+            self.update_maximize_icon(self.obj().is_maximized());
+        }
+
+        /// Set the visible page's maximize button to look like a maximize or
+        /// a restore button, matching `maximized`.
+        #[cfg(target_os = "windows")]
+        fn update_maximize_icon(&self, maximized: bool) {
+            let Some(visible_page) = self.main_stack.visible_child() else {
+                return;
+            };
+            let Some(button) = find_maximize_button(&visible_page) else {
+                return;
+            };
+            button.set_icon_name(if maximized {
+                "window-restore-symbolic"
+            } else {
+                "window-maximize-symbolic"
+            });
+            button.set_tooltip_text(Some(&if maximized {
+                gettext("Restore")
+            } else {
+                gettext("Maximize")
+            }));
+        }
+    }
+
+    /// What is under a client-area point (physical pixels from its top-left):
+    /// the header bar background if nothing interactive is there, the
+    /// maximize window control, or ordinary content.
+    ///
+    /// The window switches between several pages, each with its own header
+    /// bar (or none, for the session page's own layout), so this looks for
+    /// *a* header bar in the picked widget's ancestry rather than a single
+    /// one fixed at construction. A resolved maximize button is stashed in
+    /// `hovered` -- see `Window::install_native_frame`.
+    #[cfg(target_os = "windows")]
+    fn frame_hit(
+        window: &super::Window,
+        x: i32,
+        y: i32,
+        hovered: &RefCell<Option<gtk::Button>>,
+    ) -> windows_frame::FrameHit {
+        let Some(surface) = window.surface() else {
+            return windows_frame::FrameHit::Client;
+        };
+        let scale = surface.scale();
+        let (tx, ty) = window.surface_transform();
+        let lx = f64::from(x) / scale - tx;
+        let ly = f64::from(y) / scale - ty;
+        let Some(picked) = window.pick(lx, ly, gtk::PickFlags::DEFAULT) else {
+            return windows_frame::FrameHit::Client;
+        };
+
+        // Walk up to a header bar: any interactive control on the way is
+        // content.
+        let mut widget = Some(picked);
+        while let Some(w) = widget {
+            if let Some(button) = w.downcast_ref::<gtk::Button>() {
+                if button.has_css_class("maximize") {
+                    hovered.replace(Some(button.clone()));
+                    return windows_frame::FrameHit::MaximizeButton;
+                }
+                return windows_frame::FrameHit::Client;
+            }
+            if w.is::<gtk::Entry>()
+                || w.is::<gtk::Text>()
+                || w.is::<gtk::MenuButton>()
+                || w.is::<gtk::SearchEntry>()
+            {
+                return windows_frame::FrameHit::Client;
+            }
+            if w.is::<adw::HeaderBar>() || w.is::<gtk::HeaderBar>() {
+                return windows_frame::FrameHit::Caption;
+            }
+            widget = w.parent();
+        }
+        windows_frame::FrameHit::Client
+    }
+
+    /// Lights the maximize button up, or puts it out, on word from the frame.
+    ///
+    /// Also clears whatever the toolkit still thinks is hovered: the pointer
+    /// crossing into a rectangle Windows owns leaves GTK believing it never
+    /// left the button next door, and that button stays lit.
+    #[cfg(target_os = "windows")]
+    fn show_maximize_state(
+        hovered: &RefCell<Option<gtk::Button>>,
+        state: windows_frame::MaximizeState,
+    ) {
+        let Some(button) = hovered.borrow().clone() else {
+            return;
+        };
+        button.unset_state_flags(gtk::StateFlags::PRELIGHT | gtk::StateFlags::ACTIVE);
+        let flags = match state {
+            windows_frame::MaximizeState::Away => return,
+            windows_frame::MaximizeState::Hover => gtk::StateFlags::PRELIGHT,
+            windows_frame::MaximizeState::Pressed => {
+                gtk::StateFlags::PRELIGHT | gtk::StateFlags::ACTIVE
+            }
+        };
+        button.set_state_flags(flags, false);
+        // The pointer arriving here just crossed out of client territory --
+        // minimize and close are ordinary client-area buttons, and moving
+        // straight from one of them into this non-client rectangle does not
+        // reliably deliver GTK the crossing it would need to un-light
+        // whichever one the pointer left.
+        clear_sibling_button_state(&button);
+    }
+
+    /// Clears the prelight/active flags of every window-control button next
+    /// to `button` (minimize, close) other than `button` itself.
+    ///
+    /// See `show_maximize_state`.
+    #[cfg(target_os = "windows")]
+    fn clear_sibling_button_state(button: &gtk::Button) {
+        let widget = button.clone().upcast::<gtk::Widget>();
+        let Some(parent) = widget.parent() else {
+            return;
+        };
+        let mut child = parent.first_child();
+        while let Some(w) = child {
+            if w != widget
+                && let Some(sibling) = w.downcast_ref::<gtk::Button>()
+            {
+                sibling.unset_state_flags(gtk::StateFlags::PRELIGHT | gtk::StateFlags::ACTIVE);
+            }
+            child = w.next_sibling();
+        }
+    }
+
+    /// Depth-first search for a descendant `GtkButton` with the `maximize`
+    /// CSS class, starting from `widget`.
+    ///
+    /// `GtkWindowControls` draws the window buttons without exposing a
+    /// direct handle to them. Called with `main_stack`'s visible page as
+    /// `widget` -- not the window -- so a hidden page's own maximize button
+    /// is never the one found.
+    #[cfg(target_os = "windows")]
+    fn find_maximize_button(widget: &gtk::Widget) -> Option<gtk::Button> {
+        if let Some(button) = widget.downcast_ref::<gtk::Button>()
+            && button.has_css_class("maximize")
+        {
+            return Some(button.clone());
+        }
+
+        let mut child = widget.first_child();
+        while let Some(w) = child {
+            if let Some(found) = find_maximize_button(&w) {
+                return Some(found);
+            }
+            child = w.next_sibling();
+        }
+        None
     }
 }
 
+#[cfg(not(target_os = "windows"))]
 glib::wrapper! {
     /// The main window.
     pub struct Window(ObjectSubclass<imp::Window>)
         @extends gtk::Widget, gtk::Window, gtk::ApplicationWindow, adw::ApplicationWindow,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Root, gtk::Native,
+                    gtk::ShortcutManager, gio::ActionMap, gio::ActionGroup;
+}
+
+// See `doc/windows-snapping-plan.md`: on Windows the window is a plain
+// `gtk::ApplicationWindow` rather than an `adw::ApplicationWindow`, so it is
+// not in `@extends` here.
+#[cfg(target_os = "windows")]
+glib::wrapper! {
+    /// The main window.
+    pub struct Window(ObjectSubclass<imp::Window>)
+        @extends gtk::Widget, gtk::Window, gtk::ApplicationWindow,
         @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Root, gtk::Native,
                     gtk::ShortcutManager, gio::ActionMap, gio::ActionGroup;
 }

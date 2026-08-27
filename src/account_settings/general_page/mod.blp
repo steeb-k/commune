@@ -62,6 +62,15 @@ template $AccountSettingsGeneralPage: Adw.PreferencesPage {
       action-target: "'change-password'";
     }
 
+    Adw.ButtonRow third_party_ids_row {
+      visible: false;
+      selectable: false;
+      title: _("Email and Phone Numbers");
+      end-icon-name: "go-next-symbolic";
+      action-name: "account-settings.show-subpage";
+      action-target: "'third-party-ids'";
+    }
+
     Adw.ButtonRow manage_account_row {
       visible: false;
       selectable: false;
@@ -103,6 +112,11 @@ template $AccountSettingsGeneralPage: Adw.PreferencesPage {
       title: _("Dark Mode");
       subtitle: _("Always use the dark theme, whatever this device is set to");
     }
+
+    Adw.SwitchRow chat_bubbles_row {
+      title: _("Chat Bubbles");
+      subtitle: _("Draw each message inside a bubble, with your own on the right");
+    }
   }
 
   Adw.PreferencesGroup {
@@ -111,6 +125,27 @@ template $AccountSettingsGeneralPage: Adw.PreferencesPage {
     Adw.SwitchRow url_previews_row {
       title: _("Link Previews");
       subtitle: _("Show a card describing the first link of a message under it. Building the card asks your homeserver about the link, so it is never done in an encrypted room.");
+    }
+  }
+
+  Adw.PreferencesGroup {
+    title: _("Privacy");
+
+    Adw.SwitchRow share_presence_row {
+      title: _("Share When You Are Online");
+      subtitle: _("Tell your homeserver that you are here while this app is running. It has no effect on a homeserver that does not keep presence, which most do not.");
+    }
+
+    Adw.ActionRow identity_server_row {
+      title: _("Identity Server");
+      activatable: true;
+      activated => $edit_identity_server() swapped;
+
+      [suffix]
+      Gtk.Image {
+        icon-name: "go-next-symbolic";
+        accessible-role: presentation;
+      }
     }
   }
 

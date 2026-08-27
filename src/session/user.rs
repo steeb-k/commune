@@ -9,7 +9,7 @@ use ruma::{
 };
 use tracing::{debug, error};
 
-use super::{IdentityVerification, Room, Session};
+use super::{IdentityVerification, Presence, Room, Session};
 use crate::{
     components::{AvatarImage, AvatarUriSource, PillSource},
     prelude::*,
@@ -62,6 +62,16 @@ mod imp {
         #[property(get)]
         is_ignored: Cell<bool>,
         ignored_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// Whether this user is around, as far as their homeserver says.
+        ///
+        /// [`Presence::Unknown`] unless the homeserver runs the Presence
+        /// module, which most do not.
+        #[property(get, builder(Presence::default()))]
+        presence: Cell<Presence>,
+        /// The message this user set to go with their presence, if any.
+        #[property(get)]
+        presence_status_message: RefCell<Option<String>>,
+        presence_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -82,10 +92,14 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(session) = self.session.get()
-                && let Some(handler) = self.ignored_handler.take()
-            {
-                session.ignored_users().disconnect(handler);
+            if let Some(session) = self.session.get() {
+                if let Some(handler) = self.ignored_handler.take() {
+                    session.ignored_users().disconnect(handler);
+                }
+
+                if let Some(handler) = self.presence_handler.take() {
+                    session.presence_list().disconnect(handler);
+                }
             }
         }
     }
@@ -142,6 +156,24 @@ mod imp {
             self.is_ignored.set(ignored_users.contains(user_id));
             self.ignored_handler.replace(Some(ignored_handler));
 
+            let presence_list = session.presence_list();
+            let presence_handler = presence_list.connect_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, changed_user_id| {
+                    if changed_user_id == imp.user_id().as_str() {
+                        imp.update_presence();
+                    }
+                }
+            ));
+            self.presence_handler.replace(Some(presence_handler));
+
+            // Sync only carries presence when it changes, so a user who has
+            // not moved since this client started has none until they do. What
+            // earlier syncs delivered is in the store.
+            presence_list.load(user_id.clone());
+            self.update_presence();
+
             spawn!(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -149,6 +181,23 @@ mod imp {
                     imp.init_is_verified().await;
                 }
             ));
+        }
+
+        /// Update what is known about whether this user is around.
+        fn update_presence(&self) {
+            let obj = self.obj();
+            let known = self.session().presence_list().get(self.user_id());
+
+            if self.presence.get() != known.presence {
+                self.presence.set(known.presence);
+                obj.avatar_data().set_presence(known.presence);
+                obj.notify_presence();
+            }
+
+            if *self.presence_status_message.borrow() != known.status_message {
+                self.presence_status_message.replace(known.status_message);
+                obj.notify_presence_status_message();
+            }
         }
 
         /// Set whether this user has a display name set.
@@ -315,6 +364,17 @@ impl User {
             return Ok(room);
         }
 
+        // The local check needs the room's direct member to be computed; the
+        // SDK's reads `m.direct` itself, so it still finds the direct chat
+        // whose membership does not currently look like one — which is
+        // exactly the case that used to end in a duplicate room.
+        if let Some(matrix_room) = self.session().client().get_dm_room(user_id)
+            && let Some(room) = self.session().room_list().get(matrix_room.room_id())
+        {
+            debug!("Using the direct chat m.direct names for {user_id}…");
+            return Ok(room);
+        }
+
         debug!("Creating direct chat with {user_id}…");
         self.imp().create_direct_chat().await.map_err(|_| ())
     }
@@ -363,6 +423,22 @@ pub trait UserExt: IsA<User> {
     /// Whether this user is the same as the session's user.
     fn is_own_user(&self) -> bool {
         self.upcast_ref().is_own_user()
+    }
+
+    /// Whether this user is around, as far as their homeserver says.
+    fn presence(&self) -> Presence {
+        self.upcast_ref().presence()
+    }
+
+    /// Connect to the signal emitted when it changes whether this user is
+    /// around.
+    fn connect_presence_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId
+    where
+        Self: Sized,
+    {
+        self.upcast_ref().connect_presence_notify(move |user| {
+            f(user.downcast_ref().expect("user is of the expected type"));
+        })
     }
 
     /// Set the name of this user.

@@ -44,6 +44,47 @@ template $RoomDetailsInviteSubpage: Adw.NavigationPage {
       }
     }
 
+    [top]
+    Adw.Clamp email_invite_clamp {
+      visible: false;
+      margin-bottom: 6;
+      margin-end: 30;
+      margin-start: 30;
+      hexpand: true;
+
+      Gtk.Button email_invite_button {
+        clicked => $invite_by_email() swapped;
+
+        styles [
+          "card",
+        ]
+
+        child: Gtk.Box {
+          spacing: 12;
+          margin-top: 10;
+          margin-bottom: 10;
+          margin-start: 12;
+          margin-end: 12;
+
+          Gtk.Image {
+            icon-name: "send-symbolic";
+            accessible-role: presentation;
+          }
+
+          Gtk.Label email_invite_label {
+            ellipsize: end;
+            xalign: 0;
+            hexpand: true;
+          }
+
+          Gtk.Image {
+            icon-name: "go-next-symbolic";
+            accessible-role: presentation;
+          }
+        };
+      }
+    }
+
     content: Gtk.Stack stack {
       transition-type: crossfade;
 

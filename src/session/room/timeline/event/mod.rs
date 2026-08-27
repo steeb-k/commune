@@ -4,8 +4,8 @@ use gtk::{gio, glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
     AnyOtherStateEventContentChange, EmbeddedEvent, Error as TimelineError, EventSendState,
-    EventTimelineItem, MembershipChange, Message, MsgLikeKind, TimelineDetails,
-    TimelineEventItemId, TimelineItemContent,
+    EventTimelineItem, MembershipChange, Message, MsgLikeKind, ThreadSummary, TimelineDetails,
+    TimelineEventItemId, TimelineEventShieldState, TimelineItemContent,
 };
 #[cfg(not(target_os = "android"))]
 use ruma::events::{
@@ -13,7 +13,7 @@ use ruma::events::{
 };
 use ruma::{
     MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId, UserId,
-    events::{AnySyncTimelineEvent, TimelineEventType, receipt::Receipt},
+    events::{AnySyncTimelineEvent, StateEventType, TimelineEventType, receipt::Receipt},
     serde::Raw,
 };
 use serde::{Deserialize, de::IgnoredAny};
@@ -687,6 +687,31 @@ impl Event {
             TimelineItemContent::MembershipChange(_)
                 | TimelineItemContent::ProfileChange(_)
                 | TimelineItemContent::OtherState(_)
+        ) || self.is_unparsed_policy_server_change()
+    }
+
+    /// Whether this is an `m.room.policy` event whose content does not parse.
+    ///
+    /// The spec reads an invalid or empty `m.room.policy` content as the room
+    /// using no policy server, so this parse failure is itself the change
+    /// worth a sentence — the policy server was removed. Every other
+    /// unparsable event says nothing and stays hidden.
+    pub(crate) fn is_unparsed_policy_server_change(&self) -> bool {
+        matches!(
+            self.item().content(),
+            TimelineItemContent::FailedToParseState {
+                event_type: StateEventType::RoomPolicy,
+                ..
+            }
+        )
+    }
+
+    /// Whether this event's content failed to deserialize.
+    pub(crate) fn failed_to_parse(&self) -> bool {
+        matches!(
+            self.item().content(),
+            TimelineItemContent::FailedToParseMessageLike { .. }
+                | TimelineItemContent::FailedToParseState { .. }
         )
     }
 
@@ -704,7 +729,7 @@ impl Event {
                     AnyOtherStateEventContentChange::RoomCreate(_)
                 )
             }
-            _ => false,
+            _ => self.is_unparsed_policy_server_change(),
         }
     }
 
@@ -760,6 +785,39 @@ impl Event {
             TimelineItemContent::MsgLike(msg_like) => {
                 msg_like.in_reply_to.as_ref().map(|d| d.event_id.clone())
             }
+            _ => None,
+        }
+    }
+
+    /// The summary of the thread this event is the root of, if any.
+    ///
+    /// The SDK builds it from the bundled `m.thread` aggregation the server
+    /// attaches to the root event, so it is present even when none of the
+    /// thread's replies have been loaded.
+    pub(crate) fn thread_summary(&self) -> Option<ThreadSummary> {
+        match self.item().content() {
+            TimelineItemContent::MsgLike(msg_like) => msg_like.thread_summary.clone(),
+            _ => None,
+        }
+    }
+
+    /// The authenticity verdict on this event.
+    ///
+    /// The SDK computes it for every item of an encrypted room: whether the
+    /// sending device is known and signed, whether the sender is verified,
+    /// and whether the event was encrypted at all. The non-strict mode is
+    /// asked for, the same bar the other clients present by default.
+    pub(crate) fn shield(&self) -> TimelineEventShieldState {
+        self.item().get_shield(false)
+    }
+
+    /// The root of the thread this event belongs to, if any.
+    ///
+    /// This is the thread the event is *in*; an event that is itself the root
+    /// of a thread carries a [`Self::thread_summary()`] instead.
+    pub(crate) fn thread_root(&self) -> Option<OwnedEventId> {
+        match self.item().content() {
+            TimelineItemContent::MsgLike(msg_like) => msg_like.thread_root.clone(),
             _ => None,
         }
     }

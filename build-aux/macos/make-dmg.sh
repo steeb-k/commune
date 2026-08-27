@@ -33,7 +33,12 @@ APP_NAME="$(basename "$APP" .app)"
 VOLNAME="$APP_NAME"
 
 # The version the bundle was built with, so the file name says what it holds.
-VERSION="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo 'unknown')"
+# CommuneVersion is the full string, rc suffix included; the CFBundle key only
+# carries the numeric prefix, and is the fallback for a bundle from before the
+# split.
+VERSION="$(defaults read "$APP/Contents/Info" CommuneVersion 2>/dev/null \
+    || defaults read "$APP/Contents/Info" CFBundleShortVersionString 2>/dev/null \
+    || echo 'unknown')"
 ARCH="$(uname -m)"
 
 if [ -z "$OUT" ]; then
@@ -62,3 +67,28 @@ hdiutil create \
 rm -rf "$STAGE"
 
 echo "make-dmg: wrote $OUT ($(du -sh "$OUT" | awk '{print $1}'))"
+
+# Notarization is opt-in because this target is also the dev-iteration one:
+# a submission uploads the image to Apple, wants the network, and takes some
+# minutes -- none of which a local test build should pay. Set NOTARIZE_PROFILE
+# to a `notarytool store-credentials` profile name to get a .dmg that opens
+# straight off a download. It only makes sense over a real signature, so an
+# ad-hoc bundle is refused before anything leaves the machine.
+if [ -n "${NOTARIZE_PROFILE:-}" ]; then
+    if codesign -dv "$APP" 2>&1 | grep -q 'flags=.*adhoc'; then
+        echo "make-dmg: NOTARIZE_PROFILE is set but the bundle is ad-hoc signed;" >&2
+        echo "  rebuild with CODESIGN_IDENTITY first -- Apple rejects ad-hoc submissions." >&2
+        exit 1
+    fi
+    echo "make-dmg: notarizing (profile '$NOTARIZE_PROFILE'; takes a few minutes)"
+    if ! xcrun notarytool submit "$OUT" --keychain-profile "$NOTARIZE_PROFILE" --wait; then
+        echo "make-dmg: notarization failed; the reasons are in:" >&2
+        echo "  xcrun notarytool log <submission id> --keychain-profile $NOTARIZE_PROFILE" >&2
+        exit 1
+    fi
+    # The staple pins the ticket to the image so Gatekeeper can verify a
+    # download with no network. Without it the .dmg still opens -- the ticket
+    # is looked up online -- but stapling costs nothing and works offline.
+    xcrun stapler staple "$OUT"
+    echo "make-dmg: notarized and stapled"
+fi

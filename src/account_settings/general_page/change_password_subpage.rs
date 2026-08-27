@@ -8,7 +8,10 @@ use crate::{
     components::{AuthDialog, AuthError, LoadingButtonRow},
     session::Session,
     toast,
-    utils::matrix::validate_password,
+    utils::{
+        matrix::validate_password,
+        password::{draw_password_confirmation, draw_password_validity},
+    },
 };
 
 mod imp {
@@ -69,83 +72,24 @@ mod imp {
     impl ChangePasswordSubpage {
         #[template_callback]
         fn validate_password(&self) {
-            let entry = &self.password;
-            let progress = &self.password_progress;
-            let revealer = &self.password_error_revealer;
-            let label = &self.password_error;
-            let password = entry.text();
-
-            if password.is_empty() {
-                revealer.set_reveal_child(false);
-                entry.remove_css_class("success");
-                entry.remove_css_class("warning");
-                progress.set_value(0.0);
-                progress.remove_css_class("success");
-                progress.remove_css_class("warning");
-                self.update_button();
-                return;
-            }
-
-            let validity = validate_password(&password);
-
-            progress.set_value(f64::from(validity.progress) / 20.0);
-            if validity.progress == 100 {
-                revealer.set_reveal_child(false);
-                entry.add_css_class("success");
-                entry.remove_css_class("warning");
-                progress.add_css_class("success");
-                progress.remove_css_class("warning");
-            } else {
-                entry.remove_css_class("success");
-                entry.add_css_class("warning");
-                progress.remove_css_class("success");
-                progress.add_css_class("warning");
-                if !validity.has_length {
-                    label.set_label(&gettext("Password must be at least 8 characters long"));
-                } else if !validity.has_lowercase {
-                    label.set_label(&gettext(
-                        "Password must have at least one lower-case letter",
-                    ));
-                } else if !validity.has_uppercase {
-                    label.set_label(&gettext(
-                        "Password must have at least one upper-case letter",
-                    ));
-                } else if !validity.has_number {
-                    label.set_label(&gettext("Password must have at least one digit"));
-                } else if !validity.has_symbol {
-                    label.set_label(&gettext("Password must have at least one symbol"));
-                }
-                revealer.set_reveal_child(true);
-            }
+            draw_password_validity(
+                &self.password,
+                &self.password_progress,
+                &self.password_error_revealer,
+                &self.password_error,
+            );
 
             self.validate_password_confirmation();
         }
 
         #[template_callback]
         fn validate_password_confirmation(&self) {
-            let entry = &self.confirm_password;
-            let revealer = &self.confirm_password_error_revealer;
-            let label = &self.confirm_password_error;
-            let password = self.password.text();
-            let confirmation = entry.text();
-
-            if confirmation.is_empty() {
-                revealer.set_reveal_child(false);
-                entry.remove_css_class("success");
-                entry.remove_css_class("warning");
-                return;
-            }
-
-            if password == confirmation {
-                revealer.set_reveal_child(false);
-                entry.add_css_class("success");
-                entry.remove_css_class("warning");
-            } else {
-                entry.remove_css_class("success");
-                entry.add_css_class("warning");
-                label.set_label(&gettext("Passwords do not match"));
-                revealer.set_reveal_child(true);
-            }
+            draw_password_confirmation(
+                &self.password.text(),
+                &self.confirm_password,
+                &self.confirm_password_error_revealer,
+                &self.confirm_password_error,
+            );
 
             self.update_button();
         }

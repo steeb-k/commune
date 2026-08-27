@@ -17,6 +17,7 @@ mod media_viewer;
 mod room_details;
 mod room_history;
 mod sidebar;
+mod space;
 
 #[cfg(not(target_os = "android"))]
 use self::call_view::CallView;
@@ -24,7 +25,7 @@ use self::{
     content::Content, create_direct_chat_dialog::CreateDirectChatDialog,
     create_room_dialog::CreateRoomDialog, explore::Explore, invite::Invite,
     invite_request::InviteRequest, media_viewer::MediaViewer, room_details::RoomDetails,
-    room_history::RoomHistory, sidebar::Sidebar,
+    room_history::RoomHistory, sidebar::Sidebar, space::Space,
 };
 use crate::{
     Window,

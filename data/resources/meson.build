@@ -21,6 +21,7 @@ scss_deps = files(
     'stylesheet/_room_history.scss',
     'stylesheet/_session_view.scss',
     'stylesheet/_vendor.scss',
+    'stylesheet/_windows.scss',
 )
 
 stylesheet = custom_target(

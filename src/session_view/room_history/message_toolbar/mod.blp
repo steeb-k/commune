@@ -121,6 +121,13 @@ template $MessageToolbar: Adw.Bin {
             }
           }
 
+          Gtk.Button voice_button {
+            valign: end;
+            icon-name: "audio-input-microphone-symbolic";
+            tooltip-text: _("Record a Voice Message");
+            clicked => $start_voice_recording() swapped;
+          }
+
           $CustomEntry {
             Gtk.ScrolledWindow {
               vexpand: true;
@@ -184,6 +191,63 @@ template $MessageToolbar: Adw.Bin {
               "send-text-message-button",
             ]
           }
+        }
+      };
+    }
+
+    Gtk.StackPage {
+      name: "voice-recording";
+
+      child: Gtk.Box {
+        spacing: 6;
+
+        styles [
+          "toolbar",
+        ]
+
+        Gtk.Image {
+          icon-name: "media-record-symbolic";
+          accessible-role: presentation;
+
+          styles [
+            "error",
+          ]
+        }
+
+        Gtk.Label recording_elapsed_label {
+          styles [
+            "heading",
+            "numeric",
+          ]
+        }
+
+        Gtk.Label {
+          label: _("Recording a voice message");
+          hexpand: true;
+          xalign: 0;
+          ellipsize: end;
+
+          styles [
+            "dimmed",
+          ]
+        }
+
+        Gtk.Button {
+          valign: center;
+          label: _("Cancel");
+          clicked => $cancel_voice_recording() swapped;
+        }
+
+        Gtk.Button {
+          valign: center;
+          icon-name: "send-symbolic";
+          tooltip-text: _("Send Voice Message");
+          clicked => $send_voice_message() swapped;
+
+          styles [
+            "suggested-action",
+            "circular",
+          ]
         }
       };
     }

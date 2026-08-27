@@ -39,6 +39,7 @@ mod imp {
         action_group: RefCell<Option<gio::SimpleActionGroup>>,
         shortcut_controller: RefCell<Option<gtk::ShortcutController>>,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pinned_events_handler: RefCell<Option<glib::SignalHandlerId>>,
         target_user_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -205,6 +206,10 @@ mod imp {
                     event.room().permissions().disconnect(handler);
                 }
 
+                if let Some(handler) = self.pinned_events_handler.take() {
+                    event.room().disconnect(handler);
+                }
+
                 if let Some(handler) = self.target_user_handler.take()
                     && let Some(target_user) = event.target_user()
                 {
@@ -230,6 +235,18 @@ mod imp {
                     }
                 ));
                 self.permissions_handler.replace(Some(permissions_handler));
+
+                // Pinning an event swaps its Pin action for an Unpin one, and
+                // the pinned events change without the event itself changing.
+                let pinned_events_handler = event.room().connect_pinned_events_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_actions();
+                    }
+                ));
+                self.pinned_events_handler
+                    .replace(Some(pinned_events_handler));
 
                 if let Some(target_user) = event.target_user() {
                     let target_user_handler = target_user.connect_membership_notify(clone!(

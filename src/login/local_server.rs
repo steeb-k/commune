@@ -2,11 +2,10 @@
 use gettextrs::gettext;
 #[cfg(not(target_os = "android"))]
 use gtk::gio;
+#[cfg(target_os = "android")]
 use matrix_sdk::utils::local_server::QueryString;
 #[cfg(not(target_os = "android"))]
-use matrix_sdk::utils::local_server::{
-    LocalServerBuilder, LocalServerRedirectHandle, LocalServerResponse,
-};
+use matrix_sdk::utils::local_server::{LocalServerBuilder, LocalServerResponse};
 #[cfg(not(target_os = "android"))]
 use tracing::error;
 use url::Url;

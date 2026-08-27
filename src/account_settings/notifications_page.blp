@@ -70,6 +70,31 @@ template $NotificationsPage: Adw.PreferencesPage {
     }
   }
 
+  Adw.PreferencesGroup special_rules {
+    title: _("Notify Me About");
+    description: _("These apply in every room, whatever the settings above say for it");
+
+    $SwitchLoadingRow mention_rule_row {
+      title: _("Mentions of My Name");
+      notify::is-active => $set_mention_rule_enabled() swapped;
+    }
+
+    $SwitchLoadingRow room_mention_rule_row {
+      title: _("Messages Addressing the Whole Room (@room)");
+      notify::is-active => $set_room_mention_rule_enabled() swapped;
+    }
+
+    $SwitchLoadingRow invite_rule_row {
+      title: _("Room Invites");
+      notify::is-active => $set_invite_rule_enabled() swapped;
+    }
+
+    $SwitchLoadingRow call_rule_row {
+      title: _("Incoming Calls");
+      notify::is-active => $set_call_rule_enabled() swapped;
+    }
+  }
+
   Adw.PreferencesGroup {
     title: _("Keywords");
     description: _(

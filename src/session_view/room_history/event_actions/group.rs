@@ -123,6 +123,24 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
                     ))
                     .build()]);
             }
+
+            if matches!(
+                state,
+                MessageState::RecoverableError | MessageState::PermanentError
+            ) {
+                // Retry sending the event.
+                action_group.add_action_entries([gio::ActionEntry::builder("retry-send")
+                    .activate(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_, _, _| {
+                            spawn!(async move {
+                                imp.retry_send().await;
+                            });
+                        }
+                    ))
+                    .build()]);
+            }
         }
 
         self.add_message_like_actions(&action_group, &room, &event);
@@ -136,6 +154,7 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
     ///
     /// See [`Event::is_message_like()`] for the definition of a message
     /// event.
+    #[allow(clippy::too_many_lines)]
     fn add_message_like_actions(
         &self,
         action_group: &gio::SimpleActionGroup,
@@ -239,6 +258,85 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
                         {
                             error!("Could not activate `room-history.reply` action");
                         }
+                    }
+                ))
+                .build()]);
+        }
+
+        // View the thread the event is in, or is the root of.
+        //
+        // A threaded reply names its root; a root carries a summary of its
+        // thread and is its own root.
+        let thread_root = event
+            .thread_root()
+            .or_else(|| event.thread_summary().and_then(|_| event.event_id()));
+        let is_in_thread = thread_root.is_some();
+        if let Some(thread_root) = thread_root {
+            action_group.add_action_entries([gio::ActionEntry::builder("view-thread")
+                .activate(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _| {
+                        if imp
+                            .obj()
+                            .activate_action(
+                                "room-history.show-thread",
+                                Some(&thread_root.as_str().to_variant()),
+                            )
+                            .is_err()
+                        {
+                            error!("Could not activate `room-history.show-thread` action");
+                        }
+                    }
+                ))
+                .build()]);
+        }
+
+        // Root a new thread at the event.
+        //
+        // Only an event in no thread can root one: a threaded reply continues
+        // its own thread, and a root's thread is viewed instead. The thread
+        // view's composer scopes the send, so starting a thread is just
+        // opening the view on the future root.
+        if !is_in_thread
+            && event.can_be_replied_to()
+            && let Some(event_id) = event.event_id()
+        {
+            action_group.add_action_entries([gio::ActionEntry::builder("reply-in-thread")
+                .activate(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _| {
+                        if imp
+                            .obj()
+                            .activate_action(
+                                "room-history.show-thread",
+                                Some(&event_id.as_str().to_variant()),
+                            )
+                            .is_err()
+                        {
+                            error!("Could not activate `room-history.show-thread` action");
+                        }
+                    }
+                ))
+                .build()]);
+        }
+
+        // Pin or unpin the event.
+        if has_event_id && permissions.can_pin_events() {
+            let is_pinned = event
+                .event_id()
+                .is_some_and(|event_id| room.is_pinned(&event_id));
+
+            let name = if is_pinned { "unpin" } else { "pin" };
+            action_group.add_action_entries([gio::ActionEntry::builder(name)
+                .activate(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _| {
+                        spawn!(async move {
+                            imp.set_message_pinned(!is_pinned).await;
+                        });
                     }
                 ))
                 .build()]);
@@ -598,6 +696,37 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
         }
     }
 
+    /// Pin or unpin the event of this row.
+    async fn set_message_pinned(&self, pinned: bool)
+    where
+        Self::Type: IsA<gtk::Widget>,
+    {
+        let Some(event) = self.event() else {
+            error!("Could not pin timeline item that is not an event");
+            return;
+        };
+        let Some(event_id) = event.event_id() else {
+            error!("Event to pin does not have an event ID");
+            return;
+        };
+        let obj = self.obj();
+        let room = event.room();
+
+        let result = if pinned {
+            room.pin_event(event_id).await
+        } else {
+            room.unpin_event(event_id).await
+        };
+
+        if result.is_err() {
+            if pinned {
+                toast!(obj, gettext("Could not pin message"));
+            } else {
+                toast!(obj, gettext("Could not unpin message"));
+            }
+        }
+    }
+
     /// Toggle the reaction with the given key for the event of this row.
     async fn toggle_reaction(&self, key: String)
     where
@@ -654,6 +783,32 @@ pub(crate) trait EventActionsGroup: ObjectSubclass {
     }
 
     /// Cancel sending the event of this row.
+    /// Try to send the current failed event again.
+    async fn retry_send(&self)
+    where
+        Self::Type: IsA<gtk::Widget>,
+    {
+        let Some(event) = self.event() else {
+            error!("Could not retry timeline item that is not an event");
+            return;
+        };
+        let Some(handle) = event.item().local_echo_send_handle() else {
+            error!("Could not retry event without a send handle");
+            return;
+        };
+
+        let result = spawn_tokio!(async move { handle.unwedge().await })
+            .await
+            .expect("task was not aborted");
+        if let Err(error) = result {
+            error!("Could not retry sending the message: {error}");
+            toast!(
+                self.obj(),
+                gettext("Could not try sending the message again")
+            );
+        }
+    }
+
     async fn cancel_send(&self)
     where
         Self::Type: IsA<gtk::Widget>,

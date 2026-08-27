@@ -25,7 +25,7 @@ pub(crate) const APP_NAME: &str = "Commune";
 pub(crate) const APP_HOMEPAGE_URL: &str = "https://github.com/steeb-k/commune";
 
 mod imp {
-    use std::cell::Cell;
+    use std::cell::{Cell, OnceCell};
 
     use super::*;
 
@@ -39,6 +39,12 @@ mod imp {
         pub(super) session_list: SessionList,
         intent_handler: BoundObjectWeakRef<glib::Object>,
         last_network_state: Cell<NetworkState>,
+        /// Where to load the app's own resources from.
+        ///
+        /// `run()` puts them here for `startup()`, which is the only place
+        /// they are loaded and the only place that runs on the instance that
+        /// won registration.
+        pub(super) paths: OnceCell<RuntimePaths>,
     }
 
     impl Default for Application {
@@ -49,6 +55,7 @@ mod imp {
                 session_list: Default::default(),
                 intent_handler: Default::default(),
                 last_network_state: Default::default(),
+                paths: Default::default(),
             }
         }
     }
@@ -130,7 +137,12 @@ mod imp {
                 }
             ));
 
-            self.set_up_color_scheme();
+            // The colour scheme is not set up here: it goes through
+            // `AdwStyleManager`, which needs libadwaita started, and nothing
+            // has started it at construction time — `main()` builds the
+            // `Application` before `startup()` has run. It is done there
+            // instead, which is also the first place it could matter, since
+            // there is no window until `activate()`.
 
             #[cfg(debug_assertions)]
             self.set_up_test_notification();
@@ -164,7 +176,103 @@ mod imp {
         }
 
         fn startup(&self) {
+            // Everything below happens here rather than in `main()` because
+            // `GApplication` calls `startup` only on the instance that won
+            // registration. Work done in `main()` is work a second launch does
+            // too, in the window before either process knows which one it is,
+            // and that window is the single-instance race in
+            // `doc/startup-registration-race.md`: two launches a few seconds
+            // apart could both become primary, and two primaries are two
+            // writers on one `matrix-sdk-sqlite` store.
+            let paths = self
+                .paths
+                .get()
+                .expect("`run()` stores the paths before starting the application");
+
+            // Before the parent, which looks for its own menus under the
+            // application's `resource-base-path`.
+            let res =
+                gio::Resource::load(&paths.resources_file).expect("Could not load gresource file");
+            gio::resources_register(&res);
+            let ui_res = gio::Resource::load(&paths.ui_resources_file)
+                .expect("Could not load UI gresource file");
+            gio::resources_register(&ui_res);
+
+            // Starts GTK and libadwaita, among much else. `main()`
+            // deliberately does neither.
             self.parent_startup();
+
+            // Needs libadwaita started, so it cannot be done at construction.
+            self.set_up_color_scheme();
+
+            // Capture the Java VM while we are still on the thread GTK gave a
+            // `JNIEnv` to. The secret store needs it from a tokio worker, which
+            // has no env of its own and cannot borrow this one, so this has to
+            // happen here and not where it is used. It needs a display, so it
+            // must follow the parent's `gtk::init()`.
+            #[cfg(target_os = "android")]
+            if let Err(error) = crate::utils::android::init() {
+                // Not fatal on its own: what fails without it is the secret
+                // store, and that reports its own failure with a message about
+                // sessions rather than about JNI.
+                error!("Could not reach the Java VM: {error}");
+            }
+
+            // The slowest thing the process does: GStreamer scans its plugin
+            // registry, which is not fast, and is cold on a first run.
+            gst::init().expect("Could not initialize gst");
+
+            // Android links GStreamer statically out of the upstream binaries
+            // rather than building it as a wrap, so there is no plugin
+            // directory to scan and nothing is discovered: the plugins in
+            // `build-aux/android/gstreamer-plugins` are the only elements that
+            // exist, and an element outside that list fails at
+            // `gst_element_factory_make` rather than at build time.
+            //
+            // `gst_init()` does not register them. The ndk-build template
+            // shipped with the GStreamer binaries implies it does, but nothing
+            // in `libgstreamer-1.0.a` references `gst_init_static_plugins` at
+            // all, so the call is ours to make — after `gst::init()`, because
+            // registration needs an initialized registry. See
+            // `doc/android-media-plan.md`.
+            #[cfg(target_os = "android")]
+            {
+                // Generated by `build-aux/android/gstreamer-static-plugins.sh`.
+                unsafe extern "C" {
+                    fn commune_gst_register_static_plugins();
+                }
+
+                // SAFETY: the generated function only calls GStreamer's own
+                // registration entry points, and `gst::init()` has returned.
+                unsafe { commune_gst_register_static_plugins() };
+
+                // `gtk4paintablesink` is not among them: it is a Rust plugin,
+                // built here as a crate rather than taken from the upstream
+                // binaries, so it registers through its own generated entry
+                // point.
+                gst_gtk4::plugin_register_static().expect("Could not register gtk4paintablesink");
+
+                // The plugin count is worth logging rather than just the
+                // version: in a static build it is the only evidence that
+                // registration ran, and a missing plugin presents much later as
+                // "no such element".
+                tracing::info!(
+                    "{}, {} plugins registered",
+                    gst::version_string(),
+                    gst::Registry::get().plugins().len()
+                );
+            }
+
+            #[cfg(target_os = "linux")]
+            aperture::init(crate::APP_ID);
+
+            // Now that there are settings to change, make text resolve to the
+            // size it is on every other platform.
+            #[cfg(target_os = "macos")]
+            crate::utils::macos_text_scale::init();
+
+            gtk::IconTheme::for_display(&gtk::gdk::Display::default().unwrap())
+                .add_resource_path("/org/gnome/Fractal/icons");
 
             // Set icons for shell
             gtk::Window::set_default_icon_name(crate::APP_ID);
@@ -843,7 +951,31 @@ impl Application {
         info!("Version: {} ({})", config::VERSION, config::PROFILE);
         info!("Datadir: {}", paths.pkgdata_dir().display());
 
+        // `startup()` loads the resources from these, and it runs inside the
+        // `run()` calls below.
+        self.imp()
+            .paths
+            .set(paths.clone())
+            .expect("`run()` is called once");
+
+        #[cfg(not(target_os = "windows"))]
         ApplicationExtManual::run(self);
+
+        // Windows starts us with `-Embedding` when a notification is clicked
+        // and nothing is serving the activator class yet. `GApplication` has
+        // `HANDLES_OPEN`, so it would take that for something to open and
+        // refuse to start over an argument it cannot make sense of.
+        #[cfg(target_os = "windows")]
+        {
+            let args = std::env::args_os()
+                .map(|argument| argument.to_string_lossy().into_owned())
+                .filter(|argument| {
+                    !crate::utils::windows_toast_activator::is_embedding_argument(argument)
+                })
+                .collect::<Vec<_>>();
+
+            ApplicationExtManual::run_with_args(self, &args);
+        }
     }
 }
 

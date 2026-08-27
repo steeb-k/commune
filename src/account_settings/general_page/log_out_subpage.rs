@@ -6,7 +6,7 @@ use crate::{
     account_settings::AccountSettings,
     components::LoadingButtonRow,
     session::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
-    toast,
+    spawn, spawn_tokio, toast,
 };
 
 mod imp {
@@ -64,11 +64,18 @@ mod imp {
         /// Set the current session.
         fn set_session(&self, session: Option<&Session>) {
             self.session.set(session);
-            self.update_warning();
+
+            spawn!(glib::clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    imp.update_warning().await;
+                }
+            ));
         }
 
         /// Update the warning message.
-        fn update_warning(&self) {
+        async fn update_warning(&self) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
@@ -80,7 +87,28 @@ mod imp {
             if verification_state != SessionVerificationState::Verified
                 || recovery_state != RecoveryState::Enabled
             {
-                self.warning_description.set_label(&gettext("The crypto identity and account recovery are not set up properly. If this is your last connected session and you have no recent local backup of your encryption keys, you will not be able to restore your account."));
+                // The SDK can answer whether this really is the last device,
+                // which turns "if this is your last session" from a
+                // hypothetical into the data-loss warning it deserves to be.
+                // An error keeps the hedged sentence; guessing "not last"
+                // would soften a warning that exists to be heard.
+                let client = session.client();
+                let handle =
+                    spawn_tokio!(
+                        async move { client.encryption().recovery().is_last_device().await }
+                    );
+                let is_last_device = handle.await.expect("task was not aborted").unwrap_or(false);
+
+                let label = if is_last_device {
+                    gettext(
+                        "This is your last connected session, and account recovery is not set up. If you log out without a backup of your encryption keys, your encrypted messages will be lost for good.",
+                    )
+                } else {
+                    gettext(
+                        "The crypto identity and account recovery are not set up properly. If this is your last connected session and you have no recent local backup of your encryption keys, you will not be able to restore your account.",
+                    )
+                };
+                self.warning_description.set_label(&label);
                 self.warning_box.set_visible(true);
                 return;
             }

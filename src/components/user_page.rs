@@ -22,8 +22,8 @@ use crate::{
     gettext_f,
     prelude::*,
     session::{Member, Membership, Permissions, Room, User},
-    toast,
-    utils::BoundObject,
+    spawn, spawn_tokio, toast,
+    utils::{BoundObject, TemplateCallbacks, matrix::fetch_mutual_rooms},
 };
 
 mod imp {
@@ -43,6 +43,10 @@ mod imp {
         direct_chat_box: TemplateChild<gtk::ListBox>,
         #[template_child]
         direct_chat_button: TemplateChild<LoadingButtonRow>,
+        #[template_child]
+        mutual_rooms_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        mutual_rooms_list: TemplateChild<gtk::ListBox>,
         #[template_child]
         verified_row: TemplateChild<adw::ActionRow>,
         #[template_child]
@@ -83,6 +87,11 @@ mod imp {
         bindings: RefCell<Vec<glib::Binding>>,
         permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
         room_handlers: RefCell<Vec<glib::SignalHandlerId>>,
+        /// The rooms listed in the shared rooms section, in display order.
+        mutual_rooms: RefCell<Vec<ruma::OwnedRoomId>>,
+        /// The number of the current shared rooms request, so a stale answer
+        /// is dropped rather than drawn for the wrong user.
+        mutual_rooms_generation: std::cell::Cell<u64>,
     }
 
     #[glib::object_subclass]
@@ -94,6 +103,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::bind_template_callbacks(klass);
+            TemplateCallbacks::bind_template_callbacks(klass);
 
             klass.set_css_name("user-page");
         }
@@ -226,7 +236,114 @@ mod imp {
             self.update_room();
             self.update_verified();
             self.update_ignored();
+            self.load_mutual_rooms();
             obj.notify_user();
+        }
+
+        /// Load the rooms shared with the current user.
+        fn load_mutual_rooms(&self) {
+            self.mutual_rooms_box.set_visible(false);
+            self.mutual_rooms_list.remove_all();
+
+            let Some(user) = self.user.obj() else {
+                return;
+            };
+            if user.is_own_user() {
+                // The endpoint refuses our own user ID, sensibly.
+                return;
+            }
+
+            let generation = self.mutual_rooms_generation.get().wrapping_add(1);
+            self.mutual_rooms_generation.set(generation);
+
+            let session = user.session();
+            let client = session.client();
+            let user_id = user.user_id().clone();
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    let handle =
+                        spawn_tokio!(async move { fetch_mutual_rooms(&client, user_id).await });
+                    let Some(room_ids) = handle.await.expect("task was not aborted") else {
+                        // The homeserver does not answer the endpoint, which
+                        // is the rule rather than the exception — the section
+                        // simply does not appear.
+                        return;
+                    };
+
+                    if imp.mutual_rooms_generation.get() != generation {
+                        // The page moved on to another user.
+                        return;
+                    }
+
+                    imp.show_mutual_rooms(&room_ids);
+                }
+            ));
+        }
+
+        /// Fill the shared rooms section with the given rooms.
+        fn show_mutual_rooms(&self, room_ids: &[ruma::OwnedRoomId]) {
+            let Some(session) = self.user.obj().map(|user| user.session()) else {
+                return;
+            };
+            let room_list = session.room_list();
+
+            let mut listed = Vec::new();
+            for room_id in room_ids {
+                // A room both users are joined to is by definition a room
+                // sync knows about; one that is not resolvable is stale
+                // server state and better skipped than named by its ID.
+                let Some(room) = room_list.get(room_id) else {
+                    continue;
+                };
+
+                let avatar = Avatar::new();
+                avatar.set_size(24);
+                avatar.set_data(Some(room.avatar_data().clone()));
+
+                let row = adw::ActionRow::builder()
+                    .activatable(true)
+                    .use_markup(false)
+                    .title(room.display_name())
+                    .build();
+                row.add_prefix(&avatar);
+
+                self.mutual_rooms_list.append(&row);
+                listed.push(room_id.clone());
+            }
+
+            self.mutual_rooms_box.set_visible(!listed.is_empty());
+            self.mutual_rooms.replace(listed);
+        }
+
+        /// Open the room of the given activated row.
+        #[template_callback]
+        fn mutual_room_activated(&self, row: &gtk::ListBoxRow) {
+            let index = usize::try_from(row.index()).ok();
+            let Some(room_id) = index.and_then(|i| self.mutual_rooms.borrow().get(i).cloned())
+            else {
+                return;
+            };
+
+            let Some(session) = self.user.obj().map(|user| user.session()) else {
+                return;
+            };
+            let Some(room) = session.room_list().get(&room_id) else {
+                return;
+            };
+
+            let obj = self.obj();
+            let Some(parent_window) = obj.root().and_downcast::<gtk::Window>() else {
+                return;
+            };
+
+            if let Some(main_window) = parent_window.transient_for().and_downcast::<Window>() {
+                main_window.session_view().select_room(room);
+            }
+
+            parent_window.close();
         }
 
         /// Disconnect all the signals.
@@ -356,8 +473,8 @@ mod imp {
                     Some(pgettext("member", "Banned"))
                 }
                 Membership::Knock => {
-                    // Translators: As in, 'The room member requested an invite'.
-                    Some(pgettext("member", "Requested an Invite"))
+                    // Translators: As in, 'The room member asked to be let in'.
+                    Some(pgettext("member", "Requested Access"))
                 }
                 Membership::Unsupported => {
                     // Translators: As in, 'The room member has an unknown role'.
@@ -383,8 +500,16 @@ mod imp {
                 permissions.can_do_to_user(user_id, PowerLevelUserAction::ChangePowerLevel);
             self.power_level_row.set_read_only(!can_change_power_level);
 
+            // This button is only ever offered for somebody who has knocked,
+            // and to them an invite is not an invitation — it is the answer to
+            // a request they made. The button beside it already says "Deny
+            // Request"; this one used to say "Invite", which is what the
+            // protocol does rather than what the person is doing.
             let can_invite = matches!(membership, Membership::Knock) && permissions.can_invite();
             self.invite_button.set_visible(can_invite);
+            if can_invite {
+                self.invite_button.set_title(&gettext("Accept Request"));
+            }
 
             let can_kick = matches!(
                 membership,
@@ -522,7 +647,9 @@ mod imp {
             let user_id = member.user_id().clone();
 
             if room.invite(&[user_id]).await.is_err() {
-                toast!(self.obj(), gettext("Could not invite user"));
+                // Same reasoning as the button's own label: this only ever
+                // runs for somebody who asked to come in.
+                toast!(self.obj(), gettext("Could not accept the request"));
             }
 
             self.reset_room();

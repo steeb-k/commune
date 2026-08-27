@@ -49,6 +49,7 @@ mod macros;
 pub(crate) mod matrix;
 pub(crate) mod media;
 pub(crate) mod notifications;
+pub(crate) mod password;
 mod placeholder_object;
 mod single_item_list_model;
 pub(crate) mod sourceview;
@@ -56,6 +57,14 @@ pub(crate) mod string;
 mod template_callbacks;
 pub(crate) mod tls;
 pub(crate) mod toast;
+#[cfg(target_os = "windows")]
+pub(crate) mod windows_app_id;
+#[cfg(target_os = "windows")]
+pub(crate) mod windows_frame;
+#[cfg(target_os = "windows")]
+pub(crate) mod windows_notifications;
+#[cfg(target_os = "windows")]
+pub(crate) mod windows_toast_activator;
 
 pub(crate) use self::{
     expression_list_model::ExpressionListModel,
@@ -80,6 +89,7 @@ pub(crate) enum DataType {
 impl DataType {
     /// The path of the directory where data should be stored, depending on this
     /// type.
+    #[cfg(not(target_os = "windows"))]
     pub(crate) fn dir_path(self) -> PathBuf {
         let mut path = self.base_dir_path();
         path.push(PROFILE.dir_name().as_ref());
@@ -87,8 +97,35 @@ impl DataType {
         path
     }
 
+    /// The path of the directory where data should be stored, depending on this
+    /// type.
+    ///
+    /// Windows has one per-user location for both types, `%LOCALAPPDATA%`,
+    /// which is where an application keeps state that should not roam to the
+    /// user's other machines — and our databases are far too large to roam.
+    /// There is no system cache directory to pair it with, so the two types are
+    /// told apart by a subdirectory. That puts the profile in the middle of the
+    /// path rather than at the end, which is why this does not share the shape
+    /// above.
+    #[cfg(target_os = "windows")]
+    pub(crate) fn dir_path(self) -> PathBuf {
+        // `glib::user_data_dir()` is `%LOCALAPPDATA%` on Windows. It is used
+        // rather than the variable itself so that a deliberate `XDG_DATA_HOME`
+        // still moves the data, which is how the app is told apart from itself
+        // in tests.
+        let mut path = glib::user_data_dir();
+        path.push(PROFILE.dir_name().as_ref());
+
+        match self {
+            DataType::Persistent => path.push("data"),
+            DataType::Cache => path.push("cache"),
+        }
+
+        path
+    }
+
     /// The path of the platform directory that holds data of this type.
-    #[cfg(not(any(target_os = "macos", target_os = "android")))]
+    #[cfg(not(any(target_os = "macos", target_os = "android", target_os = "windows")))]
     fn base_dir_path(self) -> PathBuf {
         match self {
             DataType::Persistent => glib::user_data_dir(),
@@ -205,6 +242,24 @@ fn android_files_dir() -> PathBuf {
         .parent()
         .expect("`<files>/share` should have a parent")
         .to_owned()
+}
+
+/// Repair a file handed over by GTK's broken macOS pasteboard encoding.
+///
+/// GTK 4.22's macOS backend percent-encodes the whole `file://…` string it
+/// builds for a file that is dropped on the window or read from the
+/// clipboard, so the scheme's own colon comes out as `%3A` and GIO, unable
+/// to parse a scheme, hands us a dummy file with no path. The rest of the
+/// string *is* correctly encoded, so putting the colon back yields exactly
+/// the URI a fixed GTK produces. Upstream fixed it on `main` in `2a8a2895`;
+/// no 4.22 release carries the fix. Once one does, this never triggers: a
+/// healthy local file has a path.
+#[cfg(target_os = "macos")]
+pub(crate) fn repair_pasteboard_file(file: gio::File) -> gio::File {
+    match file.uri().strip_prefix("file%3A//") {
+        Some(rest) if file.path().is_none() => gio::File::for_uri(&format!("file://{rest}")),
+        _ => file,
+    }
 }
 
 /// Replace variables in the given string with the given dictionary.
@@ -1047,5 +1102,31 @@ where
 
     fn into_future(self) -> Self::IntoFuture {
         Box::pin(async move { self.0.await.unwrap_or_default() })
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_mangled_pasteboard_uri_gets_its_scheme_back() {
+        // The exact string GTK 4.22's macOS backend produces for
+        // "/tmp/test file ü.png" dropped from the Finder.
+        let broken = gio::File::for_uri("file%3A///tmp/test%20file%20u%CC%88.png");
+        assert!(broken.path().is_none());
+
+        let repaired = repair_pasteboard_file(broken);
+        assert_eq!(
+            repaired.path().as_deref(),
+            Some(Path::new("/tmp/test file u\u{308}.png"))
+        );
+    }
+
+    #[test]
+    fn a_healthy_file_is_left_alone() {
+        let file = gio::File::for_path("/tmp/plain.png");
+        let same = repair_pasteboard_file(file.clone());
+        assert_eq!(same.uri(), file.uri());
     }
 }

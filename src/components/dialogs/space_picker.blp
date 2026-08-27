@@ -1,0 +1,79 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $SpacePickerDialog: Adw.Dialog {
+  title: _("Choose a Space");
+  content-width: 400;
+  content-height: 480;
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    [top]
+    Adw.Clamp {
+      margin-start: 12;
+      margin-end: 12;
+      margin-bottom: 12;
+
+      child: Gtk.SearchEntry search_entry {
+        placeholder-text: _("Search spaces…");
+        search-changed => $update_search() swapped;
+
+        accessibility {
+          label: _("Space Search");
+        }
+      };
+    }
+
+    content: Gtk.Stack stack {
+      transition-type: crossfade;
+
+      Gtk.StackPage {
+        name: "list";
+
+        child: Gtk.ScrolledWindow {
+          hscrollbar-policy: never;
+
+          child: Adw.Clamp {
+            margin-start: 12;
+            margin-end: 12;
+            margin-bottom: 12;
+
+            child: Gtk.ListBox list {
+              valign: start;
+              selection-mode: none;
+              row-activated => $row_activated() swapped;
+
+              styles [
+                "boxed-list",
+              ]
+            };
+          };
+        };
+      }
+
+      Gtk.StackPage {
+        name: "empty";
+
+        child: Adw.StatusPage {
+          icon-name: "view-grid-symbolic";
+          title: _("No Spaces");
+          // Translators: A space is a collection of rooms, presented as a
+          // folder-like room that other rooms belong to.
+          description: _("You have not joined a space yet. Find one with Explore, or make one from another client.");
+        };
+      }
+
+      Gtk.StackPage {
+        name: "no-matching";
+
+        child: Adw.StatusPage {
+          icon-name: "system-search-symbolic";
+          title: _("No Spaces Found");
+          description: _("No space matching the search was found");
+        };
+      }
+    };
+  };
+}

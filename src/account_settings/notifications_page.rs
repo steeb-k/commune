@@ -5,7 +5,7 @@ use gtk::{gio, glib, glib::clone};
 use crate::{
     components::{CheckLoadingRow, EntryAddRow, RemovableRow, SwitchLoadingRow},
     i18n::gettext_f,
-    session::{NotificationsGlobalSetting, NotificationsSettings},
+    session::{NotificationsGlobalSetting, NotificationsSettings, NotificationsSpecialRule},
     spawn, toast,
     utils::{BoundObjectWeakRef, PlaceholderObject, SingleItemListModel},
 };
@@ -33,6 +33,16 @@ mod imp {
         global_direct_row: TemplateChild<CheckLoadingRow>,
         #[template_child]
         global_mentions_row: TemplateChild<CheckLoadingRow>,
+        #[template_child]
+        special_rules: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        mention_rule_row: TemplateChild<SwitchLoadingRow>,
+        #[template_child]
+        room_mention_rule_row: TemplateChild<SwitchLoadingRow>,
+        #[template_child]
+        invite_rule_row: TemplateChild<SwitchLoadingRow>,
+        #[template_child]
+        call_rule_row: TemplateChild<SwitchLoadingRow>,
         #[template_child]
         keywords: TemplateChild<gtk::ListBox>,
         #[template_child]
@@ -222,12 +232,46 @@ mod imp {
                     }
                 ));
 
+                let mention_rule_handler = settings.connect_mention_rule_enabled_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_special_rules();
+                    }
+                ));
+                let room_mention_rule_handler =
+                    settings.connect_room_mention_rule_enabled_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_special_rules();
+                        }
+                    ));
+                let invite_rule_handler = settings.connect_invite_rule_enabled_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_special_rules();
+                    }
+                ));
+                let call_rule_handler = settings.connect_call_rule_enabled_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_special_rules();
+                    }
+                ));
+
                 self.notifications_settings.set(
                     settings,
                     vec![
                         account_enabled_handler,
                         session_enabled_handler,
                         global_setting_handler,
+                        mention_rule_handler,
+                        room_mention_rule_handler,
+                        invite_rule_handler,
+                        call_rule_handler,
                     ],
                 );
 
@@ -325,6 +369,7 @@ mod imp {
 
             // Other sections will be disabled or not.
             self.update_global();
+            self.update_special_rules();
             self.update_keywords();
         }
 
@@ -415,6 +460,94 @@ mod imp {
             self.obj().notify_global_loading();
         }
 
+        /// Update the section about the special push rules.
+        fn update_special_rules(&self) {
+            let Some(settings) = self.notifications_settings.obj() else {
+                return;
+            };
+
+            self.mention_rule_row
+                .set_is_active(settings.mention_rule_enabled());
+            self.room_mention_rule_row
+                .set_is_active(settings.room_mention_rule_enabled());
+            self.invite_rule_row
+                .set_is_active(settings.invite_rule_enabled());
+            self.call_rule_row
+                .set_is_active(settings.call_rule_enabled());
+
+            let sensitive = settings.account_enabled() && settings.session_enabled();
+            self.special_rules.set_sensitive(sensitive);
+        }
+
+        /// Toggle the given special push rule to match the given row.
+        async fn toggle_special_rule(
+            &self,
+            row: &SwitchLoadingRow,
+            rule: NotificationsSpecialRule,
+        ) {
+            let Some(settings) = self.notifications_settings.obj() else {
+                return;
+            };
+
+            let enabled = row.is_active();
+            if enabled == settings.special_rule_enabled(rule) {
+                // Nothing to do.
+                return;
+            }
+
+            row.set_sensitive(false);
+            row.set_is_loading(true);
+
+            if settings
+                .set_special_rule_enabled(rule, enabled)
+                .await
+                .is_err()
+            {
+                toast!(self.obj(), gettext("Could not change notification rule"));
+            }
+
+            row.set_is_loading(false);
+            row.set_sensitive(true);
+            self.update_special_rules();
+        }
+
+        /// Toggle notifications for mentions of the user.
+        #[template_callback]
+        async fn set_mention_rule_enabled(&self) {
+            self.toggle_special_rule(
+                &self.mention_rule_row.clone(),
+                NotificationsSpecialRule::UserMention,
+            )
+            .await;
+        }
+
+        /// Toggle notifications for mentions of the whole room.
+        #[template_callback]
+        async fn set_room_mention_rule_enabled(&self) {
+            self.toggle_special_rule(
+                &self.room_mention_rule_row.clone(),
+                NotificationsSpecialRule::RoomMention,
+            )
+            .await;
+        }
+
+        /// Toggle notifications for invites.
+        #[template_callback]
+        async fn set_invite_rule_enabled(&self) {
+            self.toggle_special_rule(
+                &self.invite_rule_row.clone(),
+                NotificationsSpecialRule::Invite,
+            )
+            .await;
+        }
+
+        /// Toggle notifications for incoming calls.
+        #[template_callback]
+        async fn set_call_rule_enabled(&self) {
+            self.toggle_special_rule(&self.call_rule_row.clone(), NotificationsSpecialRule::Call)
+                .await;
+        }
+
         /// Update the section about keywords.
         #[template_callback]
         fn update_keywords(&self) {
@@ -484,12 +617,13 @@ mod imp {
             ));
         }
 
-        /// Whether we can add the keyword that is currently in the entry.
         /// The background delivery mode combo changed.
         ///
         /// Bound on every platform because the template is; only Android has
-        /// anything to do.
+        /// anything to do — which is also why `self` goes unused everywhere
+        /// else.
         #[template_callback]
+        #[cfg_attr(not(target_os = "android"), allow(clippy::unused_self))]
         fn delivery_changed(&self) {
             #[cfg(target_os = "android")]
             self.apply_delivery_mode();
@@ -497,11 +631,13 @@ mod imp {
 
         /// The push status row was activated.
         #[template_callback]
+        #[cfg_attr(not(target_os = "android"), allow(clippy::unused_self))]
         fn push_status_activated(&self) {
             #[cfg(target_os = "android")]
             self.push_status_tapped();
         }
 
+        /// Whether we can add the keyword that is currently in the entry.
         fn can_add_keyword(&self) -> bool {
             // Cannot add a keyword if section is disabled.
             if !self.keywords.is_sensitive() {

@@ -41,7 +41,7 @@ template $LoginHomeserverPage: Adw.NavigationPage {
             }
 
             Gtk.Label title {
-              label: _("Homeserver");
+              label: _("Choose a Homeserver");
               wrap: true;
               justify: center;
               accessible-role: heading;
@@ -66,43 +66,93 @@ template $LoginHomeserverPage: Adw.NavigationPage {
 
               Gtk.ListBox {
                 accessible-role: group;
+                selection-mode: none;
 
                 styles [
                   "boxed-list",
                 ]
 
-                Adw.EntryRow homeserver_entry {
-                  selectable: false;
+                Adw.ActionRow {
+                  title: "matrix.org";
+                  subtitle: _("The biggest public homeserver");
+                  activatable-widget: matrix_org_check;
 
-                  // A URL, and saying so is what makes a phone keyboard offer
-                  // "/" and "." and stop capitalising the first letter. Not an
-                  // Android detail: desktop input methods and accessibility
-                  // tooling read the same property, and this field has always
-                  // been a URL.
-                  input-purpose: url;
-                  changed => $update_next_state() swapped;
-                  entry-activated => $check_homeserver() swapped;
+                  [prefix]
+                  Gtk.CheckButton matrix_org_check {
+                    active: true;
+                    valign: center;
+                    toggled => $server_choice_changed() swapped;
 
-                  accessibility {
-                    described-by: [
-                      homeserver_help,
-                    ];
+                    accessibility {
+                      label: "matrix.org";
+                    }
+                  }
+                }
+
+                Adw.ActionRow {
+                  title: _("Another Homeserver");
+                  subtitle: _("Your own, your workplace’s, or your community’s");
+                  activatable-widget: other_check;
+
+                  [prefix]
+                  Gtk.CheckButton other_check {
+                    group: matrix_org_check;
+                    valign: center;
+
+                    accessibility {
+                      label: _("Another Homeserver");
+                    }
                   }
                 }
               }
 
-              Gtk.Label homeserver_help {
-                justify: left;
-                xalign: 0.0;
-                margin-start: 6;
-                margin-end: 6;
-                wrap: true;
-                use-markup: true;
+              Gtk.Revealer other_revealer {
+                child: Gtk.Box {
+                  orientation: vertical;
+                  spacing: 6;
+                  margin-top: 12;
 
-                styles [
-                  "caption",
-                  "dimmed",
-                ]
+                  Gtk.ListBox {
+                    accessible-role: group;
+
+                    styles [
+                      "boxed-list",
+                    ]
+
+                    Adw.EntryRow homeserver_entry {
+                      selectable: false;
+
+                      // A URL, and saying so is what makes a phone keyboard offer
+                      // "/" and "." and stop capitalising the first letter. Not an
+                      // Android detail: desktop input methods and accessibility
+                      // tooling read the same property, and this field has always
+                      // been a URL.
+                      input-purpose: url;
+                      changed => $update_next_state() swapped;
+                      entry-activated => $check_homeserver() swapped;
+
+                      accessibility {
+                        described-by: [
+                          homeserver_help,
+                        ];
+                      }
+                    }
+                  }
+
+                  Gtk.Label homeserver_help {
+                    justify: left;
+                    xalign: 0.0;
+                    margin-start: 6;
+                    margin-end: 6;
+                    wrap: true;
+                    use-markup: true;
+
+                    styles [
+                      "caption",
+                      "dimmed",
+                    ]
+                  }
+                };
               }
             }
 
@@ -121,6 +171,9 @@ template $LoginHomeserverPage: Adw.NavigationPage {
             Gtk.Button {
               can-shrink: true;
               halign: center;
+              // Auto-discovery is only a question for a homeserver somebody
+              // types; matrix.org is always looked up the same way.
+              visible: bind other_revealer.reveal-child;
               // Translators: As in 'Advanced Settings'.
               label: _("Advanced…");
               action-name: "login.open-advanced";

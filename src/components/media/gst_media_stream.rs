@@ -3,10 +3,12 @@
 //! GTK has a `GStreamer` media backend of its own, and everywhere it is
 //! available `GtkVideo` uses it and this type is not built. It is compiled
 //! into `libgtk` and switched on only when the `GStreamer` libraries are found
-//! while GTK itself is built. Two of our builds are built without them — the
-//! conda-forge one on macOS, and pixiewood's on Android, whose cross file says
-//! `media-gstreamer = 'disabled'` — so there `GtkMediaFile` has no backend at
-//! all, and a `GtkVideo` or a `GtkMediaControls` given a file shows an empty
+//! while GTK itself is built, and none of the builds we use off Linux were:
+//! conda-forge's on macOS, MSYS2's on Windows, which installs no
+//! `lib/gtk-4.0` module directory at all, and pixiewood's on Android, whose
+//! cross file says `media-gstreamer = 'disabled'`. So on all three,
+//! `GtkMediaFile` has no backend, and a `GtkVideo` or a `GtkMediaControls`
+//! given a file shows an empty
 //! frame and a duration of zero without ever reporting an error.
 //!
 //! This is the same shape as GTK's own `GtkGstMediaFile`, assembled from the

@@ -23,7 +23,7 @@ template $ContentMessageRow: Adw.Bin {
       layout {
         column: 0;
         row: 0;
-        row-span: 4;
+        row-span: 5;
       }
 
       child: $Avatar avatar {
@@ -64,13 +64,21 @@ template $ContentMessageRow: Adw.Bin {
       }
     }
 
-    $MessageStateStack message_state {
+    Gtk.Box state_box {
       valign: end;
+      spacing: 2;
 
       layout {
         column: 2;
         row: 1;
       }
+
+      Gtk.Image shield_icon {
+        visible: false;
+        pixel-size: 12;
+      }
+
+      $MessageStateStack message_state {}
     }
 
     $ContentMessageReactionList reactions {
@@ -81,6 +89,39 @@ template $ContentMessageRow: Adw.Bin {
       }
     }
 
+    Gtk.Button thread_chip {
+      visible: false;
+      halign: start;
+      action-name: "room-history.show-thread";
+      tooltip-text: _("Open Thread");
+
+      styles [
+        "thread-chip",
+        "flat",
+      ]
+
+      layout {
+        column: 1;
+        row: 3;
+        column-span: 2;
+      }
+
+      child: Gtk.Box {
+        spacing: 4;
+
+        styles [
+          "dim-label",
+        ]
+
+        Gtk.Image {
+          icon-name: "thread-symbolic";
+          accessible-role: presentation;
+        }
+
+        Gtk.Label thread_replies_label {}
+      };
+    }
+
     $ContentReadReceiptsList read_receipts {
       visible: bind template.event as <$RoomEvent>.has-read-receipts;
       members: bind template.event as <$RoomEvent>.timeline as <$Timeline>.room as <$Room>.members;
@@ -88,7 +129,7 @@ template $ContentMessageRow: Adw.Bin {
 
       layout {
         column: 1;
-        row: 3;
+        row: 4;
         column-span: 2;
       }
     }
