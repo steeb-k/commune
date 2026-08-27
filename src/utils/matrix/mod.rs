@@ -257,6 +257,9 @@ pub(crate) async fn client_with_stored_session(
     let search_index_store = search_index_store(&cache_path, &passphrase);
 
     let mut client_builder = Client::builder()
+        // Otherwise the SDK builds its own client with the TLS backend that
+        // does not work on Android. See `crate::utils::tls`.
+        .http_client(crate::utils::tls::matrix_client())
         .homeserver_url(homeserver)
         .sqlite_store_with_cache_path(data_path, cache_path, Some(&passphrase))
         // force_auth option to solve an issue with some servers configuration to require

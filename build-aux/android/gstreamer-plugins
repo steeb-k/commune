@@ -1,0 +1,78 @@
+# The GStreamer plugins linked into the Android build, one per line.
+#
+# Read by `build-aux/android/gstreamer-static-plugins.sh`, which turns this list
+# into both the C registration and the link line, so the two cannot drift apart.
+# Names are plugin names, not element names: the archive for `foo` is
+# `lib/gstreamer-1.0/libgstfoo.a`.
+#
+# Every entry costs binary size, so this is a list of things something actually
+# asks for rather than everything that might one day be useful. On a dynamic
+# build GStreamer would discover plugins by scanning a directory; here nothing
+# is discovered, and an element that is not reachable from this list fails at
+# `gst_element_factory_make` with "no such element".
+
+# --- the machinery, needed by any pipeline at all ---
+coreelements        # filesrc, fakesink, queue, capsfilter, typefind
+typefindfunctions   # the content sniffing decodebin dispatches on
+playback            # uridecodebin3, decodebin3, urisourcebin
+gio                 # giosrc, for the URIs GFile hands out that are not file://
+
+# --- audio conversion and measurement ---
+audioconvert
+audioresample
+audioparsers        # framing for elementary streams that arrive without it
+level               # the meter the voice-message waveform is built from
+app                 # appsink; the video thumbnailer will want it
+
+# --- containers ---
+ogg
+matroska            # .mkv and .webm
+isomp4              # .mp4 and .m4a
+
+# --- audio decoders ---
+opus                # what Matrix voice messages actually are
+vorbis
+flac
+wavparse
+mpg123              # mp3
+id3demux            # an mp3 with an ID3 tag is `application/x-id3` until this
+                    # strips it, and then nothing downstream is reachable.
+                    # Measured: without it, a tagged mp3 gives no duration and
+                    # no waveform, while ogg, wav and flac are unaffected.
+
+# --- video, and everything else `libav` decodes ---
+videoconvertscale   # videoconvert, for the thumbnailer and the video sink
+videoparsersbad     # h264parse and friends, which decodebin3 inserts ahead of
+                    # a decoder for a stream that arrives out of a container
+libav               # the decoders themselves, in software. `androidmedia` is
+                    # the hardware alternative and is not usable yet; see below
+
+# --- playback ---
+volume              # playbin's own volume element, which it makes by name
+audiofx             # for `scaletempo`, which `GstPlay` asks for by name to
+                    # hold pitch steady when the rate is not 1.0
+deinterlace         # `playsink` builds a deinterlace chain and warns without it
+autodetect          # autoaudiosink, which is what playbin picks when nothing
+                    # else is set
+opensles            # and what autoaudiosink then finds. OpenSL ES is an NDK
+                    # API, so unlike MediaCodec it needs nothing from Java
+
+# Deliberately absent, and why:
+#
+#   * `androidmedia`, the hardware codecs, reached through MediaCodec. It wants
+#     `gst_android_get_application_class_loader`, which GStreamer core defines
+#     in `gstandroid.c.o` — and that object also defines `JNI_OnLoad`, which
+#     GTK already defines in `gdkandroidruntime.c`. Referencing the one drags in
+#     the other and the link fails on a duplicate symbol. Nothing pulls that
+#     object in today, which is why static GStreamer links at all.
+#
+#     There is a way through: an archive member is only extracted to satisfy an
+#     *undefined* symbol, so defining `gst_android_get_application_class_loader`
+#     ourselves leaves `gstandroid.c.o` unreferenced and the collision never
+#     happens. GTK is handed the application classloader in
+#     `gdk_android_initialize`, which is exactly what that function has to
+#     return. Untried; `libav` decodes the same formats in software today.
+#   * `openh264` and `vpx`, which `libav` already covers.
+#   * The camera and microphone sources (`ahc`, `ahs`). Both are in
+#     `androidmedia`, and both are Java callbacks rather than an NDK API, so
+#     they need more than the classloader above.

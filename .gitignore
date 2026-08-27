@@ -37,6 +37,29 @@ __pycache__/
 # The throwaway homeserver used by testing/local-homeserver.sh
 testing/.homeserver/
 
+# Meson clones wrap subprojects in here; only the .wrap files are ours.
+/subprojects/*/
+
+# `packagefiles/` is the exception: meson reads a wrap's `diff_files` from
+# there and nowhere else, so a patch we author has to live in it. pixiewood
+# also copies one directory per wrap it patches into the same place, and those
+# are generated, so the directory is re-included and then emptied again.
+!/subprojects/packagefiles/
+/subprojects/packagefiles/*
+!/subprojects/packagefiles/adwaita-icon-theme-android.patch
+
+# pixiewood generates the Android build tree in here.
+.pixiewood/
+
+# `pixiewood prepare` writes one wrap per dependency named in the Android
+# manifest, and rewrites them every time it runs. Only the wraps we author are
+# ours to keep.
+/subprojects/*.wrap
+!/subprojects/gtksourceview.wrap
+!/subprojects/adwaita-icon-theme.wrap
+/subprojects/.wraplock
+/.buildconfig
+
 # Azure Trusted Signing metadata. Machine-local: it names a signing account
 # and this repository is public. `build-aux/windows/sign.ps1` skips signing
 # when it is absent, so a build without it still succeeds, unsigned.

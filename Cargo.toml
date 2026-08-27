@@ -9,6 +9,10 @@ publish = false
 
 [package.metadata.cargo-machete]
 ignored = [
+    # Never called; present on Android only, to turn on `bundled` for the
+    # `rusqlite` that `matrix-sdk-sqlite` depends on. See the Android section
+    # below for why that is necessary.
+    "rusqlite",
     # Used by the SecretFile API.
     "serde_bytes",
     # Used by `build.rs`, inside a `cfg(target_os = "windows")` that
@@ -79,11 +83,8 @@ gst = { version = "0.25", package = "gstreamer" }
 gst_app = { version = "0.25", package = "gstreamer-app" }
 gst_pbutils = { version = "0.25", package = "gstreamer-pbutils" }
 gst_play = { version = "0.25", package = "gstreamer-play" }
-gst_sdp = { version = "0.25", package = "gstreamer-sdp" }
 gst_video = { version = "0.25", package = "gstreamer-video" }
-gst_webrtc = { version = "0.25", package = "gstreamer-webrtc" }
 gtk = { version = "0.11", features = ["gnome_49"], package = "gtk4" }
-shumate = { version = "0.8", features = ["v1_1"], package = "libshumate" }
 sourceview = { version = "0.11", package = "sourceview5" }
 
 [dependencies.matrix-sdk]
@@ -141,6 +142,17 @@ features = [
     "compat-lax-room-topic-deser",
 ]
 
+# The last of GStreamer that Android does not have. Both of these are for
+# calls, which are their own step; everything media needs is in the common table
+# above. Part of the gtk-rs family, and still updated together with it.
+[target.'cfg(not(target_os = "android"))'.dependencies]
+gst_sdp = { version = "0.25", package = "gstreamer-sdp" }
+gst_webrtc = { version = "0.25", package = "gstreamer-webrtc" }
+# libshumate wants libsoup-3.0, json-glib, libprotobuf-c and sqlite3, none of
+# which are cross-built. Unlike GtkSourceView, which is now a wrap, the map is
+# reached from one file and one message row, so Android goes without it.
+shumate = { version = "0.8", features = ["v1_1"], package = "libshumate" }
+
 # The image decoder used where glycin is not available.
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 image = { version = "0.25.5", default-features = false, features = [
@@ -152,6 +164,46 @@ image = { version = "0.25.5", default-features = false, features = [
     "tiff",
     "webp",
 ] }
+
+# Android-only dependencies.
+[target.'cfg(target_os = "android")'.dependencies]
+# `gtk4paintablesink`, which everything here renders video through. Every other
+# platform finds it at run time — the GNOME runtime ships it, and so does the
+# conda-forge build on macOS — but nothing on Android does: it is the one plugin
+# in this application that depends on GTK, so Cerbero cannot build it and the
+# upstream Android binaries do not carry it. Building it here is not a
+# workaround, it is the same plugin from the same source, registered statically
+# with `gst::plugin_define!` like every other plugin in this build.
+gst_gtk4 = { version = "0.15", package = "gst-plugin-gtk4" }
+# Not a new dependency, only a wider one. `gtk::Svg` is GTK's own SVG renderer,
+# public since 4.22 and behind that feature in gtk-rs, and on Android it is the
+# only thing that will draw an SVG: the `image` crate has never read one, and
+# there is no librsvg in the APK for the GdkPixbuf fallback to reach. Enabled
+# here rather than beside the main `gtk` entry because Cargo unions features per
+# target, and the Linux build targets the GNOME 49 runtime, which is GTK 4.20 —
+# turning it on there would let us call symbols that are not in that library.
+gtk = { version = "0.11", features = ["v4_22"], package = "gtk4" }
+# The Android Keystore is a Java API and there is no other way to reach it: the
+# keys are non-extractable by design, so the encryption has to happen on the
+# other side of JNI rather than with key material handed back to us.
+jni = "0.21"
+# `tracing` has nowhere to go on Android without a logcat sink.
+paranoid-android = "0.2"
+# Never used directly. It is here to turn on `bundled` for the `rusqlite` that
+# `matrix-sdk-sqlite` pulls in, which makes `libsqlite3-sys` compile SQLite from
+# source rather than look for a system one.
+#
+# Android does have SQLite, but not as an NDK API: there is no `libsqlite3.so`
+# anywhere in the NDK sysroot, so nothing native can link against it and every
+# application wanting SQLite ships its own. Only Android turns this on, so every
+# other platform still links the system library exactly as before.
+rusqlite = { version = "0.40", features = ["bundled"] }
+# `reqwest`'s rustls feature always brings `rustls-platform-verifier`, which
+# panics on Android until a Kotlin component that is not published anywhere is
+# built into the APK. `src/utils/tls.rs` configures the TLS itself instead, from
+# the device's own trust store, which needs rustls directly.
+rustls = "0.23"
+rustls-pemfile = "2"
 
 # Linux-only dependencies.
 [target.'cfg(target_os = "linux")'.dependencies]

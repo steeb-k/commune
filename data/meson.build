@@ -81,6 +81,13 @@ configure_file(
     configuration: gschema_conf,
     install: true,
     install_dir: datadir / 'glib-2.0' / 'schemas',
+    # `configure_file` carries no install tag of its own, and pixiewood packages
+    # an APK with `meson install --tags runtime`, which installs only tagged
+    # files. Without this the schema is left out silently and the application
+    # aborts on first launch with `Settings schema 'io.github.steeb_k.Commune'
+    # is not installed`, raised by GLib several frames below anything of ours.
+    # Harmless elsewhere: a plain `meson install` ignores tags entirely.
+    install_tag: 'runtime',
 )
 # Validate GSchema
 if glib_compile_schemas.found()

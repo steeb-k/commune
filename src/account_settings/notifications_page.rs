@@ -47,6 +47,17 @@ mod imp {
         keywords: TemplateChild<gtk::ListBox>,
         #[template_child]
         keywords_add_row: TemplateChild<EntryAddRow>,
+        // The Android-only background-delivery section. The children exist on
+        // every platform — the template does — but stay hidden and untouched
+        // outside Android.
+        #[template_child]
+        delivery_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        delivery_row: TemplateChild<adw::ComboRow>,
+        #[template_child]
+        push_status_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        push_status_next: TemplateChild<gtk::Image>,
         /// The notifications settings of the current session.
         #[property(get, set = Self::set_notifications_settings, explicit_notify)]
         notifications_settings: BoundObjectWeakRef<NotificationsSettings>,
@@ -80,10 +91,110 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for NotificationsPage {}
+    impl ObjectImpl for NotificationsPage {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            #[cfg(target_os = "android")]
+            self.init_delivery_group();
+        }
+    }
 
     impl WidgetImpl for NotificationsPage {}
     impl PreferencesPageImpl for NotificationsPage {}
+
+    /// The Android-only background-delivery section — the settings home of
+    /// step 5 of `doc/android-push-plan.md`, so that the choice the one-time
+    /// setup dialog offers stays reachable: the person who taps through a
+    /// setup screen is not the person who later installs ntfy.
+    #[cfg(target_os = "android")]
+    impl NotificationsPage {
+        /// The `background-delivery` values, in the combo's row order.
+        const DELIVERY_MODES: &'static [&'static str] = &["auto", "push", "service"];
+
+        /// Show and fill the background-delivery section.
+        fn init_delivery_group(&self) {
+            let choices = gtk::StringList::new(&[
+                // Translators: How new messages reach the device while the
+                // app is closed: push when possible, the background service
+                // otherwise.
+                &gettext("Automatic"),
+                // Translators: Same context: never fall back to the
+                // background service.
+                &gettext("Push only"),
+                // Translators: Same context: never rely on push.
+                &gettext("Keep Commune running"),
+            ]);
+            self.delivery_row.set_model(Some(&choices));
+
+            let mode = crate::Application::default()
+                .settings()
+                .string("background-delivery");
+            let index = Self::DELIVERY_MODES
+                .iter()
+                .position(|known| *known == mode)
+                .unwrap_or(0);
+            self.delivery_row.set_selected(index as u32);
+
+            // Re-detect whenever the page comes back on screen: the person
+            // who left for the store comes back here.
+            self.obj().connect_map(|obj| {
+                obj.imp().update_push_status();
+            });
+
+            self.update_push_status();
+            self.delivery_group.set_visible(true);
+        }
+
+        /// Write the chosen mode, when it changed.
+        fn apply_delivery_mode(&self) {
+            let Some(mode) = Self::DELIVERY_MODES.get(self.delivery_row.selected() as usize) else {
+                return;
+            };
+
+            let settings = crate::Application::default().settings();
+            if settings.string("background-delivery") != *mode
+                && let Err(error) = settings.set_string("background-delivery", mode)
+            {
+                tracing::error!("Could not save the background delivery mode: {error}");
+            }
+        }
+
+        /// Reflect the current push delivery status in its row.
+        fn update_push_status(&self) {
+            use crate::utils::android_push::{self, DeliveryStatus};
+
+            let status = android_push::delivery_status();
+            let subtitle = match status {
+                DeliveryStatus::Delivering => {
+                    gettext("Connected — new messages arrive through the notification app")
+                }
+                DeliveryStatus::Pending => {
+                    gettext("Waiting for the notification app and the homeserver")
+                }
+                DeliveryStatus::NoDistributor => {
+                    gettext("Needs a small notification app — tap to get ntfy")
+                }
+            };
+            self.push_status_row.set_subtitle(&subtitle);
+
+            let needs_app = status == DeliveryStatus::NoDistributor;
+            self.push_status_row.set_activatable(needs_app);
+            self.push_status_next.set_visible(needs_app);
+        }
+
+        /// The push status row was tapped: the door to getting a distributor.
+        fn push_status_tapped(&self) {
+            use crate::utils::android_push::{self, DeliveryStatus};
+
+            if android_push::delivery_status() == DeliveryStatus::NoDistributor
+                && let Some(window) = self.obj().root().and_downcast::<gtk::Window>()
+            {
+                android_push::open_ntfy_store(&window);
+            }
+            self.update_push_status();
+        }
+    }
 
     #[gtk::template_callbacks]
     impl NotificationsPage {
@@ -504,6 +615,26 @@ mod imp {
                     row.set_is_loading(false);
                 }
             ));
+        }
+
+        /// The background delivery mode combo changed.
+        ///
+        /// Bound on every platform because the template is; only Android has
+        /// anything to do — which is also why `self` goes unused everywhere
+        /// else.
+        #[template_callback]
+        #[cfg_attr(not(target_os = "android"), allow(clippy::unused_self))]
+        fn delivery_changed(&self) {
+            #[cfg(target_os = "android")]
+            self.apply_delivery_mode();
+        }
+
+        /// The push status row was activated.
+        #[template_callback]
+        #[cfg_attr(not(target_os = "android"), allow(clippy::unused_self))]
+        fn push_status_activated(&self) {
+            #[cfg(target_os = "android")]
+            self.push_status_tapped();
         }
 
         /// Whether we can add the keyword that is currently in the entry.

@@ -313,7 +313,11 @@ mod imp {
 
         /// Construct a [`ClientBuilder`] with the proper configuration.
         fn client_builder() -> ClientBuilder {
-            Client::builder().request_config(RequestConfig::new().retry_limit(2))
+            Client::builder()
+                .request_config(RequestConfig::new().retry_limit(2))
+                // Otherwise the SDK builds its own client with the TLS backend
+                // that does not work on Android. See `crate::utils::tls`.
+                .http_client(crate::utils::tls::matrix_client())
         }
 
         /// Show the given error and abort the current login.

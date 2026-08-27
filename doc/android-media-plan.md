@@ -1,0 +1,590 @@
+# S4 — Media on Android: context and a plan
+
+Written 25 August 2026, before any of it is built. This is the first piece of the port that
+genuinely needs something cross-compiled that does not exist yet, so the decision matters more than
+the code. Everything below marked _measured_ was checked in the tree; everything marked _unverified_
+is a claim to test before relying on it.
+
+## What is actually broken today
+
+Three separate things, and they are not equally broken.
+
+| | today on Android | why |
+| --- | --- | --- |
+| Video in the timeline | error row, _"Videos are not supported on this platform"_ | `build_video` is gated out |
+| Video duration + thumbnail | absent — outgoing videos carry neither | `load_video_info` gated out |
+| Voice-message duration + waveform | absent — outgoing voice messages carry neither | `load_audio_info` gated out |
+| **Playing a voice message** | **the player appears and silently does nothing** | see below |
+
+That last row is the one worth knowing about, because it is not documented anywhere and it is not a
+gate.
+
+`src/components/media/audio_player/` is **not** gated for Android — it compiles and the UI is built.
+It gets its stream from a two-line seam:
+
+```rust
+/// Create a stream that plays the given file.
+#[cfg(not(target_os = "macos"))]
+fn media_stream_for_file(file: &gio::File) -> gtk::MediaStream {
+    gtk::MediaFile::for_file(file).upcast()
+}
+```
+
+`GtkMediaFile` only has a backend where GTK was built against GStreamer, and pixiewood builds GTK
+with `media-gstreamer = 'disabled'`. So on Android that call returns a media file with **no backend
+at all** — which, in GTK, does not error. It reports a duration of zero and plays nothing.
+
+This is precisely the macOS situation, and macOS already has the fix: the `#[cfg(target_os =
+"macos")]` arm of that same function returns `GstMediaStream`, a `GtkMediaStream` of Commune's own
+built on `gst_play::Play`. Android does not get it only because Android has no GStreamer either.
+
+**The useful consequence: there is already a one-function seam, designed for exactly this problem,
+that any new backend can be dropped into without touching the audio-player UI at all.**
+
+## What the code needs, precisely
+
+_Measured_ — the whole GStreamer surface used by the non-call code is small:
+
+| file | lines | uses |
+| --- | --- | --- |
+| `utils/media/audio.rs` | 197 | `uridecodebin3 ! audioconvert ! level ! fakesink` for the waveform; Discoverer for duration |
+| `utils/media/video.rs` | 287 | `gst_pbutils::Discoverer` for metadata; a pipeline to grab one frame for the thumbnail |
+| `components/media/gst_media_stream.rs` | 274 | `gst_play::Play` rendering into `gtk4paintablesink` |
+| `components/media/video_player.rs` | 225 | wraps the above in `GtkVideo` |
+| `components/media/video_player_renderer.rs` | 68 | makes the `gtk4paintablesink` |
+
+Against `session/calls/pipeline.rs` at 1839 lines plus `ringtone.rs` — **calls are two-thirds of the
+GStreamer code and stay out of scope.**
+
+Note `gtk4paintablesink` is not part of GStreamer proper: it lives in gst-plugins-rs and is obtained
+here through `ElementFactory::make`, i.e. from a system plugin registry that Android does not have.
+
+## The routes
+
+### A — GStreamer from the official Android binaries (Cerbero)
+
+Drop `gstreamer-1.0-android-universal-<ver>.tar.xz` into the Gradle project, call `GStreamer.init()`
+from the Java glue, point the Rust build at the headers and libraries.
+
+* **For:** one code path with desktop; keeps the existing 1051 lines nearly unchanged; the only
+  route that leaves calls possible later.
+* **Against:** a foreign binary blob in a build that is otherwise all source; pkg-config and link
+  plumbing that meson and pixiewood know nothing about; `gtk4paintablesink` still has to come from
+  somewhere; APK growth on top of an APK that is already 366 MB and takes ~20 minutes to install
+  over nullgate.
+* _Unverified:_ whether the Cerbero layout can be made to satisfy the `PKG_CONFIG_LIBDIR` view that
+  `pkgconfig-stubs.sh` builds for the Rust side.
+
+### B — GStreamer as meson subprojects
+
+The GStreamer monorepo builds with meson, and Commune already adds its own wraps outside
+pixiewood's fixed list of eight — `gtksourceview.wrap` and `adwaita-icon-theme.wrap` are both ours.
+So this is structurally possible.
+
+* **For:** native to the build; no blobs; the pattern is already established twice.
+* **Against:** gstreamer + plugins-base + plugins-good is an order of magnitude more than anything
+  wrapped so far, `orc` and the codec libraries each bring their own cross-compilation questions,
+  and the failure modes are unknown until tried. **Highest risk of the three by a wide margin.**
+
+### C — Android's own media stack, no GStreamer at all
+
+`MediaPlayer` (or ExoPlayer) behind a `GtkMediaStream`, via JNI, in the seam described above.
+`MediaMetadataRetriever` for duration and thumbnail frames.
+
+* **For:** nothing to cross-compile; negligible APK growth; hardware-accelerated decode; handles
+  whatever the phone handles, which _unverified but likely_ includes Opus-in-Ogg, i.e. Matrix voice
+  messages. Slots into `media_stream_for_file` with **no UI change**.
+* **Against:** Android diverges from desktop; the waveform needs another source entirely; and video
+  **rendering** is the hard part — getting decoded frames into a `GdkPaintable` means either
+  SurfaceTexture → GL texture → `GdkGLTexture` interop with GTK's context, or pulling frames to CPU
+  memory and pushing `GdkMemoryTexture`, which is simple but expensive.
+* **Closes the door on calls** without a later GStreamer effort anyway.
+
+## Recommendation: staged, C-first
+
+Ordered by value-per-unit-risk rather than by tidiness.
+
+1. **Audio playback via `MediaPlayer` + JNI.** Fills the existing seam, no UI work, and fixes the
+   silently-inert player. Voice messages are the common case in a Matrix client and this is the
+   cheapest thing on the list.
+2. **Video duration and thumbnails via `MediaMetadataRetriever`.** Android's own API returns both,
+   including frame extraction, which is exactly what `video.rs` wants from Discoverer plus a
+   thumbnailer pipeline. Restores timeline thumbnails and outgoing metadata.
+3. **Waveform.** Decide separately once 1 is in. Options: decode with `MediaCodec` and compute RMS
+   in Rust; a pure-Rust decoder; or ship without a waveform at first, which is a cosmetic loss next
+   to a voice message that will not play.
+4. **Video playback.** The genuinely hard one, and best decided _after_ 1–3, because by then we will
+   know whether the JNI-to-paintable interop is tractable in practice.
+5. **Calls.** Out of scope. Different project, needs WebRTC, libnice, DTLS/SRTP.
+
+The honest cost of this recommendation is **divergence**: Android would play media through a path
+desktop does not use, and that path has to be maintained. The `#[cfg]` seam already exists and macOS
+already uses it, so the shape is not new — but two backends is two backends.
+
+## The decision that changes everything — settled
+
+**Are voice and video calls on Android a real goal?** Asked 25 August 2026, answered: **calls
+matter eventually.**
+
+That settles it for route A. GStreamer becomes mandatory at some point, and doing C now and A later
+does not replace the first effort, it adds to it — two backends, two sets of bugs, and the call
+pipeline still unbuilt at the end of it. The staged plan above keeps its _order of value_ (audio
+first, video playback last) but is delivered through GStreamer rather than around it.
+
+### One thing to try before anything else
+
+pixiewood builds GTK with `media-gstreamer = 'disabled'` **because GStreamer is not there**. If it
+becomes there, that option can be flipped — and then `GtkMediaFile` has a backend, and
+`media_stream_for_file`'s ordinary non-macOS arm works on Android with **no Commune change at all**.
+
+Commune's own `GstMediaStream` exists only because the conda-forge GTK on macOS was built without
+GStreamer. Android need not inherit that workaround. Worth establishing early, because it decides
+whether `gtk4paintablesink` is needed at all — _measured:_ the current path reaches it even for
+audio, since `GstMediaStream` always builds a `VideoPlayerRenderer` and that calls
+`ElementFactory::make("gtk4paintablesink").expect(...)`.
+
+### Staging for route A
+
+0. **Spike: make `gst::init()` succeed on the device.** Nothing else matters until GStreamer links
+   and initialises inside the APK. This is the whole risk of the route, concentrated in one step.
+1. **Flip `media-gstreamer` in the GTK build** and see whether the audio player simply works.
+2. **Waveform and duration** — un-gate `utils/media/audio.rs`.
+3. **Video metadata and thumbnails** — un-gate `utils/media/video.rs`.
+4. **Video playback** — un-gate the player; needs `gtk4paintablesink` if step 1 did not make it
+   moot, most likely via the `gst-plugin-gtk4` crate registered statically rather than as a plugin
+   `.so`.
+5. **Calls** — a separate project, on top of a GStreamer that by then exists.
+
+Steps 1–4 are almost entirely _un-gating code that already exists and already works on desktop_.
+The work is step 0.
+
+## Is this more work than a Kotlin UI?
+
+Asked directly, and worth answering with numbers rather than instinct.
+
+_Measured, 25 August 2026:_
+
+| | lines |
+| --- | --- |
+| Rust in `src/` | 113,520 |
+| Blueprint UI | 13,460 |
+| of which `session_view/` (timeline, message rows, sidebar) | 38,302 |
+| `components/` (widgets) | 15,915 |
+| `session/` (GObject models, not portable to Kotlin) | 27,360 |
+| `login/` | 2,154 |
+
+A Kotlin front end replaces `session_view` + `components` + `login` + the Blueprints — **about
+70,000 lines** — and most of `session/` besides, because those are GObject subclasses and list
+models, not portable logic. What it would reuse from "our Rust repos" is smaller than it sounds:
+`matrix-sdk` is upstream, and already ships official UniFFI Kotlin bindings that Element X Android
+uses. So a Kotlin Commune would mostly be _a new Matrix client_, not a re-skin of this one.
+
+Against that, the media work is: get one prebuilt library to link, then remove `#[cfg]` gates from
+1,051 lines that already work.
+
+**These are not close, and the media question should not be what reopens the Kotlin decision.**
+
+What _would_ legitimately reopen it is a pattern, not a task: if step 0 proves not merely hard but
+impossible, or if the list of things GTK-on-Android cannot do keeps growing faster than it shrinks.
+So far it has shrunk — S6, S7, S8 and S9 each ended with the thing working, and three of the four
+were unwired code rather than missing capability. The honest counterweight is that libshumate and
+GStreamer are both genuinely absent, and that is a real cost, not a rhetorical one.
+
+The way to keep this decision evidence-based is to **timebox step 0**. If GStreamer links inside a
+day or two, the rest is deleting `#[cfg]` lines. If it does not, that is a real signal about the
+platform and worth acting on — and it will have cost a day rather than a rewrite.
+
+## Open questions to settle before starting
+
+1. Does Android's `MediaPlayer` play Matrix voice messages as sent — Opus in an Ogg container?
+   Cheap to test with a file already on the phone.
+2. Can a `GdkPaintable` be fed from a `SurfaceTexture` without GTK's GL context fighting it? This
+   is the crux of step 4, and worth a spike before committing to it.
+3. Would GStreamer via Cerbero actually link here, given `pkgconfig-stubs.sh` and pixiewood's
+   `PKG_CONFIG_LIBDIR`? Worth a timeboxed attempt before ruling route A in or out on cost.
+4. How much APK does route A add? Relevant because installs already run ~20 minutes over nullgate
+   and only ~2 minutes over LAN.
+
+## Step 0 reconnaissance, 25 August 2026
+
+All _measured_ against `gstreamer-1.0-android-universal-1.28.6`, extracted to
+`~/android/gstreamer/{x86_64,arm64}` on the Arch host (2.0 GB per architecture).
+
+### The tarball is static-only
+
+**391 static archives and zero `.so` files.** There is no `libgstreamer-1.0.so` to ship; there is
+`libgstreamer-1.0.a`. This kills the tidy idea of dropping plugin `.so`s flat into `lib/<abi>/` and
+pointing `GST_PLUGIN_PATH` at `nativeLibraryDir` — there is nothing to drop in. GStreamer has to be
+**linked statically into `libcommune.so`**, and its plugins are static too, so each one has to be
+registered explicitly rather than discovered.
+
+The mechanism is shipped with the tarball. `gst_init()` calls `gst_init_static_plugins()`, which the
+application provides; `share/gst-android/ndk-build/gstreamer_android-1.0.c.in` is the template the
+official ndk-build flow fills in, and it is short enough to write by hand:
+
+```c
+void gst_init_static_plugins (void) {
+  GST_PLUGIN_STATIC_REGISTER (coreelements);   /* one per plugin */
+  ...
+}
+```
+
+### The two-GLib problem, and why it looks survivable
+
+The tarball bundles **GLib 2.82.4**; pixiewood builds **2.89.4** for GTK. Linking both would put two
+GObject type systems in one process, which is fatal — so GStreamer must resolve GLib against
+pixiewood's shared `libglib-2.0.so` rather than its own `libglib-2.0.a`.
+
+The tarball cooperates. `gstreamer-1.0.pc` says:
+
+```text
+Requires: glib-2.0 >=  2.64.0, gobject-2.0
+Libs: -L${libdir} -lgstreamer-1.0
+```
+
+It requires `glib-2.0` **by module name**, not by its own copy. So a pkg-config search path with
+pixiewood's `meson-uninstalled` **first** and GStreamer's `lib/pkgconfig` second resolves
+`gstreamer-1.0` to the tarball and `glib-2.0` to pixiewood — exactly the split needed. 2.89.4
+satisfies `>= 2.64.0`, and newer-GLib-under-older-GStreamer is the safe direction, since GLib does
+not remove symbols.
+
+_Unverified:_ whether the link actually succeeds. That is the whole of step 0.
+
+### The four places this touches
+
+| what | where |
+| --- | --- |
+| pkg-config search path for Cargo | `meson.build:193`, `cargo_env` — `PKG_CONFIG_LIBDIR` **replaces** the path, so GStreamer's dir must be appended with `:`, after `meson-uninstalled` |
+| the dependency Meson links | `meson.build:124`, `android_deps` |
+| `gst_init_static_plugins()` | a new C file beside `../build-aux/android/stub.c` in `src/meson.build:155` — that `executable()` is the one real link |
+| the Rust crates | `Cargo.toml:132`, currently `[target.'cfg(not(target_os = "android"))'.dependencies]` |
+
+The shape of the build helps here: Cargo produces `libcommune.a` and never links, so it only needs
+pkg-config to _describe_ GStreamer; Meson performs the single real link. That is the same property
+that made the port work at all.
+
+_Measured:_ `gstreamer-sys` 0.25.2 requires `gstreamer-1.0 >= 1.14` and no higher feature is enabled
+in `Cargo.toml`, so 1.28.6 is comfortably compatible — no version work needed.
+
+### What step 0 actually is
+
+The smallest thing that proves the route: link GStreamer core statically, call `gst::init()`, log
+`gst::version_string()`, see it on the emulator. Not the media code — none of the gates come off
+until this returns a version string.
+
+---
+
+## Step 0 — done, 25 August 2026
+
+**`GStreamer 1.28.6`, logged from Rust, on the emulator.** Route A works. Everything below is
+_measured_.
+
+The reconnaissance above was right that pkg-config resolves the _modules_ correctly and wrong that
+this was enough. Two things sat between the plan and a working link, and neither was visible from
+reading `.pc` files.
+
+### The `-L` does not follow the module resolution
+
+pkg-config gives `-uninstalled.pc` files priority over plain ones, everywhere on the search path,
+so pixiewood wins `glib-2.0` as predicted:
+
+```text
+gstreamer-1.0            1.28.6
+glib-2.0                 2.89.4
+```
+
+The link does not inherit that. `gstreamer-1.0.pc` emits `-L<tarball>/lib`, that `-L` lands ahead of
+pixiewood's, and the linker searches directories in order for **every** `-l` on the command line —
+including `-lglib-2.0`, which pixiewood's own GLib asked for. The tarball is a complete prefix: its
+`lib/` holds `libglib-2.0.a` right beside `libgstreamer-1.0.a`.
+
+So the first attempt pulled GLib **2.82.4 out of the tarball** and died:
+
+```text
+ld.lld: error: undefined symbol: libiconv_open
+>>> referenced by gconvert.c:72
+>>>   gconvert.c.o:(try_conversion) in archive .../gstreamer/x86_64/lib/libglib-2.0.a
+```
+
+— the tarball's GLib expects a standalone libiconv, and Android's is inside libc. That error was a
+courtesy. A build that got past it would have put two GObject type systems in one process.
+
+The fix is to give that `-L` nothing to shadow with: `build-aux/android/gstreamer-prefix.sh` builds
+a prefix holding GStreamer's own libraries and nothing else. Symlinks for the archives, **copies**
+for the `.pc` files — they set `prefix=${pcfiledir}/../..`, and pkg-config resolves symlinks before
+computing `pcfiledir`, so a symlinked `.pc` file points straight back at the tarball and undoes the
+whole exercise. That cost one wasted iteration.
+
+### proxy-libintl, twice, under two sets of names
+
+With the shadowing gone, two symbols were left undefined: `libintl_bindtextdomain` and
+`libintl_bind_textdomain_codeset`, both from `init_pre` in `gst_init`.
+
+Neither side uses GNU gettext. Both use proxy-libintl — and the tarball's 0.4 exports `libintl_*`
+where pixiewood's 0.5 exports `g_libintl_*`. Same nine functions, renamed:
+
+| tarball (proxy-libintl 0.4) | pixiewood (proxy-libintl 0.5) |
+| --- | --- |
+| `libintl_bindtextdomain` | `g_libintl_bindtextdomain` |
+| `libintl_gettext` | `g_libintl_gettext` |
+| … seven more | … seven more |
+
+Linking the tarball's own `libintl.a` would have resolved them and put a second proxy-libintl in
+the process with its own idea of the bound domains. `build-aux/android/gstreamer.c` forwards
+instead, nine lines, and leaves one libintl.
+
+### What the build does now
+
+| what | where |
+| --- | --- |
+| the pruned prefix | `build-aux/android/gstreamer-prefix.sh`, run once per machine |
+| where it is found | `$GSTREAMER_ANDROID_PREFIX`, default `~/android/gst-android`, the convention `probe-env.sh` already used for the SDK; `meson.build` errors with a pointer to the script if it is absent |
+| the search path | `meson-uninstalled:<prefix>/lib/pkgconfig`, built once in `meson.build` and handed to both Meson and Cargo |
+| the dependency | `declare_dependency` from `pkg-config --libs --static`, **not** `dependency()` — Meson would run pkg-config with `PKG_CONFIG_SYSROOT_DIR` set from the NDK sysroot and rewrite these absolute paths, and there is nowhere to tell it about the two search directories anyway |
+| the libintl shim | `build-aux/android/gstreamer.c`, compiled beside `stub.c` in the one real link |
+| the crate | `gst` moved to the common `[dependencies]` table |
+| the proof | `gst::init()` now runs on Android, and `src/lib.rs` logs `gst::version_string()` on every launch |
+
+`gst_init_static_plugins()` is **not** written yet. It is not needed to start: `gst_init()` brings
+up the registry, the type system and the clock quite happily with no plugins at all. Nothing can
+decode anything, which is step 1.
+
+### Step 1 is already de-risked
+
+All seven crates the media code wants were link-tested together, ahead of needing them:
+
+```text
+GStreamer 1.28.6 app=0x644befd71498 play=125455685747712 sdp=0x644befd83b74
+                 video=125457296395328 webrtc=125457296411568
+```
+
+— core, app, pbutils, play, sdp, video and webrtc, all initialising and registering GObject types on
+the emulator. The only additional private dependencies pkg-config asked for were **orc** and
+**zlib**. orc is GStreamer's alone and now sits in the pruned prefix. zlib is the one library in the
+set that Android itself provides — `libz.so` has been an NDK API since API 1 — so the prefix ships a
+three-line `zlib.pc` that emits a bare `-lz`, with no `-L` to shadow the zlib everything else in the
+process is already using.
+
+### Cost: about 0.55 MiB
+
+_Measured_ by summing the sizes of every defined symbol in `libcommune.so`:
+
+| | |
+| --- | --- |
+| GStreamer's text | **0.55 MiB**, 2753 symbols |
+| all text in `libcommune.so` | 83.4 MiB |
+| shared libraries needed | unchanged — one `libglib-2.0.so`, pixiewood's |
+
+`libgstreamer-1.0.a` is 10.9 MB on disk, but most of that is debug information and object files
+nothing references. A static archive only contributes what is reached, and so far what is reached is
+`gst_init` and `gst_version_string`. Step 1 will pull in more, since each registered plugin is a
+reason to keep another object — that is worth re-measuring then rather than guessing now.
+
+The APK did not grow measurably. Its size problem is real but unrelated: see the packaging note in
+`doc/android.md`.
+
+---
+
+## Step 1 — plugins, and the first working media, 25 August 2026
+
+**A voice message gets a duration and a waveform on Android**, from the same
+`generate_waveform` every other platform runs. `load_audio_info` is no longer a stub.
+
+### Nothing is discovered
+
+This is the part that makes a static GStreamer different from every other GStreamer. There is no
+plugin directory to scan, so the elements that exist are exactly the ones registered, and one that
+is not fails at `gst_element_factory_make` — at run time, in a code path nobody exercised, rather
+than at build time.
+
+So the plugin set is a checked-in list with its reasons attached,
+`build-aux/android/gstreamer-plugins`, and it generates **both** halves:
+
+| from the list | how |
+| --- | --- |
+| the C that registers the plugins | `gstreamer-static-plugins.sh --source`, a `custom_target` |
+| the archives that get linked | `gstreamer-static-plugins.sh --libs`, into `gst_dep`'s `link_args` |
+
+A plugin therefore cannot be linked without being registered, or registered without being linked;
+the first is dead weight and the second is a link error.
+
+### Two things the reconnaissance had wrong
+
+**`gst_init()` does not call `gst_init_static_plugins()`.** The ndk-build template shipped in
+`share/gst-android/ndk-build` carries the comment `/* This is called by gst_init() */`, and the
+step 0 notes above repeated it. It is not true of this tarball: nothing in `libgstreamer-1.0.a`
+references that symbol at all. It is a convention of that template's own init function. Since we do
+not use the template, the call is ours — `commune_gst_register_static_plugins`, from `src/lib.rs`,
+immediately after `gst::init()`, because registration needs an initialized registry.
+
+**Meson already wraps the link in `--start-group`.** The first version of the resolver emitted its
+own around the plugin archives, to cover the cycles between GStreamer's libraries, and lld refused:
+`error: nested --start-group`. The outer group covers them already.
+
+### Where the plugins' own dependencies come from
+
+`libgstopus.a` needs libopus, `libgstmpg123.a` needs libmpg123, and so on down. Those live in the
+tarball's `lib/`, beside its GLib, cairo, freetype and libpng — the exact directory step 0 exists to
+keep off the link line.
+
+They are resolved instead through the `.la` files, whose `dependency_libs` are absolute paths into
+Cerbero's build machine and therefore useless as paths but exactly right as a dependency graph, and
+emitted as **absolute paths** into the prefix's new `deps/`. An absolute path is a file rather than
+a search, so no `-L` is involved and nothing there can answer anyone else's `-l`. `deps/` can hold
+the tarball's GLib safely for precisely that reason, where `lib/` cannot.
+
+Names pixiewood already provides — `glib-2.0`, `gobject-2.0`, `gio-2.0`, `gmodule-2.0`, `intl`,
+`ffi`, `pcre2-8`, `z` — are left unresolved on purpose, so the `-l` flags already on the line answer
+them and there stays one GLib in the process.
+
+### What was measured
+
+On the emulator, running the pipeline `generate_waveform` builds, against files made with ffmpeg:
+
+| file | codec | duration | waveform samples |
+| --- | --- | --- | --- |
+| `test-voice.ogg` | opus in ogg — what a Matrix voice message is | 6.000 s | 111 |
+| `test-tone.wav` | pcm_s16le | 6.000 s | 111 |
+| `test-tone.mp3` | mp3 | 6.034 s | 111 |
+| `test-tone.flac` | flac | 6.000 s | 111 |
+
+and in the application itself, on every launch:
+
+```text
+I Commune : commune: GStreamer 1.28.6, 19 plugins registered
+```
+
+That line is deliberate. In a static build the plugin count is the only evidence registration ran;
+without it the first sign of trouble is a missing element much later.
+
+**One real bug, found the way this failure mode always shows up.** mp3 gave no duration and no
+waveform while ogg, wav and flac were fine. `GST_DEBUG=2`:
+
+```text
+WARN uridecodebin gsturidecodebin.c:1008:unknown_type_cb:
+     warning: No decoder available for type 'application/x-id3'.
+```
+
+A tagged mp3 is `application/x-id3` until something strips the tag, and `id3demux` was not on the
+list. Adding it fixed it. A dynamic build would have found the plugin on disk and nobody would ever
+have known it was needed.
+
+### Cost
+
+| | |
+| --- | --- |
+| GStreamer and codec text in `libcommune.so` | 2.9 MiB, up from 0.55 MiB |
+| `libcommune.so`, unstripped debug | 196.2 MiB, up from 172.4 MiB |
+| APK, x86_64 debug, packaged clean | 343.3 MiB, up from 319.4 MiB |
+
+The 24 MiB the APK grew is almost all symbol table, not code — see the packaging note in
+`doc/android.md`, which is unrelated to this work and still unaddressed.
+
+### Not done
+
+* **AAC**, so an `.m4a` gets a duration from its container and no waveform. There is no `faad` in
+  the tarball; the choice is `libav` or `androidmedia`, and it belongs with the video work.
+* **Playback.** The player widgets go through `gtk::MediaFile`, and pixiewood builds GTK with
+  `media-gstreamer = 'disabled'` — its cross file says *"disabled until we have a mechanism to pass
+  the JNIEnv* & Context to gstreamer"*. No sink is linked, because until that changes one would be
+  dead weight.
+* **Video.** Thumbnails and metadata need `videoconvertscale` and a decoder; `androidmedia` is the
+  interesting option, and it needs the same JNIEnv and Context that GTK's own backend does. That is
+  one problem, not two, and it is the next step.
+
+## Step 2 — playback and video, 25 August 2026
+
+Done, and the plan above was wrong about what it would take. It assumed GTK's own
+`media-gstreamer` backend, and therefore assumed the JNIEnv and Context that pixiewood's cross file
+cites for keeping that backend disabled. Neither is needed for playback.
+
+### The backend we needed was already in the repository
+
+`src/components/media/gst_media_stream.rs` is a `gst_play::Play` rendering into
+`gtk4paintablesink`, wrapped as a `gtk::MediaStream`. It was written for macOS, whose conda-forge
+GTK has no media backend either, and its module comment says as much. Android is the same
+situation, so it is the same code: the gates that said macOS now say macOS or Android, and
+`GtkVideo` and `GtkMediaControls` work on top of it unchanged.
+
+That also explains a symptom that looked unrelated. **Audio rows showed `00:00` because that label
+is the position, not the duration, and it never moved** — `gtk::MediaFile` had no backend, so
+pressing play did nothing and reported nothing. Nothing was wrong with the waveform work from step
+1; there was simply no player under it.
+
+### Six plugins, and one built here
+
+| plugin | for |
+| --- | --- |
+| `libav` | the decoders, in software. Also closes the AAC gap step 1 left open |
+| `videoconvertscale`, `videoparsersbad` | what `decodebin3` reaches for around a decoder |
+| `volume`, `autodetect`, `opensles` | the output side |
+| `audiofx`, `deinterlace` | `scaletempo` and `deinterlace`, which `GstPlay` and `playsink` ask for by name and warn about without |
+
+`opensles` is worth a line of its own: OpenSL ES is an NDK API, so unlike MediaCodec it needs
+nothing from Java, and audio output cost no JNI work at all.
+
+`gtk4paintablesink` is not in the tarball and cannot be — it is the one plugin in this application
+that depends on GTK, so Cerbero has nothing to build it against. Every other platform finds it at
+run time; the GNOME runtime ships it and so does conda-forge. Here it is built as a crate,
+`gst-plugin-gtk4`, and registered statically like everything else. Same plugin, same source.
+
+### Two things the link needed
+
+`.la` files carry bare `-l` flags as well as archive paths, and the resolver dropped every one of
+them. Most are already on the line — `-llog`, `-landroid`, `-lm`, `-latomic` come with the NDK, and
+`-liconv` is answered by bionic — but nothing else asks for `-lOpenSLES`, and without it
+`openslessink` does not link. The resolver now passes through the ones on a named list, so a plugin
+needing a system library says so through its own `.la` rather than through a special case in
+`meson.build`.
+
+And `gst_modules` needs one entry per GStreamer crate the Rust builds against, plus
+`gstreamer-gl-1.0` for `gst-plugin-gtk4`, which depends on the `gstreamer-gl` crate unconditionally
+and so references `gst_gl_*` whatever its features say. Nothing in the plugin list reaches those
+archives. A missing entry is a wall of undefined symbols at the end of a seven-minute build, which
+is how this was found.
+
+### `androidmedia` has a known obstacle and a known way through
+
+The hardware codecs stay out, but no longer for the reason the plan gave. `androidmedia` wants
+`gst_android_get_application_class_loader`, which GStreamer core defines in `gstandroid.c.o` — and
+that object also defines `JNI_OnLoad`, which GTK already defines in `gdkandroidruntime.c`.
+Referencing the one drags in the other and the link fails on a duplicate symbol. **Nothing pulling
+that object in is exactly why static GStreamer links at all today.**
+
+The way through, untried: an archive member is only extracted to satisfy an _undefined_ symbol, so
+defining `gst_android_get_application_class_loader` ourselves leaves `gstandroid.c.o` unreferenced
+and the collision never happens. `gdk_android_initialize` is handed the application classloader,
+which is precisely what that function has to return. `libav` decodes the same formats in software
+today, so this is a performance and battery question rather than a correctness one.
+
+### What was measured
+
+On the emulator, in a real room:
+
+* An opus voice message **plays**. OpenSL ES opens a track, the position counts up and the waveform
+  fills behind it.
+* An mp4 picked from storage previews in the send dialog, uploads, and **plays in the timeline**
+  with a correct `00:05` duration badge — so `GstDiscoverer` and the thumbnailer ran too.
+* A video that was already in the room plays as well, which is the receiving path rather than the
+  sending one.
+* `GStreamer 1.28.6, 28 plugins registered`, and no missing-element warnings.
+
+### Two defects found on the way, neither of them GStreamer
+
+Both are recorded in `doc/android.md`, because neither is about media.
+
+1. **Picking any attachment crashed the application**, in `gdk_android_content_file_query_info`.
+   Patched downstream as `build-aux/android/patch-gtk-jni-attach.sh`.
+2. **Sending any attachment failed**, because a `content://` file has no URI GStreamer can resolve
+   and no path that exists.
+
+The second is worth stating plainly: **sending attachments had never worked on this port**, for any
+file type. Video was only what happened to be tried.
+
+### Not done
+
+* **Hardware decode**, per `androidmedia` above.
+* **A GL path for `gtk4paintablesink`.** Its GL features are off, so frames go through system memory
+  rather than staying on the GPU. Nothing was measured about the cost; a 320x240 test clip proves
+  nothing about a phone camera video.
+* **Calls**, which are `gst_sdp` and `gst_webrtc` and their own step.

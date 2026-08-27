@@ -15,6 +15,8 @@ use tracing::{debug, error};
 use url::Url;
 use zeroize::Zeroizing;
 
+#[cfg(target_os = "android")]
+mod android;
 mod file;
 #[cfg(target_os = "linux")]
 mod linux;
@@ -42,6 +44,9 @@ cfg_if::cfg_if! {
     } else if #[cfg(target_os = "macos")] {
         /// The secret API.
         pub(crate) type Secret = macos::MacosSecret;
+    } else if #[cfg(target_os = "android")] {
+        /// The secret API.
+        pub(crate) type Secret = android::AndroidSecret;
     } else if #[cfg(target_os = "windows")] {
         /// The secret API.
         pub(crate) type Secret = windows::WindowsSecret;
@@ -65,7 +70,12 @@ pub(crate) trait SecretExt {
 }
 
 /// The fallback `Secret` API, to use on platforms where it is unimplemented.
-#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+#[cfg(not(any(
+    target_os = "linux",
+    target_os = "macos",
+    target_os = "android",
+    target_os = "windows"
+)))]
 mod unimplemented {
     use super::*;
 

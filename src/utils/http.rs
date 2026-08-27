@@ -11,9 +11,13 @@ use std::sync::LazyLock;
 use futures_util::StreamExt;
 use matrix_sdk::reqwest;
 
+use super::tls;
+
 /// The HTTP client shared by everything that talks to a non-Matrix host.
 pub(crate) static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
-    reqwest::Client::builder()
+    // Through `tls`, because `reqwest`'s own default does not work on Android.
+    // See `crate::utils::tls`.
+    tls::client_builder()
         .user_agent(concat!("Commune/", env!("CARGO_PKG_VERSION")))
         .build()
         .expect("HTTP client should be constructible with the default TLS backend")

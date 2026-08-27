@@ -21,6 +21,7 @@ account_switcher/account_switcher_button.blp
 account_switcher/account_switcher_popover.blp
 account_switcher/avatar_with_selection.blp
 account_switcher/session_item.blp
+android_setup_dialog/mod.blp
 components/action_button.blp
 components/avatar/editable.blp
 components/avatar/mod.blp

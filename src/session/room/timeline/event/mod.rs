@@ -7,12 +7,13 @@ use matrix_sdk_ui::timeline::{
     EventTimelineItem, MembershipChange, Message, MsgLikeKind, ThreadSummary, TimelineDetails,
     TimelineEventItemId, TimelineEventShieldState, TimelineItemContent,
 };
+#[cfg(not(target_os = "android"))]
+use ruma::events::{
+    AnySyncMessageLikeEvent, SyncMessageLikeEvent, call::invite::CallInviteEventContent,
+};
 use ruma::{
     MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId, UserId,
-    events::{
-        AnySyncMessageLikeEvent, AnySyncTimelineEvent, StateEventType, SyncMessageLikeEvent,
-        TimelineEventType, call::invite::CallInviteEventContent, receipt::Receipt,
-    },
+    events::{AnySyncTimelineEvent, StateEventType, TimelineEventType, receipt::Receipt},
     serde::Raw,
 };
 use serde::{Deserialize, de::IgnoredAny};
@@ -649,6 +650,7 @@ impl Event {
     }
 
     /// Whether this is a call event.
+    #[cfg(not(target_os = "android"))]
     pub(crate) fn is_call_event(&self) -> bool {
         matches!(
             self.item().content(),
@@ -662,6 +664,7 @@ impl Event {
     /// it is a unit variant — so what the row needs comes back out of the
     /// event's own JSON. In an encrypted room that JSON is the decrypted
     /// event, which is what makes this work in the rooms calls happen in.
+    #[cfg(not(target_os = "android"))]
     pub(crate) fn call_invite(&self) -> Option<CallInviteEventContent> {
         if !matches!(self.item().content(), TimelineItemContent::CallInvite) {
             return None;

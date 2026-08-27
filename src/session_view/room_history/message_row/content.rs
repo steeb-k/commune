@@ -13,12 +13,13 @@ use ruma::{
 use tracing::{error, warn};
 use url::Url;
 
+#[cfg(not(target_os = "android"))]
+use super::location::MessageLocation;
 use super::{
     audio::MessageAudio,
     caption::MessageCaption,
     file::MessageFile,
     info::{MessageInfo, MessageInfoIcon},
-    location::MessageLocation,
     reply::MessageReply,
     text::MessageText,
     url_preview::MessageUrlPreview,
@@ -382,6 +383,10 @@ trait MessageContentContainer: ChildPropertyExt {
                     detect_at_room,
                 );
             }
+            // Drawing a map needs libshumate, which is not cross-built for Android, so
+            // there a location falls through to the unsupported-event arm at the end
+            // rather than growing a message of its own. See `doc/android.md`.
+            #[cfg(not(target_os = "android"))]
             MessageType::Location(message) => {
                 let child = self.child_or_default::<MessageLocation>();
                 child.set_geo_uri(&message.geo_uri, format);

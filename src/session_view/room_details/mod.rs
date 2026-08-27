@@ -1,7 +1,3 @@
-// FIXME: AdwPreferencesWindow is deprecated but we cannot use
-// AdwPreferencesDialog yet because we need to be able to open the media viewer.
-#![allow(deprecated)]
-
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone};
@@ -122,7 +118,7 @@ mod imp {
     impl ObjectSubclass for RoomDetails {
         const NAME: &'static str = "RoomDetails";
         type Type = super::RoomDetails;
-        type ParentType = adw::PreferencesWindow;
+        type ParentType = adw::PreferencesDialog;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -167,14 +163,6 @@ mod imp {
                     obj.push_subpage(&user_page);
                 },
             );
-
-            klass.install_action("win.toggle-fullscreen", None, |obj, _, _| {
-                if obj.is_fullscreen() {
-                    obj.unfullscreen();
-                } else {
-                    obj.fullscreen();
-                }
-            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -186,9 +174,34 @@ mod imp {
     impl ObjectImpl for RoomDetails {}
 
     impl WidgetImpl for RoomDetails {}
-    impl WindowImpl for RoomDetails {}
-    impl AdwWindowImpl for RoomDetails {}
-    impl PreferencesWindowImpl for RoomDetails {}
+
+    impl AdwDialogImpl for RoomDetails {
+        /// Handle an attempt to close this dialog.
+        ///
+        /// Only reached on Android, where `can-close` is unset so that the
+        /// system back gesture -- which arrives as the window's close request,
+        /// which `AdwDialogHost` turns into closing this dialog -- can mean one
+        /// step back rather than the whole dialog. Everywhere else `can-close`
+        /// is left alone and this is never emitted.
+        #[cfg(target_os = "android")]
+        fn close_attempt(&self) {
+            let obj = self.obj();
+
+            // The media history viewer carries a media viewer of its own,
+            // inside a subpage. When it is up it is the thing on top, and the
+            // thing back comes out of first.
+            if let Some(media_viewer) = super::super::open_media_viewer(obj.upcast_ref()) {
+                media_viewer.close();
+                return;
+            }
+
+            if !obj.pop_subpage() {
+                obj.force_close();
+            }
+        }
+    }
+
+    impl PreferencesDialogImpl for RoomDetails {}
 
     impl RoomDetails {
         /// Set the room to show the details for.
@@ -289,25 +302,25 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// Preference Window to display and update room details.
+    /// Preferences dialog to display and update room details.
     pub struct RoomDetails(ObjectSubclass<imp::RoomDetails>)
-        @extends gtk::Widget, gtk::Window, adw::Window, adw::PreferencesWindow,
-        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget, gtk::Root, gtk::Native,
-                    gtk::ShortcutManager;
+        @extends gtk::Widget, adw::Dialog, adw::PreferencesDialog,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl RoomDetails {
-    /// Construct a `RoomDetails` for the given room with the given parent
-    /// window, showing the given initial view.
-    pub(super) fn new(
-        parent_window: Option<&gtk::Window>,
-        room: &Room,
-        initial_view: InitialView,
-    ) -> Self {
+    /// Construct a `RoomDetails` for the given room, showing the given initial
+    /// view.
+    ///
+    /// The caller presents it, which is where the parent is named.
+    pub(super) fn new(room: &Room, initial_view: InitialView) -> Self {
         let obj = glib::Object::builder::<Self>()
-            .property("transient-for", parent_window)
             .property("room", room)
             .build();
+
+        // See `AdwDialogImpl::close_attempt()`.
+        #[cfg(target_os = "android")]
+        obj.set_can_close(false);
 
         obj.imp().show_initial_view(initial_view);
 

@@ -208,7 +208,7 @@ mod imp {
                 return;
             };
 
-            RoomDetails::new(self.obj().root().and_downcast_ref(), &room, initial_view).present();
+            RoomDetails::new(&room, initial_view).present(Some(&*self.obj()));
         }
 
         /// Leave this space.

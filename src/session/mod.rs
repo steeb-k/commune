@@ -18,6 +18,9 @@ use tokio::{task::AbortHandle, time::sleep};
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, info};
 
+// Calls are WebRTC over GStreamer, which is not cross-built for Android; see
+// `doc/android.md`.
+#[cfg(not(target_os = "android"))]
 mod calls;
 mod global_account_data;
 mod identity_server;
@@ -35,10 +38,12 @@ mod user;
 mod user_sessions_list;
 mod verification;
 
+#[cfg(not(target_os = "android"))]
+pub(crate) use self::calls::*;
 pub(crate) use self::{
-    calls::*, global_account_data::*, identity_server::*, ignored_users::*, image_packs::*,
-    notifications::*, presence::*, remote::*, room::*, room_list::*, security::*,
-    session_settings::*, sidebar_data::*, user::*, user_sessions_list::*, verification::*,
+    global_account_data::*, identity_server::*, ignored_users::*, image_packs::*, notifications::*,
+    presence::*, remote::*, room::*, room_list::*, security::*, session_settings::*,
+    sidebar_data::*, user::*, user_sessions_list::*, verification::*,
 };
 use crate::{
     Application,
@@ -121,6 +126,7 @@ mod imp {
         #[property(get)]
         presence_list: PresenceList,
         /// The calls of this session.
+        #[cfg(not(target_os = "android"))]
         #[property(get = Self::calls_owned)]
         calls: OnceCell<Calls>,
         /// The list of sessions for this session's user.
@@ -368,6 +374,53 @@ mod imp {
             self.obj().notify_is_offline();
         }
 
+        /// Drop any stale offline claim and find out fresh.
+        ///
+        /// On Android, backgrounding cuts the process off the network and then
+        /// freezes it, so the last thing this session learned before the
+        /// freeze is usually "the syncs are failing" — and that stale claim is
+        /// what an `is-offline` banner would greet the user with on every
+        /// return, right up until the first sync lands. Coming back to the
+        /// foreground makes the connectivity genuinely unknown, and unknown is
+        /// presented as online: the banner's job is to announce known trouble,
+        /// not unfinished measurement. If the trouble is real, the fresh
+        /// checks this kicks off will say so within a few seconds.
+        #[cfg(target_os = "android")]
+        pub(super) fn recheck_connectivity(&self) {
+            if self.state.get() < SessionState::InitialSync {
+                return;
+            }
+
+            let was_struggling = self.is_offline.get() || self.missed_sync_count.get() > 0;
+            self.missed_sync_count.set(0);
+            self.set_offline(false);
+
+            if !was_struggling {
+                // The sync loop is healthy — its running long-poll is already
+                // the fresh check.
+                return;
+            }
+
+            if self.is_homeserver_reachable.get() {
+                // Restart the sync loop rather than let it sleep out a backoff
+                // delay measured against a network that no longer exists.
+                if let Some(handle) = self.sync_handle.take() {
+                    handle.abort();
+                }
+                self.sync();
+            } else {
+                // The reachability check restarts the sync loop itself when it
+                // succeeds.
+                spawn!(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    async move {
+                        imp.update_homeserver_reachable().await;
+                    }
+                ));
+            }
+        }
+
         /// The settings stored in the global account data for this session.
         fn global_account_data(&self) -> &GlobalAccountData {
             self.global_account_data
@@ -392,11 +445,13 @@ mod imp {
         }
 
         /// The calls of this session.
+        #[cfg(not(target_os = "android"))]
         pub(super) fn calls(&self) -> &Calls {
             self.calls.get_or_init(|| Calls::new(&self.obj()))
         }
 
         /// The owned calls of this session.
+        #[cfg(not(target_os = "android"))]
         fn calls_owned(&self) -> Calls {
             self.calls().clone()
         }
@@ -435,6 +490,7 @@ mod imp {
 
             self.room_list().load().await;
             self.verification_list().init();
+            #[cfg(not(target_os = "android"))]
             self.calls().init();
             self.security.set_session(Some(&*self.obj()));
 
@@ -571,6 +627,18 @@ mod imp {
                     if self.state.get() < SessionState::Ready {
                         self.set_state(SessionState::Ready);
                         self.init_notifications();
+
+                        // Make sure the UnifiedPush endpoint, when there is
+                        // one, is registered with this session's homeserver.
+                        // Once per run, at readiness, so a registration a
+                        // previous run left half-done heals here.
+                        #[cfg(target_os = "android")]
+                        {
+                            let client = self.client().clone();
+                            crate::spawn_tokio!(async move {
+                                crate::utils::android_push::ensure_pusher(client).await;
+                            });
+                        }
                     }
 
                     self.set_offline(false);
@@ -858,6 +926,16 @@ impl Session {
         self.imp().remote_cache()
     }
 
+    /// Drop any stale offline claim and find out fresh.
+    ///
+    /// For the moment the application comes back to the foreground, when what
+    /// this session last learned about its connection predates a background
+    /// freeze.
+    #[cfg(target_os = "android")]
+    pub(crate) fn recheck_connectivity(&self) {
+        self.imp().recheck_connectivity();
+    }
+
     /// The identity server of this session.
     pub(crate) fn identity_server(&self) -> &IdentityServer {
         self.imp().identity_server()
@@ -869,6 +947,20 @@ impl Session {
             session = self.session_id(),
             "The session is about to be logged out"
         );
+
+        // The pusher belongs to the account, so nothing removes it with the
+        // device — and it has to go before the access token that can remove
+        // it does. Best-effort: an account that never had one refuses the
+        // delete, quietly.
+        #[cfg(target_os = "android")]
+        {
+            let client = self.client();
+            let handle =
+                spawn_tokio!(
+                    async move { crate::utils::android_push::remove_pusher(client).await }
+                );
+            handle.await.expect("task was not aborted");
+        }
 
         let client = self.client();
         let handle = spawn_tokio!(async move { client.logout().await });

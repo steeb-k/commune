@@ -50,12 +50,14 @@ use crate::{
     session::{Event, Member, PackImage, Room, RoomListRoomInfo, Timeline},
     spawn, spawn_tokio, toast,
     utils::{
-        Location, LocationError, TemplateCallbacks, TokioDrop, http,
+        File, Location, LocationError, TemplateCallbacks, TokioDrop, http,
         klipy::{self, SelectedGif},
+        local_path,
         media::{
             FileInfo, audio::load_audio_info, filename_for_mime, image::ImageInfoLoader,
             video::load_video_info,
         },
+        save_data_to_tmp_file,
     },
 };
 
@@ -125,6 +127,14 @@ mod imp {
         pub(super) message_entry: TemplateChild<sourceview::View>,
         #[template_child]
         attach_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        emoji_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        more_button: TemplateChild<gtk::MenuButton>,
+        #[template_child]
+        action_row: TemplateChild<gtk::Box>,
+        #[template_child]
+        toolbar_row: TemplateChild<gtk::Box>,
         #[template_child]
         voice_button: TemplateChild<gtk::Button>,
         #[template_child]
@@ -209,6 +219,29 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
+
+            // Six widgets do not fit beside a typing area on a phone — the
+            // send button was the one pushed off the screen — so the
+            // auxiliary buttons move to a row of their own above the entry,
+            // and the row that types keeps only the entry and Send. Done here
+            // rather than with a breakpoint because on Android narrow is not
+            // a window state, it is the shape of the device.
+            #[cfg(target_os = "android")]
+            {
+                for button in [
+                    self.attach_button.upcast_ref::<gtk::Widget>(),
+                    self.emoji_button.upcast_ref(),
+                    self.sticker_button.upcast_ref(),
+                    self.more_button.upcast_ref(),
+                ] {
+                    self.toolbar_row.remove(button);
+                    self.action_row.append(button);
+                }
+                // The overflow menu reads best at the far end of its row.
+                self.more_button.set_hexpand(true);
+                self.more_button.set_halign(gtk::Align::End);
+                self.action_row.set_visible(true);
+            }
 
             // Markdown highlighting.
             let settings = Application::default().settings();
@@ -1395,12 +1428,6 @@ mod imp {
             #[cfg(target_os = "macos")]
             let file = crate::utils::repair_pasteboard_file(file);
 
-            let Some(path) = file.path() else {
-                warn!("Could not read file: file does not have a path");
-                toast!(obj, gettext("Error reading file"));
-                return;
-            };
-
             let file_info = match FileInfo::try_from_file(&file).await {
                 Ok(file_info) => file_info,
                 Err(error) => {
@@ -1410,8 +1437,54 @@ mod imp {
                 }
             };
 
+            // Everything below this wants the file as a path or as a `file://`
+            // URI: the preview and the thumbnailer hand a URI to `GStreamer`,
+            // and the upload hands a path to the send queue. A file the Android
+            // picker returns has neither in a usable form. Its URI is
+            // `content://...`, which `GStreamer` has no handler for, and its
+            // path is a document id that points at nothing, which is what
+            // `local_path` is checking for. Copying it once here is what makes
+            // the rest work, and on every other platform the path is real and
+            // nothing is copied.
+            //
+            // `source_file` is held until this function returns, because a
+            // temporary one deletes itself when the last reference to it goes.
+            let (source_file, source) = if let Some(path) = local_path(&file) {
+                (File::from(file), AttachmentSource::from(path))
+            } else {
+                let data = match file.load_contents_future().await {
+                    Ok((data, _)) => data.to_vec(),
+                    Err(error) => {
+                        warn!("Could not read file: {error}");
+                        toast!(obj, gettext("Error reading file"));
+                        return;
+                    }
+                };
+
+                // The upload is given the bytes rather than the copy's
+                // path, because `matrix-sdk` names an attachment after the
+                // file it read, and the copy is named `.tmp` followed by
+                // six random characters. The cost is holding the attachment
+                // twice while the dialog is open, and the alternative is
+                // sending every picked file under a name nobody chose.
+                let source = AttachmentSource::Data {
+                    bytes: data.clone(),
+                    filename: file_info.filename.clone(),
+                };
+
+                match save_data_to_tmp_file(data).await {
+                    Ok(file) => (file, source),
+                    Err(error) => {
+                        warn!("Could not copy the file to a temporary file: {error}");
+                        toast!(obj, gettext("Error reading file"));
+                        return;
+                    }
+                }
+            };
+            let file = source_file.as_gfile();
+
             let dialog = AttachmentDialog::new(&file_info.filename);
-            dialog.set_file(file.clone());
+            dialog.set_file(file.clone(), file_info.mime.type_().as_str().into());
 
             if dialog.response_future(&*obj).await != gtk::ResponseType::Ok {
                 return;
@@ -1440,7 +1513,7 @@ mod imp {
                 _ => (AttachmentInfo::File(BaseFileInfo { size }), None),
             };
 
-            self.send_attachment(path.into(), file_info.mime, info, thumbnail)
+            self.send_attachment(source, file_info.mime, info, thumbnail)
                 .await;
         }
 

@@ -20,6 +20,14 @@ use tempfile::NamedTempFile;
 use tokio::task::{AbortHandle, JoinHandle};
 use tracing::error;
 
+#[cfg(target_os = "android")]
+pub(crate) mod android;
+#[cfg(target_os = "android")]
+pub(crate) mod android_notifications;
+#[cfg(target_os = "android")]
+pub(crate) mod android_push;
+#[cfg(target_os = "android")]
+pub(crate) mod android_sync_service;
 pub(crate) mod app_bundle;
 pub(crate) mod expression;
 mod expression_list_model;
@@ -47,6 +55,7 @@ mod single_item_list_model;
 pub(crate) mod sourceview;
 pub(crate) mod string;
 mod template_callbacks;
+pub(crate) mod tls;
 pub(crate) mod toast;
 #[cfg(target_os = "windows")]
 pub(crate) mod windows_app_id;
@@ -116,11 +125,70 @@ impl DataType {
     }
 
     /// The path of the platform directory that holds data of this type.
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    #[cfg(not(any(target_os = "macos", target_os = "android", target_os = "windows")))]
     fn base_dir_path(self) -> PathBuf {
         match self {
             DataType::Persistent => glib::user_data_dir(),
             DataType::Cache => glib::user_cache_dir(),
+        }
+    }
+
+    /// The path of the platform directory that holds data of this type.
+    ///
+    /// `GLib`'s XDG answers are wrong here in both directions, and the
+    /// persistent one is wrong in a way that matters.
+    ///
+    /// GTK's Android glue sets `XDG_DATA_HOME` — what `glib::user_data_dir()`
+    /// returns — to `Context.getExternalFilesDir(null)/share`. That is
+    /// *external* storage: not readable by other ordinary applications under
+    /// scoped storage, but exposed over USB/MTP, reachable by anything holding
+    /// `MANAGE_EXTERNAL_STORAGE`, and possibly on removable media. The session
+    /// databases and the secret store both sit under this directory, so leaving
+    /// it there would put the message history and the passphrase that encrypts
+    /// it somewhere the application sandbox does not reach.
+    ///
+    /// The glue sets nothing at all for the cache, so `glib::user_cache_dir()`
+    /// falls back to `$HOME/.cache`, and an Android process has no useful
+    /// `HOME`.
+    ///
+    /// What the glue does give us is `XDG_DATA_DIRS`, set to
+    /// `Context.getFilesDir()/share` — internal storage, owned by this
+    /// application's UID. Everything here is derived from that, because asking
+    /// Android directly needs a `Context`, and a `Context` needs a realized
+    /// toplevel, which does not exist when the first session is restored.
+    ///
+    /// **Persistent data may not live in `getFilesDir()` itself**, which is
+    /// where it was first put and where it was destroyed by every new build.
+    /// That directory is GTK's, not ours: the glue extracts the application's
+    /// assets into it, and decides whether to do so by comparing a fingerprint
+    /// file against the one in the APK. When they differ — which is to say on
+    /// every build — `SystemFilesystem.doWriteResources()` calls
+    /// `cleanDirectory(getFilesDir())` first, and that recurses and deletes
+    /// everything it finds. Sessions, the secret store, the SDK's databases and
+    /// the message history all sat under it, so installing a new build silently
+    /// logged the account out and threw away its data.
+    ///
+    /// So persistent data goes to `<data>/no_backup` — `getNoBackupFilesDir()`,
+    /// a sibling of `files` and `cache` that the glue never looks at. It is the
+    /// right place on its own merits too: `patch-manifest.sh` already forces
+    /// `allowBackup="false"` because the databases are sealed with a Keystore
+    /// key that cannot leave the device, and this is the directory Android
+    /// provides for exactly that.
+    ///
+    /// The cache stays at `getCacheDir()`, which the glue does not touch.
+    #[cfg(target_os = "android")]
+    fn base_dir_path(self) -> PathBuf {
+        // `getFilesDir()`, `getCacheDir()` and `getNoBackupFilesDir()` are all
+        // siblings on Android: `<data>/files`, `<data>/cache`,
+        // `<data>/no_backup`.
+        let data_dir = android_files_dir()
+            .parent()
+            .expect("the Android files directory should have a parent")
+            .to_owned();
+
+        match self {
+            DataType::Persistent => data_dir.join("no_backup"),
+            DataType::Cache => data_dir.join("cache"),
         }
     }
 
@@ -142,6 +210,38 @@ impl DataType {
 
         path
     }
+}
+
+/// The path of `Context.getFilesDir()`, derived from what GTK's Android glue
+/// told `GLib`.
+///
+/// # Panics
+///
+/// If `XDG_DATA_DIRS` is not the single `<files>/share` entry the glue sets.
+///
+/// Carrying on with `glib::user_data_dir()` instead would be possible and is
+/// exactly what must not happen: that path is external storage, so a quiet
+/// fallback would put the databases and the secret store back where this code
+/// exists to move them from. A panic is loud and obvious; the alternative is
+/// silent and wrong.
+#[cfg(target_os = "android")]
+fn android_files_dir() -> PathBuf {
+    let data_dirs = glib::system_data_dirs();
+
+    let share_dir = data_dirs
+        .first()
+        .expect("XDG_DATA_DIRS should be set by GTK's Android glue");
+
+    assert!(
+        share_dir.file_name().is_some_and(|name| name == "share"),
+        "expected XDG_DATA_DIRS to be `<files>/share`, got {}",
+        share_dir.display()
+    );
+
+    share_dir
+        .parent()
+        .expect("`<files>/share` should have a parent")
+        .to_owned()
 }
 
 /// Repair a file handed over by GTK's broken macOS pasteboard encoding.
@@ -540,6 +640,31 @@ pub(crate) fn bool_to_accessible_tristate(checked: bool) -> gtk::AccessibleTrist
     }
 }
 
+/// The path of the given file on the local filesystem, if it has one.
+///
+/// Use this instead of `gio::File::path()` everywhere the path is about to be
+/// opened, read, or handed to something that is not GIO.
+///
+/// GTK's Android backend answers `g_file_get_path()` for a `content://` URI
+/// with `Uri.getPath()`, so a file the picker returned reports a plausible
+/// absolute path -- `/document/video:1000000034` -- that no filesystem has.
+/// GIO's contract is that a file with no local path returns `NULL`, and every
+/// `if let Some(path)` guard here was written against that contract, so the lie
+/// defeats all of them at once and the failure surfaces far from the picker
+/// that caused it. Checking that the path exists restores the contract without
+/// diverging from upstream GTK, and is correct everywhere else too, because a
+/// stale path is stale on every platform.
+///
+/// This is a test for *reading*. A file the user has just chosen as a save
+/// destination does not exist yet, so this returns `None` for it; check the
+/// parent directory instead in that case.
+///
+/// See `doc/android-attachments-plan.md` for why this is a helper here rather
+/// than a patch to GTK.
+pub(crate) fn local_path(file: &gio::File) -> Option<PathBuf> {
+    file.path().filter(|path| path.exists())
+}
+
 /// A wrapper around several sources of files.
 #[derive(Debug, Clone)]
 pub enum File {
@@ -553,14 +678,6 @@ pub enum File {
 }
 
 impl File {
-    /// The path to the file.
-    pub(crate) fn path(&self) -> Option<PathBuf> {
-        match self {
-            Self::Gio(file) => file.path(),
-            Self::Temp(file) => Some(file.path().to_owned()),
-        }
-    }
-
     /// Get a `GFile` for this file.
     pub(crate) fn as_gfile(&self) -> gio::File {
         match self {
@@ -583,11 +700,47 @@ impl From<NamedTempFile> for File {
 }
 
 /// The directory where to put temporary files.
+///
+/// Not `glib::user_runtime_dir()` on Android. GTK's glue sets `XDG_DATA_DIRS`,
+/// `XDG_DATA_HOME`, `XDG_CONFIG_DIRS` and `XDG_CONFIG_HOME`, and nothing else,
+/// so that call falls through to `glib::user_cache_dir()` and then to
+/// `$HOME/.cache` — the fallback [`DataType::base_dir_path`] already describes,
+/// reached here by a path that had not been changed with it.
+///
+/// The symptom was not an error message. Every media file the viewer opened
+/// failed with `ENOENT`, the viewer took its empty state, and a picture opened
+/// from a room showed as a black screen.
 static TMP_DIR: LazyLock<Box<Path>> = LazyLock::new(|| {
-    let mut dir = glib::user_runtime_dir();
-    dir.push(PROFILE.dir_name().as_ref());
+    #[cfg(target_os = "android")]
+    let dir = DataType::Cache.dir_path().join("tmp");
+
+    #[cfg(not(target_os = "android"))]
+    let dir = {
+        let mut dir = glib::user_runtime_dir();
+        dir.push(PROFILE.dir_name().as_ref());
+        dir
+    };
+
     dir.into_boxed_path()
 });
+
+/// Ensure the temporary file directory exists, and return it.
+///
+/// `create_dir_all`, not `create_dir`: the parent is not guaranteed to exist.
+/// On Android nothing has created the cache directory when the first
+/// attachment is opened, and `create_dir` fails with `ENOENT` rather than
+/// creating it.
+fn ensure_tmp_dir() -> Result<&'static Path, std::io::Error> {
+    let dir = TMP_DIR.as_ref();
+    if !dir.exists()
+        && let Err(error) = fs::create_dir_all(dir)
+        && !matches!(error.kind(), io::ErrorKind::AlreadyExists)
+    {
+        return Err(error);
+    }
+
+    Ok(dir)
+}
 
 /// Save the given data to a temporary file.
 ///
@@ -596,19 +749,26 @@ static TMP_DIR: LazyLock<Box<Path>> = LazyLock::new(|| {
 pub(crate) async fn save_data_to_tmp_file(data: Vec<u8>) -> Result<File, std::io::Error> {
     RUNTIME
         .spawn_blocking(move || {
-            let dir = TMP_DIR.as_ref();
-            if !dir.exists()
-                && let Err(error) = fs::create_dir(dir)
-                && !matches!(error.kind(), io::ErrorKind::AlreadyExists)
-            {
-                return Err(error);
-            }
-
-            let mut file = NamedTempFile::new_in(dir)?;
+            let mut file = NamedTempFile::new_in(ensure_tmp_dir()?)?;
             file.write_all(&data)?;
 
             Ok(file.into())
         })
+        .await
+        .expect("task was not aborted")
+}
+
+/// Create an empty temporary file and return its path, with the file closed.
+///
+/// Use this instead of [`save_data_to_tmp_file`] when the caller hands the
+/// path to something outside GIO that opens the file itself — matrix-sdk's
+/// key export writes to its path with `std::fs::File::create`, and on Windows
+/// that fails while this process still holds the same file open, which a live
+/// `NamedTempFile` does. The file is deleted when the returned `TempPath` is
+/// dropped, the same as [`File::Temp`].
+pub(crate) async fn tmp_file_path() -> Result<tempfile::TempPath, std::io::Error> {
+    RUNTIME
+        .spawn_blocking(|| Ok(NamedTempFile::new_in(ensure_tmp_dir()?)?.into_temp_path()))
         .await
         .expect("task was not aborted")
 }

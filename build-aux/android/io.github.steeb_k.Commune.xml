@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The pixiewood manifest: what `pixiewood prepare`, `generate` and `build` need
+  to know that Meson does not tell them. See `doc/android.md`.
+
+  Two things here are load-bearing and easy to get wrong.
+
+  The `xi:include` reads the *built* metainfo, not the source one, because the
+  source is `.xml.in.in` and still full of placeholders. The architecture it
+  names has to match the whitelist below, or the include points into a build
+  directory that was never created.
+
+  `target` is the Meson target name, and it becomes the `gtk.android.lib_name`
+  metadata the Java glue reads to decide which shared object to load.
+-->
+<app xmlns="https://sp1rit.arpa/pixiewood/" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <metainfo>
+    <xi:include href="build://x86_64/data/io.github.steeb_k.Commune.metainfo.xml" parse="xml"/>
+  </metainfo>
+  <style>
+    <theme name="adw"/>
+    <icon type="generate">
+      <drawable target="foreground" scale=".6" type="svg" path="src://data/icons/io.github.steeb_k.Commune.svg"/>
+      <color target="background">#FFFFFF</color>
+      <drawable target="monochrome" scale=".45" type="svg" path="src://data/icons/io.github.steeb_k.Commune-symbolic.svg"/>
+    </icon>
+  </style>
+  <!--
+    pixiewood copies one wrap per name listed here and does not follow
+    dependencies of its own accord, so anything the build needs a wrap for has
+    to be named. Unlike GTK's and libadwaita's own manifests, which are for the
+    toolkit itself and get most of this from their own trees, an application
+    starts with nothing.
+
+    A wrap that is never resolved costs nothing, so the list is the whole of
+    what pixiewood offers rather than a guess at the minimum.
+  -->
+  <dependencies>
+    <glib>
+      <patch>hack</patch>
+    </glib>
+    <gtk/>
+    <!--
+      Deliberately without pixiewood's `no-appstream` patch, which no longer
+      applies: it deletes the metainfo of libadwaita's tests and demo, and four
+      of its hunks are rejected against libadwaita `main`. Nothing is lost by
+      leaving it off — current libadwaita does not mention appstream in its
+      Meson files at all, and `android.cross` already builds it with
+      `tests = false` and `examples = false`, so the files the patch was
+      written to remove are never reached.
+    -->
+    <libadwaita/>
+    <cairo/>
+    <fontconfig/>
+    <gdk-pixbuf/>
+    <harfbuzz/>
+    <rsvg/>
+  </dependencies>
+  <build target="commune">
+    <configure-options>
+      <!-- GtkSourceView is built from `subprojects/gtksourceview.wrap`; these
+           are the options that keep it to the library itself. -->
+      <option>-Dgtksourceview:introspection=disabled</option>
+      <option>-Dgtksourceview:vapi=false</option>
+      <option>-Dgtksourceview:documentation=false</option>
+      <option>-Dgtksourceview:build-testsuite=false</option>
+      <option>-Dgtksourceview:install-tests=false</option>
+      <!--
+        16 KB ELF alignment, for every shared object in the APK.
+
+        The NDK links to 4 KB by default, and a Pixel 9a on Android 17 reports
+        the consequence: `AppWarnings: Showing PageSizeMismatchDialog`, and
+        `pageSizeCompat=4` in `dumpsys package`. `llvm-readelf -l` agrees:
+        every LOAD segment came out `0x1000` where a 16 KB device wants
+        `0x4000`. Android runs a 4 KB-aligned app in a compatibility mode
+        rather than refusing it, so this presents as a warning and a slower
+        app, not a crash, which is why no emulator run ever mentioned it.
+
+        These reach the C and C++ links of every subproject, which is what
+        matters here: `libcommune.so` is linked by Meson, not by Cargo, so the
+        Rust needs nothing of its own.
+      -->
+      <option>-Dc_link_args=-Wl,-z,max-page-size=16384</option>
+      <option>-Dcpp_link_args=-Wl,-z,max-page-size=16384</option>
+    </configure-options>
+    <!--
+      Both, deliberately. `x86_64` is the emulator, which is where every
+      measurement in `doc/android.md` was taken, and `aarch64` is every phone
+      worth the name. Dropping `x86_64` would also break the `xi:include`
+      above, which reads the metainfo out of that architecture's build
+      directory.
+    -->
+    <architectures mode="whitelist">
+      <arch>x86_64</arch>
+      <arch>aarch64</arch>
+    </architectures>
+  </build>
+</app>

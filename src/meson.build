@@ -107,7 +107,69 @@ else
     message('Building in release mode')
 endif
 
-if not build_env_only
+if not build_env_only and is_android
+    # Android does not run a binary. GTK's glue loads a shared object and calls
+    # `main` inside it, so Cargo produces a static library and Meson performs the
+    # one real link, of that archive plus `build-aux/android/stub.c`.
+    #
+    # `cargo rustc --crate-type staticlib` rather than a `crate-type` in
+    # `Cargo.toml`, so that no other platform builds an archive it will never
+    # use. `--lib` because the binary target is not wanted here at all.
+    #
+    # A static library is what makes this fit inside pixiewood's single ninja
+    # pass: rustc never links one, so Cargo needs no `libgtk-4.so` to exist and
+    # only reads the pkg-config description of it, which Meson has already
+    # written by the time ninja runs. See `doc/android.md`.
+    rust_staticlib = custom_target(
+        'cargo-build-staticlib',
+        build_by_default: true,
+        build_always_stale: true,
+        output: 'lib' + meson.project_name() + '.a',
+        console: true,
+        depends: [resources, ui_resources],
+        env: cargo_env,
+        command: [
+            cargo,
+            'rustc',
+            '--lib',
+            '--crate-type',
+            'staticlib',
+            cargo_build_options,
+            cargo_build_options_android,
+            '&&',
+            'cp',
+            # With `--target`, Cargo puts the artefact under the triple.
+            cargo_target_dir / rust_triple / rust_target / 'lib' + meson.project_name() + '.a',
+            '@OUTPUT@',
+        ],
+    )
+
+    # `sources:` is what orders the Cargo run before the link; `link_args` is
+    # what puts the archive into it.
+    rust_dep = declare_dependency(
+        link_args: [rust_staticlib.full_path()],
+        sources: [rust_staticlib],
+    )
+
+    # The kwarg that turns an executable into the `lib<target>.so` the Java glue
+    # loads. Guarded the way libadwaita guards its own, since it only exists from
+    # Meson 1.8 and this file claims 1.4.
+    exe_kwargs = {}
+    if meson.version().version_compare('>= 1.8.0')
+        exe_kwargs += {'android_exe_type': 'application'}
+    endif
+
+    executable(
+        meson.project_name(),
+        '../build-aux/android/stub.c',
+        '../build-aux/android/gstreamer.c',
+        gst_static_plugins_c,
+        dependencies: android_deps + [rust_dep],
+        install: true,
+        install_dir: get_option('libdir'),
+        kwargs: exe_kwargs,
+    )
+elif not build_env_only
     # Build binary with cargo
     custom_target(
         'cargo-build',
@@ -127,6 +189,9 @@ if not build_env_only
             cargo_build_options,
         ],
     )
+endif
+
+if not build_env_only
 
     # Lint Rust code with clippy
     run_target(

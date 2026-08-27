@@ -57,7 +57,7 @@ set -uo pipefail
 
 FORK_POINT=1e5c1cab
 PAGES=(doc/client-comparison.html doc/spec-gaps.html doc/upstream-defects.html)
-PUBLISHED=(doc/client-comparison.html doc/spec-gaps.html doc/upstream-defects.html doc/eyeball-run.html)
+PUBLISHED=(doc/client-comparison.html doc/spec-gaps.html doc/upstream-defects.html doc/eyeball-run.html doc/eyeball-android-run.html)
 STATE=doc/pages.state
 
 act="\e[1;33m"
