@@ -1019,6 +1019,7 @@ sh build-aux/android/patch-gtk-ime-caps.sh       # likewise, and after the one a
 sh build-aux/android/patch-gtk-caps-sentences.sh  # likewise; see S10
 sh build-aux/android/patch-gtk-jni-attach.sh     # likewise; see the attachment crash below
 sh build-aux/android/patch-notification-icon.sh  # likewise; see the small icon below
+sh build-aux/android/patch-gtk-ime-composing-region.sh  # likewise; see "Before this ships"
 $PW build
 ```
 
@@ -2860,7 +2861,7 @@ all of it blocks calling the port finished.
   application is English-only on Android. Recorded much earlier as something that _"should be fixed
   before anyone sees it"_, and still true.
 * **File the GTK IME defects upstream.** Notes are written and ready to paste:
-  [doc/upstream-gtk-android-ime.md](upstream-gtk-android-ime.md). Six of the nine patch scripts
+  [doc/upstream-gtk-android-ime.md](upstream-gtk-android-ime.md). Seven of the patch scripts
   this port carries are GTK bugs rather than Commune glue, and every one of them is a local patch
   that has to be re-applied after each `pixiewood generate` and re-checked against each GTK update:
 
@@ -2872,6 +2873,7 @@ all of it blocks calling the port finished.
   | `patch-gtk-ime-selection.sh` | `ImeConnection` answers no text query and has no `setSelection` |
   | `patch-gtk-ime-caps.sh` | `ImeConnection` answers `getCursorCapsMode` from the cleared scratch buffer, so every word looks sentence-initial |
   | `patch-gtk-caps-sentences.sh` | the JNI field cache reads `TEXT_FLAG_CAP_WORDS` into `text_flag_cap_sentences`, so `UPPERCASE_SENTENCES` capitalises every word |
+  | `patch-gtk-ime-composing-region.sh` | `setComposingRegion` inherited from `BaseInputConnection` marks the always-empty scratch buffer, so a keyboard "resuming" a word (backspace after refocusing a draft) duplicates it on screen — one backspace grew `Testing` into itself plus a truncated copy, on a Pixel 9a. The patch records the mark and spends it when the replacement text arrives, through the native `deleteSurrounding`. A first attempt rewrote the entry from inside the region call itself; every rewrite made the keyboard re-send the region, and the two chased each other as a composer flashing several times a second and eating keystrokes — so the quiet half of this design, that `setComposingRegion` touches nothing, is the load-bearing half. The script header carries both mechanisms |
 
   The first three and the sixth are defects with one-line fixes, and the fifth is a six-line
   override that only became worth writing once the fourth had put the real text within reach. The
@@ -2879,7 +2881,7 @@ all of it blocks calling the port finished.
   the cursor here" at all — so what is carried here is a workaround (synthesised arrow keys) rather
   than something to propose as a patch without asking the maintainers first.
 
-  This does not block Commune shipping. It is on the list because carrying six downstream patches
+  This does not block Commune shipping. It is on the list because carrying seven downstream patches
   against a moving `main` branch is a standing cost, and because the fixes are worth more to other
   GTK-on-Android applications than they are here.
 * **Loose ends from the push round (S5b), to be revisited once the push implementation is
@@ -2909,6 +2911,13 @@ all of it blocks calling the port finished.
 
 ## Known gaps
 
+* **`onCreateInputConnection` can seed the keyboard a stale cursor.** Refocusing a restored
+  draft on the emulator produced `initialSelStart=0, initialSelEnd=0` for a seven-character
+  draft — `getSurrounding()` answered from before the restore placed the cursor. On that run it
+  _masked_ the composing-region bug (Gboard believed nothing preceded the cursor, so it never
+  resumed the word); on a device where the seed is correct, the resume happens and the
+  composing-region patch is what answers it. The seed race itself is unfixed and small: worst
+  case, the keyboard's first guess about the cursor is wrong until the next selection update.
 * **A long unbroken word in the composer scrolls sideways instead of breaking.** The message
   entry wraps at `word`, and a token with no break point — a pasted URL, most days — makes the
   entry scroll horizontally inside itself rather than wrap like the timeline (which breaks
