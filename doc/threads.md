@@ -18,10 +18,13 @@ names the state and offers the way back, the composer at the bottom sends
 into the thread, read receipts sent while reading it are the thread's own,
 and the thread keeps a draft of its own. With somewhere to read them,
 threaded replies do not land inline in the main timeline:
-`hide_threaded_events` is on. And the threads button in the room history's
+`hide_threaded_events` is on. The threads button in the room history's
 header lists every thread of the room off the `/threads` endpoint, most
-recent activity first, kept current as thread events arrive — so a thread
-whose root has scrolled out of reach is one press away.
+recent activity first — so a thread whose root has scrolled out of reach is
+one press away. And a thread is **started** from any repliable message's
+context menu: _Reply in Thread_ opens the thread view rooted at that
+message, and the first send through the thread's composer creates the
+thread on the wire.
 
 ## The summary is the server's, not ours
 
@@ -52,7 +55,7 @@ event ID as the target, set in `update_thread_chip`. The same action backs the
 _View Thread_ context-menu entry, which appears on any event that names a
 thread root or carries a thread summary.
 
-Two visibility rules, both in `MessageRow::update_thread_chip`:
+Three visibility rules, all in `MessageRow::update_thread_chip`:
 
 * **Zero replies means no chip.** `num_replies` can be zero when every reply
   in the thread has been redacted; announcing a thread with nothing to read is
@@ -60,6 +63,15 @@ Two visibility rules, both in `MessageRow::update_thread_chip`:
 * **Compact rows hide it**, under exactly the condition that hides the
   reaction list (`ContentFormat::Compact | Ellipsized`) — those formats are
   previews, and a preview does not need a reply count.
+* **The thread's own view hides it.** The chip on the root would open the
+  very view it sits in, and a thread-focused timeline does not keep the
+  summary current, so the count would go stale on top of being redundant.
+
+The same menu that carries _View Thread_ carries _Reply in Thread_ on any
+repliable message that is in no thread — the entry that starts one. It only
+activates `room-history.show-thread` with the message's own event ID: the
+thread view opens on the future root, and the composer does the creating.
+The threads panel's empty state names the entry.
 
 The row's grid grew a row: the chip sits at row 3 between the reactions and
 the read receipts, which moved to row 4, with the avatar's `row-span` grown to
@@ -142,6 +154,12 @@ the model only mirrors its `VectorDiff`s into the `GListModel`, mapping each
 item to a fresh entry object. A `Set` diff therefore replaces the row
 wholesale, which is what keeps the reply count and the latest-reply preview
 current without any binding plumbing.
+
+The service only rewrites the threads it has already fetched — it never
+inserts a thread rooted after its pages were built — so the panel rebuilds
+the list from a fresh request every time it is mapped. Opening the threads
+list always shows the server's current answer, and a list left open still
+updates row by row.
 
 The service spawns its live-update task at construction, so it is built
 inside the Tokio runtime and dropped (aborting the task) when the view lets
@@ -228,9 +246,6 @@ registered in `resources.gresource.xml`.
 
 ## Not done
 
-* **Slice 3** — the thread list, wrapping `ThreadListService`. Until it
-  exists, a thread can only be entered through its root — there is no page
-  listing the threads of a room.
 * Thread subscriptions (MSC4306) are out — off spec.
 * The latest-event preview and per-thread unread state that `ThreadSummary`
   carries are not drawn; the chip is count-only.
