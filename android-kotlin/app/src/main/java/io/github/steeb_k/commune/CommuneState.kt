@@ -14,6 +14,7 @@ import io.github.steeb_k.commune.core.FfiCoreConfig
 import io.github.steeb_k.commune.core.FfiMember
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRecoveryState
+import io.github.steeb_k.commune.core.FfiSasEmoji
 import io.github.steeb_k.commune.core.FfiSessionSettings
 import io.github.steeb_k.commune.core.FfiTargetRoomCategory
 import io.github.steeb_k.commune.core.FfiTimelineItem
@@ -22,6 +23,7 @@ import io.github.steeb_k.commune.core.MemberListListener
 import io.github.steeb_k.commune.core.RoomListListener
 import io.github.steeb_k.commune.core.TimelineListener
 import io.github.steeb_k.commune.core.TypingListener
+import io.github.steeb_k.commune.core.VerificationListener
 import io.github.steeb_k.commune.core.initCore
 import kotlin.concurrent.thread
 import kotlinx.coroutines.runBlocking
@@ -139,6 +141,7 @@ class CommuneState(context: Context) {
                 app.restoreSessions()
                 main.post {
                     phase = if (app.hasSessions()) Phase.Session else Phase.Login
+                    if (phase == Phase.Session) watchVerifications()
                 }
             }
         }
@@ -155,6 +158,7 @@ class CommuneState(context: Context) {
                     main.post {
                         loginBusy = false
                         phase = Phase.Session
+                        watchVerifications()
                     }
                 } catch (failure: Exception) {
                     main.post {
@@ -542,6 +546,95 @@ class CommuneState(context: Context) {
         app.sendTyping(room.roomId, typing)
     }
 
+    /// The stages of the one verification flow shown at a time.
+    var verificationFlowId by mutableStateOf<String?>(null)
+        private set
+    var verificationUser by mutableStateOf<String?>(null)
+        private set
+    var verificationEmojis by mutableStateOf<List<FfiSasEmoji>>(emptyList())
+        private set
+    var verificationDone by mutableStateOf(false)
+        private set
+    var verificationOutgoing by mutableStateOf(false)
+        private set
+
+    /// Start following verification requests; harmless to call again.
+    fun watchVerifications() {
+        app.setVerificationListener(object : VerificationListener {
+            override fun onRequest(flowId: String, userId: String) {
+                main.post {
+                    verificationFlowId = flowId
+                    verificationUser = userId
+                    verificationEmojis = emptyList()
+                    verificationDone = false
+                    verificationOutgoing = false
+                }
+            }
+
+            override fun onEmojis(flowId: String, emojis: List<FfiSasEmoji>) {
+                main.post {
+                    if (verificationFlowId == flowId) verificationEmojis = emojis
+                }
+            }
+
+            override fun onDone(flowId: String) {
+                main.post {
+                    if (verificationFlowId == flowId) verificationDone = true
+                }
+            }
+
+            override fun onCancelled(flowId: String, reason: String) {
+                main.post {
+                    if (verificationFlowId == flowId) dismissVerification()
+                }
+            }
+        })
+    }
+
+    /// Ask the account's other (verified) sessions to verify this one.
+    fun requestVerification() {
+        thread {
+            runBlocking {
+                try {
+                    val flowId = app.requestVerification()
+                    main.post {
+                        verificationFlowId = flowId
+                        verificationUser = null
+                        verificationEmojis = emptyList()
+                        verificationDone = false
+                        verificationOutgoing = true
+                    }
+                } catch (_: Exception) {
+                    // Nothing to wait for.
+                }
+            }
+        }
+    }
+
+    fun acceptVerification() {
+        val flowId = verificationFlowId ?: return
+        thread { runBlocking { app.acceptVerification(flowId) } }
+    }
+
+    fun confirmVerification() {
+        val flowId = verificationFlowId ?: return
+        thread { runBlocking { app.confirmVerification(flowId) } }
+    }
+
+    fun cancelVerification() {
+        val flowId = verificationFlowId ?: return
+        dismissVerification()
+        thread { runBlocking { app.cancelVerification(flowId) } }
+    }
+
+    fun dismissVerification() {
+        verificationFlowId = null
+        verificationUser = null
+        verificationEmojis = emptyList()
+        verificationDone = false
+        verificationOutgoing = false
+    }
+
     var recoveryState by mutableStateOf(FfiRecoveryState.UNKNOWN)
         private set
     var recoveryKey by mutableStateOf<String?>(null)
@@ -598,7 +691,11 @@ class CommuneState(context: Context) {
                             ?: "Could not recover"
                     }
                 }
-                main.post { refreshRecoveryState() }
+                // The SDK settles its recovery state a moment after the
+                // secrets arrive; look again until it does.
+                for (delay in listOf(0L, 2000L, 5000L)) {
+                    main.postDelayed({ refreshRecoveryState() }, delay)
+                }
             }
         }
     }
