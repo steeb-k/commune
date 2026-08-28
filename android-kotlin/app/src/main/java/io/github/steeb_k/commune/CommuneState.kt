@@ -15,7 +15,9 @@ import io.github.steeb_k.commune.core.FfiMember
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRecoveryState
 import io.github.steeb_k.commune.core.FfiSasEmoji
+import io.github.steeb_k.commune.core.FfiRoomCategory
 import io.github.steeb_k.commune.core.FfiSessionSettings
+import io.github.steeb_k.commune.core.FfiSpaceChild
 import io.github.steeb_k.commune.core.FfiTargetRoomCategory
 import io.github.steeb_k.commune.core.FfiTimelineItem
 import io.github.steeb_k.commune.core.Native
@@ -173,7 +175,44 @@ class CommuneState(context: Context) {
         }
     }
 
+    var openSpace by mutableStateOf<FfiRoom?>(null)
+        private set
+    var spaceChildren by mutableStateOf<List<FfiSpaceChild>>(emptyList())
+        private set
+    var spaceLoading by mutableStateOf(false)
+        private set
+
+    fun openSpace(space: FfiRoom) {
+        openSpace = space
+        spaceChildren = emptyList()
+        spaceLoading = true
+        thread {
+            runBlocking {
+                val children = try {
+                    app.spaceChildren(space.roomId)
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                main.post {
+                    if (openSpace?.roomId == space.roomId) {
+                        spaceChildren = children
+                        spaceLoading = false
+                    }
+                }
+            }
+        }
+    }
+
+    fun closeSpace() {
+        openSpace = null
+        spaceChildren = emptyList()
+    }
+
     fun openRoom(room: FfiRoom) {
+        if (room.category == FfiRoomCategory.SPACE) {
+            openSpace(room)
+            return
+        }
         openRoom = room
         timeline = emptyList()
         if (uiVisible) notifier.visibleRoomId = room.roomId

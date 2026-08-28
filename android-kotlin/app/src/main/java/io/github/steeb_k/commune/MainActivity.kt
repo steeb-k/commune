@@ -25,6 +25,7 @@ import io.github.steeb_k.commune.ui.SettingsScreen
 import io.github.steeb_k.commune.ui.ThreadScreen
 import io.github.steeb_k.commune.ui.VerificationDialog
 import io.github.steeb_k.commune.ui.SidebarScreen
+import io.github.steeb_k.commune.ui.SpaceScreen
 
 class MainActivity : ComponentActivity() {
     private lateinit var state: CommuneState
@@ -109,6 +110,9 @@ private fun CommuneApp(state: CommuneState) {
             } else if (state.settingsOpen) {
                 BackHandler { state.closeSettings() }
                 SettingsScreen(state)
+            } else if (state.openSpace != null) {
+                BackHandler { state.closeSpace() }
+                SpaceScreen(state, state.openSpace!!)
             } else if (room == null) {
                 SidebarScreen(state)
             } else if (state.membersOpen) {

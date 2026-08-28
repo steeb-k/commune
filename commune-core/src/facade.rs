@@ -395,6 +395,23 @@ pub enum FfiStateChange {
     Other,
 }
 
+/// One room inside a space, as its hierarchy reports it.
+#[derive(uniffi::Record)]
+pub struct FfiSpaceChild {
+    /// The ID of the room.
+    pub room_id: String,
+    /// The name of the room, if it has one.
+    pub name: Option<String>,
+    /// The topic of the room, if it has one.
+    pub topic: Option<String>,
+    /// How many members have joined it.
+    pub num_joined_members: u64,
+    /// Whether our own user has joined it.
+    pub is_joined: bool,
+    /// Whether this child is itself a space.
+    pub is_space: bool,
+}
+
 /// One emoji of the short auth string.
 #[derive(uniffi::Record)]
 pub struct FfiSasEmoji {
@@ -1573,6 +1590,56 @@ impl CoreApp {
                 },
             );
         });
+    }
+
+    /// The rooms inside the given space, from the server's hierarchy.
+    pub async fn space_children(&self, space_id: String) -> Result<Vec<FfiSpaceChild>, CoreError> {
+        use ruma::api::client::space::get_hierarchy;
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let space_id = ruma::RoomId::parse(&space_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+
+                let client = session.client();
+                let request = get_hierarchy::v1::Request::new(space_id.clone());
+                let response =
+                    client
+                        .send(request)
+                        .await
+                        .map_err(|hierarchy_error| CoreError::Failed {
+                            msg: format!("Could not load the space: {hierarchy_error}"),
+                        })?;
+
+                Ok(response
+                    .rooms
+                    .into_iter()
+                    .filter(|chunk| chunk.summary.room_id != space_id)
+                    .map(|chunk| {
+                        let summary = &chunk.summary;
+                        FfiSpaceChild {
+                            room_id: summary.room_id.to_string(),
+                            name: summary.name.clone(),
+                            topic: summary.topic.clone(),
+                            num_joined_members: summary.num_joined_members.into(),
+                            is_joined: session
+                                .room_list()
+                                .get(&summary.room_id)
+                                .is_some_and(|room| room.is_joined()),
+                            is_space: summary.room_type == Some(ruma::room::RoomType::Space),
+                        }
+                    })
+                    .collect())
+            })
+            .await
+            .expect("task was not aborted")
     }
 
     /// Feed a scanned QR code into the verification with the given flow
