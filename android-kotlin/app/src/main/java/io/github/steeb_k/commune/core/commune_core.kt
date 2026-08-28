@@ -853,6 +853,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_room_details(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_room_list_listener(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_thread_listener(
@@ -994,6 +996,8 @@ external fun uniffi_commune_core_fn_method_coreapp_set_pinned_listener(`ptr`: Lo
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_public_read_receipts_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_set_room_details(`ptr`: Long,`roomId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`topic`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_room_list_listener(`ptr`: Long,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_thread_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`rootEventId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1300,6 +1304,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled() != 61979.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_details() != 28546.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_list_listener() != 44096.toShort()) {
@@ -2074,6 +2081,11 @@ public interface CoreAppInterface {
      * Set whether read receipts are public for this session.
      */
     fun `setPublicReadReceiptsEnabled`(`enabled`: kotlin.Boolean)
+    
+    /**
+     * Set the given room's name and topic.
+     */
+    suspend fun `setRoomDetails`(`roomId`: kotlin.String, `name`: kotlin.String, `topic`: kotlin.String)
     
     /**
      * Give the room list of the first ready session to the given listener,
@@ -3091,6 +3103,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     }
     
     
+
+    
+    /**
+     * Set the given room's name and topic.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setRoomDetails`(`roomId`: kotlin.String, `name`: kotlin.String, `topic`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_room_details(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`name`),FfiConverterString.lower(`topic`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
     
     /**
@@ -5295,6 +5332,11 @@ data class FfiRoom (
      * The number of joined members.
      */
     var `joinedMembersCount`: kotlin.ULong
+    , 
+    /**
+     * The topic of the room, if any.
+     */
+    var `topic`: kotlin.String?
     
 ){
     
@@ -5321,6 +5363,7 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterULong.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterULong.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -5334,7 +5377,8 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterBoolean.allocationSize(value.`isRead`) +
             FfiConverterULong.allocationSize(value.`latestActivity`) +
             FfiConverterOptionalString.allocationSize(value.`avatarUrl`) +
-            FfiConverterULong.allocationSize(value.`joinedMembersCount`)
+            FfiConverterULong.allocationSize(value.`joinedMembersCount`) +
+            FfiConverterOptionalString.allocationSize(value.`topic`)
     )
 
     override fun write(value: FfiRoom, buf: ByteBuffer) {
@@ -5348,6 +5392,7 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterULong.write(value.`latestActivity`, buf)
             FfiConverterOptionalString.write(value.`avatarUrl`, buf)
             FfiConverterULong.write(value.`joinedMembersCount`, buf)
+            FfiConverterOptionalString.write(value.`topic`, buf)
     }
 }
 
