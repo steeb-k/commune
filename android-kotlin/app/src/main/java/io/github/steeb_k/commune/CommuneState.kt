@@ -13,6 +13,7 @@ import io.github.steeb_k.commune.core.CoreApp
 import io.github.steeb_k.commune.core.FfiCoreConfig
 import io.github.steeb_k.commune.core.FfiMember
 import io.github.steeb_k.commune.core.FfiRoom
+import io.github.steeb_k.commune.core.FfiRecoveryState
 import io.github.steeb_k.commune.core.FfiSessionSettings
 import io.github.steeb_k.commune.core.FfiTargetRoomCategory
 import io.github.steeb_k.commune.core.FfiTimelineItem
@@ -541,9 +542,75 @@ class CommuneState(context: Context) {
         app.sendTyping(room.roomId, typing)
     }
 
+    var recoveryState by mutableStateOf(FfiRecoveryState.UNKNOWN)
+        private set
+    var recoveryKey by mutableStateOf<String?>(null)
+        private set
+    var recoveryBusy by mutableStateOf(false)
+        private set
+    var recoveryError by mutableStateOf<String?>(null)
+        private set
+
+    fun refreshRecoveryState() {
+        thread {
+            runBlocking {
+                val state = app.recoveryState()
+                main.post { recoveryState = state }
+            }
+        }
+    }
+
+    fun enableRecovery() {
+        recoveryBusy = true
+        recoveryError = null
+        thread {
+            runBlocking {
+                try {
+                    val key = app.enableRecovery()
+                    main.post {
+                        recoveryBusy = false
+                        recoveryKey = key
+                    }
+                } catch (failure: Exception) {
+                    main.post {
+                        recoveryBusy = false
+                        recoveryError = failure.message?.removePrefix("msg=")
+                            ?: "Could not set up recovery"
+                    }
+                }
+                main.post { refreshRecoveryState() }
+            }
+        }
+    }
+
+    fun recover(key: String) {
+        recoveryBusy = true
+        recoveryError = null
+        thread {
+            runBlocking {
+                try {
+                    app.recover(key)
+                    main.post { recoveryBusy = false }
+                } catch (failure: Exception) {
+                    main.post {
+                        recoveryBusy = false
+                        recoveryError = failure.message?.removePrefix("msg=")
+                            ?: "Could not recover"
+                    }
+                }
+                main.post { refreshRecoveryState() }
+            }
+        }
+    }
+
+    fun dismissRecoveryKey() {
+        recoveryKey = null
+    }
+
     fun openSettings() {
         settings = app.sessionSettings()
         settingsOpen = true
+        refreshRecoveryState()
     }
 
     fun closeSettings() {

@@ -373,6 +373,20 @@ pub enum FfiStateChange {
     Other,
 }
 
+/// Where account recovery stands.
+#[derive(uniffi::Enum)]
+pub enum FfiRecoveryState {
+    /// The state is not known yet.
+    Unknown,
+    /// Recovery is set up and every secret is here.
+    Enabled,
+    /// Recovery is not set up.
+    Disabled,
+    /// Recovery is set up elsewhere and this session misses secrets —
+    /// entering the recovery key completes it.
+    Incomplete,
+}
+
 /// What a media event carries.
 #[derive(uniffi::Enum)]
 pub enum FfiMediaKind {
@@ -1416,6 +1430,75 @@ impl CoreApp {
                     .map(|room| room.room_id().to_string())
                     .map_err(|join_error| CoreError::Failed {
                         msg: format!("Could not join the room: {join_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Where account recovery stands for the first ready session.
+    pub async fn recovery_state(&self) -> FfiRecoveryState {
+        use matrix_sdk::encryption::recovery::RecoveryState;
+
+        let Some(session) = self.first_ready_session() else {
+            return FfiRecoveryState::Unknown;
+        };
+
+        RUNTIME
+            .spawn(async move {
+                match session.client().encryption().recovery().state() {
+                    RecoveryState::Unknown => FfiRecoveryState::Unknown,
+                    RecoveryState::Enabled => FfiRecoveryState::Enabled,
+                    RecoveryState::Disabled => FfiRecoveryState::Disabled,
+                    RecoveryState::Incomplete => FfiRecoveryState::Incomplete,
+                }
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Set up recovery, returning the recovery key to write down.
+    pub async fn enable_recovery(&self) -> Result<String, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                session
+                    .client()
+                    .encryption()
+                    .recovery()
+                    .enable()
+                    .await
+                    .map_err(|enable_error| CoreError::Failed {
+                        msg: format!("Could not set up recovery: {enable_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Recover the account's secrets with the given recovery key.
+    pub async fn recover(&self, recovery_key: String) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                session
+                    .client()
+                    .encryption()
+                    .recovery()
+                    .recover(recovery_key.trim())
+                    .await
+                    .map_err(|recover_error| CoreError::Failed {
+                        msg: format!("Could not recover: {recover_error}"),
                     })
             })
             .await
