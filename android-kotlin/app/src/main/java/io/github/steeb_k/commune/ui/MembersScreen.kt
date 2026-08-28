@@ -4,6 +4,7 @@
 package io.github.steeb_k.commune.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -48,6 +49,10 @@ private val GROUPS = listOf(
 
 @Composable
 fun MembersScreen(state: CommuneState, room: FfiRoom) {
+    var acting by remember { mutableStateOf<io.github.steeb_k.commune.core.FfiMember?>(null) }
+    acting?.let { member ->
+        MemberActionsDialog(state, member, onDismiss = { acting = null })
+    }
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -85,7 +90,7 @@ fun MembersScreen(state: CommuneState, room: FfiRoom) {
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(joined.size, key = { joined[it].userId }) { index ->
-                MemberRow(state, joined[index])
+                MemberRow(state, joined[index], onClick = { acting = joined[index] })
             }
 
             for ((membership, title) in GROUPS) {
@@ -101,7 +106,7 @@ fun MembersScreen(state: CommuneState, room: FfiRoom) {
                     )
                 }
                 items(group.size, key = { group[it].userId }) { index ->
-                    MemberRow(state, group[index])
+                    MemberRow(state, group[index], onClick = { acting = group[index] })
                 }
             }
         }
@@ -109,10 +114,11 @@ fun MembersScreen(state: CommuneState, room: FfiRoom) {
 }
 
 @Composable
-private fun MemberRow(state: CommuneState, member: FfiMember) {
+private fun MemberRow(state: CommuneState, member: FfiMember, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -229,6 +235,64 @@ private fun InviteDialog(state: CommuneState, onDismiss: () -> Unit) {
         },
         dismissButton = {
             androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+
+/// Moderation from a member row: role changes, kick, ban. The server is
+/// the judge of what we may actually do.
+@Composable
+private fun MemberActionsDialog(
+    state: CommuneState,
+    member: io.github.steeb_k.commune.core.FfiMember,
+    onDismiss: () -> Unit,
+) {
+    var error by remember { mutableStateOf<String?>(null) }
+    val done: (String?) -> Unit = { failure ->
+        if (failure == null) {
+            onDismiss()
+        } else {
+            error = failure
+        }
+    }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(member.displayName) },
+        text = {
+            Column {
+                Text(
+                    member.userId,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                androidx.compose.material3.TextButton(
+                    onClick = { state.setMemberPower(member.userId, 100, done) },
+                ) { Text("Make Admin") }
+                androidx.compose.material3.TextButton(
+                    onClick = { state.setMemberPower(member.userId, 50, done) },
+                ) { Text("Make Moderator") }
+                androidx.compose.material3.TextButton(
+                    onClick = { state.setMemberPower(member.userId, 0, done) },
+                ) { Text("Make Default") }
+                androidx.compose.material3.TextButton(
+                    onClick = { state.kickUser(member.userId, done) },
+                ) { Text("Kick", color = MaterialTheme.colorScheme.error) }
+                androidx.compose.material3.TextButton(
+                    onClick = { state.banUser(member.userId, done) },
+                ) { Text("Ban", color = MaterialTheme.colorScheme.error) }
+                error?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Close") }
         },
     )
 }

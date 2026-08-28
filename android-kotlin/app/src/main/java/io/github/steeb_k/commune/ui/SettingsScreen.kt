@@ -3,6 +3,7 @@
 // GTK Account Settings groups them.
 package io.github.steeb_k.commune.ui
 
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,7 +37,11 @@ import io.github.steeb_k.commune.core.FfiRecoveryState
 fun SettingsScreen(state: CommuneState) {
     val settings = state.settings
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -109,7 +114,26 @@ fun SettingsScreen(state: CommuneState) {
             }) { Text("Change") }
         }
 
+        SettingsGroup("Sessions")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Manage Sessions", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Rename or sign out your other sessions",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = { state.openDevices() }) { Text("Open") }
+        }
+
         SettingsGroup("Encryption")
+        KeyBackupRows(state)
         RecoveryRow(state)
         Row(
             modifier = Modifier
@@ -406,4 +430,124 @@ private fun SettingSwitch(
         Spacer(Modifier.size(12.dp))
         Switch(checked = checked, onCheckedChange = onChange)
     }
+}
+
+
+/// Export the room keys to Downloads, or import an export — each behind
+/// a passphrase dialog.
+@Composable
+private fun KeyBackupRows(state: CommuneState) {
+    var exportOpen by remember { mutableStateOf(false) }
+    var importOpen by remember { mutableStateOf(false) }
+    var exportResult by remember { mutableStateOf<String?>(null) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Message Keys", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                exportResult ?: state.importResult
+                    ?: "Export or import the keys to your encrypted messages",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(onClick = { exportOpen = true }) { Text("Export") }
+        TextButton(onClick = { importOpen = true }) { Text("Import") }
+    }
+
+    if (exportOpen) {
+        PassphraseDialog(
+            title = "Export Keys",
+            explainer = "The export is encrypted with this passphrase; " +
+                "it lands in Downloads as commune-keys.txt.",
+            confirm = "Export",
+            onConfirm = { passphrase, done ->
+                state.exportKeys(passphrase) { failure ->
+                    done(failure)
+                    if (failure == null) {
+                        exportResult = "Keys exported to Downloads"
+                        exportOpen = false
+                    }
+                }
+            },
+            onDismiss = { exportOpen = false },
+        )
+    }
+    if (importOpen) {
+        PassphraseDialog(
+            title = "Import Keys",
+            explainer = "Enter the passphrase of the export, then pick the file.",
+            confirm = "Pick File",
+            onConfirm = { passphrase, done ->
+                state.clearImportResult()
+                state.pendingImportPassphrase = passphrase
+                state.pickKeyFile?.invoke()
+                done(null)
+                importOpen = false
+            },
+            onDismiss = { importOpen = false },
+        )
+    }
+}
+
+@Composable
+private fun PassphraseDialog(
+    title: String,
+    explainer: String,
+    confirm: String,
+    onConfirm: (String, (String?) -> Unit) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var passphrase by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                Text(
+                    explainer,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(
+                    value = passphrase,
+                    onValueChange = { passphrase = it },
+                    label = { Text("Passphrase") },
+                    singleLine = true,
+                    visualTransformation =
+                        androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                )
+                error?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = passphrase.isNotBlank() && !busy,
+                onClick = {
+                    busy = true
+                    onConfirm(passphrase) { failure ->
+                        busy = false
+                        if (failure != null) error = failure
+                    }
+                },
+            ) { Text(confirm) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }

@@ -19,6 +19,7 @@ import io.github.steeb_k.commune.ui.LoginFlow
 import io.github.steeb_k.commune.ui.MediaViewerScreen
 import io.github.steeb_k.commune.ui.MembersScreen
 import io.github.steeb_k.commune.ui.PinnedScreen
+import io.github.steeb_k.commune.ui.DevicesScreen
 import io.github.steeb_k.commune.ui.ExploreScreen
 import io.github.steeb_k.commune.ui.PushOnboardingScreen
 import io.github.steeb_k.commune.ui.HistoryScreen
@@ -55,6 +56,11 @@ class MainActivity : ComponentActivity() {
             uri?.let { state.setAvatarFromUri(it) }
         }
 
+    private val keyFilePicker =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let { state.importKeysFromUri(it) }
+        }
+
     override fun onStart() {
         super.onStart()
         if (::state.isInitialized) state.uiVisible = true
@@ -70,6 +76,7 @@ class MainActivity : ComponentActivity() {
         state = CommuneState(this)
         state.pickAttachment = { attachmentPicker.launch("*/*") }
         state.pickAvatar = { avatarPicker.launch("image/*") }
+        state.pickKeyFile = { keyFilePicker.launch("*/*") }
         state.scanQrCode = {
             qrScanner.launch(
                 com.journeyapps.barcodescanner.ScanOptions()
@@ -124,6 +131,9 @@ private fun CommuneApp(state: CommuneState) {
             } else if (state.exploreOpen) {
                 BackHandler { state.closeExplore() }
                 ExploreScreen(state)
+            } else if (state.devicesOpen) {
+                BackHandler { state.closeDevices() }
+                DevicesScreen(state)
             } else if (state.settingsOpen) {
                 BackHandler { state.closeSettings() }
                 SettingsScreen(state)

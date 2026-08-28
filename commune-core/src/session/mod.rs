@@ -5,16 +5,16 @@
 //! the same logic in the same order:
 //!
 //! * **Change propagation.** `GObject` properties with `notify` became
-//!   [`eyeball::SharedObservable`]s — the same primitive the SDK itself
-//!   uses — so state, offline-ness, reachability and the user profile are
-//!   subscribable streams.
+//!   [`eyeball::SharedObservable`]s — the same primitive the SDK itself uses —
+//!   so state, offline-ness, reachability and the user profile are subscribable
+//!   streams.
 //! * **No UI-thread hop.** The application bounced every sync response and
-//!   session change through `glib::MainContext`. Here the handlers run
-//!   directly on the tokio task that received the value; whoever subscribes
-//!   decides where to consume the streams.
+//!   session change through `glib::MainContext`. Here the handlers run directly
+//!   on the tokio task that received the value; whoever subscribes decides
+//!   where to consume the streams.
 //! * **Reachability.** `gio::NetworkMonitor` became a plain TCP dial to the
-//!   homeserver plus [`Session::network_changed()`], which the embedder
-//!   calls whenever the platform reports a connectivity change (GTK from
+//!   homeserver plus [`Session::network_changed()`], which the embedder calls
+//!   whenever the platform reports a connectivity change (GTK from
 //!   `NetworkMonitor`, Android from `ConnectivityManager`).
 //!
 //! The subsystems the application hangs off its session — verification,

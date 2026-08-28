@@ -19,7 +19,8 @@
 //! these files somewhere USB and `MANAGE_EXTERNAL_STORAGE` can reach; and
 //! `getFilesDir()`, the obvious replacement and the one used until now, is the
 //! directory GTK's glue empties whenever the APK's assets have changed — which
-//! is every build. In the core, the embedder passes the right directory in through `config`.
+//! is every build. In the core, the embedder passes the right directory in
+//! through `config`.
 //!
 //! **`allowBackup` being off.** pixiewood leaves Android's default of `true`,
 //! which would let `adb backup` and the system's cloud backup carry the files
