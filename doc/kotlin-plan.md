@@ -141,6 +141,34 @@ Decisions:
   native messaging idiom on Android, so the Kotlin app inverts the GTK
   default; the flat style remains the setting's other value.
 
+## The core stays transplantable
+
+The point of the extraction is not one Kotlin app; it is a core that any
+future front end — SwiftUI on iOS/macOS, WinUI, whatever comes — can pick
+up whole. That is a contract, kept by construction:
+
+* **No UI types cross the core's boundary.** No gtk/glib, no Android
+  classes, no display assumptions. State is `eyeball` observables and
+  `VectorDiff` streams; strings out are semantic values the UI words.
+* **Every platform seam is already per-OS.** Secrets have five backends
+  (Keystore, Keychain, Credential Manager, Secret Service, sealed files);
+  paths, settings storage and connectivity notification are handed in by
+  the embedder through `config::init()`; the JNI bridge is the one
+  Android-only module and is `cfg`-gated.
+* **The facade is generated per language from one definition.** uniffi
+  produces the Kotlin bindings the Android app uses and — demonstrated
+  27 Aug 2026 from the same built library — the Swift bindings
+  (`commune_core.swift` + C header + modulemap) a SwiftUI app would
+  import. C# for WinUI comes from the community `uniffi-bindgen-cs` on
+  the same definitions; and a Rust UI (the GTK app, Track 3) skips the
+  FFI and links the crate directly.
+* **The GTK application is untouched until Track 3 chooses otherwise.**
+  The extraction copies logic; `git diff main fractal-kotlin -- src po
+  data meson.build build-aux hooks Cargo.toml Cargo.lock` is empty
+  (verified 27 Aug 2026), and the app builds and tests green from this
+  branch. Divergence risk runs the other way — main moving while copies
+  age — which the merge cadence and Track 3 retire.
+
 ## The UI contract
 
 The Kotlin app should _feel_ native (Material 3, predictive back, native

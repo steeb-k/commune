@@ -304,6 +304,20 @@ impl CoreApp {
         !self.session_list.is_empty()
     }
 
+    /// The Matrix user ID of the first ready session, if any.
+    #[must_use]
+    pub fn session_user_id(&self) -> Option<String> {
+        self.first_ready_session()
+            .map(|session| session.user_id().to_string())
+    }
+
+    /// The display name of the first ready session's user, if it is known.
+    #[must_use]
+    pub fn session_display_name(&self) -> Option<String> {
+        self.first_ready_session()
+            .and_then(|session| session.profile().display_name)
+    }
+
     /// Log in with a password on the given homeserver.
     pub async fn login_with_password(
         &self,

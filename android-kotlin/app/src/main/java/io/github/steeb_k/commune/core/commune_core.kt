@@ -705,6 +705,10 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_message(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_session_display_name(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_session_user_id(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_room_list_listener(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_timeline_listener(
@@ -755,6 +759,10 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
     ): Long
+    external fun uniffi_commune_core_fn_method_coreapp_session_display_name(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    external fun uniffi_commune_core_fn_method_coreapp_session_user_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_commune_core_fn_method_coreapp_set_room_list_listener(`ptr`: Long,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
     external fun uniffi_commune_core_fn_method_coreapp_set_timeline_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -923,6 +931,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 8707.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_session_display_name() != 11144.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_session_user_id() != 13656.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_list_listener() != 44096.toShort()) {
@@ -1411,6 +1425,16 @@ public interface CoreAppInterface {
     suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String)
     
     /**
+     * The display name of the first ready session's user, if it is known.
+     */
+    fun `sessionDisplayName`(): kotlin.String?
+    
+    /**
+     * The Matrix user ID of the first ready session, if any.
+     */
+    fun `sessionUserId`(): kotlin.String?
+    
+    /**
      * Give the room list of the first ready session to the given listener,
      * now and on every change.
      *
@@ -1688,6 +1712,38 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         CoreException.ErrorHandler,
     )
     }
+
+    
+    /**
+     * The display name of the first ready session's user, if it is known.
+     */override fun `sessionDisplayName`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_session_display_name(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The Matrix user ID of the first ready session, if any.
+     */override fun `sessionUserId`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_session_user_id(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
     
     /**

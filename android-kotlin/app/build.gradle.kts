@@ -1,5 +1,6 @@
 plugins {
     id("com.android.application")
+    id("org.jetbrains.kotlin.plugin.compose") version "2.2.10"
 }
 
 android {
@@ -25,6 +26,10 @@ android {
             applicationIdSuffix = ".skeleton"
         }
     }
+
+    buildFeatures {
+        compose = true
+    }
 }
 
 dependencies {
@@ -32,4 +37,12 @@ dependencies {
     implementation("net.java.dev.jna:jna:5.17.0@aar")
     // The uniffi-generated async functions are suspend functions.
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+
+    // The UI. Material 3 with dynamic color, per doc/kotlin-plan.md.
+    val composeBom = platform("androidx.compose:compose-bom:2025.06.01")
+    implementation(composeBom)
+    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.foundation:foundation")
 }
