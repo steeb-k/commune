@@ -159,6 +159,37 @@ fun LoadingRing(modifier: Modifier = Modifier) {
 }
 
 
+/// An image from a media file, animating when the platform decoder says
+/// it animates (GIF, animated WebP); stills come out as plain drawables
+/// from the same call. `ImageDecoder` is the platform path — no library.
+@Composable
+fun MediaImage(path: String, contentDescription: String?, modifier: Modifier = Modifier) {
+    val drawable = remember(path) {
+        try {
+            val source = android.graphics.ImageDecoder.createSource(java.io.File(path))
+            android.graphics.ImageDecoder.decodeDrawable(source)
+        } catch (_: Exception) {
+            null
+        }
+    } ?: return
+
+    androidx.compose.ui.viewinterop.AndroidView(
+        factory = { context ->
+            android.widget.ImageView(context).apply {
+                adjustViewBounds = true
+                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                this.contentDescription = contentDescription
+            }
+        },
+        update = { view ->
+            view.setImageDrawable(drawable)
+            (drawable as? android.graphics.drawable.AnimatedImageDrawable)?.start()
+        },
+        modifier = modifier,
+    )
+}
+
+
 /// A room avatar: the picture when there is one, initials otherwise.
 @Composable
 fun RoomAvatar(state: CommuneState, room: FfiRoom, size: Dp) {

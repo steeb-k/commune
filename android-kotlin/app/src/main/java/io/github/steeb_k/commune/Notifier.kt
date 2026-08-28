@@ -61,7 +61,7 @@ class Notifier(private val context: Context) {
         val text = if (count == 1uL) "1 new message" else "$count new messages"
 
         return Notification.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_chat)
+            .setSmallIcon(R.drawable.ic_notify_symbolic)
             .setContentTitle(name)
             .setContentText(text)
             .setContentIntent(openApp)

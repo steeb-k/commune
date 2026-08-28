@@ -32,7 +32,7 @@ class SyncService : Service() {
             PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = Notification.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_sync_noanim)
+            .setSmallIcon(R.drawable.ic_notify_symbolic)
             .setContentTitle("Commune is syncing")
             .setContentIntent(openApp)
             .setOngoing(true)

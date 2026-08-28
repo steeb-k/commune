@@ -550,30 +550,24 @@ internal fun MessageBubble(
                 }
             }
             if (mediaKind == FfiMediaKind.IMAGE) {
-                var bitmap by remember(event.uniqueId) {
-                    mutableStateOf<android.graphics.Bitmap?>(null)
-                }
                 var mediaPath by remember(event.uniqueId) {
                     mutableStateOf<String?>(null)
                 }
                 LaunchedEffect(event.uniqueId) {
-                    val path = state.app.getTimelineMedia(room.roomId, event.uniqueId)
-                    if (path != null) {
-                        mediaPath = path
-                        bitmap = android.graphics.BitmapFactory.decodeFile(path)
-                    }
+                    mediaPath = state.app.getTimelineMedia(room.roomId, event.uniqueId)
                 }
 
-                bitmap?.let {
-                    Image(
-                        it.asImageBitmap(),
+                mediaPath?.let { path ->
+                    // Media fills the bubble and scales up to it, as the
+                    // GTK history presents it — small originals included.
+                    MediaImage(
+                        path,
                         contentDescription = event.body,
-                        contentScale = ContentScale.Fit,
                         modifier = Modifier
-                            .widthIn(max = 280.dp)
-                            .heightIn(max = 280.dp)
+                            .fillMaxWidth()
+                            .heightIn(max = 420.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable { mediaPath?.let(state::openViewer) }
+                            .clickable { state.openViewer(path) }
                             .padding(bottom = 4.dp),
                     )
                 }
