@@ -306,6 +306,17 @@ pub trait MemberListListener: Send + Sync {
     fn on_update(&self, members: Vec<FfiMember>);
 }
 
+/// One reaction key on an event, aggregated over its senders.
+#[derive(uniffi::Record)]
+pub struct FfiReaction {
+    /// The reaction key — usually an emoji.
+    pub key: String,
+    /// How many users sent this reaction.
+    pub count: u64,
+    /// Whether our own user is among them.
+    pub is_own: bool,
+}
+
 /// A timeline item, as the message list needs it.
 #[derive(uniffi::Enum)]
 pub enum FfiTimelineItem {
@@ -317,6 +328,10 @@ pub enum FfiTimelineItem {
         event_id: Option<String>,
         /// The number of replies in the thread rooted here, if any.
         thread_replies: u64,
+        /// The reactions on the event.
+        reactions: Vec<FfiReaction>,
+        /// Whether the event was edited.
+        is_edited: bool,
         /// The user that sent the event.
         sender: String,
         /// The display name of the sender, if it is known.
@@ -678,15 +693,26 @@ impl CoreApp {
                 let Some((items, mut stream)) = timeline.subscribe_items().await else {
                     return;
                 };
+                let own_user_id = session.user_id().clone();
 
-                listener.on_update(items.iter().map(|item| ffi_timeline_item(item)).collect());
+                listener.on_update(
+                    items
+                        .iter()
+                        .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                        .collect(),
+                );
 
                 let mut items = items;
                 while let Some(diffs) = stream.next().await {
                     for diff in diffs {
                         diff.apply(&mut items);
                     }
-                    listener.on_update(items.iter().map(|item| ffi_timeline_item(item)).collect());
+                    listener.on_update(
+                        items
+                            .iter()
+                            .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                            .collect(),
+                    );
                 }
             })
             .abort_handle();
@@ -908,14 +934,25 @@ impl CoreApp {
                     return;
                 };
 
-                listener.on_update(items.iter().map(|item| ffi_timeline_item(item)).collect());
+                let own_user_id = session.user_id().clone();
+                listener.on_update(
+                    items
+                        .iter()
+                        .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                        .collect(),
+                );
 
                 let mut items = items;
                 while let Some(diffs) = stream.next().await {
                     for diff in diffs {
                         diff.apply(&mut items);
                     }
-                    listener.on_update(items.iter().map(|item| ffi_timeline_item(item)).collect());
+                    listener.on_update(
+                        items
+                            .iter()
+                            .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                            .collect(),
+                    );
                 }
             })
             .abort_handle();
@@ -1028,6 +1065,45 @@ impl CoreApp {
                     .await
                     .map_err(|()| CoreError::Failed {
                         msg: "Could not send the message".to_owned(),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Toggle the given reaction on the given event in the given room.
+    pub async fn toggle_reaction(
+        &self,
+        room_id: String,
+        event_id: String,
+        key: String,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid event ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                room.live_timeline()
+                    .toggle_reaction(event_id, &key)
+                    .await
+                    .map_err(|()| CoreError::Failed {
+                        msg: "Could not toggle the reaction".to_owned(),
                     })
             })
             .await
@@ -1202,7 +1278,10 @@ fn watch_room(room: &Room, notify_tx: &mpsc::UnboundedSender<()>) {
 }
 
 /// Convert an SDK timeline item for the FFI.
-fn ffi_timeline_item(item: &matrix_sdk_ui::timeline::TimelineItem) -> FfiTimelineItem {
+fn ffi_timeline_item(
+    item: &matrix_sdk_ui::timeline::TimelineItem,
+    own_user_id: Option<&ruma::UserId>,
+) -> FfiTimelineItem {
     use matrix_sdk_ui::timeline::{
         MsgLikeKind, TimelineDetails, TimelineItemContent, TimelineItemKind, VirtualTimelineItem,
     };
@@ -1262,10 +1341,30 @@ fn ffi_timeline_item(item: &matrix_sdk_ui::timeline::TimelineItem) -> FfiTimelin
                 _ => 0,
             };
 
+            let reactions = match event.content() {
+                TimelineItemContent::MsgLike(msg_like) => msg_like
+                    .reactions
+                    .iter()
+                    .map(|(key, senders)| FfiReaction {
+                        key: key.clone(),
+                        count: senders.len() as u64,
+                        is_own: own_user_id.is_some_and(|own| senders.contains_key(own)),
+                    })
+                    .collect(),
+                _ => Vec::new(),
+            };
+
+            let is_edited = {
+                use crate::matrix::ext_traits::TimelineItemContentExt;
+                event.content().is_edited()
+            };
+
             FfiTimelineItem::Event {
                 unique_id: item.unique_id().0.clone(),
                 event_id: event.event_id().map(ToString::to_string),
                 thread_replies,
+                reactions,
+                is_edited,
                 sender: event.sender().to_string(),
                 sender_display_name,
                 timestamp: event.timestamp().get().into(),

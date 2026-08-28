@@ -230,6 +230,19 @@ class CommuneState(context: Context) {
         app.clearThreadListener()
     }
 
+    fun toggleReaction(eventId: String, key: String) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                try {
+                    app.toggleReaction(room.roomId, eventId, key)
+                } catch (_: Exception) {
+                    // The next update reflects reality either way.
+                }
+            }
+        }
+    }
+
     fun sendAttachmentFromUri(uri: android.net.Uri) {
         val room = openRoom ?: return
         val resolver = appContext.contentResolver
