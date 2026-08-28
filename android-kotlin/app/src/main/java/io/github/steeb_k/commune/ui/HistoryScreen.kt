@@ -44,6 +44,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import kotlinx.coroutines.launch
 import io.github.steeb_k.commune.CommuneState
 import io.github.steeb_k.commune.R
 import io.github.steeb_k.commune.core.FfiHistoryEvent
@@ -129,17 +136,164 @@ fun HistoryScreen(state: CommuneState, kind: FfiHistoryKind) {
     }
 }
 
+/// One entry of the flattened media timeline: a month header or a cell.
+private sealed class TimelineEntry {
+    class Month(val label: String) : TimelineEntry()
+    class Cell(val event: FfiHistoryEvent, val index: Int) : TimelineEntry()
+}
+
+private val MONTH = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+
+/// The media grid as a timeline: month headers spanning the row, and a
+/// draggable scrubber along the edge that names where in time you are.
 @Composable
 private fun MediaGrid(state: CommuneState, selected: Set<String>, toggle: (String) -> Unit) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
-    ) {
-        items(state.historyEvents.size, key = { state.historyEvents[it].eventId }) { index ->
-            val event = state.historyEvents[index]
-            MediaCell(state, event, selected, toggle)
-            LoadMoreAtEnd(state, index)
+    // Flatten events (newest first) into headers + cells.
+    val entries = remember(state.historyEvents) {
+        val flat = mutableListOf<TimelineEntry>()
+        var lastMonth: String? = null
+        state.historyEvents.forEachIndexed { index, event ->
+            val month = MONTH.format(Date(event.timestamp.toLong()))
+            if (month != lastMonth) {
+                flat.add(TimelineEntry.Month(month))
+                lastMonth = month
+            }
+            flat.add(TimelineEntry.Cell(event, index))
         }
+        flat
+    }
+    val gridState = androidx.compose.foundation.lazy.grid.rememberLazyGridState()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var scrubLabel by remember { mutableStateOf<String?>(null) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            state = gridState,
+            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+        ) {
+            items(
+                entries.size,
+                key = {
+                    when (val entry = entries[it]) {
+                        is TimelineEntry.Month -> "month:" + entry.label
+                        is TimelineEntry.Cell -> entry.event.eventId
+                    }
+                },
+                span = {
+                    when (entries[it]) {
+                        is TimelineEntry.Month ->
+                            androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan)
+                        is TimelineEntry.Cell ->
+                            androidx.compose.foundation.lazy.grid.GridItemSpan(1)
+                    }
+                },
+            ) { index ->
+                when (val entry = entries[index]) {
+                    is TimelineEntry.Month -> Text(
+                        entry.label,
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+                    )
+                    is TimelineEntry.Cell -> {
+                        MediaCell(state, entry.event, selected, toggle)
+                        LoadMoreAtEnd(state, entry.index)
+                    }
+                }
+            }
+        }
+
+        TimeScrubber(
+            entries = entries,
+            onScrub = { fraction, label ->
+                scrubLabel = label
+                val target = ((entries.size - 1) * fraction).toInt().coerceIn(0, entries.size - 1)
+                scope.launch { gridState.scrollToItem(target) }
+            },
+            onDone = { scrubLabel = null },
+            modifier = Modifier.align(Alignment.CenterEnd),
+        )
+
+        scrubLabel?.let { label ->
+            Text(
+                label,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 48.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
+    }
+}
+
+/// The drag handle along the edge. The fraction of the track maps to the
+/// loaded span of the timeline; the label names the month under the
+/// thumb. More history keeps loading as the bottom scrolls into view,
+/// so the reachable span grows while scrubbing.
+@Composable
+private fun TimeScrubber(
+    entries: List<TimelineEntry>,
+    onScrub: (Float, String) -> Unit,
+    onDone: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (entries.size < 12) return
+    var trackHeight by remember { mutableStateOf(1) }
+    var dragging by remember { mutableStateOf(false) }
+
+    fun labelAt(fraction: Float): String {
+        val index = ((entries.size - 1) * fraction).toInt().coerceIn(0, entries.size - 1)
+        // Walk back to the month header covering this position.
+        for (i in index downTo 0) {
+            val entry = entries[i]
+            if (entry is TimelineEntry.Month) return entry.label
+        }
+        return ""
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .width(32.dp)
+            .onSizeChanged { trackHeight = it.height }
+            .pointerInput(entries.size) {
+                detectVerticalDragGestures(
+                    onDragStart = { offset ->
+                        dragging = true
+                        val fraction = (offset.y / trackHeight).coerceIn(0f, 1f)
+                        onScrub(fraction, labelAt(fraction))
+                    },
+                    onDragEnd = {
+                        dragging = false
+                        onDone()
+                    },
+                    onDragCancel = {
+                        dragging = false
+                        onDone()
+                    },
+                ) { change, _ ->
+                    val fraction = (change.position.y / trackHeight).coerceIn(0f, 1f)
+                    onScrub(fraction, labelAt(fraction))
+                }
+            },
+        contentAlignment = Alignment.CenterEnd,
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(end = 4.dp)
+                .width(4.dp)
+                .fillMaxHeight(0.9f)
+                .clip(RoundedCornerShape(2.dp))
+                .background(
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                        alpha = if (dragging) 0.6f else 0.25f
+                    )
+                ),
+        )
     }
 }
 
