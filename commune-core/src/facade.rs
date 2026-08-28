@@ -1472,13 +1472,21 @@ impl CoreApp {
                     })?;
 
                 let client = session.client();
-                client
-                    .join_room_by_id_or_alias(&id_or_alias, &[])
-                    .await
-                    .map(|room| room.room_id().to_string())
-                    .map_err(|join_error| CoreError::Failed {
-                        msg: format!("Could not join the room: {join_error}"),
-                    })
+                match client.join_room_by_id_or_alias(&id_or_alias, &[]).await {
+                    Ok(room) => Ok(room.room_id().to_string()),
+                    Err(join_error) => {
+                        // A room that cannot be joined may still take a
+                        // knock; the sidebar's knock machinery handles the
+                        // approval from there.
+                        client
+                            .knock(id_or_alias.clone(), None, Vec::new())
+                            .await
+                            .map(|room| room.room_id().to_string())
+                            .map_err(|_| CoreError::Failed {
+                                msg: format!("Could not join the room: {join_error}"),
+                            })
+                    }
+                }
             })
             .await
             .expect("task was not aborted")
@@ -1503,12 +1511,13 @@ impl CoreApp {
 
         let list = self.session_list.clone();
         RUNTIME.spawn(async move {
-            let session = wait_for_ready_session(&list).await;
-            let client = session.client();
             use ruma::events::key::verification::{
                 request::ToDeviceKeyVerificationRequestEvent,
                 start::ToDeviceKeyVerificationStartEvent,
             };
+
+            let session = wait_for_ready_session(&list).await;
+            let client = session.client();
 
             let flows_for_request = flows.clone();
             client.add_event_handler(
