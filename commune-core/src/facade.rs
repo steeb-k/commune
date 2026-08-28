@@ -306,6 +306,30 @@ pub trait MemberListListener: Send + Sync {
     fn on_update(&self, members: Vec<FfiMember>);
 }
 
+/// Where a room can be moved: the sidebar's category actions.
+#[derive(uniffi::Enum)]
+pub enum FfiTargetRoomCategory {
+    /// Join or move the room into the favorite category.
+    Favorite,
+    /// Join or move the room into the normal category.
+    Normal,
+    /// Join or move the room into the low priority category.
+    LowPriority,
+    /// Leave the room.
+    Left,
+}
+
+impl From<FfiTargetRoomCategory> for crate::session::TargetRoomCategory {
+    fn from(value: FfiTargetRoomCategory) -> Self {
+        match value {
+            FfiTargetRoomCategory::Favorite => Self::Favorite,
+            FfiTargetRoomCategory::Normal => Self::Normal,
+            FfiTargetRoomCategory::LowPriority => Self::LowPriority,
+            FfiTargetRoomCategory::Left => Self::Left,
+        }
+    }
+}
+
 /// The reply context of an event: what it replies to.
 #[derive(uniffi::Record)]
 pub struct FfiInReplyTo {
@@ -1168,6 +1192,41 @@ impl CoreApp {
         .map_err(|()| CoreError::Failed {
             msg: "Could not redact the event".to_owned(),
         })
+    }
+
+    /// Move the given room to the given category: accepting an invite is a
+    /// move to Normal, declining it (or leaving) a move to Left.
+    pub async fn change_room_category(
+        &self,
+        room_id: String,
+        category: FfiTargetRoomCategory,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                room.change_category(category.into())
+                    .await
+                    .map_err(|change_error| CoreError::Failed {
+                        msg: format!("Could not move the room: {change_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
     }
 
     /// Send the file at the given path as an attachment to the given room.

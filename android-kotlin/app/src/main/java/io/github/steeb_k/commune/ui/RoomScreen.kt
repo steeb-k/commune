@@ -39,6 +39,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,6 +63,7 @@ import io.github.steeb_k.commune.CommuneState
 import io.github.steeb_k.commune.core.FfiEventKind
 import io.github.steeb_k.commune.core.FfiMembershipChange
 import io.github.steeb_k.commune.core.FfiRoom
+import io.github.steeb_k.commune.core.FfiRoomCategory
 import io.github.steeb_k.commune.core.FfiTimelineItem
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -81,15 +84,47 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
             onOpenThread = { state.openThread(it) },
         )
         TypingLine(state.typingUsers)
-        ComposerActionBar(state)
-        Composer(
-            onSend = { state.sendFromComposer(it) },
-            onTyping = { state.setTyping(it) },
-            onAttach = state.pickAttachment,
-        )
+        if (room.category == FfiRoomCategory.INVITED) {
+            InviteBanner(state)
+        } else {
+            ComposerActionBar(state)
+            Composer(
+                onSend = { state.sendFromComposer(it) },
+                onTyping = { state.setTyping(it) },
+                onAttach = state.pickAttachment,
+            )
+        }
     }
 
     EventActionSheet(state)
+}
+
+/// Accept or decline, where the composer would be — an invite is a
+/// question before it is a conversation.
+@Composable
+private fun InviteBanner(state: CommuneState) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            "You have been invited to this room",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        Row {
+            OutlinedButton(onClick = { state.declineInvite() }) {
+                Text("Decline")
+            }
+            Spacer(Modifier.size(16.dp))
+            Button(onClick = { state.acceptInvite() }) {
+                Text("Accept")
+            }
+        }
+    }
 }
 
 /// The bar above the composer naming the armed reply or edit.

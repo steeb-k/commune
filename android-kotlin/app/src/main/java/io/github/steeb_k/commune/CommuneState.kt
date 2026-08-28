@@ -14,6 +14,7 @@ import io.github.steeb_k.commune.core.FfiCoreConfig
 import io.github.steeb_k.commune.core.FfiMember
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiSessionSettings
+import io.github.steeb_k.commune.core.FfiTargetRoomCategory
 import io.github.steeb_k.commune.core.FfiTimelineItem
 import io.github.steeb_k.commune.core.Native
 import io.github.steeb_k.commune.core.MemberListListener
@@ -104,6 +105,11 @@ class CommuneState(context: Context) {
             override fun onUpdate(rooms: List<FfiRoom>) {
                 main.post {
                     this@CommuneState.rooms = rooms
+                    // The open room rides along with its list entry, so a
+                    // category flip (accepted invite) reaches the screen.
+                    openRoom?.let { current ->
+                        rooms.find { it.roomId == current.roomId }?.let { openRoom = it }
+                    }
                     if (ownUserId == null) ownUserId = app.sessionUserId()
                     if (settings == null) settings = app.sessionSettings()
                 }
@@ -312,6 +318,33 @@ class CommuneState(context: Context) {
                     app.redactEvent(room.roomId, eventId)
                 } catch (_: Exception) {
                     // The next update reflects reality either way.
+                }
+            }
+        }
+    }
+
+    fun acceptInvite() {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                try {
+                    app.changeRoomCategory(room.roomId, FfiTargetRoomCategory.NORMAL)
+                } catch (_: Exception) {
+                    // The sidebar reflects what actually happened.
+                }
+            }
+        }
+    }
+
+    fun declineInvite() {
+        val room = openRoom ?: return
+        main.post { closeRoom() }
+        thread {
+            runBlocking {
+                try {
+                    app.changeRoomCategory(room.roomId, FfiTargetRoomCategory.LEFT)
+                } catch (_: Exception) {
+                    // The sidebar reflects what actually happened.
                 }
             }
         }
