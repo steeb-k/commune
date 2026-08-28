@@ -1,26 +1,34 @@
-// The walking skeleton, one step further: the Rust core logs into a
-// homeserver (the local test harness by default), syncs, and this activity
-// renders the core's room list live — the same rooms, categories and unread
-// state the GTK sidebar shows. Still throwaway: the real UI is Jetpack
-// Compose (chunk 8 of doc/kotlin-plan.md).
+// The walking skeleton, now a chat: the Rust core logs into a homeserver
+// (the local test harness by default), syncs, and this activity renders the
+// core's room list and — one tap deeper — a room's live timeline with a
+// working composer. Still throwaway: the real UI is Jetpack Compose
+// (chunk 8 of doc/kotlin-plan.md).
 package io.github.steeb_k.commune
 
 import android.app.Activity
 import android.os.Bundle
 import android.view.Gravity
 import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
 import io.github.steeb_k.commune.core.CoreApp
 import io.github.steeb_k.commune.core.FfiCoreConfig
+import io.github.steeb_k.commune.core.FfiEventKind
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRoomCategory
 import io.github.steeb_k.commune.core.FfiRoomDisplayName
+import io.github.steeb_k.commune.core.FfiTimelineItem
 import io.github.steeb_k.commune.core.RoomListListener
+import io.github.steeb_k.commune.core.TimelineListener
 import io.github.steeb_k.commune.core.Native
 import io.github.steeb_k.commune.core.coreVersion
 import io.github.steeb_k.commune.core.initCore
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.concurrent.thread
 import kotlinx.coroutines.runBlocking
 
@@ -42,11 +50,28 @@ private val CATEGORY_ORDER = listOf(
     FfiRoomCategory.LEFT to "Historical",
 )
 
+private fun roomName(room: FfiRoom): String = when (val displayName = room.displayName) {
+    is FfiRoomDisplayName.Named -> displayName.name
+    is FfiRoomDisplayName.EmptyWas -> "Empty Room (was ${displayName.user})"
+    is FfiRoomDisplayName.Empty -> "Empty Room"
+    is FfiRoomDisplayName.Unknown -> "Unknown"
+}
+
 class SkeletonActivity : Activity() {
     private lateinit var status: TextView
     private lateinit var list: ListView
     private lateinit var adapter: ArrayAdapter<String>
     private lateinit var app: CoreApp
+
+    /// The room id behind each sidebar row; null for section headers.
+    private var sidebarRowRooms: List<FfiRoom?> = emptyList()
+    private var lastRooms: List<FfiRoom> = emptyList()
+
+    /// The room being shown, if the room view is open.
+    private var openRoomId: String? = null
+
+    private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,24 +85,13 @@ class SkeletonActivity : Activity() {
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, mutableListOf())
         list = ListView(this)
         list.adapter = adapter
+        list.setOnItemClickListener { _, _, position, _ ->
+            if (openRoomId == null) {
+                sidebarRowRooms.getOrNull(position)?.let { showRoom(it) }
+            }
+        }
 
-        val column = LinearLayout(this)
-        column.orientation = LinearLayout.VERTICAL
-        // API 35 draws edge-to-edge by default; keep the skeleton's content
-        // out from under the bars.
-        column.fitsSystemWindows = true
-        column.addView(
-            status,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ),
-        )
-        column.addView(
-            list,
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f),
-        )
-        setContentView(column)
+        showSidebarView()
 
         Native.seed(applicationContext)
         initCore(
@@ -92,7 +106,10 @@ class SkeletonActivity : Activity() {
 
         app.setRoomListListener(object : RoomListListener {
             override fun onUpdate(rooms: List<FfiRoom>) {
-                runOnUiThread { render(rooms) }
+                runOnUiThread {
+                    lastRooms = rooms
+                    if (openRoomId == null) renderSidebar(rooms)
+                }
             }
         })
 
@@ -116,14 +133,49 @@ class SkeletonActivity : Activity() {
         }
     }
 
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (openRoomId != null) {
+            openRoomId = null
+            showSidebarView()
+            renderSidebar(lastRooms)
+        } else {
+            @Suppress("DEPRECATION")
+            super.onBackPressed()
+        }
+    }
+
     private fun setStatus(text: String) {
         runOnUiThread { status.text = text }
     }
 
-    private fun render(rooms: List<FfiRoom>) {
+    // ---- Sidebar ----
+
+    private fun showSidebarView() {
+        val column = LinearLayout(this)
+        column.orientation = LinearLayout.VERTICAL
+        // API 35 draws edge-to-edge by default; keep the skeleton's content
+        // out from under the bars.
+        column.fitsSystemWindows = true
+        column.addView(
+            status.also { (it.parent as? LinearLayout)?.removeView(it) },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+        column.addView(
+            list.also { (it.parent as? LinearLayout)?.removeView(it) },
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f),
+        )
+        setContentView(column)
+    }
+
+    private fun renderSidebar(rooms: List<FfiRoom>) {
         status.text = "commune-core ${coreVersion()} — ${rooms.size} rooms"
 
         val lines = mutableListOf<String>()
+        val rowRooms = mutableListOf<FfiRoom?>()
         for ((category, title) in CATEGORY_ORDER) {
             val section = rooms
                 .filter { it.category == category }
@@ -131,13 +183,8 @@ class SkeletonActivity : Activity() {
             if (section.isEmpty()) continue
 
             lines.add("— $title —")
+            rowRooms.add(null)
             for (room in section) {
-                val name = when (val displayName = room.displayName) {
-                    is FfiRoomDisplayName.Named -> displayName.name
-                    is FfiRoomDisplayName.EmptyWas -> "Empty Room (was ${displayName.user})"
-                    is FfiRoomDisplayName.Empty -> "Empty Room"
-                    is FfiRoomDisplayName.Unknown -> "Unknown"
-                }
                 val badge = if (room.notificationCount > 0uL) {
                     "  (${room.notificationCount})"
                 } else if (!room.isRead) {
@@ -146,12 +193,117 @@ class SkeletonActivity : Activity() {
                     ""
                 }
                 val direct = if (room.isDirect) "@ " else ""
-                lines.add("    $direct$name$badge")
+                lines.add("    $direct${roomName(room)}$badge")
+                rowRooms.add(room)
+            }
+        }
+
+        sidebarRowRooms = rowRooms
+        adapter.clear()
+        adapter.addAll(lines)
+        adapter.notifyDataSetChanged()
+    }
+
+    // ---- Room view ----
+
+    private fun showRoom(room: FfiRoom) {
+        openRoomId = room.roomId
+
+        status.text = roomName(room)
+
+        val input = EditText(this)
+        input.hint = "Message"
+
+        val send = Button(this)
+        send.text = "Send"
+        send.setOnClickListener {
+            val body = input.text.toString().trim()
+            if (body.isEmpty()) return@setOnClickListener
+            input.setText("")
+            thread {
+                runBlocking {
+                    try {
+                        app.sendMessage(room.roomId, body)
+                    } catch (failure: Exception) {
+                        setStatus("Send failed: ${failure.message}")
+                    }
+                }
+            }
+        }
+
+        val inputRow = LinearLayout(this)
+        inputRow.orientation = LinearLayout.HORIZONTAL
+        inputRow.addView(input, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        inputRow.addView(send)
+
+        val column = LinearLayout(this)
+        column.orientation = LinearLayout.VERTICAL
+        column.fitsSystemWindows = true
+        column.addView(
+            status.also { (it.parent as? LinearLayout)?.removeView(it) },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+        column.addView(
+            list.also { (it.parent as? LinearLayout)?.removeView(it) },
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f),
+        )
+        column.addView(inputRow)
+        setContentView(column)
+
+        adapter.clear()
+        adapter.add("Loading…")
+
+        app.setTimelineListener(
+            room.roomId,
+            object : TimelineListener {
+                override fun onUpdate(items: List<FfiTimelineItem>) {
+                    runOnUiThread {
+                        if (openRoomId == room.roomId) renderTimeline(items)
+                    }
+                }
+            },
+        )
+
+        // Pull a first page of history in behind the cached events.
+        thread { runBlocking { app.paginateBackwards(room.roomId) } }
+    }
+
+    private fun renderTimeline(items: List<FfiTimelineItem>) {
+        val lines = mutableListOf<String>()
+
+        for (item in items) {
+            when (item) {
+                is FfiTimelineItem.Event -> {
+                    val time = timeFormat.format(Date(item.timestamp.toLong()))
+                    val who = item.senderDisplayName ?: item.sender
+                    val marker = if (item.isOwn) "»" else " "
+                    val text = when (item.kind) {
+                        FfiEventKind.TEXT -> item.body
+                        FfiEventKind.MEDIA -> "[media] ${item.body}"
+                        FfiEventKind.STICKER -> "[sticker]"
+                        FfiEventKind.UNABLE_TO_DECRYPT -> "[could not decrypt]"
+                        FfiEventKind.REDACTED -> "[message removed]"
+                        FfiEventKind.MEMBERSHIP -> "· membership change ·"
+                        FfiEventKind.OTHER_STATE -> "· state change ·"
+                        FfiEventKind.UNSUPPORTED -> "[unsupported]"
+                    }
+                    lines.add("$marker $time  $who\n    $text")
+                }
+                is FfiTimelineItem.DateDivider ->
+                    lines.add("——  ${dateFormat.format(Date(item.timestamp.toLong()))}  ——")
+                is FfiTimelineItem.ReadMarker -> {}
+                is FfiTimelineItem.TimelineStart ->
+                    lines.add("——  The conversation starts here  ——")
             }
         }
 
         adapter.clear()
         adapter.addAll(lines)
         adapter.notifyDataSetChanged()
+        // Open at the newest message, like the room-open behavior upstream.
+        list.setSelection(adapter.count - 1)
     }
 }
