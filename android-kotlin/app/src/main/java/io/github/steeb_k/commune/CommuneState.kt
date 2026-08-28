@@ -208,6 +208,10 @@ class CommuneState(context: Context) {
         spaceChildren = emptyList()
     }
 
+    /// The open room's members, for the composer's mention completion.
+    var composerMembers by mutableStateOf<List<FfiMember>>(emptyList())
+        private set
+
     fun openRoom(room: FfiRoom) {
         if (room.category == FfiRoomCategory.SPACE) {
             openSpace(room)
@@ -215,6 +219,15 @@ class CommuneState(context: Context) {
         }
         openRoom = room
         timeline = emptyList()
+        composerMembers = emptyList()
+        thread {
+            runBlocking {
+                val members = app.roomMembers(room.roomId)
+                main.post {
+                    if (openRoom?.roomId == room.roomId) composerMembers = members
+                }
+            }
+        }
         if (uiVisible) notifier.visibleRoomId = room.roomId
 
         app.setTimelineListener(
@@ -836,11 +849,14 @@ class CommuneState(context: Context) {
 
     fun send(body: String) {
         val room = openRoom ?: return
+        val mentions = composerMembers
+            .filter { body.contains("@" + it.displayName) }
+            .map { it.userId }
         setTyping(false)
         thread {
             runBlocking {
                 try {
-                    app.sendMessage(room.roomId, body)
+                    app.sendMessage(room.roomId, body, mentions)
                 } catch (_: Exception) {
                     // The send queue retries; a failed-send surface comes
                     // with its own chunk.

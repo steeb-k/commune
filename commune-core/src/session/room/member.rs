@@ -224,6 +224,19 @@ impl MemberList {
             .into_values_and_batched_stream()
     }
 
+    /// A snapshot of the members known right now.
+    #[must_use]
+    pub fn snapshot(&self) -> Vec<Member> {
+        self.inner
+            .members
+            .lock()
+            .expect("mutex is not poisoned")
+            .list
+            .iter()
+            .cloned()
+            .collect()
+    }
+
     /// The member with the given ID, if it is known.
     #[must_use]
     pub fn get(&self, user_id: &UserId) -> Option<Member> {

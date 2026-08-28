@@ -97,6 +97,7 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
                 onSend = { state.sendFromComposer(it) },
                 onTyping = { state.setTyping(it) },
                 onAttach = state.pickAttachment,
+                members = state.composerMembers,
             )
         }
     }
@@ -700,8 +701,43 @@ internal fun Composer(
     onSend: (String) -> Unit,
     onTyping: (Boolean) -> Unit,
     onAttach: (() -> Unit)? = null,
+    members: List<io.github.steeb_k.commune.core.FfiMember> = emptyList(),
 ) {
-    var draft by remember { mutableStateOf("") }
+    var draft by remember {
+        mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(""))
+    }
+
+    // Mention completion: the word being typed, when it starts with @.
+    val currentWord = draft.text.substringAfterLast(' ').substringAfterLast('\n')
+    val mentionQuery = currentWord.takeIf { it.startsWith("@") && it.length > 1 }?.drop(1)
+    val matches = mentionQuery?.let { query ->
+        members.filter { it.displayName.startsWith(query, ignoreCase = true) }.take(4)
+    }.orEmpty()
+
+    if (matches.isNotEmpty()) {
+        Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
+            for (member in matches) {
+                Text(
+                    member.displayName,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable {
+                            val text = draft.text.dropLast(currentWord.length) +
+                                "@" + member.displayName + " "
+                            draft = androidx.compose.ui.text.input.TextFieldValue(
+                                text,
+                                androidx.compose.ui.text.TextRange(text.length),
+                            )
+                        }
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+        }
+    }
 
     Row(
         modifier = Modifier
@@ -719,7 +755,7 @@ internal fun Composer(
             value = draft,
             onValueChange = {
                 draft = it
-                onTyping(it.isNotBlank())
+                onTyping(it.text.isNotBlank())
             },
             placeholder = { Text("Message") },
             modifier = Modifier.weight(1f),
@@ -736,9 +772,9 @@ internal fun Composer(
         ) {
             IconButton(
                 onClick = {
-                    val body = draft.trim()
+                    val body = draft.text.trim()
                     if (body.isNotEmpty()) {
-                        draft = ""
+                        draft = androidx.compose.ui.text.input.TextFieldValue("")
                         onSend(body)
                     }
                 },

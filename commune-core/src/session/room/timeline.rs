@@ -299,19 +299,24 @@ impl Timeline {
         None
     }
 
-    /// Send the given plain-text message to the room.
-    ///
-    /// The application's composer detects mentions and offers Markdown;
-    /// that logic arrives with the composer chunk.
-    pub async fn send_text(&self, body: String) -> Result<(), ()> {
+    /// Send the given message to the room, rendered from Markdown the
+    /// way the application's composer sends by default, mentioning the
+    /// given users.
+    pub async fn send_text(
+        &self,
+        body: String,
+        mentions: Vec<ruma::OwnedUserId>,
+    ) -> Result<(), ()> {
         let Some(matrix_timeline) = self.matrix_timeline().await else {
             return Err(());
         };
 
         let handle = spawn_tokio!(async move {
-            matrix_timeline
-                .send(RoomMessageEventContent::text_plain(body).into())
-                .await
+            let mut content = RoomMessageEventContent::text_markdown(body);
+            if !mentions.is_empty() {
+                content.mentions = Some(ruma::events::Mentions::with_user_ids(mentions));
+            }
+            matrix_timeline.send(content.into()).await
         });
 
         match handle.await.expect("task was not aborted") {

@@ -823,6 +823,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_restore_sessions(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_room_members(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_rooms(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_scan_qr(
@@ -962,13 +964,15 @@ external fun uniffi_commune_core_fn_method_coreapp_request_verification(`ptr`: L
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_room_members(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_method_coreapp_scan_qr(`ptr`: Long,`flowId`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
 ): Long
-external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
+external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`mentions`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_reply(`ptr`: Long,`roomId`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
 ): Long
@@ -1253,6 +1257,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_restore_sessions() != 15459.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_room_members() != 65362.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_rooms() != 14668.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1262,7 +1269,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_attachment() != 7086.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 8707.toShort()) {
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 61043.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_reply() != 33697.toShort()) {
@@ -1981,6 +1988,12 @@ public interface CoreAppInterface {
     suspend fun `restoreSessions`()
     
     /**
+     * A snapshot of the given room's members, loading the list on first
+     * use — the composer's mention completion reads this.
+     */
+    suspend fun `roomMembers`(`roomId`: kotlin.String): List<FfiMember>
+    
+    /**
      * The rooms of the first ready session, as of now.
      */
     fun `rooms`(): List<FfiRoom>
@@ -1997,9 +2010,10 @@ public interface CoreAppInterface {
     suspend fun `sendAttachment`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String)
     
     /**
-     * Send a plain-text message to the given room.
+     * Send a message to the given room — Markdown, as the composer
+     * writes it — mentioning the given users.
      */
-    suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String)
+    suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String, `mentions`: List<kotlin.String>)
     
     /**
      * Send a plain-text reply to the given event in the given room.
@@ -2780,6 +2794,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * A snapshot of the given room's members, loading the list on first
+     * use — the composer's mention completion reads this.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `roomMembers`(`roomId`: kotlin.String) : List<FfiMember> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_room_members(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeFfiMember.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
      * The rooms of the first ready session, as of now.
      */override fun `rooms`(): List<FfiRoom> {
             return FfiConverterSequenceTypeFfiRoom.lift(
@@ -2847,16 +2885,17 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
-     * Send a plain-text message to the given room.
+     * Send a message to the given room — Markdown, as the composer
+     * writes it — mentioning the given users.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String) {
+    override suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String, `mentions`: List<kotlin.String>) {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_commune_core_fn_method_coreapp_send_message(
                 uniffiHandle,
-                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`body`),
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`body`),FfiConverterSequenceString.lower(`mentions`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
