@@ -341,6 +341,38 @@ pub struct FfiInReplyTo {
     pub body: Option<String>,
 }
 
+/// What a state event changed — the ones the timeline words, with the
+/// strings the sentence needs.
+#[derive(uniffi::Enum)]
+pub enum FfiStateChange {
+    /// The room name changed.
+    Name {
+        /// The new name; unset when it was removed.
+        name: Option<String>,
+    },
+    /// The room topic changed.
+    Topic {
+        /// The new topic; unset when it was removed.
+        topic: Option<String>,
+    },
+    /// The room avatar changed.
+    Avatar,
+    /// The room was created.
+    Create,
+    /// Encryption was enabled.
+    Encryption,
+    /// The join rules changed.
+    JoinRules,
+    /// The history visibility changed.
+    HistoryVisibility,
+    /// The canonical alias changed.
+    CanonicalAlias,
+    /// The pinned events changed.
+    PinnedEvents,
+    /// Something the timeline has no words for yet.
+    Other,
+}
+
 /// What a media event carries.
 #[derive(uniffi::Enum)]
 pub enum FfiMediaKind {
@@ -441,7 +473,10 @@ pub enum FfiEventKind {
         user: String,
     },
     /// Another state event.
-    OtherState,
+    OtherState {
+        /// What changed.
+        change: FfiStateChange,
+    },
     /// Something not handled yet.
     Unsupported,
 }
@@ -1579,6 +1614,42 @@ fn watch_room(room: &Room, notify_tx: &mpsc::UnboundedSender<()>) {
 }
 
 /// Convert an SDK timeline item for the FFI.
+/// What the given state-event content change is, for the timeline's
+/// sentences.
+fn ffi_state_change(
+    change: &matrix_sdk_ui::timeline::AnyOtherStateEventContentChange,
+) -> FfiStateChange {
+    use matrix_sdk_ui::timeline::AnyOtherStateEventContentChange as Change;
+    use ruma::events::StateEventContentChange;
+
+    match change {
+        Change::RoomName(state) => FfiStateChange::Name {
+            name: match state {
+                StateEventContentChange::Original { content, .. } => {
+                    Some(content.name.clone()).filter(|name| !name.is_empty())
+                }
+                StateEventContentChange::Redacted(_) => None,
+            },
+        },
+        Change::RoomTopic(state) => FfiStateChange::Topic {
+            topic: match state {
+                StateEventContentChange::Original { content, .. } => {
+                    Some(content.topic.clone()).filter(|topic| !topic.is_empty())
+                }
+                StateEventContentChange::Redacted(_) => None,
+            },
+        },
+        Change::RoomAvatar(_) => FfiStateChange::Avatar,
+        Change::RoomCreate(_) => FfiStateChange::Create,
+        Change::RoomEncryption(_) => FfiStateChange::Encryption,
+        Change::RoomJoinRules(_) => FfiStateChange::JoinRules,
+        Change::RoomHistoryVisibility(_) => FfiStateChange::HistoryVisibility,
+        Change::RoomCanonicalAlias(_) => FfiStateChange::CanonicalAlias,
+        Change::RoomPinnedEvents(_) => FfiStateChange::PinnedEvents,
+        _ => FfiStateChange::Other,
+    }
+}
+
 /// The reactions on the given content, aggregated per key.
 fn ffi_reactions(
     content: &matrix_sdk_ui::timeline::TimelineItemContent,
@@ -1689,7 +1760,12 @@ fn ffi_timeline_item(
                     },
                     String::new(),
                 ),
-                TimelineItemContent::OtherState(_) => (FfiEventKind::OtherState, String::new()),
+                TimelineItemContent::OtherState(state) => (
+                    FfiEventKind::OtherState {
+                        change: ffi_state_change(state.content()),
+                    },
+                    String::new(),
+                ),
                 _ => (FfiEventKind::Unsupported, String::new()),
             };
 
