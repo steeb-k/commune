@@ -79,6 +79,8 @@ class CommuneState(context: Context) {
         private set
     var viewerImagePath by mutableStateOf<String?>(null)
         private set
+    var viewerIsVideo by mutableStateOf(false)
+        private set
     var roomDetailsOpen by mutableStateOf(false)
         private set
     var membersOpen by mutableStateOf(false)
@@ -521,11 +523,34 @@ class CommuneState(context: Context) {
     }
 
     fun openViewer(path: String) {
+        viewerIsVideo = false
         viewerImagePath = path
+    }
+
+    /// Fetch the media behind the given timeline item, then open it as
+    /// video or audio playback.
+    fun openMediaPlayer(uniqueId: String) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                try {
+                    val path = app.getTimelineMedia(room.roomId, uniqueId)
+                    if (path != null) {
+                        main.post {
+                            viewerIsVideo = true
+                            viewerImagePath = path
+                        }
+                    }
+                } catch (_: Exception) {
+                    // Nothing to show.
+                }
+            }
+        }
     }
 
     fun closeViewer() {
         viewerImagePath = null
+        viewerIsVideo = false
     }
 
     fun setNotificationsEnabled(enabled: Boolean) {

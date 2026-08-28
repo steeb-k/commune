@@ -30,6 +30,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -61,6 +62,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import io.github.steeb_k.commune.CommuneState
 import io.github.steeb_k.commune.core.FfiEventKind
+import io.github.steeb_k.commune.core.FfiMediaKind
 import io.github.steeb_k.commune.core.FfiMembershipChange
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRoomCategory
@@ -477,8 +479,30 @@ internal fun MessageBubble(
                 }
             }
 
-            val mediaKind = event.kind as? FfiEventKind.Media
-            if (mediaKind?.isImage == true) {
+            val mediaKind = (event.kind as? FfiEventKind.Media)?.kind
+            if (mediaKind == FfiMediaKind.VIDEO || mediaKind == FfiMediaKind.AUDIO) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .padding(bottom = 4.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { state.openMediaPlayer(event.uniqueId) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.PlayArrow,
+                        contentDescription = "Play",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        if (mediaKind == FfiMediaKind.VIDEO) "Play video" else "Play audio",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+            if (mediaKind == FfiMediaKind.IMAGE) {
                 var bitmap by remember(event.uniqueId) {
                     mutableStateOf<android.graphics.Bitmap?>(null)
                 }

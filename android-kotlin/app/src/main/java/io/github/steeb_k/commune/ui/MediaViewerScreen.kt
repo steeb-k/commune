@@ -25,7 +25,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 
 @Composable
-fun MediaViewerScreen(path: String, onClose: () -> Unit) {
+fun MediaViewerScreen(path: String, isVideo: Boolean = false, onClose: () -> Unit) {
+    if (isVideo) {
+        PlayerScreen(path, onClose)
+        return
+    }
+
     var bitmap by remember(path) { mutableStateOf<android.graphics.Bitmap?>(null) }
     LaunchedEffect(path) {
         bitmap = android.graphics.BitmapFactory.decodeFile(path)
@@ -63,5 +68,40 @@ fun MediaViewerScreen(path: String, onClose: () -> Unit) {
                     ),
             )
         }
+    }
+}
+
+
+/// Video or audio playback over black, with the player's own controls.
+@Composable
+private fun PlayerScreen(path: String, onClose: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val player = remember(path) {
+        androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
+            setMediaItem(androidx.media3.common.MediaItem.fromUri(android.net.Uri.fromFile(java.io.File(path))))
+            prepare()
+            playWhenReady = true
+        }
+    }
+    androidx.compose.runtime.DisposableEffect(path) {
+        onDispose { player.release() }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center,
+    ) {
+        androidx.compose.ui.viewinterop.AndroidView(
+            factory = { viewContext ->
+                androidx.media3.ui.PlayerView(viewContext).apply {
+                    this.player = player
+                    setShowNextButton(false)
+                    setShowPreviousButton(false)
+                }
+            },
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }

@@ -4515,7 +4515,7 @@ sealed class FfiEventKind {
          * Whether the media is an image the timeline can show inline
          * (fetch it with `get_timeline_media`).
          */
-        val `isImage`: kotlin.Boolean) : FfiEventKind()
+        val `kind`: io.github.steeb_k.commune.core.FfiMediaKind) : FfiEventKind()
         
     {
         
@@ -4605,7 +4605,7 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
         return when(buf.getInt()) {
             1 -> FfiEventKind.Text
             2 -> FfiEventKind.Media(
-                FfiConverterBoolean.read(buf),
+                FfiConverterTypeFfiMediaKind.read(buf),
                 )
             3 -> FfiEventKind.Sticker
             4 -> FfiEventKind.UnableToDecrypt
@@ -4634,7 +4634,7 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
-                + FfiConverterBoolean.allocationSize(value.`isImage`)
+                + FfiConverterTypeFfiMediaKind.allocationSize(value.`kind`)
             )
         }
         is FfiEventKind.Sticker -> {
@@ -4692,7 +4692,7 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
             }
             is FfiEventKind.Media -> {
                 buf.putInt(2)
-                FfiConverterBoolean.write(value.`isImage`, buf)
+                FfiConverterTypeFfiMediaKind.write(value.`kind`, buf)
                 Unit
             }
             is FfiEventKind.Sticker -> {
@@ -4727,6 +4727,57 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * What a media event carries.
+ */
+
+enum class FfiMediaKind {
+    
+    /**
+     * An image.
+     */
+    IMAGE,
+    /**
+     * A video.
+     */
+    VIDEO,
+    /**
+     * An audio message, voice or otherwise.
+     */
+    AUDIO,
+    /**
+     * Any other file.
+     */
+    FILE;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiMediaKind: FfiConverterRustBuffer<FfiMediaKind> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiMediaKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiMediaKind) = 4UL
+
+    override fun write(value: FfiMediaKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 

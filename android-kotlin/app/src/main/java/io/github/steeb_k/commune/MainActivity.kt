@@ -82,7 +82,11 @@ private fun CommuneApp(state: CommuneState) {
             val viewerPath = state.viewerImagePath
             if (viewerPath != null) {
                 BackHandler { state.closeViewer() }
-                MediaViewerScreen(viewerPath, onClose = { state.closeViewer() })
+                MediaViewerScreen(
+                    viewerPath,
+                    isVideo = state.viewerIsVideo,
+                    onClose = { state.closeViewer() },
+                )
             } else if (state.settingsOpen) {
                 BackHandler { state.closeSettings() }
                 SettingsScreen(state)
