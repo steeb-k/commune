@@ -206,6 +206,27 @@ Layout translation rules (from the full widget inventory — 174 `.blp` files,
   `currentColor` @ 8% for others / accent @ 25% for own, own bubbles keep
   name + avatar, timestamp outermost.
 
+## Verifying the GTK application, every time
+
+The extraction must never cost the desktop apps anything. The gates, run
+against this branch (all green 27 Aug 2026):
+
+1. **No source divergence.** `git diff main fractal-kotlin -- src po data
+   meson.build meson.options build-aux hooks Cargo.toml Cargo.lock` must
+   be empty until a Track 3 change deliberately says otherwise.
+2. **The application builds.** `cargo check` from a UCRT64 shell in the
+   worktree. Two generated files must be copied from the main checkout
+   first, since Meson writes them and git ignores them:
+   `src/config.rs` and `hooks/checks-bin.exe`.
+3. **The application's lint gate.** `cargo clippy --all-targets -- -D
+   warnings`, same shell.
+4. **The pre-commit hook** runs on every commit here anyway — style,
+   template checks, doc freshness, machete, deny, POTFILES, markdown.
+5. When Track 3 begins moving the GTK app onto the core, the eyeball
+   checklists (`doc/eyeball-tests.md`, `doc/eyeball-android.md`) become
+   the acceptance suite per migrated module, exactly as they were for the
+   ports.
+
 ## Chunks
 
 Each chunk is a session-sized unit ending in something that compiles and is
