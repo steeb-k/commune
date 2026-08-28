@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.foundation.Image
@@ -370,7 +371,7 @@ internal fun Timeline(
 internal fun FfiEventKind.isMessageLike(): Boolean = when (this) {
     is FfiEventKind.Text,
     is FfiEventKind.Media,
-    is FfiEventKind.Sticker,
+    is FfiEventKind.Location,
     is FfiEventKind.UnableToDecrypt,
     is FfiEventKind.Redacted -> true
     is FfiEventKind.Membership,
@@ -453,12 +454,13 @@ internal fun MessageBubble(
     val body = when (event.kind) {
         is FfiEventKind.Text -> event.body
         is FfiEventKind.Media -> event.body
-        is FfiEventKind.Sticker -> "🏷 Sticker"
+        is FfiEventKind.Location -> event.body.ifBlank { "Shared a location" }
         is FfiEventKind.UnableToDecrypt -> "Could not decrypt this message"
         is FfiEventKind.Redacted -> "Message removed"
         else -> return
     }
-    val muted = event.kind !is FfiEventKind.Text && event.kind !is FfiEventKind.Media
+    val muted = event.kind !is FfiEventKind.Text && event.kind !is FfiEventKind.Media &&
+        event.kind !is FfiEventKind.Location
 
     Row(
         modifier = Modifier
@@ -605,6 +607,38 @@ internal fun MessageBubble(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+            }
+
+            (event.kind as? FfiEventKind.Location)?.let { location ->
+                val context = androidx.compose.ui.platform.LocalContext.current
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable {
+                            try {
+                                context.startActivity(
+                                    android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse(location.geoUri),
+                                    )
+                                )
+                            } catch (_: Exception) {
+                                // No maps app; the coordinates in the body
+                                // are all there is to offer.
+                            }
+                        }
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                ) {
+                    Icon(
+                        androidx.compose.material.icons.Icons.Filled.Place,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.size(6.dp))
+                    Text("Open in Maps", style = MaterialTheme.typography.bodyMedium)
                 }
             }
 

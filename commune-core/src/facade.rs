@@ -581,8 +581,11 @@ pub enum FfiEventKind {
         /// (decode it with `decode_blurhash`).
         blurhash: Option<String>,
     },
-    /// A sticker.
-    Sticker,
+    /// A shared location; the body describes it.
+    Location {
+        /// The `geo:` URI of the spot.
+        geo_uri: String,
+    },
     /// A message that could not be decrypted.
     UnableToDecrypt,
     /// A redacted message.
@@ -1131,14 +1134,23 @@ impl CoreApp {
                 let TimelineItemContent::MsgLike(msg_like) = event.content() else {
                     return None;
                 };
-                let MsgLikeKind::Message(message) = &msg_like.kind else {
-                    return None;
-                };
-                let source = match message.msgtype() {
-                    MessageType::Image(image) => image.source.clone(),
-                    MessageType::Video(video) => video.source.clone(),
-                    MessageType::Audio(audio) => audio.source.clone(),
-                    MessageType::File(file) => file.source.clone(),
+                let source = match &msg_like.kind {
+                    MsgLikeKind::Message(message) => match message.msgtype() {
+                        MessageType::Image(image) => image.source.clone(),
+                        MessageType::Video(video) => video.source.clone(),
+                        MessageType::Audio(audio) => audio.source.clone(),
+                        MessageType::File(file) => file.source.clone(),
+                        _ => return None,
+                    },
+                    MsgLikeKind::Sticker(sticker) => match &sticker.content().source {
+                        ruma::events::sticker::StickerMediaSource::Plain(url) => {
+                            ruma::events::room::MediaSource::Plain(url.clone())
+                        }
+                        ruma::events::sticker::StickerMediaSource::Encrypted(file) => {
+                            ruma::events::room::MediaSource::Encrypted(file.clone())
+                        }
+                        _ => return None,
+                    },
                     _ => return None,
                 };
 
@@ -3797,6 +3809,9 @@ fn ffi_message_kind(message: &matrix_sdk_ui::timeline::Message) -> (FfiEventKind
         | MessageType::Notice(_)
         | MessageType::Emote(_)
         | MessageType::ServerNotice(_) => FfiEventKind::Text,
+        MessageType::Location(location) => FfiEventKind::Location {
+            geo_uri: location.geo_uri.clone(),
+        },
         MessageType::Image(_) => FfiEventKind::Media {
             kind: FfiMediaKind::Image,
             blurhash,
@@ -3836,7 +3851,16 @@ fn ffi_timeline_item(
             let (kind, body) = match event.content() {
                 TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
                     MsgLikeKind::Message(message) => ffi_message_kind(message),
-                    MsgLikeKind::Sticker(_) => (FfiEventKind::Sticker, String::new()),
+                    MsgLikeKind::Sticker(sticker) => {
+                        let content = sticker.content();
+                        (
+                            FfiEventKind::Media {
+                                kind: FfiMediaKind::Image,
+                                blurhash: content.info.blurhash.clone(),
+                            },
+                            content.body.clone(),
+                        )
+                    }
                     MsgLikeKind::Redacted => (FfiEventKind::Redacted, String::new()),
                     MsgLikeKind::UnableToDecrypt(_) => {
                         (FfiEventKind::UnableToDecrypt, String::new())
