@@ -19,14 +19,23 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -102,7 +111,7 @@ private fun SidebarHeader(state: CommuneState) {
         }
         Spacer(Modifier.weight(1f))
         HeaderIcon(Icons.Filled.Search)
-        HeaderIcon(Icons.Filled.MoreVert)
+        PrimaryMenu(state)
     }
 }
 
@@ -111,6 +120,106 @@ private fun HeaderIcon(icon: ImageVector) {
     IconButton(onClick = {}, enabled = false) {
         Icon(icon, contentDescription = null)
     }
+}
+
+/// Which dialog of the primary menu is open.
+private enum class MenuDialog { None, DirectChat, JoinRoom }
+
+/// The primary menu: New Direct Chat and Join Room, as the GTK menu
+/// leads; the rest of its entries arrive with their features.
+@Composable
+private fun PrimaryMenu(state: CommuneState) {
+    var menuOpen by remember { mutableStateOf(false) }
+    var dialog by remember { mutableStateOf(MenuDialog.None) }
+
+    IconButton(onClick = { menuOpen = true }) {
+        Icon(Icons.Filled.MoreVert, contentDescription = "Menu")
+    }
+    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+        DropdownMenuItem(
+            text = { Text("New Direct Chat") },
+            onClick = {
+                menuOpen = false
+                dialog = MenuDialog.DirectChat
+            },
+        )
+        DropdownMenuItem(
+            text = { Text("Join Room") },
+            onClick = {
+                menuOpen = false
+                dialog = MenuDialog.JoinRoom
+            },
+        )
+    }
+
+    when (dialog) {
+        MenuDialog.DirectChat -> ConversationDialog(
+            state = state,
+            title = "New Direct Chat",
+            placeholder = "@user:example.org",
+            confirm = "Chat",
+            onConfirm = { input, done -> state.startDirectChat(input, done) },
+            onDismiss = { dialog = MenuDialog.None },
+        )
+        MenuDialog.JoinRoom -> ConversationDialog(
+            state = state,
+            title = "Join Room",
+            placeholder = "#room:example.org",
+            confirm = "Join",
+            onConfirm = { input, done -> state.joinRoom(input, done) },
+            onDismiss = { dialog = MenuDialog.None },
+        )
+        MenuDialog.None -> {}
+    }
+}
+
+@Composable
+private fun ConversationDialog(
+    state: CommuneState,
+    title: String,
+    placeholder: String,
+    confirm: String,
+    onConfirm: (String, () -> Unit) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var input by remember { mutableStateOf("") }
+    val close = {
+        state.clearConversationError()
+        onDismiss()
+    }
+
+    AlertDialog(
+        onDismissRequest = close,
+        title = { Text(title) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    placeholder = { Text(placeholder) },
+                    singleLine = true,
+                )
+                state.conversationError?.let { error ->
+                    Text(
+                        error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = input.isNotBlank() && !state.conversationBusy,
+                onClick = { onConfirm(input) { close() } },
+            ) {
+                Text(if (state.conversationBusy) "…" else confirm)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = close) { Text("Cancel") }
+        },
+    )
 }
 
 @Composable
