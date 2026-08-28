@@ -16,6 +16,7 @@ import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRecoveryState
 import io.github.steeb_k.commune.core.FfiSasEmoji
 import io.github.steeb_k.commune.core.FfiRoomCategory
+import io.github.steeb_k.commune.core.FfiSearchResult
 import io.github.steeb_k.commune.core.FfiSessionSettings
 import io.github.steeb_k.commune.core.FfiSpaceChild
 import io.github.steeb_k.commune.core.FfiTargetRoomCategory
@@ -274,6 +275,7 @@ class CommuneState(context: Context) {
         closeThread()
         closeMembers()
         closePinned()
+        closeRoomSearch()
         roomDetailsOpen = false
     }
 
@@ -292,6 +294,43 @@ class CommuneState(context: Context) {
                     main.post {
                         detailsError = failure.message?.removePrefix("msg=")
                             ?: "Could not save"
+                    }
+                }
+            }
+        }
+    }
+
+    var roomSearchOpen by mutableStateOf(false)
+        private set
+    var roomSearchResults by mutableStateOf<List<FfiSearchResult>>(emptyList())
+        private set
+    var roomSearchBusy by mutableStateOf(false)
+        private set
+
+    fun openRoomSearch() {
+        roomSearchOpen = true
+        roomSearchResults = emptyList()
+    }
+
+    fun closeRoomSearch() {
+        roomSearchOpen = false
+        roomSearchResults = emptyList()
+    }
+
+    fun searchRoom(query: String) {
+        val room = openRoom ?: return
+        roomSearchBusy = true
+        thread {
+            runBlocking {
+                val results = try {
+                    app.searchRoom(room.roomId, query)
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                main.post {
+                    if (roomSearchOpen) {
+                        roomSearchResults = results
+                        roomSearchBusy = false
                     }
                 }
             }
