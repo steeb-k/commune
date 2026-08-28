@@ -540,6 +540,20 @@ pub enum FfiTimelineItem {
     TimelineStart,
 }
 
+/// Decode a blurhash into raw RGBA bytes at the given size.
+///
+/// Rendering at a couple dozen pixels a side and letting the UI scale it
+/// up is the intended use — a blurhash holds no more detail than that.
+#[uniffi::export]
+#[must_use]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "UniFFI hands arguments over by value"
+)]
+pub fn decode_blurhash(blurhash: String, width: u32, height: u32) -> Option<Vec<u8>> {
+    blurhash::decode(&blurhash, width, height, 1.0).ok()
+}
+
 /// How far a locally sent event has got.
 #[derive(uniffi::Enum, Clone, Copy)]
 pub enum FfiSendState {
@@ -563,6 +577,9 @@ pub enum FfiEventKind {
         /// Whether the media is an image the timeline can show inline
         /// (fetch it with `get_timeline_media`).
         kind: FfiMediaKind,
+        /// The blurhash of the media, to present until it arrives
+        /// (decode it with `decode_blurhash`).
+        blurhash: Option<String>,
     },
     /// A sticker.
     Sticker,
@@ -3088,6 +3105,42 @@ fn ffi_send_state(
     })
 }
 
+/// Build the FFI view of a message's kind and body.
+fn ffi_message_kind(message: &matrix_sdk_ui::timeline::Message) -> (FfiEventKind, String) {
+    use ruma::events::room::message::MessageType;
+
+    let msgtype = message.msgtype();
+    let blurhash = match msgtype {
+        MessageType::Image(image) => image.info.as_deref().and_then(|info| info.blurhash.clone()),
+        MessageType::Video(video) => video.info.as_deref().and_then(|info| info.blurhash.clone()),
+        _ => None,
+    };
+    let kind = match msgtype {
+        MessageType::Text(_)
+        | MessageType::Notice(_)
+        | MessageType::Emote(_)
+        | MessageType::ServerNotice(_) => FfiEventKind::Text,
+        MessageType::Image(_) => FfiEventKind::Media {
+            kind: FfiMediaKind::Image,
+            blurhash,
+        },
+        MessageType::Video(_) => FfiEventKind::Media {
+            kind: FfiMediaKind::Video,
+            blurhash,
+        },
+        MessageType::Audio(_) => FfiEventKind::Media {
+            kind: FfiMediaKind::Audio,
+            blurhash: None,
+        },
+        _ => FfiEventKind::Media {
+            kind: FfiMediaKind::File,
+            blurhash: None,
+        },
+    };
+
+    (kind, msgtype.body().to_owned())
+}
+
 fn ffi_timeline_item(
     item: &matrix_sdk_ui::timeline::TimelineItem,
     own_user_id: Option<&ruma::UserId>,
@@ -3105,30 +3158,7 @@ fn ffi_timeline_item(
 
             let (kind, body) = match event.content() {
                 TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
-                    MsgLikeKind::Message(message) => {
-                        use ruma::events::room::message::MessageType;
-
-                        let msgtype = message.msgtype();
-                        let kind = match msgtype {
-                            MessageType::Text(_)
-                            | MessageType::Notice(_)
-                            | MessageType::Emote(_)
-                            | MessageType::ServerNotice(_) => FfiEventKind::Text,
-                            MessageType::Image(_) => FfiEventKind::Media {
-                                kind: FfiMediaKind::Image,
-                            },
-                            MessageType::Video(_) => FfiEventKind::Media {
-                                kind: FfiMediaKind::Video,
-                            },
-                            MessageType::Audio(_) => FfiEventKind::Media {
-                                kind: FfiMediaKind::Audio,
-                            },
-                            _ => FfiEventKind::Media {
-                                kind: FfiMediaKind::File,
-                            },
-                        };
-                        (kind, msgtype.body().to_owned())
-                    }
+                    MsgLikeKind::Message(message) => ffi_message_kind(message),
                     MsgLikeKind::Sticker(_) => (FfiEventKind::Sticker, String::new()),
                     MsgLikeKind::Redacted => (FfiEventKind::Redacted, String::new()),
                     MsgLikeKind::UnableToDecrypt(_) => {

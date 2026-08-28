@@ -40,6 +40,9 @@ cli = ["uniffi/cli"]
 
 # Please keep dependencies sorted.
 [dependencies]
+# The same crate and version the application uses for its media
+# placeholders.
+blurhash = "0.2"
 cfg-if = "1"
 # The same reactive primitives the SDK itself uses, at the versions its
 # workspace pins, so core state and SDK state speak one vocabulary.

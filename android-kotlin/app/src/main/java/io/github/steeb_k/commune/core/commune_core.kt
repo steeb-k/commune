@@ -773,6 +773,8 @@ internal object IntegrityCheckingUniffiLib {
     }
     external fun uniffi_commune_core_checksum_func_core_version(
     ): Short
+    external fun uniffi_commune_core_checksum_func_decode_blurhash(
+    ): Short
     external fun uniffi_commune_core_checksum_func_init_core(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_accept_verification(
@@ -1094,6 +1096,8 @@ external fun uniffi_commune_core_fn_method_verificationlistener_on_cancelled(`pt
 ): Unit
 external fun uniffi_commune_core_fn_func_core_version(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_func_decode_blurhash(`blurhash`: RustBuffer.ByValue,`width`: Int,`height`: Int,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_func_init_core(`ffiConfig`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun ffi_commune_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1216,6 +1220,9 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_func_core_version() != 14287.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_func_decode_blurhash() != 5311.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_func_init_core() != 39848.toShort()) {
@@ -6491,7 +6498,12 @@ sealed class FfiEventKind {
          * Whether the media is an image the timeline can show inline
          * (fetch it with `get_timeline_media`).
          */
-        val `kind`: io.github.steeb_k.commune.core.FfiMediaKind) : FfiEventKind()
+        val `kind`: io.github.steeb_k.commune.core.FfiMediaKind, 
+        /**
+         * The blurhash of the media, to present until it arrives
+         * (decode it with `decode_blurhash`).
+         */
+        val `blurhash`: kotlin.String?) : FfiEventKind()
         
     {
         
@@ -6591,6 +6603,7 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
             1 -> FfiEventKind.Text
             2 -> FfiEventKind.Media(
                 FfiConverterTypeFfiMediaKind.read(buf),
+                FfiConverterOptionalString.read(buf),
                 )
             3 -> FfiEventKind.Sticker
             4 -> FfiEventKind.UnableToDecrypt
@@ -6622,6 +6635,7 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
             (
                 4UL
                 + FfiConverterTypeFfiMediaKind.allocationSize(value.`kind`)
+                + FfiConverterOptionalString.allocationSize(value.`blurhash`)
             )
         }
         is FfiEventKind.Sticker -> {
@@ -6681,6 +6695,7 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
             is FfiEventKind.Media -> {
                 buf.putInt(2)
                 FfiConverterTypeFfiMediaKind.write(value.`kind`, buf)
+                FfiConverterOptionalString.write(value.`blurhash`, buf)
                 Unit
             }
             is FfiEventKind.Sticker -> {
@@ -7895,6 +7910,38 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
 /**
  * @suppress
  */
+public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteArray?> {
+    override fun read(buf: ByteBuffer): kotlin.ByteArray? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterByteArray.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.ByteArray?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterByteArray.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.ByteArray?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterByteArray.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeFfiInReplyTo: FfiConverterRustBuffer<FfiInReplyTo?> {
     override fun read(buf: ByteBuffer): FfiInReplyTo? {
         if (buf.get().toInt() == 0) {
@@ -8309,6 +8356,22 @@ public object FfiConverterSequenceTypeFfiTimelineItem: FfiConverterRustBuffer<Li
     UniffiLib.uniffi_commune_core_fn_func_core_version(
     
         _status)
+}
+    )
+    }
+    
+
+        /**
+         * Decode a blurhash into raw RGBA bytes at the given size.
+         *
+         * Rendering at a couple dozen pixels a side and letting the UI scale it
+         * up is the intended use — a blurhash holds no more detail than that.
+         */ fun `decodeBlurhash`(`blurhash`: kotlin.String, `width`: kotlin.UInt, `height`: kotlin.UInt): kotlin.ByteArray? {
+            return FfiConverterOptionalByteArray.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_func_decode_blurhash(
+    
+        FfiConverterString.lower(`blurhash`),FfiConverterUInt.lower(`width`),FfiConverterUInt.lower(`height`),_status)
 }
     )
     }
