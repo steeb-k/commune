@@ -1254,7 +1254,7 @@ impl CoreApp {
                     })?;
 
                 room.thread_timeline(thread_root)
-                    .send_text(body)
+                    .send_text(body, Vec::new())
                     .await
                     .map_err(|()| CoreError::Failed {
                         msg: "Could not send the message".to_owned(),
@@ -1284,8 +1284,45 @@ impl CoreApp {
             .expect("task was not aborted");
     }
 
-    /// Send a plain-text message to the given room.
-    pub async fn send_message(&self, room_id: String, body: String) -> Result<(), CoreError> {
+    /// A snapshot of the given room's members, loading the list on first
+    /// use — the composer's mention completion reads this.
+    pub async fn room_members(&self, room_id: String) -> Vec<FfiMember> {
+        let Some(session) = self.first_ready_session() else {
+            return Vec::new();
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
+                    return Vec::new();
+                };
+                let Some(room) = session.room_list().get(&room_id) else {
+                    return Vec::new();
+                };
+                let member_list = room.member_list();
+
+                // The first call starts the load; wait (bounded) for it.
+                for _ in 0..50 {
+                    if member_list.state() == crate::utils::LoadingState::Ready {
+                        break;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+                }
+
+                member_list.snapshot().iter().map(FfiMember::from).collect()
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Send a message to the given room — Markdown, as the composer
+    /// writes it — mentioning the given users.
+    pub async fn send_message(
+        &self,
+        room_id: String,
+        body: String,
+        mentions: Vec<String>,
+    ) -> Result<(), CoreError> {
         let Some(session) = self.first_ready_session() else {
             return Err(CoreError::Failed {
                 msg: "No session".to_owned(),
@@ -1304,8 +1341,12 @@ impl CoreApp {
                         msg: "Unknown room".to_owned(),
                     })?;
 
+                let mentions = mentions
+                    .iter()
+                    .filter_map(|user| ruma::UserId::parse(user).ok())
+                    .collect();
                 room.live_timeline()
-                    .send_text(body)
+                    .send_text(body, mentions)
                     .await
                     .map_err(|()| CoreError::Failed {
                         msg: "Could not send the message".to_owned(),
