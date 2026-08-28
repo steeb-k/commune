@@ -273,6 +273,27 @@ class CommuneState(context: Context) {
         roomDetailsOpen = false
     }
 
+    var detailsError by mutableStateOf<String?>(null)
+        private set
+
+    fun setRoomDetails(name: String, topic: String, onDone: () -> Unit) {
+        val room = openRoom ?: return
+        detailsError = null
+        thread {
+            runBlocking {
+                try {
+                    app.setRoomDetails(room.roomId, name, topic)
+                    main.post { onDone() }
+                } catch (failure: Exception) {
+                    main.post {
+                        detailsError = failure.message?.removePrefix("msg=")
+                            ?: "Could not save"
+                    }
+                }
+            }
+        }
+    }
+
     fun openRoomDetails() {
         roomDetailsOpen = true
     }

@@ -192,6 +192,8 @@ pub struct FfiRoom {
     pub avatar_url: Option<String>,
     /// The number of joined members.
     pub joined_members_count: u64,
+    /// The topic of the room, if any.
+    pub topic: Option<String>,
 }
 
 impl From<&Room> for FfiRoom {
@@ -207,6 +209,7 @@ impl From<&Room> for FfiRoom {
             latest_activity: room.latest_activity(),
             avatar_url: room.avatar_url().map(|uri| uri.to_string()),
             joined_members_count: room.joined_members_count(),
+            topic: room.topic(),
         }
     }
 }
@@ -1631,6 +1634,54 @@ impl CoreApp {
                 },
             );
         });
+    }
+
+    /// Set the given room's name and topic.
+    pub async fn set_room_details(
+        &self,
+        room_id: String,
+        name: String,
+        topic: String,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let matrix_room = room.matrix_room().clone();
+
+                if room.name().unwrap_or_default() != name {
+                    matrix_room
+                        .set_name(name)
+                        .await
+                        .map_err(|set_error| CoreError::Failed {
+                            msg: format!("Could not set the name: {set_error}"),
+                        })?;
+                }
+                if room.topic().unwrap_or_default() != topic {
+                    matrix_room
+                        .set_room_topic(&topic)
+                        .await
+                        .map_err(|set_error| CoreError::Failed {
+                            msg: format!("Could not set the topic: {set_error}"),
+                        })?;
+                }
+                Ok(())
+            })
+            .await
+            .expect("task was not aborted")
     }
 
     /// The rooms inside the given space, from the server's hierarchy.
