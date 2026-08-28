@@ -557,6 +557,19 @@ internal fun MessageBubble(
                     mediaPath = state.app.getTimelineMedia(room.roomId, event.uniqueId)
                 }
 
+                if (mediaPath == null) {
+                    (event.kind as? FfiEventKind.Media)?.blurhash?.let { hash ->
+                        BlurhashImage(
+                            hash,
+                            contentDescription = event.body,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .padding(bottom = 4.dp),
+                        )
+                    }
+                }
                 mediaPath?.let { path ->
                     // Media fills the bubble and scales up to it, as the
                     // GTK history presents it — small originals included.

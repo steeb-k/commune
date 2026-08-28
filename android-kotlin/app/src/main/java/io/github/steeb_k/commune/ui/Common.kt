@@ -190,6 +190,32 @@ fun MediaImage(path: String, contentDescription: String?, modifier: Modifier = M
 }
 
 
+/// The blurhash of a media event, decoded small and scaled up — what
+/// the bubble shows until the real bytes arrive.
+@Composable
+fun BlurhashImage(blurhash: String, contentDescription: String?, modifier: Modifier = Modifier) {
+    val bitmap = remember(blurhash) {
+        io.github.steeb_k.commune.core.decodeBlurhash(blurhash, 32u, 32u)?.let { rgba ->
+            val pixels = IntArray(32 * 32)
+            for (i in pixels.indices) {
+                val r = rgba[i * 4].toInt() and 0xFF
+                val g = rgba[i * 4 + 1].toInt() and 0xFF
+                val b = rgba[i * 4 + 2].toInt() and 0xFF
+                pixels[i] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
+            }
+            android.graphics.Bitmap.createBitmap(pixels, 32, 32, android.graphics.Bitmap.Config.ARGB_8888)
+        }
+    } ?: return
+
+    Image(
+        bitmap.asImageBitmap(),
+        contentDescription = contentDescription,
+        contentScale = ContentScale.FillBounds,
+        modifier = modifier,
+    )
+}
+
+
 /// A room avatar: the picture when there is one, initials otherwise.
 @Composable
 fun RoomAvatar(state: CommuneState, room: FfiRoom, size: Dp) {
