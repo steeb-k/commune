@@ -341,6 +341,19 @@ pub struct FfiInReplyTo {
     pub body: Option<String>,
 }
 
+/// What a media event carries.
+#[derive(uniffi::Enum)]
+pub enum FfiMediaKind {
+    /// An image.
+    Image,
+    /// A video.
+    Video,
+    /// An audio message, voice or otherwise.
+    Audio,
+    /// Any other file.
+    File,
+}
+
 /// One reaction key on an event, aggregated over its senders.
 #[derive(uniffi::Record)]
 pub struct FfiReaction {
@@ -407,7 +420,7 @@ pub enum FfiEventKind {
     Media {
         /// Whether the media is an image the timeline can show inline
         /// (fetch it with `get_timeline_media`).
-        is_image: bool,
+        kind: FfiMediaKind,
     },
     /// A sticker.
     Sticker,
@@ -887,12 +900,16 @@ impl CoreApp {
                 let MsgLikeKind::Message(message) = &msg_like.kind else {
                     return None;
                 };
-                let MessageType::Image(image) = message.msgtype() else {
-                    return None;
+                let source = match message.msgtype() {
+                    MessageType::Image(image) => image.source.clone(),
+                    MessageType::Video(video) => video.source.clone(),
+                    MessageType::Audio(audio) => audio.source.clone(),
+                    MessageType::File(file) => file.source.clone(),
+                    _ => return None,
                 };
 
                 let request = matrix_sdk::media::MediaRequestParameters {
-                    source: image.source.clone(),
+                    source,
                     format: matrix_sdk::media::MediaFormat::File,
                 };
 
@@ -1493,6 +1510,28 @@ fn watch_room(room: &Room, notify_tx: &mpsc::UnboundedSender<()>) {
 }
 
 /// Convert an SDK timeline item for the FFI.
+/// The reactions on the given content, aggregated per key.
+fn ffi_reactions(
+    content: &matrix_sdk_ui::timeline::TimelineItemContent,
+    own_user_id: Option<&ruma::UserId>,
+) -> Vec<FfiReaction> {
+    use matrix_sdk_ui::timeline::TimelineItemContent;
+
+    let TimelineItemContent::MsgLike(msg_like) = content else {
+        return Vec::new();
+    };
+
+    msg_like
+        .reactions
+        .iter()
+        .map(|(key, senders)| FfiReaction {
+            key: key.clone(),
+            count: senders.len() as u64,
+            is_own: own_user_id.is_some_and(|own| senders.contains_key(own)),
+        })
+        .collect()
+}
+
 /// The reply context of the given content, if it is a reply.
 fn ffi_in_reply_to(content: &matrix_sdk_ui::timeline::TimelineItemContent) -> Option<FfiInReplyTo> {
     use matrix_sdk_ui::timeline::{MsgLikeKind, TimelineDetails, TimelineItemContent};
@@ -1546,8 +1585,18 @@ fn ffi_timeline_item(
                             | MessageType::Notice(_)
                             | MessageType::Emote(_)
                             | MessageType::ServerNotice(_) => FfiEventKind::Text,
-                            MessageType::Image(_) => FfiEventKind::Media { is_image: true },
-                            _ => FfiEventKind::Media { is_image: false },
+                            MessageType::Image(_) => FfiEventKind::Media {
+                                kind: FfiMediaKind::Image,
+                            },
+                            MessageType::Video(_) => FfiEventKind::Media {
+                                kind: FfiMediaKind::Video,
+                            },
+                            MessageType::Audio(_) => FfiEventKind::Media {
+                                kind: FfiMediaKind::Audio,
+                            },
+                            _ => FfiEventKind::Media {
+                                kind: FfiMediaKind::File,
+                            },
                         };
                         (kind, msgtype.body().to_owned())
                     }
@@ -1583,18 +1632,7 @@ fn ffi_timeline_item(
                 _ => 0,
             };
 
-            let reactions = match event.content() {
-                TimelineItemContent::MsgLike(msg_like) => msg_like
-                    .reactions
-                    .iter()
-                    .map(|(key, senders)| FfiReaction {
-                        key: key.clone(),
-                        count: senders.len() as u64,
-                        is_own: own_user_id.is_some_and(|own| senders.contains_key(own)),
-                    })
-                    .collect(),
-                _ => Vec::new(),
-            };
+            let reactions = ffi_reactions(event.content(), own_user_id);
 
             let is_edited = {
                 use crate::matrix::ext_traits::TimelineItemContentExt;
