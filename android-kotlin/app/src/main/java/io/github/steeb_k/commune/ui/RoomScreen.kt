@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -282,7 +284,11 @@ private fun RoomHeader(state: CommuneState, room: FfiRoom, onBack: () -> Unit) {
             maxLines = 1,
         )
         IconButton(onClick = { state.openPinned() }) {
-            Text("📌", style = MaterialTheme.typography.titleMedium)
+            Icon(
+                Icons.Outlined.PushPin,
+                contentDescription = "Pinned messages",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         IconButton(onClick = { state.openRoomDetails() }) {
             RoomAvatar(state, room, size = 32.dp)
@@ -427,7 +433,7 @@ internal fun MessageBubble(
 
     val body = when (event.kind) {
         is FfiEventKind.Text -> event.body
-        is FfiEventKind.Media -> "📎 ${event.body}"
+        is FfiEventKind.Media -> event.body
         is FfiEventKind.Sticker -> "🏷 Sticker"
         is FfiEventKind.UnableToDecrypt -> "Could not decrypt this message"
         is FfiEventKind.Redacted -> "Message removed"
@@ -592,14 +598,25 @@ internal fun MessageBubble(
             val eventId = event.eventId
             if (event.threadReplies > 0uL && eventId != null && onOpenThread != null) {
                 val label = if (event.threadReplies == 1uL) "1 reply" else "${event.threadReplies} replies"
-                Text(
-                    "\uD83D\uDCAC $label",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .padding(top = 4.dp)
                         .clickable { onOpenThread(eventId) },
-                )
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.Chat,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(Modifier.size(4.dp))
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
     }
