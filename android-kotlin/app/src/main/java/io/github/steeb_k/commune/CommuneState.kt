@@ -61,6 +61,8 @@ class CommuneState(context: Context) {
         private set
     var settings by mutableStateOf<FfiSessionSettings?>(null)
         private set
+    var viewerImagePath by mutableStateOf<String?>(null)
+        private set
 
     init {
         Native.seed(context.applicationContext)
@@ -214,6 +216,14 @@ class CommuneState(context: Context) {
 
     fun closeSettings() {
         settingsOpen = false
+    }
+
+    fun openViewer(path: String) {
+        viewerImagePath = path
+    }
+
+    fun closeViewer() {
+        viewerImagePath = null
     }
 
     fun setNotificationsEnabled(enabled: Boolean) {
