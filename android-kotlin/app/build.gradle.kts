@@ -39,6 +39,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    // UnifiedPush: ntfy-style instant notifications, stable connector.
+    implementation("org.unifiedpush.android:connector:3.3.5")
     implementation("androidx.media3:media3-exoplayer:1.6.1")
     implementation("androidx.media3:media3-ui:1.6.1")
 

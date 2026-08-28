@@ -2371,6 +2371,78 @@ impl CoreApp {
             .expect("task was not aborted");
     }
 
+    /// Point the homeserver's push at the given gateway.
+    ///
+    /// `gateway_url` is the Matrix push gateway (`.../_matrix/push/v1/notify`)
+    /// and `pushkey` the `UnifiedPush` endpoint that identifies this device.
+    pub async fn set_push_gateway(
+        &self,
+        gateway_url: String,
+        pushkey: String,
+    ) -> Result<(), CoreError> {
+        use ruma::{
+            api::client::push::{Pusher, PusherIds, PusherInit, PusherKind, set_pusher},
+            push::HttpPusherData,
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let pusher: Pusher = PusherInit {
+                    ids: PusherIds::new(pushkey, config::app_id().to_owned()),
+                    kind: PusherKind::Http(HttpPusherData::new(gateway_url)),
+                    app_display_name: "Commune".to_owned(),
+                    device_display_name: "Commune on Android".to_owned(),
+                    profile_tag: None,
+                    lang: "en".to_owned(),
+                }
+                .into();
+
+                session
+                    .client()
+                    .send(set_pusher::v3::Request::post(pusher))
+                    .await
+                    .map(|_| ())
+                    .map_err(|pusher_error| CoreError::Failed {
+                        msg: format!("Could not set the pusher: {pusher_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Remove the pusher with the given pushkey, so the homeserver stops
+    /// pushing to it.
+    pub async fn remove_push_gateway(&self, pushkey: String) -> Result<(), CoreError> {
+        use ruma::api::client::push::{PusherIds, set_pusher};
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let ids = PusherIds::new(pushkey, config::app_id().to_owned());
+                session
+                    .client()
+                    .send(set_pusher::v3::Request::delete(ids))
+                    .await
+                    .map(|_| ())
+                    .map_err(|pusher_error| CoreError::Failed {
+                        msg: format!("Could not remove the pusher: {pusher_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// One page of the public room directory, optionally filtered by a
     /// search term, continuing from `since` when given.
     pub async fn explore_rooms(

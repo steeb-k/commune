@@ -79,6 +79,33 @@ fun SettingsScreen(state: CommuneState) {
             onChange = { state.setTypingEnabled(it) },
         )
 
+        SettingsGroup("Notifications")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Delivery", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    when (state.pushMode) {
+                        io.github.steeb_k.commune.PushManager.MODE_UNIFIEDPUSH ->
+                            "Instant push (UnifiedPush)"
+                        io.github.steeb_k.commune.PushManager.MODE_SYNC ->
+                            "Background sync"
+                        else -> "Not chosen yet"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = {
+                state.reopenPushOnboarding()
+                state.closeSettings()
+            }) { Text("Change") }
+        }
+
         SettingsGroup("Encryption")
         RecoveryRow(state)
         Row(

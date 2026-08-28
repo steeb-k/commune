@@ -20,6 +20,7 @@ import io.github.steeb_k.commune.ui.MediaViewerScreen
 import io.github.steeb_k.commune.ui.MembersScreen
 import io.github.steeb_k.commune.ui.PinnedScreen
 import io.github.steeb_k.commune.ui.ExploreScreen
+import io.github.steeb_k.commune.ui.PushOnboardingScreen
 import io.github.steeb_k.commune.ui.HistoryScreen
 import io.github.steeb_k.commune.ui.RoomSearchScreen
 import io.github.steeb_k.commune.ui.RoomDetailsScreen
@@ -75,7 +76,9 @@ class MainActivity : ComponentActivity() {
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
-        SyncService.start(this)
+        if (PushManager.mode(this) != PushManager.MODE_UNIFIEDPUSH) {
+            SyncService.start(this)
+        }
 
         setContent {
             CommuneTheme {
@@ -110,6 +113,8 @@ private fun CommuneApp(state: CommuneState) {
                     isVideo = state.viewerIsVideo,
                     onClose = { state.closeViewer() },
                 )
+            } else if (state.pushMode == PushManager.MODE_UNSET) {
+                PushOnboardingScreen(state)
             } else if (state.exploreOpen) {
                 BackHandler { state.closeExplore() }
                 ExploreScreen(state)
