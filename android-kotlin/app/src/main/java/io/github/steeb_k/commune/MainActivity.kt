@@ -16,6 +16,7 @@ import io.github.steeb_k.commune.ui.CommuneTheme
 import io.github.steeb_k.commune.ui.LoadingScreen
 import io.github.steeb_k.commune.ui.LoginFlow
 import io.github.steeb_k.commune.ui.RoomScreen
+import io.github.steeb_k.commune.ui.SettingsScreen
 import io.github.steeb_k.commune.ui.SidebarScreen
 
 class MainActivity : ComponentActivity() {
@@ -49,7 +50,10 @@ private fun CommuneApp(state: CommuneState) {
         Phase.Login -> LoginFlow(state)
         Phase.Session -> {
             val room = state.openRoom
-            if (room == null) {
+            if (state.settingsOpen) {
+                BackHandler { state.closeSettings() }
+                SettingsScreen(state)
+            } else if (room == null) {
                 SidebarScreen(state)
             } else {
                 BackHandler { state.closeRoom() }

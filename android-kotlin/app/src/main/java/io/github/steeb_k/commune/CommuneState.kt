@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import io.github.steeb_k.commune.core.CoreApp
 import io.github.steeb_k.commune.core.FfiCoreConfig
 import io.github.steeb_k.commune.core.FfiRoom
+import io.github.steeb_k.commune.core.FfiSessionSettings
 import io.github.steeb_k.commune.core.FfiTimelineItem
 import io.github.steeb_k.commune.core.Native
 import io.github.steeb_k.commune.core.RoomListListener
@@ -52,6 +53,10 @@ class CommuneState(context: Context) {
         private set
     var typingUsers by mutableStateOf<List<String>>(emptyList())
         private set
+    var settingsOpen by mutableStateOf(false)
+        private set
+    var settings by mutableStateOf<FfiSessionSettings?>(null)
+        private set
 
     init {
         Native.seed(context.applicationContext)
@@ -70,6 +75,7 @@ class CommuneState(context: Context) {
                 main.post {
                     this@CommuneState.rooms = rooms
                     if (ownUserId == null) ownUserId = app.sessionUserId()
+                    if (settings == null) settings = app.sessionSettings()
                 }
             }
         })
@@ -156,6 +162,30 @@ class CommuneState(context: Context) {
         if (typing == wasTyping) return
         wasTyping = typing
         app.sendTyping(room.roomId, typing)
+    }
+
+    fun openSettings() {
+        settings = app.sessionSettings()
+        settingsOpen = true
+    }
+
+    fun closeSettings() {
+        settingsOpen = false
+    }
+
+    fun setNotificationsEnabled(enabled: Boolean) {
+        app.setNotificationsEnabled(enabled)
+        settings = app.sessionSettings()
+    }
+
+    fun setPublicReadReceiptsEnabled(enabled: Boolean) {
+        app.setPublicReadReceiptsEnabled(enabled)
+        settings = app.sessionSettings()
+    }
+
+    fun setTypingEnabled(enabled: Boolean) {
+        app.setTypingEnabled(enabled)
+        settings = app.sessionSettings()
     }
 
     private var markingRead = false

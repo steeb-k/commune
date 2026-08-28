@@ -737,11 +737,19 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_session_display_name(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_session_settings(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_session_user_id(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_notifications_enabled(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_room_list_listener(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_timeline_listener(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_typing_enabled(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_typing_listener(
     ): Short
@@ -804,11 +812,19 @@ external fun uniffi_commune_core_fn_method_coreapp_send_typing(`ptr`: Long,`room
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_session_display_name(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_method_coreapp_session_settings(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_method_coreapp_session_user_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_method_coreapp_set_notifications_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_coreapp_set_public_read_receipts_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_room_list_listener(`ptr`: Long,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_timeline_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_coreapp_set_typing_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_typing_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1001,13 +1017,25 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_session_display_name() != 11144.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_session_settings() != 41560.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_session_user_id() != 13656.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_notifications_enabled() != 49241.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled() != 61979.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_list_listener() != 44096.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_timeline_listener() != 32706.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_typing_enabled() != 23245.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_typing_listener() != 32255.toShort()) {
@@ -1552,9 +1580,24 @@ public interface CoreAppInterface {
     fun `sessionDisplayName`(): kotlin.String?
     
     /**
+     * The current session's settings.
+     */
+    fun `sessionSettings`(): FfiSessionSettings?
+    
+    /**
      * The Matrix user ID of the first ready session, if any.
      */
     fun `sessionUserId`(): kotlin.String?
+    
+    /**
+     * Set whether notifications are enabled for this session.
+     */
+    fun `setNotificationsEnabled`(`enabled`: kotlin.Boolean)
+    
+    /**
+     * Set whether read receipts are public for this session.
+     */
+    fun `setPublicReadReceiptsEnabled`(`enabled`: kotlin.Boolean)
     
     /**
      * Give the room list of the first ready session to the given listener,
@@ -1572,6 +1615,11 @@ public interface CoreAppInterface {
      * time, which is what one screen shows.
      */
     fun `setTimelineListener`(`roomId`: kotlin.String, `listener`: TimelineListener)
+    
+    /**
+     * Set whether typing notifications are sent for this session.
+     */
+    fun `setTypingEnabled`(`enabled`: kotlin.Boolean)
     
     /**
      * Give the typing users of the given room to the given listener, now
@@ -1952,6 +2000,22 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * The current session's settings.
+     */override fun `sessionSettings`(): FfiSessionSettings? {
+            return FfiConverterOptionalTypeFfiSessionSettings.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_session_settings(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
      * The Matrix user ID of the first ready session, if any.
      */override fun `sessionUserId`(): kotlin.String? {
             return FfiConverterOptionalString.lift(
@@ -1964,6 +2028,36 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     }
     )
     }
+    
+
+    
+    /**
+     * Set whether notifications are enabled for this session.
+     */override fun `setNotificationsEnabled`(`enabled`: kotlin.Boolean)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_set_notifications_enabled(
+        it,
+        FfiConverterBoolean.lower(`enabled`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Set whether read receipts are public for this session.
+     */override fun `setPublicReadReceiptsEnabled`(`enabled`: kotlin.Boolean)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_set_public_read_receipts_enabled(
+        it,
+        FfiConverterBoolean.lower(`enabled`),_status)
+}
+    }
+    
     
 
     
@@ -1998,6 +2092,21 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     UniffiLib.uniffi_commune_core_fn_method_coreapp_set_timeline_listener(
         it,
         FfiConverterString.lower(`roomId`),FfiConverterTypeTimelineListener.lower(`listener`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Set whether typing notifications are sent for this session.
+     */override fun `setTypingEnabled`(`enabled`: kotlin.Boolean)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_set_typing_enabled(
+        it,
+        FfiConverterBoolean.lower(`enabled`),_status)
 }
     }
     
@@ -3183,6 +3292,62 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
 
 
 
+/**
+ * The toggleable per-session settings, as the settings screen needs
+ * them.
+ */
+data class FfiSessionSettings (
+    /**
+     * Whether notifications are enabled for this session.
+     */
+    var `notificationsEnabled`: kotlin.Boolean
+    , 
+    /**
+     * Whether read receipts are public.
+     */
+    var `publicReadReceiptsEnabled`: kotlin.Boolean
+    , 
+    /**
+     * Whether typing notifications are sent.
+     */
+    var `typingEnabled`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiSessionSettings: FfiConverterRustBuffer<FfiSessionSettings> {
+    override fun read(buf: ByteBuffer): FfiSessionSettings {
+        return FfiSessionSettings(
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiSessionSettings) = (
+            FfiConverterBoolean.allocationSize(value.`notificationsEnabled`) +
+            FfiConverterBoolean.allocationSize(value.`publicReadReceiptsEnabled`) +
+            FfiConverterBoolean.allocationSize(value.`typingEnabled`)
+    )
+
+    override fun write(value: FfiSessionSettings, buf: ByteBuffer) {
+            FfiConverterBoolean.write(value.`notificationsEnabled`, buf)
+            FfiConverterBoolean.write(value.`publicReadReceiptsEnabled`, buf)
+            FfiConverterBoolean.write(value.`typingEnabled`, buf)
+    }
+}
+
+
+
 
 
 /**
@@ -3964,6 +4129,38 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
         } else {
             buf.put(1)
             FfiConverterString.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiSessionSettings: FfiConverterRustBuffer<FfiSessionSettings?> {
+    override fun read(buf: ByteBuffer): FfiSessionSettings? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiSessionSettings.read(buf)
+    }
+
+    override fun allocationSize(value: FfiSessionSettings?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiSessionSettings.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiSessionSettings?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiSessionSettings.write(value, buf)
         }
     }
 }

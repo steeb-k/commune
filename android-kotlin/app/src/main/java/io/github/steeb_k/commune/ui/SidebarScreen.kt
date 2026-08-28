@@ -97,7 +97,7 @@ private fun SidebarHeader(state: CommuneState) {
     ) {
         val userId = state.ownUserId ?: "?"
         val localpart = userId.removePrefix("@").substringBefore(':')
-        IconButton(onClick = {}) {
+        IconButton(onClick = { state.openSettings() }) {
             InitialsAvatar(identifier = userId, name = localpart, size = 32.dp)
         }
         Spacer(Modifier.weight(1f))
