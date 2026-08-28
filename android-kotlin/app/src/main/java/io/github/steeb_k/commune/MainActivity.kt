@@ -56,6 +56,13 @@ class MainActivity : ComponentActivity() {
             uri?.let { state.setAvatarFromUri(it) }
         }
 
+    private var micResult: ((Boolean) -> Unit)? = null
+    private val micPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            micResult?.invoke(granted)
+            micResult = null
+        }
+
     private val keyFilePicker =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let { state.importKeysFromUri(it) }
@@ -77,6 +84,16 @@ class MainActivity : ComponentActivity() {
         state.pickAttachment = { attachmentPicker.launch("*/*") }
         state.pickAvatar = { avatarPicker.launch("image/*") }
         state.pickKeyFile = { keyFilePicker.launch("*/*") }
+        state.ensureMicPermission = { onResult ->
+            if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                onResult(true)
+            } else {
+                micResult = onResult
+                micPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+            }
+        }
         state.scanQrCode = {
             qrScanner.launch(
                 com.journeyapps.barcodescanner.ScanOptions()

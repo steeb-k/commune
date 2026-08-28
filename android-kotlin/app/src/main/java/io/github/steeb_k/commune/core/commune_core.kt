@@ -813,6 +813,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_history_media(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_get_mxc_media(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_timeline_media(
@@ -877,9 +879,13 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_reply(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_send_sticker(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_thread_message(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_typing(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_send_voice_message(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_session_display_name(
     ): Short
@@ -922,6 +928,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_sign_out_device(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_space_children(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_sticker_packs(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_toggle_reaction(
     ): Short
@@ -1008,6 +1016,8 @@ external fun uniffi_commune_core_fn_method_coreapp_get_avatar(`ptr`: Long,`mxcUr
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_history_media(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_get_mxc_media(`ptr`: Long,`mxc`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,`size`: Int,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_timeline_media(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,
@@ -1072,10 +1082,14 @@ external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roo
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_reply(`ptr`: Long,`roomId`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_send_sticker(`ptr`: Long,`roomId`: RustBuffer.ByValue,`sticker`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_thread_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`rootEventId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_typing(`ptr`: Long,`roomId`: RustBuffer.ByValue,`isTyping`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_send_voice_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,`durationMs`: Long,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_session_display_name(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_method_coreapp_session_settings(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1117,6 +1131,8 @@ external fun uniffi_commune_core_fn_method_coreapp_set_verification_listener(`pt
 external fun uniffi_commune_core_fn_method_coreapp_sign_out_device(`ptr`: Long,`deviceId`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_space_children(`ptr`: Long,`spaceId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_sticker_packs(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_toggle_reaction(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,
 ): Long
@@ -1354,6 +1370,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_history_media() != 7757.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_get_mxc_media() != 5652.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_room_avatar() != 19575.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1450,10 +1469,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_reply() != 33697.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_sticker() != 59154.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_thread_message() != 26693.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_typing() != 23463.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_voice_message() != 1433.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_session_display_name() != 11144.toShort()) {
@@ -1517,6 +1542,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_space_children() != 57237.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_sticker_packs() != 63075.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_toggle_reaction() != 55807.toShort()) {
@@ -2150,6 +2178,12 @@ public interface CoreAppInterface {
     suspend fun `getHistoryMedia`(`roomId`: kotlin.String, `eventId`: kotlin.String): kotlin.String?
     
     /**
+     * Fetch the media behind a plain `mxc:` URI into a file, returning
+     * its path — sticker previews, mostly.
+     */
+    suspend fun `getMxcMedia`(`mxc`: kotlin.String): kotlin.String?
+    
+    /**
      * Fetch the avatar of the given room into a file, returning its path.
      */
     suspend fun `getRoomAvatar`(`roomId`: kotlin.String, `size`: kotlin.UInt): kotlin.String?
@@ -2347,6 +2381,11 @@ public interface CoreAppInterface {
     suspend fun `sendReply`(`roomId`: kotlin.String, `inReplyTo`: kotlin.String, `body`: kotlin.String)
     
     /**
+     * Send a sticker from a pack.
+     */
+    suspend fun `sendSticker`(`roomId`: kotlin.String, `sticker`: FfiSticker)
+    
+    /**
      * Send a plain-text message into the thread rooted at the given
      * event.
      */
@@ -2358,6 +2397,11 @@ public interface CoreAppInterface {
      * Owned `String` because the FFI hands one over.
      */
     fun `sendTyping`(`roomId`: kotlin.String, `isTyping`: kotlin.Boolean)
+    
+    /**
+     * Send a recorded voice message.
+     */
+    suspend fun `sendVoiceMessage`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String, `durationMs`: kotlin.ULong)
     
     /**
      * The display name of the first ready session's user, if it is known.
@@ -2487,6 +2531,13 @@ public interface CoreAppInterface {
      * The rooms inside the given space, from the server's hierarchy.
      */
     suspend fun `spaceChildren`(`spaceId`: kotlin.String): List<FfiSpaceChild>
+    
+    /**
+     * The sticker packs on the account: the personal pack from
+     * `im.ponies.user_emotes`, then every pack the account follows
+     * through `im.ponies.emote_rooms`.
+     */
+    suspend fun `stickerPacks`(): List<FfiStickerPack>
     
     /**
      * Toggle the given reaction on the given event in the given room.
@@ -3013,6 +3064,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_get_history_media(
                 uniffiHandle,
                 FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Fetch the media behind a plain `mxc:` URI into a file, returning
+     * its path — sticker previews, mostly.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getMxcMedia`(`mxc`: kotlin.String) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_get_mxc_media(
+                uniffiHandle,
+                FfiConverterString.lower(`mxc`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -3816,6 +3891,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Send a sticker from a pack.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `sendSticker`(`roomId`: kotlin.String, `sticker`: FfiSticker) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_send_sticker(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterTypeFfiSticker.lower(`sticker`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Send a plain-text message into the thread rooted at the given
      * event.
      */
@@ -3856,6 +3956,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     }
     
     
+
+    
+    /**
+     * Send a recorded voice message.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `sendVoiceMessage`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String, `durationMs`: kotlin.ULong) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_send_voice_message(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`filePath`),FfiConverterString.lower(`mimeType`),FfiConverterULong.lower(`durationMs`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
     
     /**
@@ -4275,6 +4400,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { FfiConverterSequenceTypeFfiSpaceChild.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The sticker packs on the account: the personal pack from
+     * `im.ponies.user_emotes`, then every pack the account follows
+     * through `im.ponies.emote_rooms`.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `stickerPacks`() : List<FfiStickerPack> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_sticker_packs(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeFfiStickerPack.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
     )
     }
 
@@ -6905,6 +7055,16 @@ data class FfiRoom (
      * The topic of the room, if any.
      */
     var `topic`: kotlin.String?
+    , 
+    /**
+     * Who sent the latest message, when one is known and readable.
+     */
+    var `latestEventSender`: kotlin.String?
+    , 
+    /**
+     * The body of the latest message, when one is known and readable.
+     */
+    var `latestEventBody`: kotlin.String?
     
 ){
     
@@ -6932,6 +7092,8 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterOptionalString.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -6946,7 +7108,9 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterULong.allocationSize(value.`latestActivity`) +
             FfiConverterOptionalString.allocationSize(value.`avatarUrl`) +
             FfiConverterULong.allocationSize(value.`joinedMembersCount`) +
-            FfiConverterOptionalString.allocationSize(value.`topic`)
+            FfiConverterOptionalString.allocationSize(value.`topic`) +
+            FfiConverterOptionalString.allocationSize(value.`latestEventSender`) +
+            FfiConverterOptionalString.allocationSize(value.`latestEventBody`)
     )
 
     override fun write(value: FfiRoom, buf: ByteBuffer) {
@@ -6961,6 +7125,8 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterOptionalString.write(value.`avatarUrl`, buf)
             FfiConverterULong.write(value.`joinedMembersCount`, buf)
             FfiConverterOptionalString.write(value.`topic`, buf)
+            FfiConverterOptionalString.write(value.`latestEventSender`, buf)
+            FfiConverterOptionalString.write(value.`latestEventBody`, buf)
     }
 }
 
@@ -7206,6 +7372,124 @@ public object FfiConverterTypeFfiSpaceChild: FfiConverterRustBuffer<FfiSpaceChil
             FfiConverterULong.write(value.`numJoinedMembers`, buf)
             FfiConverterBoolean.write(value.`isJoined`, buf)
             FfiConverterBoolean.write(value.`isSpace`, buf)
+    }
+}
+
+
+
+/**
+ * One sticker of a pack.
+ */
+data class FfiSticker (
+    /**
+     * The description, sent as the event body.
+     */
+    var `body`: kotlin.String
+    , 
+    /**
+     * The `mxc:` URI of the image.
+     */
+    var `url`: kotlin.String
+    , 
+    /**
+     * The width in pixels, when the pack declares one.
+     */
+    var `width`: kotlin.UInt?
+    , 
+    /**
+     * The height in pixels, when the pack declares one.
+     */
+    var `height`: kotlin.UInt?
+    , 
+    /**
+     * The MIME type, when the pack declares one.
+     */
+    var `mimeType`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiSticker: FfiConverterRustBuffer<FfiSticker> {
+    override fun read(buf: ByteBuffer): FfiSticker {
+        return FfiSticker(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalUInt.read(buf),
+            FfiConverterOptionalUInt.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiSticker) = (
+            FfiConverterString.allocationSize(value.`body`) +
+            FfiConverterString.allocationSize(value.`url`) +
+            FfiConverterOptionalUInt.allocationSize(value.`width`) +
+            FfiConverterOptionalUInt.allocationSize(value.`height`) +
+            FfiConverterOptionalString.allocationSize(value.`mimeType`)
+    )
+
+    override fun write(value: FfiSticker, buf: ByteBuffer) {
+            FfiConverterString.write(value.`body`, buf)
+            FfiConverterString.write(value.`url`, buf)
+            FfiConverterOptionalUInt.write(value.`width`, buf)
+            FfiConverterOptionalUInt.write(value.`height`, buf)
+            FfiConverterOptionalString.write(value.`mimeType`, buf)
+    }
+}
+
+
+
+/**
+ * A sticker pack from the account's image packs.
+ */
+data class FfiStickerPack (
+    /**
+     * The display name of the pack.
+     */
+    var `name`: kotlin.String
+    , 
+    /**
+     * The stickers of the pack.
+     */
+    var `stickers`: List<FfiSticker>
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiStickerPack: FfiConverterRustBuffer<FfiStickerPack> {
+    override fun read(buf: ByteBuffer): FfiStickerPack {
+        return FfiStickerPack(
+            FfiConverterString.read(buf),
+            FfiConverterSequenceTypeFfiSticker.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiStickerPack) = (
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterSequenceTypeFfiSticker.allocationSize(value.`stickers`)
+    )
+
+    override fun write(value: FfiStickerPack, buf: ByteBuffer) {
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterSequenceTypeFfiSticker.write(value.`stickers`, buf)
     }
 }
 
@@ -8713,6 +8997,38 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
 /**
  * @suppress
  */
+public object FfiConverterOptionalUInt: FfiConverterRustBuffer<kotlin.UInt?> {
+    override fun read(buf: ByteBuffer): kotlin.UInt? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterUInt.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.UInt?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterUInt.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.UInt?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterUInt.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalULong: FfiConverterRustBuffer<kotlin.ULong?> {
     override fun read(buf: ByteBuffer): kotlin.ULong? {
         if (buf.get().toInt() == 0) {
@@ -9235,6 +9551,62 @@ public object FfiConverterSequenceTypeFfiSpaceChild: FfiConverterRustBuffer<List
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiSpaceChild.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiSticker: FfiConverterRustBuffer<List<FfiSticker>> {
+    override fun read(buf: ByteBuffer): List<FfiSticker> {
+        val len = buf.getInt()
+        return List<FfiSticker>(len) {
+            FfiConverterTypeFfiSticker.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiSticker>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiSticker.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiSticker>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiSticker.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiStickerPack: FfiConverterRustBuffer<List<FfiStickerPack>> {
+    override fun read(buf: ByteBuffer): List<FfiStickerPack> {
+        val len = buf.getInt()
+        return List<FfiStickerPack>(len) {
+            FfiConverterTypeFfiStickerPack.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiStickerPack>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiStickerPack.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiStickerPack>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiStickerPack.write(it, buf)
         }
     }
 }

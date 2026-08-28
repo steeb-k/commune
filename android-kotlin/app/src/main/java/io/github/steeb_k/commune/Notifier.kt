@@ -58,12 +58,21 @@ class Notifier(private val context: Context) {
             PendingIntent.FLAG_IMMUTABLE,
         )
         val name = io.github.steeb_k.commune.ui.roomName(room)
-        val text = if (count == 1uL) "1 new message" else "$count new messages"
+        val countText = if (count == 1uL) "1 new message" else "$count new messages"
+        // The latest message, when it is readable: "sender: body". A
+        // direct chat's name already names the sender.
+        val preview = room.latestEventBody?.let { body ->
+            val sender = room.latestEventSender
+                ?.substringAfter("@")?.substringBefore(":")
+            if (sender != null && !room.isDirect) "$sender: $body" else body
+        }
 
         return Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notify_symbolic)
             .setContentTitle(name)
-            .setContentText(text)
+            .setContentText(preview ?: countText)
+            .setStyle(Notification.BigTextStyle().bigText(preview ?: countText))
+            .setSubText(if (preview != null) countText else null)
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .setNumber(count.toInt())

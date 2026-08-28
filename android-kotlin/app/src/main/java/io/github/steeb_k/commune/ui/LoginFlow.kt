@@ -58,7 +58,13 @@ fun LoginFlow(state: CommuneState) {
             BackHandler { page = LoginPage.Homeserver }
             PasswordPage(
                 state = state,
-                homeserver = if (useMatrixOrg) "https://matrix.org" else homeserver,
+                homeserver = if (useMatrixOrg) {
+                    "https://matrix.org"
+                } else {
+                    homeserver.trim().let {
+                        if (it.contains("://")) it else "https://" + it
+                    }
+                },
             )
         }
     }
@@ -88,7 +94,14 @@ private fun LoginColumn(content: @Composable () -> Unit) {
 @Composable
 private fun Greeter(onLogIn: () -> Unit) {
     LoginColumn {
-        InitialsAvatar(identifier = "commune", name = "Commune", size = 96.dp)
+        androidx.compose.material3.Icon(
+            androidx.compose.ui.res.painterResource(
+                io.github.steeb_k.commune.R.drawable.ic_app_symbolic
+            ),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(96.dp),
+        )
         Spacer(Modifier.height(24.dp))
         Text(
             "Welcome to Commune",
@@ -146,7 +159,18 @@ private fun HomeserverPage(
                 value = homeserver,
                 onValueChange = onHomeserver,
                 label = { Text("Homeserver URL") },
+                placeholder = { Text("https://example.org") },
                 singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Uri,
+                ),
+                supportingText = if (
+                    homeserver.isNotBlank() && !homeserver.contains("://")
+                ) {
+                    { Text("Will connect to https://${homeserver.trim()}") }
+                } else {
+                    null
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
         }

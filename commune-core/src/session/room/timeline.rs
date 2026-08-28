@@ -484,6 +484,49 @@ impl Timeline {
         }
     }
 
+    /// Send a recorded voice message: an audio attachment with its
+    /// duration and the voice-message marker.
+    pub async fn send_voice(
+        &self,
+        path: std::path::PathBuf,
+        mime: mime::Mime,
+        duration_ms: u64,
+    ) -> Result<(), ()> {
+        use matrix_sdk::attachment::{AttachmentInfo, BaseAudioInfo};
+        use matrix_sdk_ui::timeline::{AttachmentConfig, AttachmentSource};
+
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return Err(());
+        };
+
+        let size = std::fs::metadata(&path)
+            .ok()
+            .and_then(|metadata| metadata.len().try_into().ok());
+        let config = AttachmentConfig {
+            info: Some(AttachmentInfo::Voice(BaseAudioInfo {
+                duration: Some(std::time::Duration::from_millis(duration_ms)),
+                size,
+                waveform: None,
+            })),
+            ..Default::default()
+        };
+
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .send_attachment(AttachmentSource::File(path), mime, config)
+                .use_send_queue()
+                .await
+        });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(()) => Ok(()),
+            Err(send_error) => {
+                error!("Could not send voice message: {send_error}");
+                Err(())
+            }
+        }
+    }
+
     /// Send already-downloaded image bytes as an attachment, with their
     /// dimensions.
     ///

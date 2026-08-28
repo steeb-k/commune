@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.foundation.Image
@@ -98,13 +99,18 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
             InviteBanner(state)
         } else {
             ComposerActionBar(state)
-            Composer(
-                onSend = { state.sendFromComposer(it) },
-                onTyping = { state.setTyping(it) },
-                onAttach = state.pickAttachment,
-                onGif = { state.openGifPicker() },
-                members = state.composerMembers,
-            )
+            if (state.recordingVoice) {
+                RecordingBar(state)
+            } else {
+                Composer(
+                    onSend = { state.sendFromComposer(it) },
+                    onTyping = { state.setTyping(it) },
+                    onAttach = state.pickAttachment,
+                    onGif = { state.openGifPicker() },
+                    onVoice = { state.startVoiceRecording() },
+                    members = state.composerMembers,
+                )
+            }
         }
     }
 
@@ -785,6 +791,7 @@ internal fun Composer(
     onTyping: (Boolean) -> Unit,
     onAttach: (() -> Unit)? = null,
     onGif: (() -> Unit)? = null,
+    onVoice: (() -> Unit)? = null,
     members: List<io.github.steeb_k.commune.core.FfiMember> = emptyList(),
 ) {
     var draft by remember {
@@ -866,20 +873,84 @@ internal fun Composer(
                 .background(MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center,
         ) {
-            IconButton(
-                onClick = {
-                    val body = draft.text.trim()
-                    if (body.isNotEmpty()) {
-                        draft = androidx.compose.ui.text.input.TextFieldValue("")
-                        onSend(body)
-                    }
-                },
-            ) {
+            if (draft.text.isBlank() && onVoice != null) {
+                IconButton(onClick = { onVoice() }) {
+                    Icon(
+                        androidx.compose.material.icons.Icons.Filled.Mic,
+                        contentDescription = "Record a voice message",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
+            } else {
+                IconButton(
+                    onClick = {
+                        val body = draft.text.trim()
+                        if (body.isNotEmpty()) {
+                            draft = androidx.compose.ui.text.input.TextFieldValue("")
+                            onSend(body)
+                        }
+                    },
+                ) {
+                    Icon(
+                        androidx.compose.ui.res.painterResource(
+                            io.github.steeb_k.commune.R.drawable.ic_send_symbolic
+                        ),
+                        contentDescription = "Send",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/// While a voice message records: discard on the left, a live red dot
+/// and elapsed time, send on the right.
+@Composable
+private fun RecordingBar(state: CommuneState) {
+    var elapsed by remember { mutableStateOf(0L) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            elapsed =
+                (android.os.SystemClock.elapsedRealtime() - state.recordingStarted) / 1000
+            kotlinx.coroutines.delay(250)
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = { state.stopVoiceRecording(send = false) }) {
+            Icon(Icons.Filled.Close, contentDescription = "Discard recording")
+        }
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.error),
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            "Recording…  %d:%02d".format(elapsed / 60, elapsed % 60),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center,
+        ) {
+            IconButton(onClick = { state.stopVoiceRecording(send = true) }) {
                 Icon(
                     androidx.compose.ui.res.painterResource(
                         io.github.steeb_k.commune.R.drawable.ic_send_symbolic
                     ),
-                    contentDescription = "Send",
+                    contentDescription = "Send voice message",
                     tint = MaterialTheme.colorScheme.onPrimary,
                 )
             }

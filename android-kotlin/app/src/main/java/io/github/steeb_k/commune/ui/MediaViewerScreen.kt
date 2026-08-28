@@ -46,6 +46,7 @@ fun MediaViewerScreen(path: String, isVideo: Boolean = false, onClose: () -> Uni
         MediaImage(
             path,
             contentDescription = null,
+            targetSizePx = 2160,
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer(

@@ -25,6 +25,8 @@ import io.github.steeb_k.commune.core.FfiPublicRoom
 import io.github.steeb_k.commune.core.FfiRoomCategory
 import io.github.steeb_k.commune.core.FfiSearchResult
 import io.github.steeb_k.commune.core.FfiSessionSettings
+import io.github.steeb_k.commune.core.FfiSticker
+import io.github.steeb_k.commune.core.FfiStickerPack
 import io.github.steeb_k.commune.core.FfiSpaceChild
 import io.github.steeb_k.commune.core.FfiTargetRoomCategory
 import io.github.steeb_k.commune.core.FfiTimelineItem
@@ -1054,6 +1056,140 @@ class CommuneState(context: Context) {
 
     fun clearImportResult() {
         importResult = null
+    }
+
+    // Sticker packs from the account's image packs, for the picker.
+    var stickerPacks by mutableStateOf<List<FfiStickerPack>>(emptyList())
+        private set
+    var stickerPacksLoaded by mutableStateOf(false)
+        private set
+    val stickerMedia = mutableStateMapOf<String, String>()
+
+    fun loadStickerPacks() {
+        thread {
+            runBlocking {
+                val packs = try {
+                    app.stickerPacks()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                main.post {
+                    stickerPacks = packs
+                    stickerPacksLoaded = true
+                }
+                for (pack in packs) {
+                    for (sticker in pack.stickers) {
+                        if (stickerMedia.containsKey(sticker.url)) continue
+                        val path = try {
+                            app.getMxcMedia(sticker.url)
+                        } catch (_: Exception) {
+                            null
+                        } ?: continue
+                        main.post { stickerMedia[sticker.url] = path }
+                    }
+                }
+            }
+        }
+    }
+
+    fun sendSticker(sticker: FfiSticker) {
+        val room = openRoom ?: return
+        closeGifPicker()
+        thread {
+            runBlocking {
+                try {
+                    app.sendSticker(room.roomId, sticker)
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
+    // Voice messages: MediaRecorder into the outgoing cache, then the
+    // core sends it with the voice marker.
+    var recordingVoice by mutableStateOf(false)
+        private set
+    private var recorder: android.media.MediaRecorder? = null
+    private var recordingFile: java.io.File? = null
+    var recordingStarted = 0L
+        private set
+
+    /// Set by the activity: asks for the microphone permission; calls
+    /// back with whether it is granted.
+    var ensureMicPermission: ((onResult: (Boolean) -> Unit) -> Unit)? = null
+
+    fun startVoiceRecording() {
+        if (recordingVoice) return
+        val begin = {
+            try {
+                val dir = java.io.File(appContext.cacheDir, "outgoing")
+                dir.mkdirs()
+                val file = java.io.File(dir, "voice-${System.currentTimeMillis()}.m4a")
+                @Suppress("DEPRECATION")
+                val newRecorder = if (android.os.Build.VERSION.SDK_INT >= 31) {
+                    android.media.MediaRecorder(appContext)
+                } else {
+                    android.media.MediaRecorder()
+                }
+                newRecorder.setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
+                newRecorder.setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
+                newRecorder.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
+                newRecorder.setAudioEncodingBitRate(64000)
+                newRecorder.setAudioSamplingRate(44100)
+                newRecorder.setOutputFile(file.absolutePath)
+                newRecorder.prepare()
+                newRecorder.start()
+                recorder = newRecorder
+                recordingFile = file
+                recordingStarted = android.os.SystemClock.elapsedRealtime()
+                recordingVoice = true
+            } catch (_: Exception) {
+                recorder = null
+                recordingFile = null
+            }
+        }
+        val ask = ensureMicPermission
+        if (ask != null) {
+            ask { granted -> if (granted) begin() }
+        } else {
+            begin()
+        }
+    }
+
+    fun stopVoiceRecording(send: Boolean) {
+        val activeRecorder = recorder ?: return
+        val file = recordingFile
+        val durationMs = android.os.SystemClock.elapsedRealtime() - recordingStarted
+        recorder = null
+        recordingFile = null
+        recordingVoice = false
+        try {
+            activeRecorder.stop()
+        } catch (_: Exception) {
+            activeRecorder.release()
+            file?.delete()
+            return
+        }
+        activeRecorder.release()
+
+        val room = openRoom
+        if (!send || room == null || file == null || durationMs < 500) {
+            file?.delete()
+            return
+        }
+        thread {
+            runBlocking {
+                try {
+                    app.sendVoiceMessage(
+                        room.roomId,
+                        file.absolutePath,
+                        "audio/mp4",
+                        durationMs.toULong(),
+                    )
+                } catch (_: Exception) {
+                }
+            }
+        }
     }
 
     fun openRoomDetails() {
