@@ -18,6 +18,7 @@
 //! [`RoomDisplayName`] — "Empty Room (was X)" is the UI's sentence to make.
 
 mod category;
+mod member;
 mod timeline;
 
 use std::sync::{
@@ -48,6 +49,7 @@ use tracing::{debug, error, warn};
 
 pub use self::{
     category::{RoomCategory, RoomHighlight, TargetRoomCategory},
+    member::{Member, MemberList, MemberRole, Membership},
     timeline::{ReceiptPosition, Timeline, TimelineFocusKind},
 };
 use crate::{
@@ -179,6 +181,8 @@ struct RoomInner {
     room_info_handle: Mutex<Option<AbortHandle>>,
     /// The live timeline of this room.
     live_timeline: std::sync::OnceLock<Timeline>,
+    /// The member list of this room, built on first use.
+    member_list: std::sync::OnceLock<MemberList>,
     /// The users currently typing in this room, our own user excluded.
     typing: SharedObservable<Vec<OwnedUserId>>,
     /// The typing subscription's event-handler guard and task.
@@ -235,6 +239,7 @@ impl Room {
             attempted_auto_join: AtomicBool::new(false),
             room_info_handle: Mutex::new(None),
             live_timeline: std::sync::OnceLock::new(),
+            member_list: std::sync::OnceLock::new(),
             typing: SharedObservable::new(Vec::new()),
             typing_guard: Mutex::new(None),
             typing_handle: Mutex::new(None),
@@ -494,6 +499,25 @@ impl Room {
                 let timeline = Timeline::new(self.inner.matrix_room.clone());
                 RoomInner::watch_read_state(&self.inner, &timeline);
                 timeline
+            })
+            .clone()
+    }
+
+    /// The member list of this room.
+    ///
+    /// Built on first use; loading starts then, and room-info updates
+    /// keep it fresh afterwards.
+    #[must_use]
+    pub fn member_list(&self) -> MemberList {
+        self.inner
+            .member_list
+            .get_or_init(|| {
+                let list = MemberList::new(self.inner.matrix_room.clone());
+                let load_list = list.clone();
+                RUNTIME.spawn(async move {
+                    load_list.load().await;
+                });
+                list
             })
             .clone()
     }
@@ -1376,6 +1400,12 @@ impl RoomInner {
         Self::update_tombstone(self);
         self.set_joined_members_count(room_info.joined_members_count());
         self.update_is_encrypted().await;
+
+        // Memberships or power levels may be what changed; a built member
+        // list follows along.
+        if let Some(member_list) = self.member_list.get() {
+            member_list.refresh().await;
+        }
 
         // Without a built timeline there is no MSC2654 walk to decide
         // `is_read`, so for rooms that were never opened the server's own

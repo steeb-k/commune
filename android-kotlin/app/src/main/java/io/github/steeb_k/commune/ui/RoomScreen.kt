@@ -120,8 +120,10 @@ private fun RoomHeader(state: CommuneState, room: FfiRoom, onBack: () -> Unit) {
             modifier = Modifier.weight(1f),
             maxLines = 1,
         )
-        RoomAvatar(state, room, size = 32.dp)
-        Spacer(Modifier.size(8.dp))
+        IconButton(onClick = { state.openRoomDetails() }) {
+            RoomAvatar(state, room, size = 32.dp)
+        }
+        Spacer(Modifier.size(4.dp))
     }
 }
 
