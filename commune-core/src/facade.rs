@@ -201,6 +201,10 @@ pub enum FfiTimelineItem {
     Event {
         /// The unique ID of the item within its timeline.
         unique_id: String,
+        /// The globally unique event ID, once the server assigned one.
+        event_id: Option<String>,
+        /// The number of replies in the thread rooted here, if any.
+        thread_replies: u64,
         /// The user that sent the event.
         sender: String,
         /// The display name of the sender, if it is known.
@@ -347,6 +351,8 @@ pub struct CoreApp {
     timeline_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
     /// The task pushing typing updates to the foreign listener.
     typing_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
+    /// The task pushing thread-timeline updates to the foreign listener.
+    thread_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
 }
 
 #[uniffi::export]
@@ -360,6 +366,7 @@ impl CoreApp {
             listener_handle: Mutex::new(None),
             timeline_listener_handle: Mutex::new(None),
             typing_listener_handle: Mutex::new(None),
+            thread_listener_handle: Mutex::new(None),
         })
     }
 
@@ -685,6 +692,109 @@ impl CoreApp {
             .expect("task was not aborted");
     }
 
+    /// Give the thread rooted at the given event to the given listener,
+    /// now and on every change. Replaces any previous thread listener.
+    pub fn set_thread_listener(
+        &self,
+        room_id: String,
+        root_event_id: String,
+        listener: Arc<dyn TimelineListener>,
+    ) {
+        let session = self.first_ready_session();
+
+        let handle = RUNTIME
+            .spawn(async move {
+                let Some(session) = session else { return };
+                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
+                    return;
+                };
+                let Ok(thread_root) = ruma::EventId::parse(&root_event_id) else {
+                    return;
+                };
+                let Some(room) = session.room_list().get(&room_id) else {
+                    return;
+                };
+
+                let timeline = room.thread_timeline(thread_root);
+                let Some((items, mut stream)) = timeline.subscribe_items().await else {
+                    return;
+                };
+
+                listener.on_update(items.iter().map(|item| ffi_timeline_item(item)).collect());
+
+                let mut items = items;
+                while let Some(diffs) = stream.next().await {
+                    for diff in diffs {
+                        diff.apply(&mut items);
+                    }
+                    listener.on_update(items.iter().map(|item| ffi_timeline_item(item)).collect());
+                }
+            })
+            .abort_handle();
+
+        if let Some(previous) = self
+            .thread_listener_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .replace(handle)
+        {
+            previous.abort();
+        }
+    }
+
+    /// Stop pushing thread updates.
+    pub fn clear_thread_listener(&self) {
+        if let Some(handle) = self
+            .thread_listener_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .take()
+        {
+            handle.abort();
+        }
+    }
+
+    /// Send a plain-text message into the thread rooted at the given
+    /// event.
+    pub async fn send_thread_message(
+        &self,
+        room_id: String,
+        root_event_id: String,
+        body: String,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let thread_root =
+                    ruma::EventId::parse(&root_event_id).map_err(|_| CoreError::Failed {
+                        msg: "Invalid event ID".to_owned(),
+                    })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                room.thread_timeline(thread_root)
+                    .send_text(body)
+                    .await
+                    .map_err(|()| CoreError::Failed {
+                        msg: "Could not send the message".to_owned(),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Paginate the given room's timeline backwards.
     pub async fn paginate_backwards(&self, room_id: String) {
         let Some(session) = self.first_ready_session() else {
@@ -917,8 +1027,18 @@ fn ffi_timeline_item(item: &matrix_sdk_ui::timeline::TimelineItem) -> FfiTimelin
                 _ => (FfiEventKind::Unsupported, String::new()),
             };
 
+            let thread_replies = match event.content() {
+                TimelineItemContent::MsgLike(msg_like) => msg_like
+                    .thread_summary
+                    .as_ref()
+                    .map_or(0, |summary| u64::from(summary.num_replies)),
+                _ => 0,
+            };
+
             FfiTimelineItem::Event {
                 unique_id: item.unique_id().0.clone(),
+                event_id: event.event_id().map(ToString::to_string),
+                thread_replies,
                 sender: event.sender().to_string(),
                 sender_display_name,
                 timestamp: event.timestamp().get().into(),

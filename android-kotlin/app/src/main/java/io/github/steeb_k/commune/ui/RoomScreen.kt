@@ -5,6 +5,7 @@
 package io.github.steeb_k.commune.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,7 +65,13 @@ private val DATE = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
 fun RoomScreen(state: CommuneState, room: FfiRoom) {
     Column(modifier = Modifier.fillMaxSize().imePadding()) {
         RoomHeader(state, room, onBack = { state.closeRoom() })
-        Timeline(state, room, modifier = Modifier.weight(1f))
+        Timeline(
+            state,
+            room,
+            items = state.timeline,
+            modifier = Modifier.weight(1f),
+            onOpenThread = { state.openThread(it) },
+        )
         TypingLine(state.typingUsers)
         Composer(
             onSend = { state.send(it) },
@@ -118,8 +125,13 @@ private fun RoomHeader(state: CommuneState, room: FfiRoom, onBack: () -> Unit) {
 }
 
 @Composable
-private fun Timeline(state: CommuneState, room: FfiRoom, modifier: Modifier) {
-    val items = state.timeline
+internal fun Timeline(
+    state: CommuneState,
+    room: FfiRoom,
+    items: List<FfiTimelineItem>,
+    modifier: Modifier,
+    onOpenThread: ((String) -> Unit)? = null,
+) {
     val listState = rememberLazyListState()
 
     // Open at the newest message, and follow it.
@@ -147,6 +159,7 @@ private fun Timeline(state: CommuneState, room: FfiRoom, modifier: Modifier) {
                             room,
                             item,
                             showHeader = item.sender != previousSender,
+                            onOpenThread = onOpenThread,
                         )
                     } else {
                         StateLine(item)
@@ -162,7 +175,7 @@ private fun Timeline(state: CommuneState, room: FfiRoom, modifier: Modifier) {
     }
 }
 
-private fun FfiEventKind.isMessageLike(): Boolean = when (this) {
+internal fun FfiEventKind.isMessageLike(): Boolean = when (this) {
     is FfiEventKind.Text,
     is FfiEventKind.Media,
     is FfiEventKind.Sticker,
@@ -175,12 +188,12 @@ private fun FfiEventKind.isMessageLike(): Boolean = when (this) {
 }
 
 /// A short name for a Matrix user ID: the localpart.
-private fun localpart(userId: String): String =
+internal fun localpart(userId: String): String =
     userId.removePrefix("@").substringBefore(':')
 
 /// The sentence for a state event — the words the GTK app's state rows
 /// speak, minimally.
-private fun stateSentence(event: FfiTimelineItem.Event): String {
+internal fun stateSentence(event: FfiTimelineItem.Event): String {
     val sender = event.senderDisplayName ?: localpart(event.sender)
 
     return when (val kind = event.kind) {
@@ -214,11 +227,12 @@ private fun stateSentence(event: FfiTimelineItem.Event): String {
 /// accent at 25% on the right with the timestamp outermost, others neutral
 /// on the left.
 @Composable
-private fun MessageBubble(
+internal fun MessageBubble(
     state: CommuneState,
     room: FfiRoom,
     event: FfiTimelineItem.Event,
     showHeader: Boolean,
+    onOpenThread: ((String) -> Unit)? = null,
 ) {
     val own = event.isOwn
     val bubbleColor = if (own) {
@@ -311,6 +325,19 @@ private fun MessageBubble(
                     MaterialTheme.colorScheme.onSurface
                 },
             )
+
+            val eventId = event.eventId
+            if (event.threadReplies > 0uL && eventId != null && onOpenThread != null) {
+                val label = if (event.threadReplies == 1uL) "1 reply" else "${event.threadReplies} replies"
+                Text(
+                    "\uD83D\uDCAC $label",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .clickable { onOpenThread(eventId) },
+                )
+            }
         }
     }
 }
@@ -327,7 +354,7 @@ private fun BubbleTimestamp(time: String) {
 /// A state event, as a dim centered line — the sentence itself arrives with
 /// the state-event humanization chunk.
 @Composable
-private fun StateLine(event: FfiTimelineItem.Event) {
+internal fun StateLine(event: FfiTimelineItem.Event) {
     Text(
         stateSentence(event),
         style = MaterialTheme.typography.bodySmall,
@@ -340,7 +367,7 @@ private fun StateLine(event: FfiTimelineItem.Event) {
 }
 
 @Composable
-private fun CenteredDivider(label: String) {
+internal fun CenteredDivider(label: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -361,7 +388,7 @@ private fun CenteredDivider(label: String) {
 /// The composer: attach and emoji at the start (placeholders until their
 /// chunks), the entry, and the round send button — the GTK toolbar row.
 @Composable
-private fun Composer(onSend: (String) -> Unit, onTyping: (Boolean) -> Unit) {
+internal fun Composer(onSend: (String) -> Unit, onTyping: (Boolean) -> Unit) {
     var draft by remember { mutableStateOf("") }
 
     Row(

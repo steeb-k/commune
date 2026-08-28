@@ -17,6 +17,7 @@ import io.github.steeb_k.commune.ui.LoadingScreen
 import io.github.steeb_k.commune.ui.LoginFlow
 import io.github.steeb_k.commune.ui.RoomScreen
 import io.github.steeb_k.commune.ui.SettingsScreen
+import io.github.steeb_k.commune.ui.ThreadScreen
 import io.github.steeb_k.commune.ui.SidebarScreen
 
 class MainActivity : ComponentActivity() {
@@ -55,6 +56,9 @@ private fun CommuneApp(state: CommuneState) {
                 SettingsScreen(state)
             } else if (room == null) {
                 SidebarScreen(state)
+            } else if (state.openThreadRoot != null) {
+                BackHandler { state.closeThread() }
+                ThreadScreen(state, room)
             } else {
                 BackHandler { state.closeRoom() }
                 RoomScreen(state, room)

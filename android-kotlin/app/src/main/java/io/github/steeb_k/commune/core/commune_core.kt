@@ -713,6 +713,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_func_init_core(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_clear_thread_listener(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_timeline_media(
@@ -733,6 +735,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_message(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_send_thread_message(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_typing(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_session_display_name(
@@ -746,6 +750,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_room_list_listener(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_thread_listener(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_timeline_listener(
     ): Short
@@ -788,6 +794,8 @@ external fun uniffi_commune_core_fn_free_coreapp(`handle`: Long,uniffi_out_err: 
 ): Unit
 external fun uniffi_commune_core_fn_constructor_coreapp_new(uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_clear_thread_listener(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_commune_core_fn_method_coreapp_get_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,`size`: Int,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_timeline_media(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,
@@ -808,6 +816,8 @@ external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_
 ): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_send_thread_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`rootEventId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_typing(`ptr`: Long,`roomId`: RustBuffer.ByValue,`isTyping`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_session_display_name(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -821,6 +831,8 @@ external fun uniffi_commune_core_fn_method_coreapp_set_notifications_enabled(`pt
 external fun uniffi_commune_core_fn_method_coreapp_set_public_read_receipts_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_room_list_listener(`ptr`: Long,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_coreapp_set_thread_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`rootEventId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_timeline_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -981,6 +993,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_func_init_core() != 39848.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_clear_thread_listener() != 18100.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_room_avatar() != 19575.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1011,6 +1026,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 8707.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_thread_message() != 26693.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_typing() != 23463.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1030,6 +1048,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_list_listener() != 44096.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_thread_listener() != 15320.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_timeline_listener() != 32706.toShort()) {
@@ -1509,6 +1530,11 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
 public interface CoreAppInterface {
     
     /**
+     * Stop pushing thread updates.
+     */
+    fun `clearThreadListener`()
+    
+    /**
      * Fetch the avatar of the given room into a file, returning its path.
      */
     suspend fun `getRoomAvatar`(`roomId`: kotlin.String, `size`: kotlin.UInt): kotlin.String?
@@ -1568,6 +1594,12 @@ public interface CoreAppInterface {
     suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String)
     
     /**
+     * Send a plain-text message into the thread rooted at the given
+     * event.
+     */
+    suspend fun `sendThreadMessage`(`roomId`: kotlin.String, `rootEventId`: kotlin.String, `body`: kotlin.String)
+    
+    /**
      * Send a typing notification for the given room.
      *
      * Owned `String` because the FFI hands one over.
@@ -1606,6 +1638,12 @@ public interface CoreAppInterface {
      * Replaces any previous listener.
      */
     fun `setRoomListListener`(`listener`: RoomListListener)
+    
+    /**
+     * Give the thread rooted at the given event to the given listener,
+     * now and on every change. Replaces any previous thread listener.
+     */
+    fun `setThreadListener`(`roomId`: kotlin.String, `rootEventId`: kotlin.String, `listener`: TimelineListener)
     
     /**
      * Give the timeline of the given room to the given listener, now and
@@ -1739,6 +1777,21 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_clone_coreapp(handle, status)
         }
     }
+
+    
+    /**
+     * Stop pushing thread updates.
+     */override fun `clearThreadListener`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_clear_thread_listener(
+        it,
+        _status)
+}
+    }
+    
+    
 
     
     /**
@@ -1967,6 +2020,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Send a plain-text message into the thread rooted at the given
+     * event.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `sendThreadMessage`(`roomId`: kotlin.String, `rootEventId`: kotlin.String, `body`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_send_thread_message(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`rootEventId`),FfiConverterString.lower(`body`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Send a typing notification for the given room.
      *
      * Owned `String` because the FFI hands one over.
@@ -2073,6 +2152,22 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     UniffiLib.uniffi_commune_core_fn_method_coreapp_set_room_list_listener(
         it,
         FfiConverterTypeRoomListListener.lower(`listener`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Give the thread rooted at the given event to the given listener,
+     * now and on every change. Replaces any previous thread listener.
+     */override fun `setThreadListener`(`roomId`: kotlin.String, `rootEventId`: kotlin.String, `listener`: TimelineListener)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_set_thread_listener(
+        it,
+        FfiConverterString.lower(`roomId`),FfiConverterString.lower(`rootEventId`),FfiConverterTypeTimelineListener.lower(`listener`),_status)
 }
     }
     
@@ -3942,6 +4037,14 @@ sealed class FfiTimelineItem {
          */
         val `uniqueId`: kotlin.String, 
         /**
+         * The globally unique event ID, once the server assigned one.
+         */
+        val `eventId`: kotlin.String?, 
+        /**
+         * The number of replies in the thread rooted here, if any.
+         */
+        val `threadReplies`: kotlin.ULong, 
+        /**
          * The user that sent the event.
          */
         val `sender`: kotlin.String, 
@@ -4018,6 +4121,8 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
         return when(buf.getInt()) {
             1 -> FfiTimelineItem.Event(
                 FfiConverterString.read(buf),
+                FfiConverterOptionalString.read(buf),
+                FfiConverterULong.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterOptionalString.read(buf),
                 FfiConverterULong.read(buf),
@@ -4040,6 +4145,8 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
             (
                 4UL
                 + FfiConverterString.allocationSize(value.`uniqueId`)
+                + FfiConverterOptionalString.allocationSize(value.`eventId`)
+                + FfiConverterULong.allocationSize(value.`threadReplies`)
                 + FfiConverterString.allocationSize(value.`sender`)
                 + FfiConverterOptionalString.allocationSize(value.`senderDisplayName`)
                 + FfiConverterULong.allocationSize(value.`timestamp`)
@@ -4074,6 +4181,8 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
             is FfiTimelineItem.Event -> {
                 buf.putInt(1)
                 FfiConverterString.write(value.`uniqueId`, buf)
+                FfiConverterOptionalString.write(value.`eventId`, buf)
+                FfiConverterULong.write(value.`threadReplies`, buf)
                 FfiConverterString.write(value.`sender`, buf)
                 FfiConverterOptionalString.write(value.`senderDisplayName`, buf)
                 FfiConverterULong.write(value.`timestamp`, buf)
