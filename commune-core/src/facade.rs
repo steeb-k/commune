@@ -194,6 +194,10 @@ pub struct FfiRoom {
     pub joined_members_count: u64,
     /// The topic of the room, if any.
     pub topic: Option<String>,
+    /// Who sent the latest message, when one is known and readable.
+    pub latest_event_sender: Option<String>,
+    /// The body of the latest message, when one is known and readable.
+    pub latest_event_body: Option<String>,
 }
 
 impl From<&Room> for FfiRoom {
@@ -210,8 +214,25 @@ impl From<&Room> for FfiRoom {
             avatar_url: room.avatar_url().map(|uri| uri.to_string()),
             joined_members_count: room.joined_members_count(),
             topic: room.topic(),
+            latest_event_sender: latest_preview(room).map(|(sender, _)| sender),
+            latest_event_body: latest_preview(room).map(|(_, body)| body),
         }
     }
+}
+
+/// The latest message of the room as a (sender, body) pair, when the
+/// stored latest event is a readable message.
+fn latest_preview(room: &Room) -> Option<(String, String)> {
+    let matrix_sdk::latest_events::LatestEventValue::Remote(event) =
+        room.matrix_room().latest_event()
+    else {
+        return None;
+    };
+    let message = crate::matrix::original_message_event_from_raw(event.raw())?;
+    Some((
+        message.sender.to_string(),
+        message.content.msgtype.body().to_owned(),
+    ))
 }
 
 /// Something on the foreign side that wants to know when the room list
@@ -2888,6 +2909,178 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// Send a recorded voice message.
+    pub async fn send_voice_message(
+        &self,
+        room_id: String,
+        file_path: String,
+        mime_type: String,
+        duration_ms: u64,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let mime = mime_type
+                    .parse::<mime::Mime>()
+                    .unwrap_or(mime::APPLICATION_OCTET_STREAM);
+
+                room.live_timeline()
+                    .send_voice(file_path.into(), mime, duration_ms)
+                    .await
+                    .map_err(|()| CoreError::Failed {
+                        msg: "Could not send the voice message".to_owned(),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The sticker packs on the account: the personal pack from
+    /// `im.ponies.user_emotes`, then every pack the account follows
+    /// through `im.ponies.emote_rooms`.
+    pub async fn sticker_packs(&self) -> Vec<FfiStickerPack> {
+        let Some(session) = self.first_ready_session() else {
+            return Vec::new();
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let mut packs = Vec::new();
+
+                if let Ok(Some(raw)) = client
+                    .account()
+                    .account_data_raw("im.ponies.user_emotes".into())
+                    .await
+                    && let Ok(value) = raw.deserialize_as::<serde_json::Value>()
+                    && let Some(pack) =
+                        parse_sticker_pack(value.get("content").unwrap_or(&value), "My Stickers")
+                {
+                    packs.push(pack);
+                }
+
+                if let Ok(Some(raw)) = client
+                    .account()
+                    .account_data_raw("im.ponies.emote_rooms".into())
+                    .await
+                    && let Ok(value) = raw.deserialize_as::<serde_json::Value>()
+                    && let Some(rooms) = value
+                        .pointer("/content/rooms")
+                        .or_else(|| value.get("rooms"))
+                        .and_then(|rooms| rooms.as_object())
+                {
+                    for (room_id, keys) in rooms {
+                        let Ok(room_id) = ruma::RoomId::parse(room_id) else {
+                            continue;
+                        };
+                        let Some(room) = client.get_room(&room_id) else {
+                            continue;
+                        };
+                        let Some(keys) = keys.as_object() else {
+                            continue;
+                        };
+                        for state_key in keys.keys() {
+                            if let Ok(Some(
+                                matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState::Sync(
+                                    raw,
+                                ),
+                            )) = room
+                                .get_state_event("im.ponies.room_emotes".into(), state_key)
+                                .await
+                                && let Ok(value) = raw.deserialize_as::<serde_json::Value>()
+                                && let Some(pack) = parse_sticker_pack(
+                                    value.get("content").unwrap_or(&value),
+                                    state_key,
+                                )
+                            {
+                                packs.push(pack);
+                            }
+                        }
+                    }
+                }
+
+                packs
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Send a sticker from a pack.
+    pub async fn send_sticker(
+        &self,
+        room_id: String,
+        sticker: FfiSticker,
+    ) -> Result<(), CoreError> {
+        use ruma::events::{room::ImageInfo, sticker::StickerEventContent};
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let url = ruma::OwnedMxcUri::from(sticker.url);
+                let mut info = ImageInfo::new();
+                info.width = sticker.width.map(Into::into);
+                info.height = sticker.height.map(Into::into);
+                info.mimetype = sticker.mime_type;
+
+                room.matrix_room()
+                    .send(StickerEventContent::new(sticker.body, info, url))
+                    .await
+                    .map(|_| ())
+                    .map_err(|send_error| CoreError::Failed {
+                        msg: format!("Could not send the sticker: {send_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Fetch the media behind a plain `mxc:` URI into a file, returning
+    /// its path — sticker previews, mostly.
+    pub async fn get_mxc_media(&self, mxc: String) -> Option<String> {
+        let session = self.first_ready_session()?;
+
+        RUNTIME
+            .spawn(async move {
+                let request = matrix_sdk::media::MediaRequestParameters {
+                    source: ruma::events::room::MediaSource::Plain(ruma::OwnedMxcUri::from(mxc)),
+                    format: matrix_sdk::media::MediaFormat::File,
+                };
+                crate::matrix::media::get_media_file(&session.client(), request)
+                    .await
+                    .map(|path| path.to_string_lossy().into_owned())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Retry the messages that failed to send, by waking the send queue
     /// back up.
     ///
@@ -3192,6 +3385,80 @@ pub enum FfiRoomNotificationMode {
     MentionsOnly,
     /// Nothing.
     Mute,
+}
+
+/// A sticker pack from the account's image packs.
+#[derive(uniffi::Record)]
+pub struct FfiStickerPack {
+    /// The display name of the pack.
+    pub name: String,
+    /// The stickers of the pack.
+    pub stickers: Vec<FfiSticker>,
+}
+
+/// One sticker of a pack.
+#[derive(uniffi::Record, Clone)]
+pub struct FfiSticker {
+    /// The description, sent as the event body.
+    pub body: String,
+    /// The `mxc:` URI of the image.
+    pub url: String,
+    /// The width in pixels, when the pack declares one.
+    pub width: Option<u32>,
+    /// The height in pixels, when the pack declares one.
+    pub height: Option<u32>,
+    /// The MIME type, when the pack declares one.
+    pub mime_type: Option<String>,
+}
+
+/// Read one MSC2545 image pack out of its JSON, keeping the images whose
+/// usage allows stickers (an absent or empty usage allows everything).
+fn parse_sticker_pack(value: &serde_json::Value, fallback_name: &str) -> Option<FfiStickerPack> {
+    let images = value.get("images")?.as_object()?;
+    let name = value
+        .pointer("/pack/display_name")
+        .and_then(|name| name.as_str())
+        .unwrap_or(fallback_name)
+        .to_owned();
+
+    let stickers: Vec<FfiSticker> = images
+        .iter()
+        .filter_map(|(shortcode, image)| {
+            let url = image.get("url")?.as_str()?.to_owned();
+            if let Some(usage) = image.get("usage").and_then(|usage| usage.as_array())
+                && !usage.is_empty()
+                && !usage.iter().any(|entry| entry.as_str() == Some("sticker"))
+            {
+                return None;
+            }
+
+            Some(FfiSticker {
+                body: image
+                    .get("body")
+                    .and_then(|body| body.as_str())
+                    .unwrap_or(shortcode)
+                    .to_owned(),
+                url,
+                width: image
+                    .pointer("/info/w")
+                    .and_then(serde_json::Value::as_u64)
+                    .and_then(|w| u32::try_from(w).ok()),
+                height: image
+                    .pointer("/info/h")
+                    .and_then(serde_json::Value::as_u64)
+                    .and_then(|h| u32::try_from(h).ok()),
+                mime_type: image
+                    .pointer("/info/mimetype")
+                    .and_then(|mime| mime.as_str())
+                    .map(ToOwned::to_owned),
+            })
+        })
+        .collect();
+
+    if stickers.is_empty() {
+        return None;
+    }
+    Some(FfiStickerPack { name, stickers })
 }
 
 /// The account's profile, as far as the server tells it.

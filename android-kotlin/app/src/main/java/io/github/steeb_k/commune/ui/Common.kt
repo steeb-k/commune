@@ -159,19 +159,55 @@ fun LoadingRing(modifier: Modifier = Modifier) {
 }
 
 
+/// Still images already decoded, keyed by path and size class. The
+/// files are content-addressed cache entries, so nothing goes stale;
+/// the cache only bounds how many decoded bitmaps stay warm. Animated
+/// drawables are not shared — each view needs its own animation state.
+private val decodedMedia =
+    android.util.LruCache<String, android.graphics.drawable.Drawable>(64)
+
 /// An image from a media file, animating when the platform decoder says
 /// it animates (GIF, animated WebP); stills come out as plain drawables
-/// from the same call. `ImageDecoder` is the platform path — no library.
+/// from the same call. Decoding happens off the UI thread, downsampled
+/// to the size class actually presented — a grid of photos must never
+/// hold full-resolution bitmaps.
 @Composable
-fun MediaImage(path: String, contentDescription: String?, modifier: Modifier = Modifier) {
-    val drawable = remember(path) {
-        try {
-            val source = android.graphics.ImageDecoder.createSource(java.io.File(path))
-            android.graphics.ImageDecoder.decodeDrawable(source)
-        } catch (_: Exception) {
-            null
+fun MediaImage(
+    path: String,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    targetSizePx: Int = 1080,
+) {
+    val drawable by androidx.compose.runtime.produceState<
+        android.graphics.drawable.Drawable?,
+    >(null, path, targetSizePx) {
+        val key = "$path@$targetSizePx"
+        value = decodedMedia.get(key) ?: kotlinx.coroutines.withContext(
+            kotlinx.coroutines.Dispatchers.IO
+        ) {
+            try {
+                val source =
+                    android.graphics.ImageDecoder.createSource(java.io.File(path))
+                android.graphics.ImageDecoder.decodeDrawable(source) { decoder, info, _ ->
+                    val longest = maxOf(info.size.width, info.size.height)
+                    if (longest > targetSizePx) {
+                        val scale = targetSizePx.toFloat() / longest
+                        decoder.setTargetSize(
+                            (info.size.width * scale).toInt().coerceAtLeast(1),
+                            (info.size.height * scale).toInt().coerceAtLeast(1),
+                        )
+                    }
+                }.also {
+                    if (it !is android.graphics.drawable.AnimatedImageDrawable) {
+                        decodedMedia.put(key, it)
+                    }
+                }
+            } catch (_: Exception) {
+                null
+            }
         }
-    } ?: return
+    }
+    val current = drawable ?: return
 
     androidx.compose.ui.viewinterop.AndroidView(
         factory = { context ->
@@ -182,8 +218,8 @@ fun MediaImage(path: String, contentDescription: String?, modifier: Modifier = M
             }
         },
         update = { view ->
-            view.setImageDrawable(drawable)
-            (drawable as? android.graphics.drawable.AnimatedImageDrawable)?.start()
+            view.setImageDrawable(current)
+            (current as? android.graphics.drawable.AnimatedImageDrawable)?.start()
         },
         modifier = modifier,
     )
