@@ -404,6 +404,19 @@ class CommuneState(context: Context) {
         }
     }
 
+    /// Move any room to a category from the sidebar's long-press menu.
+    fun changeRoomCategory(roomId: String, category: FfiTargetRoomCategory) {
+        thread {
+            runBlocking {
+                try {
+                    app.changeRoomCategory(roomId, category)
+                } catch (_: Exception) {
+                    // The sidebar reflects what actually happened.
+                }
+            }
+        }
+    }
+
     fun acceptInvite() {
         val room = openRoom ?: return
         thread {
@@ -533,7 +546,7 @@ class CommuneState(context: Context) {
     private var markingRead = false
 
     /// Send a read receipt for the given room, coalescing bursts.
-    private fun markRead(roomId: String) {
+    fun markRead(roomId: String) {
         if (markingRead) return
         markingRead = true
         thread {
