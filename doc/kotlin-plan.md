@@ -130,6 +130,23 @@ Decisions:
   without a login. On-device side-by-side comparison is traded away;
   compare via the emulator (which keeps the GTK build) against the device,
   or two AVDs.
+
+  **Adoption-readiness, verified 27 Aug 2026** (statically, against the
+  GTK build installed on the emulator): session discovery is a directory
+  walk of `no_backup/commune/secrets.d/*.sealed` in both variants (the
+  core's `secret/android` is the same module — GSettings only carries
+  per-session preferences, with defaults on a miss); the Kotlin app's
+  `noBackupFilesDir/commune` and `cacheDir/commune` equal the paths the
+  GTK build demonstrably writes (`no_backup/commune/<id>/`,
+  `cache/commune/<id>/`); the Keystore alias matches (`commune.secrets.v1`
+  — the GTK build derives it from `CARGO_PKG_NAME` = `commune`); and both
+  installed APKs carry the same signing certificate, so `install -r`
+  is accepted. The live install-over is NOT run automatically: the GTK
+  build on the emulator holds a session on a real homeserver
+  (matrix.kzenjak.com), and replacing that install or syncing that
+  account is the user's call. To run it: `adb install -r` the APK built
+  without the `.skeleton` suffix, launch, and the sidebar should come up
+  logged in.
 * **`minSdk = 29`** (Android 10, decided 27 Aug 2026): scoped storage is
   the baseline, which simplifies every attachment/media path.
 * **Material You dynamic color** (decided 27 Aug 2026): the Compose app
@@ -257,7 +274,9 @@ demonstrable. Order matters only within a track; the two tracks interleave.
    and sidebar sectioning rules as pure functions over room state.
 5. ✅ _(27 Aug: live timeline read/send/paginate, receipts and the
    read-state watcher, typing both ways, semantic membership sentences;
-   focused/pinned/thread timelines pending)_ Timeline: `matrix_sdk_ui::Timeline` orchestration with `VectorDiff`
+   27 Aug late: thread focus (`TimelineFocusKind`), thread reply counts,
+   thread send, and `send_attachment` through the send queue;
+   pinned timelines pending)_ Timeline: `matrix_sdk_ui::Timeline` orchestration with `VectorDiff`
    passthrough; the diff minimizer gets a generic sink trait instead of the
    GListModel one.
 6. The rest of the logic tier as needed by UI chunks: permissions/roles,
@@ -296,8 +315,10 @@ session wants UI work sooner.
     secret storage — porting the GTK port's Rust implementations or
     redoing them natively, per module.
 16. ✅ _(27 Aug, v1: core media fetch to cache files, inline timeline
-    images, room avatars with the direct-member fallback; viewer,
-    video/voice, attachments and history viewers pending)_ Media: images/blurhash placeholders, media viewer with
+    images, room avatars with the direct-member fallback; 27 Aug late:
+    fullscreen viewer with pinch-zoom/pan, attachment sending via the
+    system picker; video/voice and history viewers
+    pending)_ Media: images/blurhash placeholders, media viewer with
     zoom-from-thumbnail, video/voice playback (ExoPlayer — no GStreamer on
     this variant), attachments dialog, media history viewers.
 17. The tail: spaces, explore/directory, invites and knocks, image packs,
