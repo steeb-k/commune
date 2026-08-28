@@ -735,6 +735,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_func_init_core(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_change_room_category(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_clear_member_list_listener(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_clear_thread_listener(
@@ -834,6 +836,8 @@ internal object UniffiLib {
 external fun uniffi_commune_core_fn_free_coreapp(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_constructor_coreapp_new(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_change_room_category(`ptr`: Long,`roomId`: RustBuffer.ByValue,`category`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_clear_member_list_listener(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1056,6 +1060,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_func_init_core() != 39848.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_change_room_category() != 21179.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_clear_member_list_listener() != 21403.toShort()) {
@@ -1645,6 +1652,12 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
 public interface CoreAppInterface {
     
     /**
+     * Move the given room to the given category: accepting an invite is a
+     * move to Normal, declining it (or leaving) a move to Left.
+     */
+    suspend fun `changeRoomCategory`(`roomId`: kotlin.String, `category`: FfiTargetRoomCategory)
+    
+    /**
      * Stop feeding the member-list listener.
      */
     fun `clearMemberListListener`()
@@ -1936,6 +1949,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         return uniffiRustCall() { status ->
             UniffiLib.uniffi_commune_core_fn_clone_coreapp(handle, status)
         }
+    }
+
+    
+    /**
+     * Move the given room to the given category: accepting an invite is a
+     * move to Normal, declining it (or leaving) a move to Left.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `changeRoomCategory`(`roomId`: kotlin.String, `category`: FfiTargetRoomCategory) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_change_room_category(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterTypeFfiTargetRoomCategory.lower(`category`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
     }
 
     
@@ -5000,6 +5039,57 @@ public object FfiConverterTypeFfiRoomHighlight: FfiConverterRustBuffer<FfiRoomHi
     override fun allocationSize(value: FfiRoomHighlight) = 4UL
 
     override fun write(value: FfiRoomHighlight, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * Where a room can be moved: the sidebar's category actions.
+ */
+
+enum class FfiTargetRoomCategory {
+    
+    /**
+     * Join or move the room into the favorite category.
+     */
+    FAVORITE,
+    /**
+     * Join or move the room into the normal category.
+     */
+    NORMAL,
+    /**
+     * Join or move the room into the low priority category.
+     */
+    LOW_PRIORITY,
+    /**
+     * Leave the room.
+     */
+    LEFT;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiTargetRoomCategory: FfiConverterRustBuffer<FfiTargetRoomCategory> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiTargetRoomCategory.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiTargetRoomCategory) = 4UL
+
+    override fun write(value: FfiTargetRoomCategory, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
