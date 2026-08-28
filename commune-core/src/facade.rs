@@ -2232,6 +2232,215 @@ impl CoreApp {
             .await
             .expect("task was not aborted")
     }
+
+    /// One page of the room's media history, walking backward from
+    /// `from`, or from the end of the room when it is `None`.
+    ///
+    /// This is the application's history viewer pagination: `/messages`
+    /// filtered to message events — with a URL filter where the server can
+    /// see the content, without one in encrypted rooms — then classified
+    /// by message type on our side.
+    pub async fn room_media_history(
+        &self,
+        room_id: String,
+        from: Option<String>,
+    ) -> Result<FfiHistoryPage, CoreError> {
+        use ruma::{
+            api::client::filter::{RoomEventFilter, UrlFilter},
+            assign,
+            events::MessageLikeEventType,
+            uint,
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                // In an encrypted room the server cannot see the content, so
+                // the URL filter would drop everything.
+                let filter = if room.is_encrypted() {
+                    assign!(RoomEventFilter::default(), {
+                        types: Some(vec![
+                            MessageLikeEventType::RoomEncrypted.to_string(),
+                            MessageLikeEventType::RoomMessage.to_string(),
+                        ]),
+                    })
+                } else {
+                    assign!(RoomEventFilter::default(), {
+                        types: Some(vec![MessageLikeEventType::RoomMessage.to_string()]),
+                        url_filter: Some(UrlFilter::EventsWithUrl),
+                    })
+                };
+                let options = assign!(
+                    matrix_sdk::room::MessagesOptions::backward().from(from.as_deref()),
+                    {
+                        limit: uint!(20),
+                        filter,
+                    }
+                );
+
+                let response =
+                    room.matrix_room()
+                        .messages(options)
+                        .await
+                        .map_err(|messages_error| CoreError::Failed {
+                            msg: format!("Could not load the media history: {messages_error}"),
+                        })?;
+
+                let events = response
+                    .chunk
+                    .iter()
+                    .filter_map(|event| ffi_history_event(event.raw()))
+                    .collect();
+
+                Ok(FfiHistoryPage {
+                    events,
+                    next_token: response.end,
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Fetch the media of a history event into a file, returning its path.
+    pub async fn get_history_media(&self, room_id: String, event_id: String) -> Option<String> {
+        use ruma::events::room::message::MessageType;
+
+        let session = self.first_ready_session()?;
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).ok()?;
+                let event_id = ruma::EventId::parse(&event_id).ok()?;
+                let room = session.room_list().get(&room_id)?;
+
+                let event = room.matrix_room().event(&event_id, None).await.ok()?;
+                let message = crate::matrix::original_message_event_from_raw(event.raw())?;
+                let source = match &message.content.msgtype {
+                    MessageType::Image(image) => image.source.clone(),
+                    MessageType::Video(video) => video.source.clone(),
+                    MessageType::Audio(audio) => audio.source.clone(),
+                    MessageType::File(file) => file.source.clone(),
+                    _ => return None,
+                };
+
+                let request = matrix_sdk::media::MediaRequestParameters {
+                    source,
+                    format: matrix_sdk::media::MediaFormat::File,
+                };
+
+                crate::matrix::media::get_media_file(&session.client(), request)
+                    .await
+                    .map(|path| path.to_string_lossy().into_owned())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+}
+
+/// Build the FFI view of one media-history event, if the raw event is a
+/// media message.
+fn ffi_history_event(
+    raw: &ruma::serde::Raw<ruma::events::AnySyncTimelineEvent>,
+) -> Option<FfiHistoryEvent> {
+    use ruma::events::room::message::MessageType;
+
+    let message = crate::matrix::original_message_event_from_raw(raw)?;
+
+    let (kind, body, mime_type, size) = match &message.content.msgtype {
+        MessageType::Image(image) => (
+            FfiHistoryKind::Media,
+            image.filename().to_owned(),
+            image.info.as_ref().and_then(|info| info.mimetype.clone()),
+            image.info.as_ref().and_then(|info| info.size),
+        ),
+        MessageType::Video(video) => (
+            FfiHistoryKind::Media,
+            video.filename().to_owned(),
+            video.info.as_ref().and_then(|info| info.mimetype.clone()),
+            video.info.as_ref().and_then(|info| info.size),
+        ),
+        MessageType::Audio(audio) => (
+            FfiHistoryKind::Audio,
+            audio.filename().to_owned(),
+            audio.info.as_ref().and_then(|info| info.mimetype.clone()),
+            audio.info.as_ref().and_then(|info| info.size),
+        ),
+        MessageType::File(file) => (
+            FfiHistoryKind::File,
+            file.filename().to_owned(),
+            file.info.as_ref().and_then(|info| info.mimetype.clone()),
+            file.info.as_ref().and_then(|info| info.size),
+        ),
+        _ => return None,
+    };
+
+    Some(FfiHistoryEvent {
+        event_id: message.event_id.to_string(),
+        sender: message.sender.to_string(),
+        timestamp: message.origin_server_ts.0.into(),
+        kind,
+        body,
+        mime_type,
+        size: size.map(u64::from),
+        is_video: matches!(&message.content.msgtype, MessageType::Video(_)),
+    })
+}
+
+/// What kind of history page an event belongs on.
+#[derive(uniffi::Enum, Clone, Copy)]
+pub enum FfiHistoryKind {
+    /// An image or a video, for the media grid.
+    Media,
+    /// A generic file.
+    File,
+    /// An audio file.
+    Audio,
+}
+
+/// One event of the media history.
+#[derive(uniffi::Record)]
+pub struct FfiHistoryEvent {
+    /// The ID of the event.
+    pub event_id: String,
+    /// The user that sent it.
+    pub sender: String,
+    /// When it was sent, in milliseconds since the epoch.
+    pub timestamp: u64,
+    /// The page it belongs on.
+    pub kind: FfiHistoryKind,
+    /// The filename, or the body when no filename travelled.
+    pub body: String,
+    /// The MIME type, when the sender declared one.
+    pub mime_type: Option<String>,
+    /// The size in bytes, when the sender declared one.
+    pub size: Option<u64>,
+    /// Whether a Media event is a video rather than an image.
+    pub is_video: bool,
+}
+
+/// One page of the media history.
+#[derive(uniffi::Record)]
+pub struct FfiHistoryPage {
+    /// The media events of this page, newest first.
+    pub events: Vec<FfiHistoryEvent>,
+    /// The token to request the next page with, absent at the start of
+    /// the room.
+    pub next_token: Option<String>,
 }
 
 /// A GIF the picker can present and send.

@@ -13,6 +13,8 @@ import androidx.compose.runtime.setValue
 import io.github.steeb_k.commune.core.CoreApp
 import io.github.steeb_k.commune.core.FfiCoreConfig
 import io.github.steeb_k.commune.core.FfiGif
+import io.github.steeb_k.commune.core.FfiHistoryEvent
+import io.github.steeb_k.commune.core.FfiHistoryKind
 import io.github.steeb_k.commune.core.FfiMember
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRecoveryState
@@ -278,6 +280,7 @@ class CommuneState(context: Context) {
         closeMembers()
         closePinned()
         closeRoomSearch()
+        closeHistory()
         roomDetailsOpen = false
     }
 
@@ -424,6 +427,80 @@ class CommuneState(context: Context) {
                 try {
                     app.sendGif(room.roomId, gif)
                 } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
+    // The media history pages under room details: one paginated list per
+    // kind, walked backward through /messages as the user scrolls.
+    var historyKind by mutableStateOf<FfiHistoryKind?>(null)
+        private set
+    var historyEvents by mutableStateOf<List<FfiHistoryEvent>>(emptyList())
+        private set
+    var historyBusy by mutableStateOf(false)
+        private set
+    private var historyNextToken: String? = null
+    private var historyDone = false
+
+    fun openHistory(kind: FfiHistoryKind) {
+        historyKind = kind
+        historyEvents = emptyList()
+        historyNextToken = null
+        historyDone = false
+        loadMoreHistory()
+    }
+
+    fun closeHistory() {
+        historyKind = null
+        historyEvents = emptyList()
+    }
+
+    fun loadMoreHistory() {
+        val room = openRoom ?: return
+        val kind = historyKind ?: return
+        if (historyBusy || historyDone) return
+        historyBusy = true
+        thread {
+            runBlocking {
+                val page = try {
+                    app.roomMediaHistory(room.roomId, historyNextToken)
+                } catch (_: Exception) {
+                    null
+                }
+                main.post {
+                    if (historyKind == kind) {
+                        if (page != null) {
+                            historyEvents = historyEvents + page.events.filter { it.kind == kind }
+                            historyNextToken = page.nextToken
+                            historyDone = page.nextToken == null
+                        }
+                        historyBusy = false
+                    }
+                }
+            }
+        }
+    }
+
+    /// Media paths for history events, filled as thumbnails download.
+    val historyMedia = mutableStateMapOf<String, String>()
+
+    fun fetchHistoryMedia(eventId: String, onDone: ((String?) -> Unit)? = null) {
+        val room = openRoom ?: return
+        if (historyMedia.containsKey(eventId)) {
+            onDone?.invoke(historyMedia[eventId])
+            return
+        }
+        thread {
+            runBlocking {
+                val path = try {
+                    app.getHistoryMedia(room.roomId, eventId)
+                } catch (_: Exception) {
+                    null
+                }
+                main.post {
+                    if (path != null) historyMedia[eventId] = path
+                    onDone?.invoke(path)
                 }
             }
         }
@@ -939,8 +1016,8 @@ class CommuneState(context: Context) {
         settingsOpen = false
     }
 
-    fun openViewer(path: String) {
-        viewerIsVideo = false
+    fun openViewer(path: String, isVideo: Boolean = false) {
+        viewerIsVideo = isVideo
         viewerImagePath = path
     }
 
