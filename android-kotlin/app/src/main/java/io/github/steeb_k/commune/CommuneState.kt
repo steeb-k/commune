@@ -225,6 +225,9 @@ class CommuneState(context: Context) {
             openSpace(room)
             return
         }
+        // A room opened from inside a space must replace the space view,
+        // which outranks the room in the routing chain.
+        closeSpace()
         openRoom = room
         timeline = emptyList()
         timelineLoading = true
