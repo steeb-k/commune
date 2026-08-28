@@ -12,6 +12,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.steeb_k.commune.core.CoreApp
 import io.github.steeb_k.commune.core.FfiCoreConfig
+import io.github.steeb_k.commune.core.FfiDevice
+import io.github.steeb_k.commune.core.FfiRoomNotificationMode
 import io.github.steeb_k.commune.core.FfiGif
 import io.github.steeb_k.commune.core.FfiHistoryEvent
 import io.github.steeb_k.commune.core.FfiHistoryKind
@@ -229,6 +231,8 @@ class CommuneState(context: Context) {
         // which outranks the room in the routing chain.
         closeSpace()
         openRoom = room
+        roomNotifMode = FfiRoomNotificationMode.DEFAULT
+        loadRoomNotificationMode()
         timeline = emptyList()
         timelineLoading = true
         composerMembers = emptyList()
@@ -851,6 +855,198 @@ class CommuneState(context: Context) {
                 }
             }
         }
+    }
+
+    // The account's sessions.
+    var devicesOpen by mutableStateOf(false)
+        private set
+    var devices by mutableStateOf<List<FfiDevice>>(emptyList())
+        private set
+    var devicesBusy by mutableStateOf(false)
+        private set
+
+    fun openDevices() {
+        devicesOpen = true
+        refreshDevices()
+    }
+
+    fun closeDevices() {
+        devicesOpen = false
+        devices = emptyList()
+    }
+
+    fun refreshDevices() {
+        devicesBusy = true
+        thread {
+            runBlocking {
+                val list = try {
+                    app.listDevices()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                main.post {
+                    if (devicesOpen) {
+                        devices = list
+                        devicesBusy = false
+                    }
+                }
+            }
+        }
+    }
+
+    fun renameDevice(deviceId: String, name: String, onDone: (String?) -> Unit) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.renameDevice(deviceId, name)
+                    null
+                } catch (failure: Exception) {
+                    failure.message ?: "Could not rename"
+                }
+                main.post {
+                    onDone(error)
+                    if (error == null) refreshDevices()
+                }
+            }
+        }
+    }
+
+    fun signOutDevice(deviceId: String, password: String, onDone: (String?) -> Unit) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.signOutDevice(deviceId, password)
+                    null
+                } catch (failure: Exception) {
+                    failure.message ?: "Could not sign out"
+                }
+                main.post {
+                    onDone(error)
+                    if (error == null) refreshDevices()
+                }
+            }
+        }
+    }
+
+    // The open room's notification mode.
+    var roomNotifMode by mutableStateOf(FfiRoomNotificationMode.DEFAULT)
+        private set
+
+    fun loadRoomNotificationMode() {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val mode = try {
+                    app.roomNotificationMode(room.roomId)
+                } catch (_: Exception) {
+                    FfiRoomNotificationMode.DEFAULT
+                }
+                main.post {
+                    if (openRoom?.roomId == room.roomId) roomNotifMode = mode
+                }
+            }
+        }
+    }
+
+    fun setRoomNotificationMode(mode: FfiRoomNotificationMode) {
+        val room = openRoom ?: return
+        roomNotifMode = mode
+        thread {
+            runBlocking {
+                try {
+                    app.setRoomNotificationMode(room.roomId, mode)
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
+    // Moderation, from the members page.
+    fun kickUser(userId: String, onDone: (String?) -> Unit) {
+        moderate(onDone) { app.kickUser(it, userId, null) }
+    }
+
+    fun banUser(userId: String, onDone: (String?) -> Unit) {
+        moderate(onDone) { app.banUser(it, userId, null) }
+    }
+
+    fun setMemberPower(userId: String, level: Long, onDone: (String?) -> Unit) {
+        moderate(onDone) { app.setMemberPowerLevel(it, userId, level) }
+    }
+
+    private fun moderate(onDone: (String?) -> Unit, action: suspend (String) -> Unit) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val error = try {
+                    action(room.roomId)
+                    null
+                } catch (failure: Exception) {
+                    failure.message ?: "Could not do that"
+                }
+                main.post { onDone(error) }
+            }
+        }
+    }
+
+    // Room-key export and import — the file goes through Downloads on the
+    // way out and the document picker on the way in.
+    fun exportKeys(passphrase: String, onDone: (String?) -> Unit) {
+        thread {
+            runBlocking {
+                val error = try {
+                    val dir = java.io.File(appContext.cacheDir, "outgoing")
+                    dir.mkdirs()
+                    val file = java.io.File(dir, "commune-keys.txt")
+                    app.exportRoomKeys(file.absolutePath, passphrase)
+                    if (!saveToDownloads(file.absolutePath, "commune-keys.txt", "text/plain")) {
+                        throw RuntimeException("Could not write to Downloads")
+                    }
+                    file.delete()
+                    null
+                } catch (failure: Exception) {
+                    failure.message ?: "Could not export the keys"
+                }
+                main.post { onDone(error) }
+            }
+        }
+    }
+
+    /// Set by the activity: opens the document picker for a key file.
+    var pickKeyFile: (() -> Unit)? = null
+
+    /// The passphrase the pending import will use, set before the picker.
+    var pendingImportPassphrase: String? = null
+
+    /// Where the last import ended up, for the settings page to show.
+    var importResult by mutableStateOf<String?>(null)
+        private set
+
+    fun importKeysFromUri(uri: android.net.Uri) {
+        val passphrase = pendingImportPassphrase ?: return
+        pendingImportPassphrase = null
+        thread {
+            runBlocking {
+                val result = try {
+                    val dir = java.io.File(appContext.cacheDir, "outgoing")
+                    dir.mkdirs()
+                    val file = java.io.File(dir, "incoming-keys.txt")
+                    appContext.contentResolver.openInputStream(uri)?.use { input ->
+                        file.outputStream().use { output -> input.copyTo(output) }
+                    } ?: throw RuntimeException("Could not read the file")
+                    val count = app.importRoomKeys(file.absolutePath, passphrase)
+                    file.delete()
+                    "Imported $count keys"
+                } catch (failure: Exception) {
+                    failure.message ?: "Could not import the keys"
+                }
+                main.post { importResult = result }
+            }
+        }
+    }
+
+    fun clearImportResult() {
+        importResult = null
     }
 
     fun openRoomDetails() {

@@ -16,8 +16,10 @@ import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import io.github.steeb_k.commune.core.FfiHistoryKind
+import io.github.steeb_k.commune.core.FfiRoomNotificationMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -88,6 +90,21 @@ fun RoomDetailsScreen(state: CommuneState, room: FfiRoom) {
             value = room.joinedMembersCount.toString(),
             onClick = { state.openMembers() },
         )
+        var notifOpen by remember { mutableStateOf(false) }
+        DetailsRow(
+            icon = { Icon(Icons.Filled.Notifications, contentDescription = null) },
+            title = "Notifications",
+            value = when (state.roomNotifMode) {
+                FfiRoomNotificationMode.DEFAULT -> "Default"
+                FfiRoomNotificationMode.ALL -> "All messages"
+                FfiRoomNotificationMode.MENTIONS_ONLY -> "Mentions only"
+                FfiRoomNotificationMode.MUTE -> "Muted"
+            },
+            onClick = { notifOpen = true },
+        )
+        if (notifOpen) {
+            NotificationModeDialog(state, onDismiss = { notifOpen = false })
+        }
         DetailsRow(
             icon = { Icon(Icons.Filled.Image, contentDescription = null) },
             title = "Media",
@@ -180,4 +197,49 @@ private fun DetailsRow(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+
+/// Pick how this room notifies.
+@Composable
+private fun NotificationModeDialog(state: CommuneState, onDismiss: () -> Unit) {
+    val options = listOf(
+        FfiRoomNotificationMode.DEFAULT to "Default",
+        FfiRoomNotificationMode.ALL to "All messages",
+        FfiRoomNotificationMode.MENTIONS_ONLY to "Mentions and keywords only",
+        FfiRoomNotificationMode.MUTE to "Mute",
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Notifications") },
+        text = {
+            Column {
+                for ((mode, label) in options) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                state.setRoomNotificationMode(mode)
+                                onDismiss()
+                            }
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        androidx.compose.material3.RadioButton(
+                            selected = state.roomNotifMode == mode,
+                            onClick = {
+                                state.setRoomNotificationMode(mode)
+                                onDismiss()
+                            },
+                        )
+                        Text(label, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Done") }
+        },
+    )
 }

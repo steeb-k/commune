@@ -2542,6 +2542,340 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// The account's sessions, ours first.
+    pub async fn list_devices(&self) -> Result<Vec<FfiDevice>, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let own_device_id = client.device_id().map(ToOwned::to_owned);
+                let own_user_id = client.user_id().map(ToOwned::to_owned);
+
+                let response =
+                    client
+                        .devices()
+                        .await
+                        .map_err(|devices_error| CoreError::Failed {
+                            msg: format!("Could not load the sessions: {devices_error}"),
+                        })?;
+
+                let mut devices = Vec::new();
+                for device in response.devices {
+                    let is_current = own_device_id.as_deref() == Some(&device.device_id);
+                    let is_verified = if let Some(user_id) = &own_user_id {
+                        client
+                            .encryption()
+                            .get_device(user_id, &device.device_id)
+                            .await
+                            .ok()
+                            .flatten()
+                            .is_some_and(|crypto_device| crypto_device.is_verified())
+                    } else {
+                        false
+                    };
+
+                    devices.push(FfiDevice {
+                        device_id: device.device_id.to_string(),
+                        display_name: device.display_name,
+                        is_current,
+                        is_verified,
+                        last_seen_ts: device.last_seen_ts.map(|ts| ts.0.into()),
+                        last_seen_ip: device.last_seen_ip,
+                    });
+                }
+
+                // Ours first, then most recently seen.
+                devices.sort_by_key(|device| {
+                    (
+                        !device.is_current,
+                        u64::MAX - device.last_seen_ts.unwrap_or(0),
+                    )
+                });
+                Ok(devices)
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Rename one of the account's sessions.
+    pub async fn rename_device(&self, device_id: String, name: String) -> Result<(), CoreError> {
+        use ruma::api::client::device::update_device;
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let device_id: ruma::OwnedDeviceId = device_id.into();
+                let request = ruma::assign!(update_device::v3::Request::new(device_id), {
+                    display_name: Some(name.trim().to_owned()),
+                });
+                session
+                    .client()
+                    .send(request)
+                    .await
+                    .map(|_| ())
+                    .map_err(|rename_error| CoreError::Failed {
+                        msg: format!("Could not rename the session: {rename_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Sign another of the account's sessions out. The server demands the
+    /// password again for this.
+    pub async fn sign_out_device(
+        &self,
+        device_id: String,
+        password: String,
+    ) -> Result<(), CoreError> {
+        use ruma::api::client::uiaa::{AuthData, MatrixUserIdentifier, Password};
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let device_id: ruma::OwnedDeviceId = device_id.into();
+                let user_id = client.user_id().ok_or_else(|| CoreError::Failed {
+                    msg: "No user".to_owned(),
+                })?;
+
+                // First pass to learn the auth session, second to answer it.
+                let devices = &[device_id];
+                match client.delete_devices(devices, None).await {
+                    Ok(_) => Ok(()),
+                    Err(delete_error) => {
+                        let Some(info) = delete_error.as_uiaa_response() else {
+                            return Err(CoreError::Failed {
+                                msg: format!("Could not sign the session out: {delete_error}"),
+                            });
+                        };
+                        let auth = AuthData::Password(ruma::assign!(
+                            Password::new(
+                                MatrixUserIdentifier::new(user_id.to_string()).into(),
+                                password,
+                            ),
+                            { session: info.session.clone() }
+                        ));
+                        client
+                            .delete_devices(devices, Some(auth))
+                            .await
+                            .map(|_| ())
+                            .map_err(|retry_error| CoreError::Failed {
+                                msg: format!("Could not sign the session out: {retry_error}"),
+                            })
+                    }
+                }
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// How the given room notifies, as far as the user has said.
+    pub async fn room_notification_mode(&self, room_id: String) -> FfiRoomNotificationMode {
+        use matrix_sdk::notification_settings::RoomNotificationMode;
+
+        let Some(session) = self.first_ready_session() else {
+            return FfiRoomNotificationMode::Default;
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
+                    return FfiRoomNotificationMode::Default;
+                };
+                let settings = session.client().notification_settings().await;
+                match settings
+                    .get_user_defined_room_notification_mode(&room_id)
+                    .await
+                {
+                    Some(RoomNotificationMode::AllMessages) => FfiRoomNotificationMode::All,
+                    Some(RoomNotificationMode::MentionsAndKeywordsOnly) => {
+                        FfiRoomNotificationMode::MentionsOnly
+                    }
+                    Some(RoomNotificationMode::Mute) => FfiRoomNotificationMode::Mute,
+                    None => FfiRoomNotificationMode::Default,
+                }
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Set how the given room notifies, or hand it back to the defaults.
+    pub async fn set_room_notification_mode(
+        &self,
+        room_id: String,
+        mode: FfiRoomNotificationMode,
+    ) -> Result<(), CoreError> {
+        use matrix_sdk::notification_settings::RoomNotificationMode;
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let settings = session.client().notification_settings().await;
+                let result = match mode {
+                    FfiRoomNotificationMode::Default => {
+                        settings.delete_user_defined_room_rules(&room_id).await
+                    }
+                    FfiRoomNotificationMode::All => {
+                        settings
+                            .set_room_notification_mode(&room_id, RoomNotificationMode::AllMessages)
+                            .await
+                    }
+                    FfiRoomNotificationMode::MentionsOnly => {
+                        settings
+                            .set_room_notification_mode(
+                                &room_id,
+                                RoomNotificationMode::MentionsAndKeywordsOnly,
+                            )
+                            .await
+                    }
+                    FfiRoomNotificationMode::Mute => {
+                        settings
+                            .set_room_notification_mode(&room_id, RoomNotificationMode::Mute)
+                            .await
+                    }
+                };
+                result.map_err(|mode_error| CoreError::Failed {
+                    msg: format!("Could not change the notification mode: {mode_error}"),
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Kick the given user from the given room.
+    pub async fn kick_user(
+        &self,
+        room_id: String,
+        user_id: String,
+        reason: Option<String>,
+    ) -> Result<(), CoreError> {
+        self.with_room_user(room_id, user_id, move |room, user| async move {
+            room.kick_user(&user, reason.as_deref())
+                .await
+                .map_err(|kick_error| CoreError::Failed {
+                    msg: format!("Could not kick: {kick_error}"),
+                })
+        })
+        .await
+    }
+
+    /// Ban the given user from the given room.
+    pub async fn ban_user(
+        &self,
+        room_id: String,
+        user_id: String,
+        reason: Option<String>,
+    ) -> Result<(), CoreError> {
+        self.with_room_user(room_id, user_id, move |room, user| async move {
+            room.ban_user(&user, reason.as_deref())
+                .await
+                .map_err(|ban_error| CoreError::Failed {
+                    msg: format!("Could not ban: {ban_error}"),
+                })
+        })
+        .await
+    }
+
+    /// Change the given user's power level in the given room.
+    pub async fn set_member_power_level(
+        &self,
+        room_id: String,
+        user_id: String,
+        level: i64,
+    ) -> Result<(), CoreError> {
+        self.with_room_user(room_id, user_id, move |room, user| async move {
+            let level = ruma::Int::try_from(level).unwrap_or_default();
+            room.update_power_levels(vec![(&user, level)])
+                .await
+                .map(|_| ())
+                .map_err(|power_error| CoreError::Failed {
+                    msg: format!("Could not change the role: {power_error}"),
+                })
+        })
+        .await
+    }
+
+    /// Export the room keys to an encrypted file at the given path.
+    pub async fn export_room_keys(
+        &self,
+        path: String,
+        passphrase: String,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                session
+                    .client()
+                    .encryption()
+                    .export_room_keys(path.into(), &passphrase, |_| true)
+                    .await
+                    .map_err(|export_error| CoreError::Failed {
+                        msg: format!("Could not export the keys: {export_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Import room keys from an encrypted export at the given path.
+    ///
+    /// Returns how many keys came in.
+    pub async fn import_room_keys(
+        &self,
+        path: String,
+        passphrase: String,
+    ) -> Result<u64, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                session
+                    .client()
+                    .encryption()
+                    .import_room_keys(path.into(), &passphrase)
+                    .await
+                    .map(|counts| counts.imported_count as u64)
+                    .map_err(|import_error| CoreError::Failed {
+                        msg: format!("Could not import the keys: {import_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Retry the messages that failed to send, by waking the send queue
     /// back up.
     ///
@@ -2818,6 +3152,36 @@ pub struct FfiHistoryEvent {
     pub is_video: bool,
 }
 
+/// One of the account's sessions.
+#[derive(uniffi::Record)]
+pub struct FfiDevice {
+    /// The ID of the device.
+    pub device_id: String,
+    /// Its display name, when one is set.
+    pub display_name: Option<String>,
+    /// Whether it is this session.
+    pub is_current: bool,
+    /// Whether cross-signing vouches for it.
+    pub is_verified: bool,
+    /// When it was last seen, in milliseconds since the epoch.
+    pub last_seen_ts: Option<u64>,
+    /// The IP it was last seen from.
+    pub last_seen_ip: Option<String>,
+}
+
+/// How a room notifies.
+#[derive(uniffi::Enum, Clone, Copy, PartialEq, Eq)]
+pub enum FfiRoomNotificationMode {
+    /// Whatever the account's defaults say.
+    Default,
+    /// Every message.
+    All,
+    /// Mentions and keywords only.
+    MentionsOnly,
+    /// Nothing.
+    Mute,
+}
+
 /// The account's profile, as far as the server tells it.
 #[derive(uniffi::Record)]
 pub struct FfiProfile {
@@ -2897,6 +3261,46 @@ pub struct FfiGifPage {
 }
 
 impl CoreApp {
+    /// Run the given action with the matrix room and parsed user ID, off
+    /// the runtime.
+    async fn with_room_user<F, Fut>(
+        &self,
+        room_id: String,
+        user_id: String,
+        action: F,
+    ) -> Result<(), CoreError>
+    where
+        F: FnOnce(matrix_sdk::room::Room, ruma::OwnedUserId) -> Fut + Send + 'static,
+        Fut: Future<Output = Result<(), CoreError>> + Send,
+    {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let user_id =
+                    ruma::UserId::parse(user_id.trim()).map_err(|_| CoreError::Failed {
+                        msg: "That is not a valid user ID".to_owned(),
+                    })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                action(room.matrix_room().clone(), user_id).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Run the given action with the room and parsed event ID, off the
     /// runtime.
     async fn with_room_event<F, Fut>(

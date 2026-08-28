@@ -9,7 +9,11 @@
 //! the entire replacement for the XDG-derivation contortions documented in
 //! the application's `utils::DataType`.
 
-use std::{fmt, path::PathBuf, sync::Arc, sync::OnceLock};
+use std::{
+    fmt,
+    path::PathBuf,
+    sync::{Arc, OnceLock},
+};
 
 use crate::settings::{FileSettingsStore, SettingsStore};
 

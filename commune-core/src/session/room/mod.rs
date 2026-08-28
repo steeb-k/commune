@@ -32,9 +32,9 @@ use matrix_sdk::{
     Result as MatrixResult, RoomDisplayName as SdkRoomDisplayName, RoomInfo, RoomState,
     deserialized_responses::RawSyncOrStrippedState, room::Room as MatrixRoom,
 };
-use ruma::api::client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType;
 use ruma::{
     MilliSecondsSinceUnixEpoch, OwnedMxcUri, OwnedRoomId, OwnedUserId, RoomId,
+    api::client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
     events::{
         AnySyncTimelineEvent,
         room::member::{MembershipState, RoomMemberEventContent},

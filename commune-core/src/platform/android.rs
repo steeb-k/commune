@@ -5,10 +5,10 @@
 //! `gdk_android_display_get_env()` on the GTK thread, and the application
 //! `Context` was dug out of a `GdkAndroidToplevel`'s `Activity`. Neither
 //! exists in the Kotlin variant, and neither is needed: the Kotlin side has
-//! both in hand at startup, so it calls [`Java_io_github_steeb_1k_commune_core_Native_seed`]
-//! once, before touching anything else in the core, and [`JNI_OnLoad`]
-//! catches the VM even earlier when the library is loaded with
-//! `System.loadLibrary`.
+//! both in hand at startup, so it calls
+//! [`Java_io_github_steeb_1k_commune_core_Native_seed`] once, before touching
+//! anything else in the core, and [`JNI_OnLoad`] catches the VM even earlier
+//! when the library is loaded with `System.loadLibrary`.
 //!
 //! A `JNIEnv` belongs to the thread it was made for and may not be used from
 //! another, and almost nothing here runs on a Java thread — the secret store
