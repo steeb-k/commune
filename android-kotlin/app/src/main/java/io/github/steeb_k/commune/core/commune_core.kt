@@ -620,6 +620,9 @@ internal open class UniffiForeignFutureResultVoid(
 internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
     fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultVoid.UniffiByValue,)
 }
+internal interface UniffiCallbackInterfaceMemberListListenerMethod0 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`members`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
 internal interface UniffiCallbackInterfaceRoomListListenerMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`rooms`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
@@ -628,6 +631,25 @@ internal interface UniffiCallbackInterfaceTimelineListenerMethod0 : com.sun.jna.
 }
 internal interface UniffiCallbackInterfaceTypingListenerMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`userIds`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
+@Structure.FieldOrder("uniffiFree", "uniffiClone", "onUpdate")
+internal open class UniffiVTableCallbackInterfaceMemberListListener(
+    @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+    @JvmField internal var `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+    @JvmField internal var `onUpdate`: UniffiCallbackInterfaceMemberListListenerMethod0? = null,
+) : Structure() {
+    class UniffiByValue(
+        `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+        `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+        `onUpdate`: UniffiCallbackInterfaceMemberListListenerMethod0? = null,
+    ): UniffiVTableCallbackInterfaceMemberListListener(`uniffiFree`,`uniffiClone`,`onUpdate`,), Structure.ByValue
+
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceMemberListListener) {
+        `uniffiFree` = other.`uniffiFree`
+        `uniffiClone` = other.`uniffiClone`
+        `onUpdate` = other.`onUpdate`
+    }
+
 }
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "onUpdate")
 internal open class UniffiVTableCallbackInterfaceRoomListListener(
@@ -713,7 +735,11 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_func_init_core(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_clear_member_list_listener(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_clear_thread_listener(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_get_avatar(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
     ): Short
@@ -747,6 +773,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_session_user_id(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_member_list_listener(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_notifications_enabled(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled(
@@ -760,6 +788,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_set_typing_enabled(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_typing_listener(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_memberlistlistener_on_update(
     ): Short
     external fun uniffi_commune_core_checksum_method_roomlistlistener_on_update(
     ): Short
@@ -785,6 +815,7 @@ internal object UniffiLib {
 
     init {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "commune_core"))
+        uniffiCallbackInterfaceMemberListListener.register(this)
         uniffiCallbackInterfaceRoomListListener.register(this)
         uniffiCallbackInterfaceTimelineListener.register(this)
         uniffiCallbackInterfaceTypingListener.register(this)
@@ -796,8 +827,12 @@ external fun uniffi_commune_core_fn_free_coreapp(`handle`: Long,uniffi_out_err: 
 ): Unit
 external fun uniffi_commune_core_fn_constructor_coreapp_new(uniffi_out_err: UniffiRustCallStatus, 
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_clear_member_list_listener(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_commune_core_fn_method_coreapp_clear_thread_listener(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_get_avatar(`ptr`: Long,`mxcUri`: RustBuffer.ByValue,`size`: Int,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,`size`: Int,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_timeline_media(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,
@@ -830,6 +865,8 @@ external fun uniffi_commune_core_fn_method_coreapp_session_settings(`ptr`: Long,
 ): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_method_coreapp_session_user_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_method_coreapp_set_member_list_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_notifications_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_public_read_receipts_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
@@ -843,6 +880,14 @@ external fun uniffi_commune_core_fn_method_coreapp_set_timeline_listener(`ptr`: 
 external fun uniffi_commune_core_fn_method_coreapp_set_typing_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_typing_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_clone_memberlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_commune_core_fn_free_memberlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_init_callback_vtable_memberlistlistener(`vtable`: UniffiVTableCallbackInterfaceMemberListListener,
+): Unit
+external fun uniffi_commune_core_fn_method_memberlistlistener_on_update(`ptr`: Long,`members`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_clone_roomlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
@@ -997,7 +1042,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_func_init_core() != 39848.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_clear_member_list_listener() != 21403.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_clear_thread_listener() != 18100.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_get_avatar() != 49706.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_room_avatar() != 19575.toShort()) {
@@ -1048,6 +1099,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_session_user_id() != 13656.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_member_list_listener() != 42898.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_notifications_enabled() != 49241.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1067,6 +1121,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_typing_listener() != 32255.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_memberlistlistener_on_update() != 20923.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_roomlistlistener_on_update() != 35870.toShort()) {
@@ -1358,6 +1415,29 @@ public object FfiConverterULong: FfiConverter<ULong, Long> {
 /**
  * @suppress
  */
+public object FfiConverterLong: FfiConverter<Long, Long> {
+    override fun lift(value: Long): Long {
+        return value
+    }
+
+    override fun read(buf: ByteBuffer): Long {
+        return buf.getLong()
+    }
+
+    override fun lower(value: Long): Long {
+        return value
+    }
+
+    override fun allocationSize(value: Long) = 8UL
+
+    override fun write(value: Long, buf: ByteBuffer) {
+        buf.putLong(value)
+    }
+}
+
+/**
+ * @suppress
+ */
 public object FfiConverterBoolean: FfiConverter<Boolean, Byte> {
     override fun lift(value: Byte): Boolean {
         return value.toInt() != 0
@@ -1537,9 +1617,20 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
 public interface CoreAppInterface {
     
     /**
+     * Stop feeding the member-list listener.
+     */
+    fun `clearMemberListListener`()
+    
+    /**
      * Stop pushing thread updates.
      */
     fun `clearThreadListener`()
+    
+    /**
+     * Fetch the avatar at the given MXC URI into a file, returning its
+     * path.
+     */
+    suspend fun `getAvatar`(`mxcUri`: kotlin.String, `size`: kotlin.UInt): kotlin.String?
     
     /**
      * Fetch the avatar of the given room into a file, returning its path.
@@ -1632,6 +1723,15 @@ public interface CoreAppInterface {
      * The Matrix user ID of the first ready session, if any.
      */
     fun `sessionUserId`(): kotlin.String?
+    
+    /**
+     * Give the member list of the given room to the given listener, now
+     * and on every change.
+     *
+     * Replaces any previous member-list listener; v1 watches one room at
+     * a time, which is what one screen shows.
+     */
+    fun `setMemberListListener`(`roomId`: kotlin.String, `listener`: MemberListListener)
     
     /**
      * Set whether notifications are enabled for this session.
@@ -1792,6 +1892,21 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Stop feeding the member-list listener.
+     */override fun `clearMemberListListener`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_clear_member_list_listener(
+        it,
+        _status)
+}
+    }
+    
+    
+
+    
+    /**
      * Stop pushing thread updates.
      */override fun `clearThreadListener`()
         = 
@@ -1804,6 +1919,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     }
     
     
+
+    
+    /**
+     * Fetch the avatar at the given MXC URI into a file, returning its
+     * path.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getAvatar`(`mxcUri`: kotlin.String, `size`: kotlin.UInt) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_get_avatar(
+                uniffiHandle,
+                FfiConverterString.lower(`mxcUri`),FfiConverterUInt.lower(`size`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
     
     /**
@@ -2148,6 +2287,25 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Give the member list of the given room to the given listener, now
+     * and on every change.
+     *
+     * Replaces any previous member-list listener; v1 watches one room at
+     * a time, which is what one screen shows.
+     */override fun `setMemberListListener`(`roomId`: kotlin.String, `listener`: MemberListListener)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_set_member_list_listener(
+        it,
+        FfiConverterString.lower(`roomId`),FfiConverterTypeMemberListListener.lower(`listener`),_status)
+}
+    }
+    
+    
+
+    
+    /**
      * Set whether notifications are enabled for this session.
      */override fun `setNotificationsEnabled`(`enabled`: kotlin.Boolean)
         = 
@@ -2294,6 +2452,325 @@ public object FfiConverterTypeCoreApp: FfiConverter<CoreApp, Long> {
     override fun allocationSize(value: CoreApp) = 8UL
 
     override fun write(value: CoreApp, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+/**
+ * Something on the foreign side that wants to know when a room's member
+ * list changes.
+ */
+public interface MemberListListener {
+    
+    /**
+     * The member list changed; here is all of it.
+     */
+    fun `onUpdate`(`members`: List<FfiMember>)
+    
+    companion object
+}
+
+/**
+ * Something on the foreign side that wants to know when a room's member
+ * list changes.
+ */
+open class MemberListListenerImpl: Disposable, AutoCloseable, MemberListListener
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = null
+    }
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable?
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_commune_core_fn_free_memberlistlistener(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_commune_core_fn_clone_memberlistlistener(handle, status)
+        }
+    }
+
+    
+    /**
+     * The member list changed; here is all of it.
+     */override fun `onUpdate`(`members`: List<FfiMember>)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_memberlistlistener_on_update(
+        it,
+        FfiConverterSequenceTypeFfiMember.lower(`members`),_status)
+}
+    }
+    
+    
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+
+// Put the implementation in an object so we don't pollute the top-level namespace
+internal object uniffiCallbackInterfaceMemberListListener {
+    internal object `onUpdate`: UniffiCallbackInterfaceMemberListListenerMethod0 {
+        override fun callback(`uniffiHandle`: Long,`members`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeMemberListListener.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onUpdate`(
+                    FfiConverterSequenceTypeFfiMember.lift(`members`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
+        override fun callback(handle: Long) {
+            FfiConverterTypeMemberListListener.handleMap.remove(handle)
+        }
+    }
+
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypeMemberListListener.handleMap.clone(handle)
+        }
+    }
+
+    internal var vtable = UniffiVTableCallbackInterfaceMemberListListener.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `onUpdate`,
+    )
+
+    // Registers the foreign callback with the Rust side.
+    // This method is generated for each callback interface.
+    internal fun register(lib: UniffiLib) {
+        lib.uniffi_commune_core_fn_init_callback_vtable_memberlistlistener(vtable)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeMemberListListener: FfiConverter<MemberListListener, Long> {
+    internal val handleMap = UniffiHandleMap<MemberListListener>()
+
+    override fun lower(value: MemberListListener): Long {
+        if (value is MemberListListenerImpl) {
+             // Rust-implemented object.  Clone the handle and return it
+            return value.uniffiCloneHandle()
+         } else {
+            // Kotlin object, generate a new vtable handle and return that.
+            return handleMap.insert(value)
+         }
+    }
+
+    override fun lift(value: Long): MemberListListener {
+        if ((value and 1.toLong()) == 0.toLong()) {
+            // Rust-generated handle, construct a new class that uses the handle to implement the
+            // interface
+            return MemberListListenerImpl(UniffiWithHandle, value)
+        } else {
+            // Kotlin-generated handle, get the object from the handle map
+            return handleMap.remove(value)
+        }
+    }
+
+    override fun read(buf: ByteBuffer): MemberListListener {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: MemberListListener) = 8UL
+
+    override fun write(value: MemberListListener, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
@@ -3321,6 +3798,93 @@ public object FfiConverterTypeFfiCoreConfig: FfiConverterRustBuffer<FfiCoreConfi
 
 
 /**
+ * A member of a room.
+ */
+data class FfiMember (
+    /**
+     * The Matrix ID of the member.
+     */
+    var `userId`: kotlin.String
+    , 
+    /**
+     * The name the member displays as.
+     */
+    var `displayName`: kotlin.String
+    , 
+    /**
+     * Whether the display name is shared with another member.
+     */
+    var `isNameAmbiguous`: kotlin.Boolean
+    , 
+    /**
+     * The avatar of the member, if any.
+     */
+    var `avatarUrl`: kotlin.String?
+    , 
+    /**
+     * The power level of the member; `i64::MAX` stands for infinite.
+     */
+    var `powerLevel`: kotlin.Long
+    , 
+    /**
+     * The role of the member.
+     */
+    var `role`: FfiMemberRole
+    , 
+    /**
+     * The membership state of the member.
+     */
+    var `membership`: FfiMembership
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiMember: FfiConverterRustBuffer<FfiMember> {
+    override fun read(buf: ByteBuffer): FfiMember {
+        return FfiMember(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterTypeFfiMemberRole.read(buf),
+            FfiConverterTypeFfiMembership.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiMember) = (
+            FfiConverterString.allocationSize(value.`userId`) +
+            FfiConverterString.allocationSize(value.`displayName`) +
+            FfiConverterBoolean.allocationSize(value.`isNameAmbiguous`) +
+            FfiConverterOptionalString.allocationSize(value.`avatarUrl`) +
+            FfiConverterLong.allocationSize(value.`powerLevel`) +
+            FfiConverterTypeFfiMemberRole.allocationSize(value.`role`) +
+            FfiConverterTypeFfiMembership.allocationSize(value.`membership`)
+    )
+
+    override fun write(value: FfiMember, buf: ByteBuffer) {
+            FfiConverterString.write(value.`userId`, buf)
+            FfiConverterString.write(value.`displayName`, buf)
+            FfiConverterBoolean.write(value.`isNameAmbiguous`, buf)
+            FfiConverterOptionalString.write(value.`avatarUrl`, buf)
+            FfiConverterLong.write(value.`powerLevel`, buf)
+            FfiConverterTypeFfiMemberRole.write(value.`role`, buf)
+            FfiConverterTypeFfiMembership.write(value.`membership`, buf)
+    }
+}
+
+
+
+/**
  * A room, as the sidebar needs it.
  */
 data class FfiRoom (
@@ -3369,6 +3933,11 @@ data class FfiRoom (
      * The avatar of the room, as an `mxc:` URI.
      */
     var `avatarUrl`: kotlin.String?
+    , 
+    /**
+     * The number of joined members.
+     */
+    var `joinedMembersCount`: kotlin.ULong
     
 ){
     
@@ -3394,6 +3963,7 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterBoolean.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterULong.read(buf),
         )
     }
 
@@ -3406,7 +3976,8 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterBoolean.allocationSize(value.`isDirect`) +
             FfiConverterBoolean.allocationSize(value.`isRead`) +
             FfiConverterULong.allocationSize(value.`latestActivity`) +
-            FfiConverterOptionalString.allocationSize(value.`avatarUrl`)
+            FfiConverterOptionalString.allocationSize(value.`avatarUrl`) +
+            FfiConverterULong.allocationSize(value.`joinedMembersCount`)
     )
 
     override fun write(value: FfiRoom, buf: ByteBuffer) {
@@ -3419,6 +3990,7 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterBoolean.write(value.`isRead`, buf)
             FfiConverterULong.write(value.`latestActivity`, buf)
             FfiConverterOptionalString.write(value.`avatarUrl`, buf)
+            FfiConverterULong.write(value.`joinedMembersCount`, buf)
     }
 }
 
@@ -3782,6 +4354,124 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * The role of a room member, derived from their power level.
+ */
+
+enum class FfiMemberRole {
+    
+    /**
+     * A room creator, with infinite power level.
+     */
+    CREATOR,
+    /**
+     * An administrator.
+     */
+    ADMINISTRATOR,
+    /**
+     * A moderator.
+     */
+    MODERATOR,
+    /**
+     * A member with the room's default power level.
+     */
+    DEFAULT,
+    /**
+     * A member without enough power to send messages.
+     */
+    MUTED,
+    /**
+     * A member with a power level that matches no other role.
+     */
+    CUSTOM;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiMemberRole: FfiConverterRustBuffer<FfiMemberRole> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiMemberRole.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiMemberRole) = 4UL
+
+    override fun write(value: FfiMemberRole, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * The membership state of a room member.
+ */
+
+enum class FfiMembership {
+    
+    /**
+     * The user left the room, or was never in the room.
+     */
+    LEAVE,
+    /**
+     * The user is currently in the room.
+     */
+    JOIN,
+    /**
+     * The user was invited to the room.
+     */
+    INVITE,
+    /**
+     * The user was banned from the room.
+     */
+    BAN,
+    /**
+     * The user knocked on the room.
+     */
+    KNOCK,
+    /**
+     * The user is in an unsupported membership state.
+     */
+    UNSUPPORTED;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiMembership: FfiConverterRustBuffer<FfiMembership> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiMembership.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiMembership) = 4UL
+
+    override fun write(value: FfiMembership, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 
@@ -4335,6 +5025,34 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterString.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiMember: FfiConverterRustBuffer<List<FfiMember>> {
+    override fun read(buf: ByteBuffer): List<FfiMember> {
+        val len = buf.getInt()
+        return List<FfiMember>(len) {
+            FfiConverterTypeFfiMember.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiMember>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiMember.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiMember>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiMember.write(it, buf)
         }
     }
 }

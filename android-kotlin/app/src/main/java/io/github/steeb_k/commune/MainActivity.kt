@@ -17,6 +17,8 @@ import io.github.steeb_k.commune.ui.CommuneTheme
 import io.github.steeb_k.commune.ui.LoadingScreen
 import io.github.steeb_k.commune.ui.LoginFlow
 import io.github.steeb_k.commune.ui.MediaViewerScreen
+import io.github.steeb_k.commune.ui.MembersScreen
+import io.github.steeb_k.commune.ui.RoomDetailsScreen
 import io.github.steeb_k.commune.ui.RoomScreen
 import io.github.steeb_k.commune.ui.SettingsScreen
 import io.github.steeb_k.commune.ui.ThreadScreen
@@ -68,6 +70,12 @@ private fun CommuneApp(state: CommuneState) {
                 SettingsScreen(state)
             } else if (room == null) {
                 SidebarScreen(state)
+            } else if (state.membersOpen) {
+                BackHandler { state.closeMembers() }
+                MembersScreen(state, room)
+            } else if (state.roomDetailsOpen) {
+                BackHandler { state.closeRoomDetails() }
+                RoomDetailsScreen(state, room)
             } else if (state.openThreadRoot != null) {
                 BackHandler { state.closeThread() }
                 ThreadScreen(state, room)

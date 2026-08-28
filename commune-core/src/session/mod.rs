@@ -62,8 +62,8 @@ use url::Url;
 
 pub use self::{
     room::{
-        ReceiptPosition, Room, RoomCategory, RoomDisplayName, RoomHighlight, TargetRoomCategory,
-        Timeline, TimelineFocusKind,
+        Member, MemberList, MemberRole, Membership, ReceiptPosition, Room, RoomCategory,
+        RoomDisplayName, RoomHighlight, TargetRoomCategory, Timeline, TimelineFocusKind,
     },
     room_list::{RoomList, RoomMetainfo},
     sidebar::SidebarSectionName,

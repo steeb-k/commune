@@ -168,6 +168,8 @@ pub struct FfiRoom {
     pub latest_activity: u64,
     /// The avatar of the room, as an `mxc:` URI.
     pub avatar_url: Option<String>,
+    /// The number of joined members.
+    pub joined_members_count: u64,
 }
 
 impl From<&Room> for FfiRoom {
@@ -182,6 +184,7 @@ impl From<&Room> for FfiRoom {
             is_read: room.is_read(),
             latest_activity: room.latest_activity(),
             avatar_url: room.avatar_url().map(|uri| uri.to_string()),
+            joined_members_count: room.joined_members_count(),
         }
     }
 }
@@ -192,6 +195,115 @@ impl From<&Room> for FfiRoom {
 pub trait RoomListListener: Send + Sync {
     /// The room list changed; here is all of it.
     fn on_update(&self, rooms: Vec<FfiRoom>);
+}
+
+/// The membership state of a room member.
+#[derive(uniffi::Enum)]
+pub enum FfiMembership {
+    /// The user left the room, or was never in the room.
+    Leave,
+    /// The user is currently in the room.
+    Join,
+    /// The user was invited to the room.
+    Invite,
+    /// The user was banned from the room.
+    Ban,
+    /// The user knocked on the room.
+    Knock,
+    /// The user is in an unsupported membership state.
+    Unsupported,
+}
+
+impl From<crate::session::Membership> for FfiMembership {
+    fn from(value: crate::session::Membership) -> Self {
+        use crate::session::Membership;
+        match value {
+            Membership::Leave => Self::Leave,
+            Membership::Join => Self::Join,
+            Membership::Invite => Self::Invite,
+            Membership::Ban => Self::Ban,
+            Membership::Knock => Self::Knock,
+            Membership::Unsupported => Self::Unsupported,
+        }
+    }
+}
+
+/// The role of a room member, derived from their power level.
+#[derive(uniffi::Enum)]
+pub enum FfiMemberRole {
+    /// A room creator, with infinite power level.
+    Creator,
+    /// An administrator.
+    Administrator,
+    /// A moderator.
+    Moderator,
+    /// A member with the room's default power level.
+    Default,
+    /// A member without enough power to send messages.
+    Muted,
+    /// A member with a power level that matches no other role.
+    Custom,
+}
+
+impl From<crate::session::MemberRole> for FfiMemberRole {
+    fn from(value: crate::session::MemberRole) -> Self {
+        use crate::session::MemberRole;
+        match value {
+            MemberRole::Creator => Self::Creator,
+            MemberRole::Administrator => Self::Administrator,
+            MemberRole::Moderator => Self::Moderator,
+            MemberRole::Default => Self::Default,
+            MemberRole::Muted => Self::Muted,
+            MemberRole::Custom => Self::Custom,
+        }
+    }
+}
+
+/// A member of a room.
+#[derive(uniffi::Record)]
+pub struct FfiMember {
+    /// The Matrix ID of the member.
+    pub user_id: String,
+    /// The name the member displays as.
+    pub display_name: String,
+    /// Whether the display name is shared with another member.
+    pub is_name_ambiguous: bool,
+    /// The avatar of the member, if any.
+    pub avatar_url: Option<String>,
+    /// The power level of the member; `i64::MAX` stands for infinite.
+    pub power_level: i64,
+    /// The role of the member.
+    pub role: FfiMemberRole,
+    /// The membership state of the member.
+    pub membership: FfiMembership,
+}
+
+impl From<&crate::session::Member> for FfiMember {
+    fn from(member: &crate::session::Member) -> Self {
+        use ruma::events::room::power_levels::UserPowerLevel;
+
+        Self {
+            user_id: member.user_id.to_string(),
+            display_name: member.display_name_or_localpart(),
+            is_name_ambiguous: member.is_name_ambiguous,
+            avatar_url: member.avatar_url.as_ref().map(ToString::to_string),
+            power_level: if let UserPowerLevel::Int(level) = member.power_level {
+                level.into()
+            } else {
+                i64::MAX
+            },
+            role: member.role.into(),
+            membership: member.membership.into(),
+        }
+    }
+}
+
+/// Something on the foreign side that wants to know when a room's member
+/// list changes.
+#[uniffi::export(with_foreign)]
+pub trait MemberListListener: Send + Sync {
+    /// The member list changed; here is all of it.
+    fn on_update(&self, members: Vec<FfiMember>);
 }
 
 /// A timeline item, as the message list needs it.
@@ -353,6 +465,8 @@ pub struct CoreApp {
     typing_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
     /// The task pushing thread-timeline updates to the foreign listener.
     thread_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
+    /// The task feeding the member-list listener.
+    member_list_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
 }
 
 #[uniffi::export]
@@ -367,6 +481,7 @@ impl CoreApp {
             timeline_listener_handle: Mutex::new(None),
             typing_listener_handle: Mutex::new(None),
             thread_listener_handle: Mutex::new(None),
+            member_list_listener_handle: Mutex::new(None),
         })
     }
 
@@ -466,6 +581,79 @@ impl CoreApp {
         {
             previous.abort();
         }
+    }
+
+    /// Give the member list of the given room to the given listener, now
+    /// and on every change.
+    ///
+    /// Replaces any previous member-list listener; v1 watches one room at
+    /// a time, which is what one screen shows.
+    pub fn set_member_list_listener(&self, room_id: String, listener: Arc<dyn MemberListListener>) {
+        let session = self.first_ready_session();
+
+        let handle = RUNTIME
+            .spawn(async move {
+                let Some(session) = session else { return };
+                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
+                    return;
+                };
+                let Some(room) = session.room_list().get(&room_id) else {
+                    return;
+                };
+
+                let member_list = room.member_list();
+                let (members, stream) = member_list.subscribe();
+
+                listener.on_update(members.iter().map(FfiMember::from).collect());
+
+                let mut members = members;
+                let mut stream = std::pin::pin!(stream);
+                while let Some(diffs) = stream.next().await {
+                    for diff in diffs {
+                        diff.apply(&mut members);
+                    }
+                    listener.on_update(members.iter().map(FfiMember::from).collect());
+                }
+            })
+            .abort_handle();
+
+        if let Some(previous) = self
+            .member_list_listener_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .replace(handle)
+        {
+            previous.abort();
+        }
+    }
+
+    /// Stop feeding the member-list listener.
+    pub fn clear_member_list_listener(&self) {
+        if let Some(previous) = self
+            .member_list_listener_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .take()
+        {
+            previous.abort();
+        }
+    }
+
+    /// Fetch the avatar at the given MXC URI into a file, returning its
+    /// path.
+    pub async fn get_avatar(&self, mxc_uri: String, size: u32) -> Option<String> {
+        let session = self.first_ready_session()?;
+
+        RUNTIME
+            .spawn(async move {
+                let avatar_url: ruma::OwnedMxcUri = mxc_uri.into();
+
+                crate::matrix::media::get_avatar_file(&session.client(), &avatar_url, size)
+                    .await
+                    .map(|path| path.to_string_lossy().into_owned())
+            })
+            .await
+            .expect("task was not aborted")
     }
 
     /// Give the timeline of the given room to the given listener, now and

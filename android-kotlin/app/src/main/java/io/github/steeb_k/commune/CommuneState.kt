@@ -11,10 +11,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.steeb_k.commune.core.CoreApp
 import io.github.steeb_k.commune.core.FfiCoreConfig
+import io.github.steeb_k.commune.core.FfiMember
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiSessionSettings
 import io.github.steeb_k.commune.core.FfiTimelineItem
 import io.github.steeb_k.commune.core.Native
+import io.github.steeb_k.commune.core.MemberListListener
 import io.github.steeb_k.commune.core.RoomListListener
 import io.github.steeb_k.commune.core.TimelineListener
 import io.github.steeb_k.commune.core.TypingListener
@@ -66,6 +68,12 @@ class CommuneState(context: Context) {
     var settings by mutableStateOf<FfiSessionSettings?>(null)
         private set
     var viewerImagePath by mutableStateOf<String?>(null)
+        private set
+    var roomDetailsOpen by mutableStateOf(false)
+        private set
+    var membersOpen by mutableStateOf(false)
+        private set
+    var members by mutableStateOf<List<FfiMember>>(emptyList())
         private set
 
     init {
@@ -163,6 +171,39 @@ class CommuneState(context: Context) {
         timeline = emptyList()
         typingUsers = emptyList()
         closeThread()
+        closeMembers()
+        roomDetailsOpen = false
+    }
+
+    fun openRoomDetails() {
+        roomDetailsOpen = true
+    }
+
+    fun closeRoomDetails() {
+        roomDetailsOpen = false
+    }
+
+    fun openMembers() {
+        val room = openRoom ?: return
+        membersOpen = true
+        members = emptyList()
+
+        app.setMemberListListener(
+            room.roomId,
+            object : MemberListListener {
+                override fun onUpdate(members: List<FfiMember>) {
+                    main.post {
+                        if (membersOpen) this@CommuneState.members = members
+                    }
+                }
+            },
+        )
+    }
+
+    fun closeMembers() {
+        membersOpen = false
+        members = emptyList()
+        app.clearMemberListListener()
     }
 
     fun openThread(rootEventId: String) {
