@@ -1335,7 +1335,7 @@ impl CoreApp {
                     })?;
 
                 room.thread_timeline(thread_root)
-                    .send_text(body, Vec::new())
+                    .send_text(body, None, Vec::new(), false)
                     .await
                     .map_err(|()| CoreError::Failed {
                         msg: "Could not send the message".to_owned(),
@@ -1402,7 +1402,7 @@ impl CoreApp {
         &self,
         room_id: String,
         body: String,
-        mentions: Vec<String>,
+        mentions: Vec<FfiMention>,
     ) -> Result<(), CoreError> {
         let Some(session) = self.first_ready_session() else {
             return Err(CoreError::Failed {
@@ -1422,12 +1422,36 @@ impl CoreApp {
                         msg: "Unknown room".to_owned(),
                     })?;
 
-                let mentions = mentions
-                    .iter()
-                    .filter_map(|user| ruma::UserId::parse(user).ok())
-                    .collect();
+                // A mention becomes a matrix.to link in the body — the
+                // application's composer produces the same anchor — plus
+                // its entry in m.mentions.
+                let mut markdown = body.clone();
+                let mut plain = body;
+                let mut user_ids = Vec::new();
+                for mention in &mentions {
+                    let Ok(user_id) = ruma::UserId::parse(&mention.user_id) else {
+                        continue;
+                    };
+                    let at_name = format!("@{}", mention.display_name);
+                    let anchor = format!(
+                        "[{}](https://matrix.to/#/{})",
+                        mention.display_name, mention.user_id,
+                    );
+                    markdown = markdown.replace(&at_name, &anchor);
+                    // The plain body carries the bare name, as the
+                    // application's composer writes it.
+                    plain = plain.replace(&at_name, &mention.display_name);
+                    user_ids.push(user_id);
+                }
+                let room_mention = plain.split_whitespace().any(|word| word == "@room");
+                let plain = if user_ids.is_empty() {
+                    None
+                } else {
+                    Some(plain)
+                };
+
                 room.live_timeline()
-                    .send_text(body, mentions)
+                    .send_text(markdown, plain, user_ids, room_mention)
                     .await
                     .map_err(|()| CoreError::Failed {
                         msg: "Could not send the message".to_owned(),
@@ -2249,6 +2273,12 @@ impl CoreApp {
     /// Download the given GIF and send it to the given room, then report the
     /// share to the GIF service.
     pub async fn send_gif(&self, room_id: String, gif: FfiGif) -> Result<(), CoreError> {
+        use ruma::events::{
+            AnyMessageLikeEventContent,
+            room::ImageInfo,
+            sticker::{StickerEventContent, StickerMediaSource},
+        };
+
         let Some(session) = self.first_ready_session() else {
             return Err(CoreError::Failed {
                 msg: "No session".to_owned(),
@@ -2275,20 +2305,43 @@ impl CoreApp {
                         msg: format!("Could not download the GIF: {fetch_error}"),
                     })?;
 
-                // The filename becomes the fallback body of the event, as in
-                // the GTK composer.
-                let filename = format!("{}.gif", gif.title.replace(['/', '\\'], " "));
-                room.live_timeline()
-                    .send_image_bytes(
-                        bytes,
-                        filename,
-                        mime::IMAGE_GIF,
-                        gif.send_width,
-                        gif.send_height,
-                    )
+                // The application sends a GIF as a sticker: uploaded, never
+                // linked, encrypted where the room is.
+                let client = session.client();
+                let source = if room.is_encrypted() {
+                    let mut cursor = std::io::Cursor::new(bytes.clone());
+                    let file = client.upload_encrypted_file(&mut cursor).await.map_err(
+                        |upload_error| CoreError::Failed {
+                            msg: format!("Could not upload the GIF: {upload_error}"),
+                        },
+                    )?;
+                    StickerMediaSource::Encrypted(Box::new(file))
+                } else {
+                    let response = client
+                        .media()
+                        .upload(&mime::IMAGE_GIF, bytes.clone(), None)
+                        .await
+                        .map_err(|upload_error| CoreError::Failed {
+                            msg: format!("Could not upload the GIF: {upload_error}"),
+                        })?;
+                    StickerMediaSource::Plain(response.content_uri)
+                };
+
+                let mut info = ImageInfo::new();
+                info.width = Some(gif.send_width.into());
+                info.height = Some(gif.send_height.into());
+                info.size = bytes.len().try_into().ok();
+                info.mimetype = Some(mime::IMAGE_GIF.to_string());
+                // Without this the receiving client asks its homeserver for
+                // a thumbnail, which is a still frame.
+                info.is_animated = Some(true);
+
+                let content = StickerEventContent::with_source(gif.title, info, source);
+                room.matrix_room()
+                    .send(AnyMessageLikeEventContent::Sticker(content))
                     .await
-                    .map_err(|()| CoreError::Failed {
-                        msg: "Could not send the GIF".to_owned(),
+                    .map_err(|send_error| CoreError::Failed {
+                        msg: format!("Could not send the GIF: {send_error}"),
                     })?;
 
                 crate::klipy::report_share(&gif.slug).await;
@@ -2419,6 +2472,11 @@ impl CoreApp {
                         .get_static::<ruma::api::client::profile::DisplayName>()
                         .ok()
                         .flatten(),
+                    avatar_url: profile
+                        .get_static::<ruma::api::client::profile::AvatarUrl>()
+                        .ok()
+                        .flatten()
+                        .map(|url| url.to_string()),
                 })
             })
             .await
@@ -2949,9 +3007,11 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
-    /// The sticker packs on the account: the personal pack from
-    /// `im.ponies.user_emotes`, then every pack the account follows
-    /// through `im.ponies.emote_rooms`.
+    /// The sticker packs on the account, as the application resolves
+    /// them: the packs of Commune's own packs room first, then every
+    /// room pack enabled globally. Stable event names are preferred,
+    /// the unstable `im.ponies` names read as fallback, and personal
+    /// `im.ponies.user_emotes` packs from other clients come along too.
     pub async fn sticker_packs(&self) -> Vec<FfiStickerPack> {
         let Some(session) = self.first_ready_session() else {
             return Vec::new();
@@ -2961,56 +3021,53 @@ impl CoreApp {
             .spawn(async move {
                 let client = session.client();
                 let mut packs = Vec::new();
+                let mut seen: std::collections::HashSet<(String, String)> =
+                    std::collections::HashSet::new();
 
-                if let Ok(Some(raw)) = client
-                    .account()
-                    .account_data_raw("im.ponies.user_emotes".into())
-                    .await
-                    && let Ok(value) = raw.deserialize_as::<serde_json::Value>()
+                // Commune's own packs room.
+                if let Some(value) =
+                    read_account_data(&client, "io.github.steeb_k.Commune.image_packs_room").await
+                    && let Some(room_id) = value
+                        .pointer("/content/room_id")
+                        .or_else(|| value.get("room_id"))
+                        .and_then(|id| id.as_str())
+                    && let Ok(room_id) = ruma::RoomId::parse(room_id)
+                    && let Some(room) = client.get_room(&room_id)
+                    && let Ok(events) = room.get_state_events("m.room.image_pack".into()).await
+                {
+                    for event in events {
+                        let matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState::Sync(
+                            raw,
+                        ) = event
+                        else {
+                            continue;
+                        };
+                        let Ok(value) = raw.deserialize_as::<serde_json::Value>() else {
+                            continue;
+                        };
+                        let state_key = value
+                            .get("state_key")
+                            .and_then(|key| key.as_str())
+                            .unwrap_or_default()
+                            .to_owned();
+                        if let Some(pack) =
+                            parse_sticker_pack(value.get("content").unwrap_or(&value), &state_key)
+                        {
+                            seen.insert((room_id.to_string(), state_key));
+                            packs.push(pack);
+                        }
+                    }
+                }
+
+                // Room packs enabled globally, stable name first.
+                collect_enabled_packs(&client, &mut seen, &mut packs).await;
+
+                // Personal packs other clients keep in account data.
+                if let Some(value) = read_account_data(&client, "im.ponies.user_emotes").await
                     && let Some(pack) =
                         parse_sticker_pack(value.get("content").unwrap_or(&value), "My Stickers")
                 {
                     packs.push(pack);
-                }
-
-                if let Ok(Some(raw)) = client
-                    .account()
-                    .account_data_raw("im.ponies.emote_rooms".into())
-                    .await
-                    && let Ok(value) = raw.deserialize_as::<serde_json::Value>()
-                    && let Some(rooms) = value
-                        .pointer("/content/rooms")
-                        .or_else(|| value.get("rooms"))
-                        .and_then(|rooms| rooms.as_object())
-                {
-                    for (room_id, keys) in rooms {
-                        let Ok(room_id) = ruma::RoomId::parse(room_id) else {
-                            continue;
-                        };
-                        let Some(room) = client.get_room(&room_id) else {
-                            continue;
-                        };
-                        let Some(keys) = keys.as_object() else {
-                            continue;
-                        };
-                        for state_key in keys.keys() {
-                            if let Ok(Some(
-                                matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState::Sync(
-                                    raw,
-                                ),
-                            )) = room
-                                .get_state_event("im.ponies.room_emotes".into(), state_key)
-                                .await
-                                && let Ok(value) = raw.deserialize_as::<serde_json::Value>()
-                                && let Some(pack) = parse_sticker_pack(
-                                    value.get("content").unwrap_or(&value),
-                                    state_key,
-                                )
-                            {
-                                packs.push(pack);
-                            }
-                        }
-                    }
                 }
 
                 packs
@@ -3387,6 +3444,16 @@ pub enum FfiRoomNotificationMode {
     Mute,
 }
 
+/// A user the composer mentions, by the display name that stands for
+/// them in the text.
+#[derive(uniffi::Record)]
+pub struct FfiMention {
+    /// The user ID of the mention.
+    pub user_id: String,
+    /// The display name as it appears in the body, after an `@`.
+    pub display_name: String,
+}
+
 /// A sticker pack from the account's image packs.
 #[derive(uniffi::Record)]
 pub struct FfiStickerPack {
@@ -3409,6 +3476,76 @@ pub struct FfiSticker {
     pub height: Option<u32>,
     /// The MIME type, when the pack declares one.
     pub mime_type: Option<String>,
+}
+
+/// Collect the room packs the account enabled globally — the stable
+/// `m.image_pack.rooms` account data, the unstable `im.ponies` names as
+/// fallback — into `packs`, skipping the (room, key) pairs already seen.
+async fn collect_enabled_packs(
+    client: &matrix_sdk::Client,
+    seen: &mut std::collections::HashSet<(String, String)>,
+    packs: &mut Vec<FfiStickerPack>,
+) {
+    let mut enabled = serde_json::Map::new();
+    for event_type in ["m.image_pack.rooms", "im.ponies.emote_rooms"] {
+        if let Some(value) = read_account_data(client, event_type).await
+            && let Some(rooms) = value
+                .pointer("/content/rooms")
+                .or_else(|| value.get("rooms"))
+                .and_then(|rooms| rooms.as_object())
+        {
+            for (room_id, keys) in rooms {
+                enabled
+                    .entry(room_id.clone())
+                    .or_insert_with(|| keys.clone());
+            }
+        }
+    }
+
+    for (room_id, keys) in &enabled {
+        let Ok(room_id) = ruma::RoomId::parse(room_id) else {
+            continue;
+        };
+        let Some(room) = client.get_room(&room_id) else {
+            continue;
+        };
+        let Some(keys) = keys.as_object() else {
+            continue;
+        };
+        for state_key in keys.keys() {
+            if seen.contains(&(room_id.to_string(), state_key.clone())) {
+                continue;
+            }
+            for event_type in ["m.room.image_pack", "im.ponies.room_emotes"] {
+                if let Ok(Some(
+                    matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState::Sync(raw),
+                )) = room.get_state_event((*event_type).into(), state_key).await
+                    && let Ok(value) = raw.deserialize_as::<serde_json::Value>()
+                    && let Some(pack) =
+                        parse_sticker_pack(value.get("content").unwrap_or(&value), state_key)
+                {
+                    seen.insert((room_id.to_string(), state_key.clone()));
+                    packs.push(pack);
+                    break;
+                }
+            }
+        }
+    }
+}
+
+/// Read one global account-data event as plain JSON, `None` when it is
+/// absent or unreadable.
+async fn read_account_data(
+    client: &matrix_sdk::Client,
+    event_type: &str,
+) -> Option<serde_json::Value> {
+    client
+        .account()
+        .account_data_raw(event_type.into())
+        .await
+        .ok()
+        .flatten()
+        .and_then(|raw| raw.deserialize_as::<serde_json::Value>().ok())
 }
 
 /// Read one MSC2545 image pack out of its JSON, keeping the images whose
@@ -3466,6 +3603,8 @@ fn parse_sticker_pack(value: &serde_json::Value, fallback_name: &str) -> Option<
 pub struct FfiProfile {
     /// The display name, when one is set.
     pub display_name: Option<String>,
+    /// The avatar, as an `mxc:` URI, when one is set.
+    pub avatar_url: Option<String>,
 }
 
 /// One room of the public directory.

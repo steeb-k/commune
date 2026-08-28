@@ -68,6 +68,11 @@ class MainActivity : ComponentActivity() {
             uri?.let { state.importKeysFromUri(it) }
         }
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        intent.getStringExtra("room_id")?.let { state.openRoomById(it) }
+    }
+
     override fun onStart() {
         super.onStart()
         if (::state.isInitialized) state.uiVisible = true
@@ -109,6 +114,7 @@ class MainActivity : ComponentActivity() {
         if (PushManager.mode(this) != PushManager.MODE_UNIFIEDPUSH) {
             SyncService.start(this)
         }
+        intent?.getStringExtra("room_id")?.let { state.openRoomById(it) }
 
         setContent {
             CommuneTheme {

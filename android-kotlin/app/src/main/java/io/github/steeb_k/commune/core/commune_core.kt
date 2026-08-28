@@ -1463,7 +1463,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_gif() != 37883.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 61043.toShort()) {
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 25531.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_reply() != 33697.toShort()) {
@@ -1544,7 +1544,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_space_children() != 57237.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_commune_core_checksum_method_coreapp_sticker_packs() != 63075.toShort()) {
+    if (lib.uniffi_commune_core_checksum_method_coreapp_sticker_packs() != 31430.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_toggle_reaction() != 55807.toShort()) {
@@ -2373,7 +2373,7 @@ public interface CoreAppInterface {
      * Send a message to the given room — Markdown, as the composer
      * writes it — mentioning the given users.
      */
-    suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String, `mentions`: List<kotlin.String>)
+    suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String, `mentions`: List<FfiMention>)
     
     /**
      * Send a plain-text reply to the given event in the given room.
@@ -2533,9 +2533,11 @@ public interface CoreAppInterface {
     suspend fun `spaceChildren`(`spaceId`: kotlin.String): List<FfiSpaceChild>
     
     /**
-     * The sticker packs on the account: the personal pack from
-     * `im.ponies.user_emotes`, then every pack the account follows
-     * through `im.ponies.emote_rooms`.
+     * The sticker packs on the account, as the application resolves
+     * them: the packs of Commune's own packs room first, then every
+     * room pack enabled globally. Stable event names are preferred,
+     * the unstable `im.ponies` names read as fallback, and personal
+     * `im.ponies.user_emotes` packs from other clients come along too.
      */
     suspend fun `stickerPacks`(): List<FfiStickerPack>
     
@@ -3845,12 +3847,12 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String, `mentions`: List<kotlin.String>) {
+    override suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String, `mentions`: List<FfiMention>) {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_commune_core_fn_method_coreapp_send_message(
                 uniffiHandle,
-                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`body`),FfiConverterSequenceString.lower(`mentions`),
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`body`),FfiConverterSequenceTypeFfiMention.lower(`mentions`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -4405,9 +4407,11 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
-     * The sticker packs on the account: the personal pack from
-     * `im.ponies.user_emotes`, then every pack the account follows
-     * through `im.ponies.emote_rooms`.
+     * The sticker packs on the account, as the application resolves
+     * them: the packs of Commune's own packs room first, then every
+     * room pack enabled globally. Stable event names are preferred,
+     * the unstable `im.ponies` names read as fallback, and personal
+     * `im.ponies.user_emotes` packs from other clients come along too.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `stickerPacks`() : List<FfiStickerPack> {
@@ -6777,6 +6781,54 @@ public object FfiConverterTypeFfiMember: FfiConverterRustBuffer<FfiMember> {
 
 
 /**
+ * A user the composer mentions, by the display name that stands for
+ * them in the text.
+ */
+data class FfiMention (
+    /**
+     * The user ID of the mention.
+     */
+    var `userId`: kotlin.String
+    , 
+    /**
+     * The display name as it appears in the body, after an `@`.
+     */
+    var `displayName`: kotlin.String
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiMention: FfiConverterRustBuffer<FfiMention> {
+    override fun read(buf: ByteBuffer): FfiMention {
+        return FfiMention(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiMention) = (
+            FfiConverterString.allocationSize(value.`userId`) +
+            FfiConverterString.allocationSize(value.`displayName`)
+    )
+
+    override fun write(value: FfiMention, buf: ByteBuffer) {
+            FfiConverterString.write(value.`userId`, buf)
+            FfiConverterString.write(value.`displayName`, buf)
+    }
+}
+
+
+
+/**
  * The account's profile, as far as the server tells it.
  */
 data class FfiProfile (
@@ -6784,6 +6836,11 @@ data class FfiProfile (
      * The display name, when one is set.
      */
     var `displayName`: kotlin.String?
+    , 
+    /**
+     * The avatar, as an `mxc:` URI, when one is set.
+     */
+    var `avatarUrl`: kotlin.String?
     
 ){
     
@@ -6801,15 +6858,18 @@ public object FfiConverterTypeFfiProfile: FfiConverterRustBuffer<FfiProfile> {
     override fun read(buf: ByteBuffer): FfiProfile {
         return FfiProfile(
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
     override fun allocationSize(value: FfiProfile) = (
-            FfiConverterOptionalString.allocationSize(value.`displayName`)
+            FfiConverterOptionalString.allocationSize(value.`displayName`) +
+            FfiConverterOptionalString.allocationSize(value.`avatarUrl`)
     )
 
     override fun write(value: FfiProfile, buf: ByteBuffer) {
             FfiConverterOptionalString.write(value.`displayName`, buf)
+            FfiConverterOptionalString.write(value.`avatarUrl`, buf)
     }
 }
 
@@ -9383,6 +9443,34 @@ public object FfiConverterSequenceTypeFfiMember: FfiConverterRustBuffer<List<Ffi
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiMember.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiMention: FfiConverterRustBuffer<List<FfiMention>> {
+    override fun read(buf: ByteBuffer): List<FfiMention> {
+        val len = buf.getInt()
+        return List<FfiMention>(len) {
+            FfiConverterTypeFfiMention.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiMention>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiMention.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiMention>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiMention.write(it, buf)
         }
     }
 }

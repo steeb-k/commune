@@ -138,6 +138,9 @@ class CommuneState(context: Context) {
                 }
                 if (ownUserId == null) ownUserId = app.sessionUserId()
                 if (settings == null) settings = app.sessionSettings()
+                // The first delivery proves the session is ready; the
+                // profile fetch at startup can have been too early.
+                if (profileName == null) loadProfile()
                 notifier.enabled = settings?.notificationsEnabled != false
                 notifier.update(rooms)
             }
@@ -163,7 +166,10 @@ class CommuneState(context: Context) {
                 app.restoreSessions()
                 main.post {
                     phase = if (app.hasSessions()) Phase.Session else Phase.Login
-                    if (phase == Phase.Session) watchVerifications()
+                    if (phase == Phase.Session) {
+                        watchVerifications()
+                        loadProfile()
+                    }
                 }
             }
         }
@@ -183,6 +189,7 @@ class CommuneState(context: Context) {
                         // The old listener task died with the old session.
                         app.setRoomListListener(roomListListener)
                         watchVerifications()
+                        loadProfile()
                     }
                 } catch (failure: Exception) {
                     main.post {
@@ -734,6 +741,8 @@ class CommuneState(context: Context) {
     // The account: profile, and the way out.
     var profileName by mutableStateOf<String?>(null)
         private set
+    var profileAvatarPath by mutableStateOf<String?>(null)
+        private set
 
     fun loadProfile() {
         thread {
@@ -744,6 +753,14 @@ class CommuneState(context: Context) {
                     null
                 }
                 main.post { profileName = profile?.displayName }
+                val avatarPath = profile?.avatarUrl?.let { url ->
+                    try {
+                        app.getMxcMedia(url)
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+                main.post { profileAvatarPath = avatarPath }
             }
         }
     }
@@ -1124,7 +1141,7 @@ class CommuneState(context: Context) {
             try {
                 val dir = java.io.File(appContext.cacheDir, "outgoing")
                 dir.mkdirs()
-                val file = java.io.File(dir, "voice-${System.currentTimeMillis()}.m4a")
+                val file = java.io.File(dir, "voice-${System.currentTimeMillis()}.ogg")
                 @Suppress("DEPRECATION")
                 val newRecorder = if (android.os.Build.VERSION.SDK_INT >= 31) {
                     android.media.MediaRecorder(appContext)
@@ -1132,10 +1149,11 @@ class CommuneState(context: Context) {
                     android.media.MediaRecorder()
                 }
                 newRecorder.setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
-                newRecorder.setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
-                newRecorder.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
+                // Ogg Opus, the codec the desktop app records voice in.
+                newRecorder.setOutputFormat(android.media.MediaRecorder.OutputFormat.OGG)
+                newRecorder.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.OPUS)
                 newRecorder.setAudioEncodingBitRate(64000)
-                newRecorder.setAudioSamplingRate(44100)
+                newRecorder.setAudioSamplingRate(48000)
                 newRecorder.setOutputFile(file.absolutePath)
                 newRecorder.prepare()
                 newRecorder.start()
@@ -1183,7 +1201,7 @@ class CommuneState(context: Context) {
                     app.sendVoiceMessage(
                         room.roomId,
                         file.absolutePath,
-                        "audio/mp4",
+                        "audio/ogg",
                         durationMs.toULong(),
                     )
                 } catch (_: Exception) {
@@ -1405,6 +1423,12 @@ class CommuneState(context: Context) {
 
     /// Open the given room as soon as the room list carries it — freshly
     /// created rooms arrive with the next sync.
+    /// Open the room with the given ID as soon as the list carries it —
+    /// how a notification tap lands in its room.
+    fun openRoomById(roomId: String) {
+        openRoomWhenListed(roomId)
+    }
+
     private fun openRoomWhenListed(roomId: String, attempt: Int = 0) {
         val room = rooms.find { it.roomId == roomId }
         when {
@@ -1770,7 +1794,7 @@ class CommuneState(context: Context) {
         val room = openRoom ?: return
         val mentions = composerMembers
             .filter { body.contains("@" + it.displayName) }
-            .map { it.userId }
+            .map { io.github.steeb_k.commune.core.FfiMention(it.userId, it.displayName) }
         setTyping(false)
         thread {
             runBlocking {

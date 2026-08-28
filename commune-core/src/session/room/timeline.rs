@@ -305,7 +305,9 @@ impl Timeline {
     pub async fn send_text(
         &self,
         body: String,
+        plain_body: Option<String>,
         mentions: Vec<ruma::OwnedUserId>,
+        room_mention: bool,
     ) -> Result<(), ()> {
         let Some(matrix_timeline) = self.matrix_timeline().await else {
             return Err(());
@@ -313,8 +315,17 @@ impl Timeline {
 
         let handle = spawn_tokio!(async move {
             let mut content = RoomMessageEventContent::text_markdown(body);
-            if !mentions.is_empty() {
-                content.mentions = Some(ruma::events::Mentions::with_user_ids(mentions));
+            // Mention anchors ride in as markdown; the plain body carries
+            // the bare names instead of the link syntax.
+            if let Some(plain) = plain_body
+                && let MessageType::Text(text) = &mut content.msgtype
+            {
+                text.body = plain;
+            }
+            if !mentions.is_empty() || room_mention {
+                let mut all = ruma::events::Mentions::with_user_ids(mentions);
+                all.room = room_mention;
+                content.mentions = Some(all);
             }
             matrix_timeline.send(content.into()).await
         });
@@ -522,53 +533,6 @@ impl Timeline {
             Ok(()) => Ok(()),
             Err(send_error) => {
                 error!("Could not send voice message: {send_error}");
-                Err(())
-            }
-        }
-    }
-
-    /// Send already-downloaded image bytes as an attachment, with their
-    /// dimensions.
-    ///
-    /// This is the GIF picker's path: the file exists only as a download from
-    /// the GIF service, so there is no path to hand over, and the dimensions
-    /// are known from the API rather than read from the file.
-    pub async fn send_image_bytes(
-        &self,
-        bytes: Vec<u8>,
-        filename: String,
-        mime: mime::Mime,
-        width: u32,
-        height: u32,
-    ) -> Result<(), ()> {
-        use matrix_sdk::attachment::{AttachmentInfo, BaseImageInfo};
-        use matrix_sdk_ui::timeline::{AttachmentConfig, AttachmentSource};
-
-        let Some(matrix_timeline) = self.matrix_timeline().await else {
-            return Err(());
-        };
-
-        let config = AttachmentConfig {
-            info: Some(AttachmentInfo::Image(BaseImageInfo {
-                width: Some(width.into()),
-                height: Some(height.into()),
-                size: bytes.len().try_into().ok(),
-                ..Default::default()
-            })),
-            ..Default::default()
-        };
-
-        let handle = spawn_tokio!(async move {
-            matrix_timeline
-                .send_attachment(AttachmentSource::Data { bytes, filename }, mime, config)
-                .use_send_queue()
-                .await
-        });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(()) => Ok(()),
-            Err(send_error) => {
-                error!("Could not send image: {send_error}");
                 Err(())
             }
         }

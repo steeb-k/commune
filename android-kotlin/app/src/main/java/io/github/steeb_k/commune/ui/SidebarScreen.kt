@@ -142,8 +142,33 @@ private fun SidebarHeader(
     ) {
         val userId = state.ownUserId ?: "?"
         val localpart = userId.removePrefix("@").substringBefore(':')
-        IconButton(onClick = { state.openSettings() }) {
-            InitialsAvatar(identifier = userId, name = localpart, size = 32.dp)
+        // The account's real avatar and name, tappable into settings.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
+                .clickable { state.openSettings() }
+                .padding(horizontal = 6.dp, vertical = 4.dp),
+        ) {
+            val avatarPath = state.profileAvatarPath
+            if (avatarPath != null) {
+                MediaImage(
+                    avatarPath,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape),
+                    targetSizePx = 96,
+                )
+            } else {
+                InitialsAvatar(identifier = userId, name = localpart, size = 32.dp)
+            }
+            Spacer(Modifier.size(8.dp))
+            Text(
+                state.profileName ?: localpart,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+            )
         }
         Spacer(Modifier.weight(1f))
         IconButton(onClick = onToggleSearch) {
