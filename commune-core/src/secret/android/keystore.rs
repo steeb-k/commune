@@ -42,10 +42,13 @@ use crate::platform::android::{self, AndroidJniError};
 
 /// The alias the key is stored under in the Keystore.
 ///
-/// Namespaced by application id: the Keystore is per-application, but the Devel
-/// and Hack profiles install alongside the stable build and should not be
-/// sharing a key.
-const KEY_ALIAS: &str = concat!(env!("CARGO_PKG_NAME"), ".secrets.v1");
+/// Spelled out rather than derived from `CARGO_PKG_NAME`: the application
+/// derives it and gets `commune.secrets.v1`, and this crate is named
+/// `commune-core` — deriving here would seal under a different alias and
+/// silently break the same-application-id session adoption that
+/// `doc/kotlin-plan.md` promises. The Keystore is per-application, so the
+/// Devel and Hack profiles never see this key anyway.
+const KEY_ALIAS: &str = "commune.secrets.v1";
 
 /// The Keystore provider name. Not a real file, a virtual provider.
 const PROVIDER: &str = "AndroidKeyStore";
