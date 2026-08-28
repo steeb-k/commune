@@ -1229,6 +1229,75 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// Open a direct chat with the given user: the existing one when
+    /// there is one, a newly created encrypted DM otherwise. Returns the
+    /// room ID.
+    pub async fn create_direct_chat(&self, user_id: String) -> Result<String, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let user_id = ruma::UserId::parse(&user_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid user ID".to_owned(),
+                })?;
+
+                // The application reuses an existing direct chat rather
+                // than opening a second one.
+                let existing = session.room_list().snapshot().iter().find_map(|room| {
+                    (room.is_joined() && room.direct_member_user_id().as_deref() == Some(&user_id))
+                        .then(|| room.room_id().to_string())
+                });
+                if let Some(room_id) = existing {
+                    return Ok(room_id);
+                }
+
+                let client = session.client();
+                client
+                    .create_dm(&user_id)
+                    .await
+                    .map(|room| room.room_id().to_string())
+                    .map_err(|create_error| CoreError::Failed {
+                        msg: format!("Could not create the direct chat: {create_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Join the room with the given ID or alias. Returns the room ID.
+    pub async fn join_room(&self, room_id_or_alias: String) -> Result<String, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let id_or_alias =
+                    ruma::RoomOrAliasId::parse(room_id_or_alias.trim()).map_err(|_| {
+                        CoreError::Failed {
+                            msg: "Not a room ID or alias".to_owned(),
+                        }
+                    })?;
+
+                let client = session.client();
+                client
+                    .join_room_by_id_or_alias(&id_or_alias, &[])
+                    .await
+                    .map(|room| room.room_id().to_string())
+                    .map_err(|join_error| CoreError::Failed {
+                        msg: format!("Could not join the room: {join_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Send the file at the given path as an attachment to the given room.
     pub async fn send_attachment(
         &self,

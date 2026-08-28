@@ -741,6 +741,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_clear_thread_listener(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_create_direct_chat(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_edit_message(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_avatar(
@@ -752,6 +754,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_has_ready_session(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_has_sessions(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_join_room(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_login_with_password(
     ): Short
@@ -843,6 +847,8 @@ external fun uniffi_commune_core_fn_method_coreapp_clear_member_list_listener(`p
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_clear_thread_listener(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_create_direct_chat(`ptr`: Long,`userId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_edit_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`newBody`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_avatar(`ptr`: Long,`mxcUri`: RustBuffer.ByValue,`size`: Int,
@@ -855,6 +861,8 @@ external fun uniffi_commune_core_fn_method_coreapp_has_ready_session(`ptr`: Long
 ): Byte
 external fun uniffi_commune_core_fn_method_coreapp_has_sessions(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_commune_core_fn_method_coreapp_join_room(`ptr`: Long,`roomIdOrAlias`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_login_with_password(`ptr`: Long,`homeserver`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_mark_room_read(`ptr`: Long,`roomId`: RustBuffer.ByValue,
@@ -1071,6 +1079,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_clear_thread_listener() != 18100.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_create_direct_chat() != 36767.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_edit_message() != 19406.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1087,6 +1098,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_has_sessions() != 62270.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_join_room() != 20793.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_login_with_password() != 16278.toShort()) {
@@ -1668,6 +1682,13 @@ public interface CoreAppInterface {
     fun `clearThreadListener`()
     
     /**
+     * Open a direct chat with the given user: the existing one when
+     * there is one, a newly created encrypted DM otherwise. Returns the
+     * room ID.
+     */
+    suspend fun `createDirectChat`(`userId`: kotlin.String): kotlin.String
+    
+    /**
      * Replace the given event's content with the given plain text.
      */
     suspend fun `editMessage`(`roomId`: kotlin.String, `eventId`: kotlin.String, `newBody`: kotlin.String)
@@ -1705,6 +1726,11 @@ public interface CoreAppInterface {
      * Whether there are sessions on this device, in any state.
      */
     fun `hasSessions`(): kotlin.Boolean
+    
+    /**
+     * Join the room with the given ID or alias. Returns the room ID.
+     */
+    suspend fun `joinRoom`(`roomIdOrAlias`: kotlin.String): kotlin.String
     
     /**
      * Log in with a password on the given homeserver.
@@ -2009,6 +2035,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Open a direct chat with the given user: the existing one when
+     * there is one, a newly created encrypted DM otherwise. Returns the
+     * room ID.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `createDirectChat`(`userId`: kotlin.String) : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_create_direct_chat(
+                uniffiHandle,
+                FfiConverterString.lower(`userId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Replace the given event's content with the given plain text.
      */
     @Throws(CoreException::class)
@@ -2141,6 +2193,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     )
     }
     
+
+    
+    /**
+     * Join the room with the given ID or alias. Returns the room ID.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `joinRoom`(`roomIdOrAlias`: kotlin.String) : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_join_room(
+                uniffiHandle,
+                FfiConverterString.lower(`roomIdOrAlias`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
     
     /**

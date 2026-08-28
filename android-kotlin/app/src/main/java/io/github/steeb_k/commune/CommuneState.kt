@@ -336,6 +336,74 @@ class CommuneState(context: Context) {
         }
     }
 
+    /// Busy/error state of the create-or-join dialogs.
+    var conversationBusy by mutableStateOf(false)
+        private set
+    var conversationError by mutableStateOf<String?>(null)
+        private set
+
+    fun clearConversationError() {
+        conversationError = null
+    }
+
+    /// Open (or create) the direct chat with the given user, then show it
+    /// once it reaches the room list.
+    fun startDirectChat(userId: String, onDone: () -> Unit) {
+        conversationBusy = true
+        conversationError = null
+        thread {
+            runBlocking {
+                try {
+                    val roomId = app.createDirectChat(userId.trim())
+                    main.post {
+                        conversationBusy = false
+                        onDone()
+                        openRoomWhenListed(roomId)
+                    }
+                } catch (failure: Exception) {
+                    main.post {
+                        conversationBusy = false
+                        conversationError = failure.message?.removePrefix("msg=") ?: "Could not open the chat"
+                    }
+                }
+            }
+        }
+    }
+
+    /// Join the room with the given ID or alias, then show it once it
+    /// reaches the room list.
+    fun joinRoom(idOrAlias: String, onDone: () -> Unit) {
+        conversationBusy = true
+        conversationError = null
+        thread {
+            runBlocking {
+                try {
+                    val roomId = app.joinRoom(idOrAlias.trim())
+                    main.post {
+                        conversationBusy = false
+                        onDone()
+                        openRoomWhenListed(roomId)
+                    }
+                } catch (failure: Exception) {
+                    main.post {
+                        conversationBusy = false
+                        conversationError = failure.message?.removePrefix("msg=") ?: "Could not join the room"
+                    }
+                }
+            }
+        }
+    }
+
+    /// Open the given room as soon as the room list carries it — freshly
+    /// created rooms arrive with the next sync.
+    private fun openRoomWhenListed(roomId: String, attempt: Int = 0) {
+        val room = rooms.find { it.roomId == roomId }
+        when {
+            room != null -> openRoom(room)
+            attempt < 20 -> main.postDelayed({ openRoomWhenListed(roomId, attempt + 1) }, 500)
+        }
+    }
+
     fun acceptInvite() {
         val room = openRoom ?: return
         thread {
