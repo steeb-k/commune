@@ -190,6 +190,13 @@ private fun PrimaryMenu(state: CommuneState) {
             },
         )
         DropdownMenuItem(
+            text = { Text("Explore Rooms") },
+            onClick = {
+                menuOpen = false
+                state.openExplore()
+            },
+        )
+        DropdownMenuItem(
             text = { Text("Join Room") },
             onClick = {
                 menuOpen = false

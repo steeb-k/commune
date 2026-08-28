@@ -2316,6 +2316,70 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// One page of the public room directory, optionally filtered by a
+    /// search term, continuing from `since` when given.
+    pub async fn explore_rooms(
+        &self,
+        search: Option<String>,
+        since: Option<String>,
+    ) -> Result<FfiPublicRoomPage, CoreError> {
+        use ruma::{
+            api::client::directory::get_public_rooms_filtered,
+            assign,
+            directory::{Filter, RoomNetwork},
+            uint,
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let request = assign!(get_public_rooms_filtered::v3::Request::new(), {
+                    limit: Some(uint!(20)),
+                    since,
+                    room_network: RoomNetwork::Matrix,
+                    filter: assign!(Filter::new(), {
+                        generic_search_term: search.filter(|term| !term.is_empty()),
+                    }),
+                });
+
+                let response = session
+                    .client()
+                    .public_rooms_filtered(request)
+                    .await
+                    .map_err(|explore_error| CoreError::Failed {
+                        msg: format!("Could not load the directory: {explore_error}"),
+                    })?;
+
+                let rooms = response
+                    .chunk
+                    .into_iter()
+                    .map(|chunk| {
+                        let is_joined = session.room_list().get(&chunk.room_id).is_some();
+                        FfiPublicRoom {
+                            room_id: chunk.room_id.to_string(),
+                            name: chunk.name,
+                            topic: chunk.topic,
+                            alias: chunk.canonical_alias.map(|alias| alias.to_string()),
+                            joined_members: chunk.num_joined_members.into(),
+                            is_joined,
+                        }
+                    })
+                    .collect();
+
+                Ok(FfiPublicRoomPage {
+                    rooms,
+                    next_batch: response.next_batch,
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Fetch the media of a history event into a file, returning its path.
     pub async fn get_history_media(&self, room_id: String, event_id: String) -> Option<String> {
         use ruma::events::room::message::MessageType;
@@ -2431,6 +2495,32 @@ pub struct FfiHistoryEvent {
     pub size: Option<u64>,
     /// Whether a Media event is a video rather than an image.
     pub is_video: bool,
+}
+
+/// One room of the public directory.
+#[derive(uniffi::Record)]
+pub struct FfiPublicRoom {
+    /// The ID of the room.
+    pub room_id: String,
+    /// The public name of the room, when it has one.
+    pub name: Option<String>,
+    /// The topic of the room, when it has one.
+    pub topic: Option<String>,
+    /// The canonical alias of the room, when it has one.
+    pub alias: Option<String>,
+    /// How many members the room has.
+    pub joined_members: u64,
+    /// Whether this session is already in the room.
+    pub is_joined: bool,
+}
+
+/// One page of the public directory.
+#[derive(uniffi::Record)]
+pub struct FfiPublicRoomPage {
+    /// The rooms of this page.
+    pub rooms: Vec<FfiPublicRoom>,
+    /// The token to request the next page with, absent at the end.
+    pub next_batch: Option<String>,
 }
 
 /// One page of the media history.

@@ -19,6 +19,7 @@ import io.github.steeb_k.commune.ui.LoginFlow
 import io.github.steeb_k.commune.ui.MediaViewerScreen
 import io.github.steeb_k.commune.ui.MembersScreen
 import io.github.steeb_k.commune.ui.PinnedScreen
+import io.github.steeb_k.commune.ui.ExploreScreen
 import io.github.steeb_k.commune.ui.HistoryScreen
 import io.github.steeb_k.commune.ui.RoomSearchScreen
 import io.github.steeb_k.commune.ui.RoomDetailsScreen
@@ -109,6 +110,9 @@ private fun CommuneApp(state: CommuneState) {
                     isVideo = state.viewerIsVideo,
                     onClose = { state.closeViewer() },
                 )
+            } else if (state.exploreOpen) {
+                BackHandler { state.closeExplore() }
+                ExploreScreen(state)
             } else if (state.settingsOpen) {
                 BackHandler { state.closeSettings() }
                 SettingsScreen(state)
