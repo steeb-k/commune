@@ -38,6 +38,15 @@ enum class Phase {
 class CommuneState(context: Context) {
     private val main = Handler(Looper.getMainLooper())
     private val appContext = context.applicationContext
+    private val notifier = Notifier(appContext)
+
+    /// Whether the activity is in the foreground; backgrounded, the open
+    /// room notifies like any other.
+    var uiVisible: Boolean = true
+        set(value) {
+            field = value
+            notifier.visibleRoomId = if (value) openRoom?.roomId else null
+        }
 
     /// Set by the activity: opens the system file picker for an attachment.
     var pickAttachment: (() -> Unit)? = null
@@ -112,6 +121,8 @@ class CommuneState(context: Context) {
                     }
                     if (ownUserId == null) ownUserId = app.sessionUserId()
                     if (settings == null) settings = app.sessionSettings()
+                    notifier.enabled = settings?.notificationsEnabled != false
+                    notifier.update(rooms)
                 }
             }
         })
@@ -151,6 +162,7 @@ class CommuneState(context: Context) {
     fun openRoom(room: FfiRoom) {
         openRoom = room
         timeline = emptyList()
+        if (uiVisible) notifier.visibleRoomId = room.roomId
 
         app.setTimelineListener(
             room.roomId,
@@ -186,6 +198,7 @@ class CommuneState(context: Context) {
     fun closeRoom() {
         openRoom?.let { app.sendTyping(it.roomId, false) }
         openRoom = null
+        notifier.visibleRoomId = null
         timeline = emptyList()
         typingUsers = emptyList()
         closeThread()
