@@ -15,7 +15,10 @@ import io.github.steeb_k.commune.core.FfiRoom
 
 class Notifier(private val context: Context) {
     private val manager = context.getSystemService(NotificationManager::class.java)
-    private val posted = mutableMapOf<String, ULong>()
+
+    /// The per-room counts already notified, persisted so an app restart
+    /// does not re-announce the same unread messages.
+    private val posted = context.getSharedPreferences("notified", Context.MODE_PRIVATE)
 
     /// Whether notifications are wanted at all: the account setting, and
     /// the room being looked at right now never notifies.
@@ -35,16 +38,23 @@ class Notifier(private val context: Context) {
     /// Mirror the given rooms' notification counts into the shade.
     fun update(rooms: List<FfiRoom>) {
         for (room in rooms) {
-            val count = room.notificationCount
+            val count = room.notificationCount.toLong()
+            val known = posted.getLong(room.roomId, 0L)
             when {
-                count == 0uL || room.roomId == visibleRoomId || !enabled -> {
-                    if (posted.remove(room.roomId) != null) {
+                count == 0L || room.roomId == visibleRoomId || !enabled -> {
+                    if (known != 0L) {
+                        posted.edit().remove(room.roomId).apply()
                         manager.cancel(room.roomId.hashCode())
                     }
                 }
-                posted[room.roomId] != count -> {
-                    posted[room.roomId] = count
-                    manager.notify(room.roomId.hashCode(), build(room, count))
+                // Only more unread than last announced is news; the same
+                // count after a restart is not.
+                count > known -> {
+                    posted.edit().putLong(room.roomId, count).apply()
+                    manager.notify(
+                        room.roomId.hashCode(),
+                        build(room, room.notificationCount),
+                    )
                 }
             }
         }
@@ -54,8 +64,10 @@ class Notifier(private val context: Context) {
         val openApp = PendingIntent.getActivity(
             context,
             room.roomId.hashCode(),
-            Intent(context, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE,
+            Intent(context, MainActivity::class.java)
+                .putExtra("room_id", room.roomId)
+                .setAction("io.github.steeb_k.commune.OPEN_ROOM"),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val name = io.github.steeb_k.commune.ui.roomName(room)
         val countText = if (count == 1uL) "1 new message" else "$count new messages"

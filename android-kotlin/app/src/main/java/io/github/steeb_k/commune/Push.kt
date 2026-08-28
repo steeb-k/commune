@@ -96,12 +96,19 @@ private fun postFromPayload(context: Context, payload: String) {
         null
     }
 
-    // A counts-only push (unread going to zero) clears rather than posts.
     val unread = notification?.optJSONObject("counts")?.optInt("unread", -1) ?: -1
     val roomId = notification?.optString("room_id").orEmpty()
+    val eventId = notification?.optString("event_id").orEmpty()
+
+    // Unread going to zero clears; everything was read elsewhere.
     if (notification != null && unread == 0) {
-        context.getSystemService(NotificationManager::class.java)
-            .cancel(roomId.hashCode())
+        val manager = context.getSystemService(NotificationManager::class.java)
+        if (roomId.isNotEmpty()) manager.cancel(roomId.hashCode()) else manager.cancelAll()
+        return
+    }
+    // A push without an event is badge synchronization, not a message —
+    // posting it would be the generic notification next to the real one.
+    if (roomId.isEmpty() || eventId.isEmpty()) {
         return
     }
 
@@ -130,11 +137,13 @@ private fun postFromPayload(context: Context, payload: String) {
     val openApp = PendingIntent.getActivity(
         context,
         roomId.hashCode(),
-        Intent(context, MainActivity::class.java),
-        PendingIntent.FLAG_IMMUTABLE,
+        Intent(context, MainActivity::class.java)
+            .putExtra("room_id", roomId)
+            .setAction("io.github.steeb_k.commune.OPEN_ROOM"),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
     manager.notify(
-        roomId.ifEmpty { "push" }.hashCode(),
+        roomId.hashCode(),
         Notification.Builder(context, "messages")
             .setSmallIcon(R.drawable.ic_notify_symbolic)
             .setContentTitle(title)

@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -336,6 +338,21 @@ internal fun Timeline(
     // Open at the newest message, and follow it.
     LaunchedEffect(items.size) {
         if (items.isNotEmpty()) listState.scrollToItem(items.size - 1)
+    }
+
+    // The keyboard resizing the viewport must not hide the newest
+    // messages: when it opens and the view was near the bottom, stay
+    // pinned there, as any messenger does.
+    val imeBottom = WindowInsets.ime
+        .getBottom(androidx.compose.ui.platform.LocalDensity.current)
+    LaunchedEffect(imeBottom > 0) {
+        if (imeBottom > 0 && items.isNotEmpty()) {
+            val lastVisible =
+                listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            if (lastVisible >= items.size - 8) {
+                listState.scrollToItem(items.size - 1)
+            }
+        }
     }
 
     LazyColumn(
@@ -864,6 +881,10 @@ internal fun Composer(
             modifier = Modifier.weight(1f),
             maxLines = 5,
             shape = RoundedCornerShape(24.dp),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences,
+                autoCorrectEnabled = true,
+            ),
         )
         Spacer(Modifier.size(6.dp))
         Box(
