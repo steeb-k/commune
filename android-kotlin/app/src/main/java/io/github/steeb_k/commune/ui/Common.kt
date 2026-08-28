@@ -131,6 +131,34 @@ fun LoadingFace(modifier: Modifier = Modifier) {
 }
 
 
+/// The loading treatment for pop-ins (sheets, dialogs): the wavy circular
+/// indicator, centered. Full pages get [LoadingFace]'s horizontal bar;
+/// anything that pops over the content gets the circle.
+@Composable
+fun LoadingRing(modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        androidx.compose.ui.viewinterop.AndroidView(
+            factory = { context ->
+                val themed = android.view.ContextThemeWrapper(
+                    context,
+                    com.google.android.material.R.style.Theme_Material3_DayNight_NoActionBar,
+                )
+                com.google.android.material.progressindicator.CircularProgressIndicator(themed)
+                    .apply {
+                        isIndeterminate = true
+                        with(density) {
+                            indicatorSize = 48.dp.roundToPx()
+                            waveAmplitude = 2.dp.roundToPx()
+                            setWavelength(16.dp.roundToPx())
+                        }
+                    }
+            },
+        )
+    }
+}
+
+
 /// A room avatar: the picture when there is one, initials otherwise.
 @Composable
 fun RoomAvatar(state: CommuneState, room: FfiRoom, size: Dp) {

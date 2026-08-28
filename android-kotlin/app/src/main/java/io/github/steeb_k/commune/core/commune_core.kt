@@ -795,6 +795,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_enable_recovery(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_fetch_gif_preview(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_avatar(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
@@ -829,9 +831,13 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_scan_qr(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_search_gifs(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_search_room(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_attachment(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_send_gif(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_message(
     ): Short
@@ -940,6 +946,8 @@ external fun uniffi_commune_core_fn_method_coreapp_edit_message(`ptr`: Long,`roo
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_enable_recovery(`ptr`: Long,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_fetch_gif_preview(`ptr`: Long,`url`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_avatar(`ptr`: Long,`mxcUri`: RustBuffer.ByValue,`size`: Int,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,`size`: Int,
@@ -974,9 +982,13 @@ external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_
 ): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_method_coreapp_scan_qr(`ptr`: Long,`flowId`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_search_gifs(`ptr`: Long,`query`: RustBuffer.ByValue,`page`: Int,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_search_room(`ptr`: Long,`roomId`: RustBuffer.ByValue,`searchTerm`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_send_gif(`ptr`: Long,`roomId`: RustBuffer.ByValue,`gif`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`mentions`: RustBuffer.ByValue,
 ): Long
@@ -1223,6 +1235,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_enable_recovery() != 5558.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_fetch_gif_preview() != 17739.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_avatar() != 49706.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1274,10 +1289,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_scan_qr() != 10266.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_search_gifs() != 3923.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_search_room() != 20054.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_attachment() != 7086.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_gif() != 37883.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 61043.toShort()) {
@@ -1920,6 +1941,14 @@ public interface CoreAppInterface {
     suspend fun `enableRecovery`(): kotlin.String
     
     /**
+     * Download the preview of a GIF, so the picker can present it.
+     *
+     * Downloading through the core keeps one HTTP stack, one TLS
+     * configuration and one size guard for everything the app fetches.
+     */
+    suspend fun `fetchGifPreview`(`url`: kotlin.String): kotlin.ByteArray
+    
+    /**
      * Fetch the avatar at the given MXC URI into a file, returning its
      * path.
      */
@@ -2019,6 +2048,15 @@ public interface CoreAppInterface {
     suspend fun `scanQr`(`flowId`: kotlin.String, `data`: kotlin.ByteArray)
     
     /**
+     * Search the GIF service.
+     *
+     * Pages are 1-indexed. GIFs without both a preview and a sendable
+     * variant are dropped, so every entry of the result can be presented
+     * and sent.
+     */
+    suspend fun `searchGifs`(`query`: kotlin.String, `page`: kotlin.UInt): FfiGifPage
+    
+    /**
      * Search the given room's messages on the server — the application's
      * search criteria: message bodies, most recent first. Encrypted
      * rooms cannot be searched by the server.
@@ -2029,6 +2067,12 @@ public interface CoreAppInterface {
      * Send the file at the given path as an attachment to the given room.
      */
     suspend fun `sendAttachment`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String)
+    
+    /**
+     * Download the given GIF and send it to the given room, then report the
+     * share to the GIF service.
+     */
+    suspend fun `sendGif`(`roomId`: kotlin.String, `gif`: FfiGif)
     
     /**
      * Send a message to the given room — Markdown, as the composer
@@ -2489,6 +2533,33 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Download the preview of a GIF, so the picker can present it.
+     *
+     * Downloading through the core keeps one HTTP stack, one TLS
+     * configuration and one size guard for everything the app fetches.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `fetchGifPreview`(`url`: kotlin.String) : kotlin.ByteArray {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_fetch_gif_preview(
+                uniffiHandle,
+                FfiConverterString.lower(`url`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterByteArray.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Fetch the avatar at the given MXC URI into a file, returning its
      * path.
      */
@@ -2886,6 +2957,34 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Search the GIF service.
+     *
+     * Pages are 1-indexed. GIFs without both a preview and a sendable
+     * variant are dropped, so every entry of the result can be presented
+     * and sent.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `searchGifs`(`query`: kotlin.String, `page`: kotlin.UInt) : FfiGifPage {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_search_gifs(
+                uniffiHandle,
+                FfiConverterString.lower(`query`),FfiConverterUInt.lower(`page`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiGifPage.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Search the given room's messages on the server — the application's
      * search criteria: message bodies, most recent first. Encrypted
      * rooms cannot be searched by the server.
@@ -2922,6 +3021,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_send_attachment(
                 uniffiHandle,
                 FfiConverterString.lower(`roomId`),FfiConverterString.lower(`filePath`),FfiConverterString.lower(`mimeType`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Download the given GIF and send it to the given room, then report the
+     * share to the GIF service.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `sendGif`(`roomId`: kotlin.String, `gif`: FfiGif) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_send_gif(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterTypeFfiGif.lower(`gif`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -5122,6 +5247,165 @@ public object FfiConverterTypeFfiCoreConfig: FfiConverterRustBuffer<FfiCoreConfi
 
 
 /**
+ * A GIF the picker can present and send.
+ */
+data class FfiGif (
+    /**
+     * The identifier of the GIF, stable across requests.
+     */
+    var `id`: kotlin.Long
+    , 
+    /**
+     * The identifier used to report the GIF as shared, valid only for the
+     * response it came in.
+     */
+    var `slug`: kotlin.String
+    , 
+    /**
+     * A description of the GIF, never empty.
+     */
+    var `title`: kotlin.String
+    , 
+    /**
+     * The variant to present in the picker: the smallest one, WebP over GIF.
+     */
+    var `previewUrl`: kotlin.String
+    , 
+    /**
+     * The width of the preview, in pixels.
+     */
+    var `previewWidth`: kotlin.UInt
+    , 
+    /**
+     * The height of the preview, in pixels.
+     */
+    var `previewHeight`: kotlin.UInt
+    , 
+    /**
+     * The variant to send: the largest GIF within the send-size limit.
+     */
+    var `sendUrl`: kotlin.String
+    , 
+    /**
+     * The width of the sent variant, in pixels.
+     */
+    var `sendWidth`: kotlin.UInt
+    , 
+    /**
+     * The height of the sent variant, in pixels.
+     */
+    var `sendHeight`: kotlin.UInt
+    , 
+    /**
+     * The size of the sent variant, in bytes.
+     */
+    var `sendSize`: kotlin.ULong
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiGif: FfiConverterRustBuffer<FfiGif> {
+    override fun read(buf: ByteBuffer): FfiGif {
+        return FfiGif(
+            FfiConverterLong.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiGif) = (
+            FfiConverterLong.allocationSize(value.`id`) +
+            FfiConverterString.allocationSize(value.`slug`) +
+            FfiConverterString.allocationSize(value.`title`) +
+            FfiConverterString.allocationSize(value.`previewUrl`) +
+            FfiConverterUInt.allocationSize(value.`previewWidth`) +
+            FfiConverterUInt.allocationSize(value.`previewHeight`) +
+            FfiConverterString.allocationSize(value.`sendUrl`) +
+            FfiConverterUInt.allocationSize(value.`sendWidth`) +
+            FfiConverterUInt.allocationSize(value.`sendHeight`) +
+            FfiConverterULong.allocationSize(value.`sendSize`)
+    )
+
+    override fun write(value: FfiGif, buf: ByteBuffer) {
+            FfiConverterLong.write(value.`id`, buf)
+            FfiConverterString.write(value.`slug`, buf)
+            FfiConverterString.write(value.`title`, buf)
+            FfiConverterString.write(value.`previewUrl`, buf)
+            FfiConverterUInt.write(value.`previewWidth`, buf)
+            FfiConverterUInt.write(value.`previewHeight`, buf)
+            FfiConverterString.write(value.`sendUrl`, buf)
+            FfiConverterUInt.write(value.`sendWidth`, buf)
+            FfiConverterUInt.write(value.`sendHeight`, buf)
+            FfiConverterULong.write(value.`sendSize`, buf)
+    }
+}
+
+
+
+/**
+ * One page of GIF search results.
+ */
+data class FfiGifPage (
+    /**
+     * The GIFs of this page.
+     */
+    var `gifs`: List<FfiGif>
+    , 
+    /**
+     * Whether another page can be requested.
+     */
+    var `hasNext`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiGifPage: FfiConverterRustBuffer<FfiGifPage> {
+    override fun read(buf: ByteBuffer): FfiGifPage {
+        return FfiGifPage(
+            FfiConverterSequenceTypeFfiGif.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiGifPage) = (
+            FfiConverterSequenceTypeFfiGif.allocationSize(value.`gifs`) +
+            FfiConverterBoolean.allocationSize(value.`hasNext`)
+    )
+
+    override fun write(value: FfiGifPage, buf: ByteBuffer) {
+            FfiConverterSequenceTypeFfiGif.write(value.`gifs`, buf)
+            FfiConverterBoolean.write(value.`hasNext`, buf)
+    }
+}
+
+
+
+/**
  * The reply context of an event: what it replies to.
  */
 data class FfiInReplyTo (
@@ -7122,6 +7406,34 @@ public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.Str
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterString.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiGif: FfiConverterRustBuffer<List<FfiGif>> {
+    override fun read(buf: ByteBuffer): List<FfiGif> {
+        val len = buf.getInt()
+        return List<FfiGif>(len) {
+            FfiConverterTypeFfiGif.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiGif>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiGif.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiGif>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiGif.write(it, buf)
         }
     }
 }

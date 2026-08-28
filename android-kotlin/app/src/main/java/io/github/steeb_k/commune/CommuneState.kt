@@ -7,10 +7,12 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.steeb_k.commune.core.CoreApp
 import io.github.steeb_k.commune.core.FfiCoreConfig
+import io.github.steeb_k.commune.core.FfiGif
 import io.github.steeb_k.commune.core.FfiMember
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRecoveryState
@@ -332,6 +334,96 @@ class CommuneState(context: Context) {
                         roomSearchResults = results
                         roomSearchBusy = false
                     }
+                }
+            }
+        }
+    }
+
+    // The GIF picker — searches KLIPY through the core, previews cached
+    // per-URL so scrolling back does not re-download.
+    var gifPickerOpen by mutableStateOf(false)
+        private set
+    var gifResults by mutableStateOf<List<FfiGif>>(emptyList())
+        private set
+    var gifBusy by mutableStateOf(false)
+        private set
+    var gifHasNext by mutableStateOf(false)
+        private set
+    private var gifQuery = ""
+    private var gifPage = 0
+    val gifPreviews = mutableStateMapOf<String, ByteArray>()
+
+    fun openGifPicker() {
+        gifPickerOpen = true
+    }
+
+    fun closeGifPicker() {
+        gifPickerOpen = false
+        gifResults = emptyList()
+        gifHasNext = false
+        gifQuery = ""
+        gifPage = 0
+        gifPreviews.clear()
+    }
+
+    fun searchGifs(query: String) {
+        gifQuery = query
+        gifPage = 1
+        gifResults = emptyList()
+        gifPreviews.clear()
+        fetchGifPage(replace = true)
+    }
+
+    fun loadMoreGifs() {
+        if (gifBusy || !gifHasNext) return
+        gifPage += 1
+        fetchGifPage(replace = false)
+    }
+
+    private fun fetchGifPage(replace: Boolean) {
+        val query = gifQuery
+        val page = gifPage
+        gifBusy = true
+        thread {
+            runBlocking {
+                val result = try {
+                    app.searchGifs(query, page.toUInt())
+                } catch (_: Exception) {
+                    null
+                }
+                main.post {
+                    if (gifPickerOpen && query == gifQuery) {
+                        if (result != null) {
+                            gifResults = if (replace) result.gifs else gifResults + result.gifs
+                            gifHasNext = result.hasNext
+                        }
+                        gifBusy = false
+                    }
+                }
+                // Previews arrive one by one, each posted as it lands.
+                result?.gifs?.forEach { gif ->
+                    if (gifPreviews.containsKey(gif.previewUrl)) return@forEach
+                    val bytes = try {
+                        app.fetchGifPreview(gif.previewUrl)
+                    } catch (_: Exception) {
+                        return@forEach
+                    }
+                    main.post {
+                        if (gifPickerOpen) gifPreviews[gif.previewUrl] = bytes
+                    }
+                }
+            }
+        }
+    }
+
+    fun sendGif(gif: FfiGif) {
+        val room = openRoom ?: return
+        closeGifPicker()
+        thread {
+            runBlocking {
+                try {
+                    app.sendGif(room.roomId, gif)
+                } catch (_: Exception) {
                 }
             }
         }

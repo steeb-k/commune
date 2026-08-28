@@ -2118,6 +2118,155 @@ impl CoreApp {
             .await
             .expect("task was not aborted")
     }
+
+    /// Search the GIF service.
+    ///
+    /// Pages are 1-indexed. GIFs without both a preview and a sendable
+    /// variant are dropped, so every entry of the result can be presented
+    /// and sent.
+    pub async fn search_gifs(&self, query: String, page: u32) -> Result<FfiGifPage, CoreError> {
+        RUNTIME
+            .spawn(async move {
+                let result = crate::klipy::search(&query, page)
+                    .await
+                    .map_err(|search_error| CoreError::Failed {
+                        msg: format!("{search_error}"),
+                    })?;
+
+                let gifs = result
+                    .gifs
+                    .iter()
+                    .filter_map(|gif| {
+                        let preview = gif.preview()?;
+                        let selection = gif.to_selection()?;
+                        Some(FfiGif {
+                            id: gif.id,
+                            slug: selection.slug,
+                            title: selection.title,
+                            preview_url: preview.url.clone(),
+                            preview_width: preview.width,
+                            preview_height: preview.height,
+                            send_url: selection.url,
+                            send_width: selection.width,
+                            send_height: selection.height,
+                            send_size: selection.size,
+                        })
+                    })
+                    .collect();
+
+                Ok(FfiGifPage {
+                    gifs,
+                    has_next: result.has_next,
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Download the preview of a GIF, so the picker can present it.
+    ///
+    /// Downloading through the core keeps one HTTP stack, one TLS
+    /// configuration and one size guard for everything the app fetches.
+    pub async fn fetch_gif_preview(&self, url: String) -> Result<Vec<u8>, CoreError> {
+        RUNTIME
+            .spawn(async move {
+                // A preview is tens of kilobytes; 2 MB is only a guard.
+                crate::http::fetch(&url, 2 * 1024 * 1024)
+                    .await
+                    .map_err(|fetch_error| CoreError::Failed {
+                        msg: format!("{fetch_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Download the given GIF and send it to the given room, then report the
+    /// share to the GIF service.
+    pub async fn send_gif(&self, room_id: String, gif: FfiGif) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                // `to_send` can fall back to a variant above the preferred
+                // send size, so the guard here is looser than that limit.
+                let bytes = crate::http::fetch(&gif.send_url, 20 * 1024 * 1024)
+                    .await
+                    .map_err(|fetch_error| CoreError::Failed {
+                        msg: format!("Could not download the GIF: {fetch_error}"),
+                    })?;
+
+                // The filename becomes the fallback body of the event, as in
+                // the GTK composer.
+                let filename = format!("{}.gif", gif.title.replace(['/', '\\'], " "));
+                room.live_timeline()
+                    .send_image_bytes(
+                        bytes,
+                        filename,
+                        mime::IMAGE_GIF,
+                        gif.send_width,
+                        gif.send_height,
+                    )
+                    .await
+                    .map_err(|()| CoreError::Failed {
+                        msg: "Could not send the GIF".to_owned(),
+                    })?;
+
+                crate::klipy::report_share(&gif.slug).await;
+                Ok(())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+}
+
+/// A GIF the picker can present and send.
+#[derive(uniffi::Record)]
+pub struct FfiGif {
+    /// The identifier of the GIF, stable across requests.
+    pub id: i64,
+    /// The identifier used to report the GIF as shared, valid only for the
+    /// response it came in.
+    pub slug: String,
+    /// A description of the GIF, never empty.
+    pub title: String,
+    /// The variant to present in the picker: the smallest one, WebP over GIF.
+    pub preview_url: String,
+    /// The width of the preview, in pixels.
+    pub preview_width: u32,
+    /// The height of the preview, in pixels.
+    pub preview_height: u32,
+    /// The variant to send: the largest GIF within the send-size limit.
+    pub send_url: String,
+    /// The width of the sent variant, in pixels.
+    pub send_width: u32,
+    /// The height of the sent variant, in pixels.
+    pub send_height: u32,
+    /// The size of the sent variant, in bytes.
+    pub send_size: u64,
+}
+
+/// One page of GIF search results.
+#[derive(uniffi::Record)]
+pub struct FfiGifPage {
+    /// The GIFs of this page.
+    pub gifs: Vec<FfiGif>,
+    /// Whether another page can be requested.
+    pub has_next: bool,
 }
 
 impl CoreApp {
