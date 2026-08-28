@@ -584,6 +584,57 @@ class CommuneState(context: Context) {
         thread { runBlocking { try { app.retrySends() } catch (_: Exception) {} } }
     }
 
+    /// Save the given history events into the device's Downloads, fetching
+    /// any that are not cached yet. Calls back with how many were saved.
+    fun downloadHistoryEvents(events: List<FfiHistoryEvent>, onDone: (Int) -> Unit) {
+        val room = openRoom ?: return
+        thread {
+            var saved = 0
+            runBlocking {
+                for (event in events) {
+                    val path = historyMedia[event.eventId] ?: try {
+                        app.getHistoryMedia(room.roomId, event.eventId)
+                    } catch (_: Exception) {
+                        null
+                    } ?: continue
+                    if (saveToDownloads(path, event.body, event.mimeType)) saved += 1
+                }
+            }
+            main.post { onDone(saved) }
+        }
+    }
+
+    /// Copy one media file into MediaStore's Downloads collection — the
+    /// scoped-storage way, no permission needed on our minSdk.
+    private fun saveToDownloads(path: String, name: String, mime: String?): Boolean = try {
+        val values = android.content.ContentValues().apply {
+            put(
+                android.provider.MediaStore.MediaColumns.DISPLAY_NAME,
+                name.ifBlank { "commune-media" },
+            )
+            mime?.let { put(android.provider.MediaStore.MediaColumns.MIME_TYPE, it) }
+            put(android.provider.MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        val resolver = appContext.contentResolver
+        val uri = resolver.insert(
+            android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+            values,
+        )
+        if (uri == null) {
+            false
+        } else {
+            resolver.openOutputStream(uri)!!.use { out ->
+                java.io.File(path).inputStream().use { it.copyTo(out) }
+            }
+            values.clear()
+            values.put(android.provider.MediaStore.MediaColumns.IS_PENDING, 0)
+            resolver.update(uri, values, null, null)
+            true
+        }
+    } catch (_: Exception) {
+        false
+    }
+
     fun openRoomDetails() {
         roomDetailsOpen = true
     }
