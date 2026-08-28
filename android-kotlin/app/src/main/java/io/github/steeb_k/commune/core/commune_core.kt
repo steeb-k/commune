@@ -747,6 +747,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_edit_message(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_enable_recovery(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_avatar(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
@@ -764,6 +766,10 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_mark_room_read(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_paginate_backwards(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_recover(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_recovery_state(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_redact_event(
     ): Short
@@ -857,6 +863,8 @@ external fun uniffi_commune_core_fn_method_coreapp_create_direct_chat(`ptr`: Lon
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_edit_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`newBody`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_enable_recovery(`ptr`: Long,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_avatar(`ptr`: Long,`mxcUri`: RustBuffer.ByValue,`size`: Int,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,`size`: Int,
@@ -874,6 +882,10 @@ external fun uniffi_commune_core_fn_method_coreapp_login_with_password(`ptr`: Lo
 external fun uniffi_commune_core_fn_method_coreapp_mark_room_read(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_paginate_backwards(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_recover(`ptr`: Long,`recoveryKey`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_recovery_state(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_redact_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
 ): Long
@@ -1096,6 +1108,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_edit_message() != 19406.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_enable_recovery() != 5558.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_avatar() != 49706.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1121,6 +1136,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_paginate_backwards() != 11648.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_recover() != 8793.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_recovery_state() != 25749.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_redact_event() != 51517.toShort()) {
@@ -1713,6 +1734,11 @@ public interface CoreAppInterface {
     suspend fun `editMessage`(`roomId`: kotlin.String, `eventId`: kotlin.String, `newBody`: kotlin.String)
     
     /**
+     * Set up recovery, returning the recovery key to write down.
+     */
+    suspend fun `enableRecovery`(): kotlin.String
+    
+    /**
      * Fetch the avatar at the given MXC URI into a file, returning its
      * path.
      */
@@ -1766,6 +1792,16 @@ public interface CoreAppInterface {
      * Paginate the given room's timeline backwards.
      */
     suspend fun `paginateBackwards`(`roomId`: kotlin.String)
+    
+    /**
+     * Recover the account's secrets with the given recovery key.
+     */
+    suspend fun `recover`(`recoveryKey`: kotlin.String)
+    
+    /**
+     * Where account recovery stands for the first ready session.
+     */
+    suspend fun `recoveryState`(): FfiRecoveryState
     
     /**
      * Redact the given event in the given room.
@@ -2128,6 +2164,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Set up recovery, returning the recovery key to write down.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `enableRecovery`() : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_enable_recovery(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Fetch the avatar at the given MXC URI into a file, returning its
      * path.
      */
@@ -2329,6 +2389,54 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         // lift function
         { Unit },
         
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Recover the account's secrets with the given recovery key.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `recover`(`recoveryKey`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_recover(
+                uniffiHandle,
+                FfiConverterString.lower(`recoveryKey`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Where account recovery stands for the first ready session.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `recoveryState`() : FfiRecoveryState {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_recovery_state(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiRecoveryState.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
     )
@@ -5023,6 +5131,58 @@ public object FfiConverterTypeFfiMembershipChange: FfiConverterRustBuffer<FfiMem
     override fun allocationSize(value: FfiMembershipChange) = 4UL
 
     override fun write(value: FfiMembershipChange, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * Where account recovery stands.
+ */
+
+enum class FfiRecoveryState {
+    
+    /**
+     * The state is not known yet.
+     */
+    UNKNOWN,
+    /**
+     * Recovery is set up and every secret is here.
+     */
+    ENABLED,
+    /**
+     * Recovery is not set up.
+     */
+    DISABLED,
+    /**
+     * Recovery is set up elsewhere and this session misses secrets —
+     * entering the recovery key completes it.
+     */
+    INCOMPLETE;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiRecoveryState: FfiConverterRustBuffer<FfiRecoveryState> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiRecoveryState.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiRecoveryState) = 4UL
+
+    override fun write(value: FfiRecoveryState, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
