@@ -7315,10 +7315,19 @@ sealed class FfiEventKind {
     }
     
     /**
-     * A sticker.
+     * A shared location; the body describes it.
      */
-    object Sticker : FfiEventKind()
-    
+    data class Location(
+        /**
+         * The `geo:` URI of the spot.
+         */
+        val `geoUri`: kotlin.String) : FfiEventKind()
+        
+    {
+        
+
+        companion object
+    }
     
     /**
      * A message that could not be decrypted.
@@ -7408,7 +7417,9 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
                 FfiConverterTypeFfiMediaKind.read(buf),
                 FfiConverterOptionalString.read(buf),
                 )
-            3 -> FfiEventKind.Sticker
+            3 -> FfiEventKind.Location(
+                FfiConverterString.read(buf),
+                )
             4 -> FfiEventKind.UnableToDecrypt
             5 -> FfiEventKind.Redacted
             6 -> FfiEventKind.Membership(
@@ -7441,10 +7452,11 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
                 + FfiConverterOptionalString.allocationSize(value.`blurhash`)
             )
         }
-        is FfiEventKind.Sticker -> {
+        is FfiEventKind.Location -> {
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
+                + FfiConverterString.allocationSize(value.`geoUri`)
             )
         }
         is FfiEventKind.UnableToDecrypt -> {
@@ -7501,8 +7513,9 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
                 FfiConverterOptionalString.write(value.`blurhash`, buf)
                 Unit
             }
-            is FfiEventKind.Sticker -> {
+            is FfiEventKind.Location -> {
                 buf.putInt(3)
+                FfiConverterString.write(value.`geoUri`, buf)
                 Unit
             }
             is FfiEventKind.UnableToDecrypt -> {
