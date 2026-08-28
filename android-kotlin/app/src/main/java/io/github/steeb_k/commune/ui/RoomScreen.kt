@@ -576,6 +576,19 @@ internal fun MessageBubble(
 
             ReactionChips(state, event)
 
+            if (event.isOwn && event.receipts.isNotEmpty()) {
+                Row(modifier = Modifier.padding(top = 2.dp)) {
+                    for (userId in event.receipts.take(5)) {
+                        InitialsAvatar(
+                            identifier = userId,
+                            name = localpart(userId),
+                            size = 14.dp,
+                        )
+                        Spacer(Modifier.size(2.dp))
+                    }
+                }
+            }
+
             val eventId = event.eventId
             if (event.threadReplies > 0uL && eventId != null && onOpenThread != null) {
                 val label = if (event.threadReplies == 1uL) "1 reply" else "${event.threadReplies} replies"
