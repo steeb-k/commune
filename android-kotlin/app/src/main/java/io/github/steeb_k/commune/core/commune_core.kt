@@ -825,6 +825,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_rooms(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_scan_qr(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_attachment(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_message(
@@ -960,6 +962,8 @@ external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_method_coreapp_scan_qr(`ptr`: Long,`flowId`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
@@ -1246,6 +1250,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_rooms() != 14668.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_scan_qr() != 10266.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_attachment() != 7086.toShort()) {
@@ -1709,6 +1716,25 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
     }
 }
 
+/**
+ * @suppress
+ */
+public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
+    override fun read(buf: ByteBuffer): ByteArray {
+        val len = buf.getInt()
+        val byteArr = ByteArray(len)
+        buf.get(byteArr)
+        return byteArr
+    }
+    override fun allocationSize(value: ByteArray): ULong {
+        return 4UL + value.size.toULong()
+    }
+    override fun write(value: ByteArray, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        buf.put(value)
+    }
+}
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -1951,6 +1977,12 @@ public interface CoreAppInterface {
      * The rooms of the first ready session, as of now.
      */
     fun `rooms`(): List<FfiRoom>
+    
+    /**
+     * Feed a scanned QR code into the verification with the given flow
+     * ID. The outcome arrives through the listener: done, or cancelled.
+     */
+    suspend fun `scanQr`(`flowId`: kotlin.String, `data`: kotlin.ByteArray)
     
     /**
      * Send the file at the given path as an attachment to the given room.
@@ -2749,6 +2781,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     )
     }
     
+
+    
+    /**
+     * Feed a scanned QR code into the verification with the given flow
+     * ID. The outcome arrives through the listener: done, or cancelled.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `scanQr`(`flowId`: kotlin.String, `data`: kotlin.ByteArray) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_scan_qr(
+                uniffiHandle,
+                FfiConverterString.lower(`flowId`),FfiConverterByteArray.lower(`data`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
     
     /**
