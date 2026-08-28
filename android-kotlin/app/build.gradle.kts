@@ -18,12 +18,34 @@ android {
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        // The sideload identity for the device: the same debug keystore
+        // that signed every install there, so `install -r` upgrades in
+        // place and the adopted session survives. Play Store signing
+        // arrives with the Store work.
+        create("device") {
+            storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         debug {
             // Keep development builds from displacing the GTK build (and
             // its seeded test session) on a device. Dropped when a build is
             // meant to exercise session adoption.
             applicationIdSuffix = ".skeleton"
+            // The emulator loop; keep the arm64 core out of its APK.
+            ndk { abiFilters += "x86_64" }
+        }
+        release {
+            signingConfig = signingConfigs.getByName("device")
+            // The device APK carries only its own ABI. No minification:
+            // the size is the Rust core's, and R8 has nothing to shrink
+            // that is worth the JNA/UniFFI keep-rule risk.
+            ndk { abiFilters += "arm64-v8a" }
         }
     }
 
