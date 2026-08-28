@@ -16,6 +16,7 @@ import io.github.steeb_k.commune.core.FfiTimelineItem
 import io.github.steeb_k.commune.core.Native
 import io.github.steeb_k.commune.core.RoomListListener
 import io.github.steeb_k.commune.core.TimelineListener
+import io.github.steeb_k.commune.core.TypingListener
 import io.github.steeb_k.commune.core.initCore
 import kotlin.concurrent.thread
 import kotlinx.coroutines.runBlocking
@@ -48,6 +49,8 @@ class CommuneState(context: Context) {
     var loginError by mutableStateOf<String?>(null)
         private set
     var ownUserId by mutableStateOf<String?>(null)
+        private set
+    var typingUsers by mutableStateOf<List<String>>(emptyList())
         private set
 
     init {
@@ -123,13 +126,36 @@ class CommuneState(context: Context) {
             },
         )
 
+        app.setTypingListener(
+            room.roomId,
+            object : TypingListener {
+                override fun onUpdate(userIds: List<String>) {
+                    main.post {
+                        if (openRoom?.roomId == room.roomId) typingUsers = userIds
+                    }
+                }
+            },
+        )
+
         // Pull a first page of history in behind the cached events.
         thread { runBlocking { app.paginateBackwards(room.roomId) } }
     }
 
     fun closeRoom() {
+        openRoom?.let { app.sendTyping(it.roomId, false) }
         openRoom = null
         timeline = emptyList()
+        typingUsers = emptyList()
+    }
+
+    private var wasTyping = false
+
+    /// Tell the room whether we are typing; only state changes go out.
+    fun setTyping(typing: Boolean) {
+        val room = openRoom ?: return
+        if (typing == wasTyping) return
+        wasTyping = typing
+        app.sendTyping(room.roomId, typing)
     }
 
     private var markingRead = false
@@ -152,6 +178,7 @@ class CommuneState(context: Context) {
 
     fun send(body: String) {
         val room = openRoom ?: return
+        setTyping(false)
         thread {
             runBlocking {
                 try {

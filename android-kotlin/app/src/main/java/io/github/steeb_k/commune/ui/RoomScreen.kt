@@ -61,8 +61,32 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
     Column(modifier = Modifier.fillMaxSize().imePadding()) {
         RoomHeader(room, onBack = { state.closeRoom() })
         Timeline(state.timeline, modifier = Modifier.weight(1f))
-        Composer(onSend = { state.send(it) })
+        TypingLine(state.typingUsers)
+        Composer(
+            onSend = { state.send(it) },
+            onTyping = { state.setTyping(it) },
+        )
     }
+}
+
+/// "bob is typing…" — the slide-up typing row, minimally.
+@Composable
+private fun TypingLine(userIds: List<String>) {
+    if (userIds.isEmpty()) return
+
+    val names = userIds.map { localpart(it) }
+    val text = when (names.size) {
+        1 -> "${names[0]} is typing…"
+        2 -> "${names[0]} and ${names[1]} are typing…"
+        else -> "${names.size} people are typing…"
+    }
+
+    Text(
+        text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp),
+    )
 }
 
 /// Back at the start, the room name centered — the GTK room header without
@@ -295,7 +319,7 @@ private fun CenteredDivider(label: String) {
 /// The composer: attach and emoji at the start (placeholders until their
 /// chunks), the entry, and the round send button — the GTK toolbar row.
 @Composable
-private fun Composer(onSend: (String) -> Unit) {
+private fun Composer(onSend: (String) -> Unit, onTyping: (Boolean) -> Unit) {
     var draft by remember { mutableStateOf("") }
 
     Row(
@@ -312,7 +336,10 @@ private fun Composer(onSend: (String) -> Unit) {
         }
         OutlinedTextField(
             value = draft,
-            onValueChange = { draft = it },
+            onValueChange = {
+                draft = it
+                onTyping(it.isNotBlank())
+            },
             placeholder = { Text("Message") },
             modifier = Modifier.weight(1f),
             maxLines = 5,

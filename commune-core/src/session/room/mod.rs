@@ -43,6 +43,7 @@ use ruma::{
 };
 use serde::Deserialize;
 use tokio::task::AbortHandle;
+use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
 pub use self::{
@@ -176,11 +177,19 @@ struct RoomInner {
     room_info_handle: Mutex<Option<AbortHandle>>,
     /// The live timeline of this room.
     live_timeline: std::sync::OnceLock<Timeline>,
+    /// The users currently typing in this room, our own user excluded.
+    typing: SharedObservable<Vec<OwnedUserId>>,
+    /// The typing subscription's event-handler guard and task.
+    typing_guard: Mutex<Option<matrix_sdk::event_handler::EventHandlerDropGuard>>,
+    typing_handle: Mutex<Option<AbortHandle>>,
 }
 
 impl Drop for RoomInner {
     fn drop(&mut self) {
         if let Ok(Some(handle)) = self.room_info_handle.get_mut().map(Option::take) {
+            handle.abort();
+        }
+        if let Ok(Some(handle)) = self.typing_handle.get_mut().map(Option::take) {
             handle.abort();
         }
     }
@@ -223,6 +232,9 @@ impl Room {
             attempted_auto_join: AtomicBool::new(false),
             room_info_handle: Mutex::new(None),
             live_timeline: std::sync::OnceLock::new(),
+            typing: SharedObservable::new(Vec::new()),
+            typing_guard: Mutex::new(None),
+            typing_handle: Mutex::new(None),
         });
 
         let this = Self { inner };
@@ -246,8 +258,10 @@ impl Room {
             inner.update_highlight();
         }
 
-        // The timeline preload, member watch, typing, join rule, permissions
-        // and send-queue watch attach here with their chunks.
+        RoomInner::set_up_typing(inner);
+
+        // The timeline preload, member watch, join rule, permissions and
+        // send-queue watch attach here with their chunks.
 
         {
             let weak = Arc::downgrade(inner);
@@ -498,6 +512,32 @@ impl Room {
         self.live_timeline()
             .send_receipt_resolved(receipt_type, position)
             .await;
+    }
+
+    /// The users currently typing in this room, our own user excluded.
+    #[must_use]
+    pub fn typing_users(&self) -> Vec<OwnedUserId> {
+        self.inner.typing.get()
+    }
+
+    /// Subscribe to the users currently typing in this room.
+    pub fn subscribe_typing(&self) -> Subscriber<Vec<OwnedUserId>> {
+        self.inner.typing.subscribe()
+    }
+
+    /// Send a typing notification for this room, with the given typing
+    /// state.
+    pub fn send_typing_notification(&self, is_typing: bool) {
+        if self.inner.matrix_room.state() != RoomState::Joined {
+            return;
+        }
+
+        let matrix_room = self.inner.matrix_room.clone();
+        RUNTIME.spawn(async move {
+            if let Err(typing_error) = matrix_room.typing_notice(is_typing).await {
+                error!("Could not send typing notification: {typing_error}");
+            }
+        });
     }
 
     /// Change the category of this room.
@@ -1143,6 +1183,55 @@ impl RoomInner {
                 }
             }
         }
+    }
+
+    /// Start listening to typing events.
+    ///
+    /// Like the application, only joined rooms are listened to; rooms
+    /// joined later get their subscription when their category changes —
+    /// which is not wired yet, so a freshly joined room's typing arrives
+    /// after a restart. Noted in the module docs.
+    fn set_up_typing(self: &Arc<Self>) {
+        if self
+            .typing_guard
+            .lock()
+            .expect("mutex is not poisoned")
+            .is_some()
+        {
+            // The event handler is already set up.
+            return;
+        }
+        if self.matrix_room.state() != RoomState::Joined {
+            return;
+        }
+
+        let (guard, receiver) = self.matrix_room.subscribe_to_typing_notifications();
+        let own_user_id = self.matrix_room.own_user_id().to_owned();
+        let weak = Arc::downgrade(self);
+
+        let handle = RUNTIME
+            .spawn(async move {
+                let mut stream = BroadcastStream::new(receiver);
+
+                while let Some(typing_user_ids) = stream.next().await {
+                    let Ok(typing_user_ids) = typing_user_ids else {
+                        continue;
+                    };
+                    let Some(inner) = weak.upgrade() else {
+                        break;
+                    };
+
+                    let typing: Vec<OwnedUserId> = typing_user_ids
+                        .into_iter()
+                        .filter(|user_id| *user_id != own_user_id)
+                        .collect();
+                    inner.typing.set_if_not_eq(typing);
+                }
+            })
+            .abort_handle();
+
+        *self.typing_guard.lock().expect("mutex is not poisoned") = Some(guard);
+        *self.typing_handle.lock().expect("mutex is not poisoned") = Some(handle);
     }
 
     /// Follow the timeline's items and our own read receipts, keeping
