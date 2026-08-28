@@ -116,6 +116,8 @@ features = [
 
 # Android-only dependencies.
 [target.'cfg(target_os = "android")'.dependencies]
+paranoid-android = "0.2"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["registry", "env-filter"] }
 # The Android Keystore is a Java API and there is no other way to reach it: the
 # keys are non-extractable by design, so the encryption has to happen on the
 # other side of JNI rather than with key material handed back to us.
@@ -177,3 +179,6 @@ unsafe_derive_deserialize = "allow"
 wildcard_imports = "allow"
 
 [workspace]
+
+[dev-dependencies]
+anyhow = "1"

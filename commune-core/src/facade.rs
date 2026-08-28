@@ -39,6 +39,28 @@ pub struct FfiCoreConfig {
 /// store under the data directory.
 #[uniffi::export]
 pub fn init_core(ffi_config: FfiCoreConfig) {
+    // Rust logs would otherwise vanish: an Android process has no stdout.
+    // The same subscriber and panic hook the application installs, so
+    // `adb logcat -s Commune` reads the core too.
+    #[cfg(target_os = "android")]
+    {
+        use tracing_subscriber::prelude::*;
+
+        static INIT: std::sync::Once = std::sync::Once::new();
+        INIT.call_once(|| {
+            let env_filter = tracing_subscriber::EnvFilter::new("commune_core=debug,warn");
+            tracing_subscriber::registry()
+                .with(paranoid_android::layer("Commune").with_filter(env_filter))
+                .init();
+
+            let previous = std::panic::take_hook();
+            std::panic::set_hook(Box::new(move |info| {
+                tracing::error!("PANIC: {info}");
+                previous(info);
+            }));
+        });
+    }
+
     config::init(config::CoreConfig {
         app_id: ffi_config.app_id,
         profile: ffi_config.profile,
@@ -373,6 +395,29 @@ pub enum FfiStateChange {
     Other,
 }
 
+/// One emoji of the short auth string.
+#[derive(uniffi::Record)]
+pub struct FfiSasEmoji {
+    /// The emoji symbol.
+    pub symbol: String,
+    /// The word naming it.
+    pub description: String,
+}
+
+/// Something on the foreign side that wants to follow device
+/// verifications.
+#[uniffi::export(with_foreign)]
+pub trait VerificationListener: Send + Sync {
+    /// Another session asked to verify with this one.
+    fn on_request(&self, flow_id: String, user_id: String);
+    /// The short auth string is ready to compare.
+    fn on_emojis(&self, flow_id: String, emojis: Vec<FfiSasEmoji>);
+    /// The verification finished on both sides.
+    fn on_done(&self, flow_id: String);
+    /// The verification was cancelled.
+    fn on_cancelled(&self, flow_id: String, reason: String);
+}
+
 /// Where account recovery stands.
 #[derive(uniffi::Enum)]
 pub enum FfiRecoveryState {
@@ -588,6 +633,8 @@ pub struct CoreApp {
     thread_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
     /// The task feeding the pinned-events listener.
     pinned_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
+    /// The verification listener and the flows in progress.
+    verification: Arc<VerificationFlows>,
     /// The task feeding the member-list listener.
     member_list_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
 }
@@ -605,6 +652,7 @@ impl CoreApp {
             typing_listener_handle: Mutex::new(None),
             thread_listener_handle: Mutex::new(None),
             pinned_listener_handle: Mutex::new(None),
+            verification: Arc::new(VerificationFlows::default()),
             member_list_listener_handle: Mutex::new(None),
         })
     }
@@ -1436,6 +1484,199 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// Follow device verifications with the given listener, accepting
+    /// the flows the listener's side approves.
+    ///
+    /// Replaces any previous listener; registering starts watching for
+    /// incoming requests.
+    pub fn set_verification_listener(&self, listener: Arc<dyn VerificationListener>) {
+        let flows = self.verification.clone();
+
+        *flows.listener.lock().expect("mutex is not poisoned") = Some(listener);
+
+        if flows
+            .handlers_installed
+            .swap(true, std::sync::atomic::Ordering::SeqCst)
+        {
+            return;
+        }
+
+        let list = self.session_list.clone();
+        RUNTIME.spawn(async move {
+            let session = wait_for_ready_session(&list).await;
+            let client = session.client();
+            use ruma::events::key::verification::{
+                request::ToDeviceKeyVerificationRequestEvent,
+                start::ToDeviceKeyVerificationStartEvent,
+            };
+
+            let flows_for_request = flows.clone();
+            client.add_event_handler(
+                move |event: ToDeviceKeyVerificationRequestEvent, client: matrix_sdk::Client| {
+                    let flows = flows_for_request.clone();
+                    async move {
+                        let flow_id = event.content.transaction_id.to_string();
+                        tracing::info!(
+                            "Verification request event from {}: {flow_id}",
+                            event.sender
+                        );
+                        let Some(request) = client
+                            .encryption()
+                            .get_verification_request(&event.sender, &event.content.transaction_id)
+                            .await
+                        else {
+                            tracing::warn!("Request {flow_id} not found in the SDK");
+                            return;
+                        };
+                        flows.insert_request(flow_id.clone(), request);
+                        flows.emit(|listener| {
+                            listener.on_request(flow_id.clone(), event.sender.to_string());
+                        });
+                    }
+                },
+            );
+
+            let flows_for_start = flows.clone();
+            client.add_event_handler(
+                move |event: ToDeviceKeyVerificationStartEvent, client: matrix_sdk::Client| {
+                    let flows = flows_for_start.clone();
+                    async move {
+                        use matrix_sdk::encryption::verification::Verification;
+
+                        let flow_id = event.content.transaction_id.to_string();
+                        // A start belonging to a request flow is handled by
+                        // that flow; only a bare legacy start arrives alone.
+                        if flows.has(&flow_id) {
+                            return;
+                        }
+                        let Some(Verification::SasV1(sas)) = client
+                            .encryption()
+                            .get_verification(&event.sender, flow_id.as_str())
+                            .await
+                        else {
+                            return;
+                        };
+                        flows.insert_sas(flow_id.clone(), sas);
+                        flows.emit(|listener| {
+                            listener.on_request(flow_id.clone(), event.sender.to_string());
+                        });
+                    }
+                },
+            );
+        });
+    }
+
+    /// Ask the account's verified sessions to verify this one. The flow
+    /// then arrives through the listener like an incoming one: emojis,
+    /// then done.
+    pub async fn request_verification(&self) -> Result<String, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+        let flows = self.verification.clone();
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let user_id = client.user_id().expect("logged in").to_owned();
+                let identity = client
+                    .encryption()
+                    .get_user_identity(&user_id)
+                    .await
+                    .ok()
+                    .flatten()
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "No identity to verify against".to_owned(),
+                    })?;
+
+                let request = identity
+                    .request_verification()
+                    .await
+                    .map_err(|request_error| CoreError::Failed {
+                        msg: format!("Could not request verification: {request_error}"),
+                    })?;
+                let flow_id = request.flow_id().to_owned();
+                flows.insert_request(flow_id.clone(), request.clone());
+
+                // As the requester we wait for the other side to accept and
+                // start; the SAS is then followed like any other.
+                let follow_flows = flows.clone();
+                let follow_flow_id = flow_id.clone();
+                RUNTIME.spawn(async move {
+                    use futures_util::StreamExt;
+                    use matrix_sdk::encryption::verification::{
+                        Verification, VerificationRequestState,
+                    };
+
+                    let mut changes = request.changes();
+                    while let Some(state) = changes.next().await {
+                        match state {
+                            VerificationRequestState::Transitioned {
+                                verification: Verification::SasV1(sas),
+                            } => {
+                                follow_flows.insert_sas(follow_flow_id.clone(), sas.clone());
+                                if let Err(sas_error) = sas.accept().await {
+                                    tracing::error!("Could not accept SAS: {sas_error}");
+                                    return;
+                                }
+                                follow_flows.clone().follow_sas(follow_flow_id, sas);
+                                return;
+                            }
+                            VerificationRequestState::Cancelled(info) => {
+                                let reason = info.reason().to_owned();
+                                follow_flows.emit(move |listener| {
+                                    listener.on_cancelled(follow_flow_id, reason);
+                                });
+                                return;
+                            }
+                            _ => {}
+                        }
+                    }
+                });
+
+                Ok(flow_id)
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Accept the verification with the given flow ID; the emojis arrive
+    /// through the listener when both sides are ready.
+    pub async fn accept_verification(&self, flow_id: String) {
+        let flows = self.verification.clone();
+        RUNTIME
+            .spawn(async move {
+                flows.accept(&flow_id).await;
+            })
+            .await
+            .expect("task was not aborted");
+    }
+
+    /// Confirm that the emojis matched.
+    pub async fn confirm_verification(&self, flow_id: String) {
+        let flows = self.verification.clone();
+        RUNTIME
+            .spawn(async move {
+                flows.confirm(&flow_id).await;
+            })
+            .await
+            .expect("task was not aborted");
+    }
+
+    /// Cancel the verification — the emojis did not match, or the user
+    /// declined.
+    pub async fn cancel_verification(&self, flow_id: String) {
+        let flows = self.verification.clone();
+        RUNTIME
+            .spawn(async move {
+                flows.cancel(&flow_id).await;
+            })
+            .await
+            .expect("task was not aborted");
+    }
+
     /// Where account recovery stands for the first ready session.
     pub async fn recovery_state(&self) -> FfiRecoveryState {
         use matrix_sdk::encryption::recovery::RecoveryState;
@@ -1592,6 +1833,216 @@ impl Drop for CoreApp {
 }
 
 /// Wait until the session list has a ready session, and return it.
+/// The verification flows in progress and their listener.
+#[derive(Default)]
+struct VerificationFlows {
+    listener: Mutex<Option<Arc<dyn VerificationListener>>>,
+    flows: Mutex<std::collections::HashMap<String, VerificationFlow>>,
+    handlers_installed: std::sync::atomic::AtomicBool,
+}
+
+enum VerificationFlow {
+    Request(matrix_sdk::encryption::verification::VerificationRequest),
+    Sas(matrix_sdk::encryption::verification::SasVerification),
+}
+
+impl VerificationFlows {
+    fn has(&self, flow_id: &str) -> bool {
+        self.flows
+            .lock()
+            .expect("mutex is not poisoned")
+            .contains_key(flow_id)
+    }
+
+    fn insert_request(
+        &self,
+        flow_id: String,
+        request: matrix_sdk::encryption::verification::VerificationRequest,
+    ) {
+        self.flows
+            .lock()
+            .expect("mutex is not poisoned")
+            .insert(flow_id, VerificationFlow::Request(request));
+    }
+
+    fn insert_sas(
+        &self,
+        flow_id: String,
+        sas: matrix_sdk::encryption::verification::SasVerification,
+    ) {
+        self.flows
+            .lock()
+            .expect("mutex is not poisoned")
+            .insert(flow_id, VerificationFlow::Sas(sas));
+    }
+
+    fn emit(&self, f: impl FnOnce(&Arc<dyn VerificationListener>)) {
+        if let Some(listener) = self
+            .listener
+            .lock()
+            .expect("mutex is not poisoned")
+            .as_ref()
+        {
+            f(listener);
+        }
+    }
+
+    /// Accept the flow: a request is accepted and its SAS awaited, a bare
+    /// SAS is accepted directly. Either way the SAS is then followed to
+    /// its end.
+    async fn accept(self: &Arc<Self>, flow_id: &str) {
+        use futures_util::StreamExt;
+        use matrix_sdk::encryption::verification::{Verification, VerificationRequestState};
+
+        tracing::info!("Accepting verification flow {flow_id}");
+
+        let flow = {
+            let flows = self.flows.lock().expect("mutex is not poisoned");
+            match flows.get(flow_id) {
+                Some(VerificationFlow::Request(request)) => Some(request.clone()),
+                _ => None,
+            }
+        };
+
+        if let Some(request) = flow {
+            if let Err(accept_error) = request.accept().await {
+                tracing::error!("Could not accept verification request: {accept_error}");
+                return;
+            }
+
+            // Wait for the flow to transition into a SAS verification,
+            // starting one ourselves once both sides are ready — someone
+            // has to go first.
+            let mut changes = request.changes();
+            while let Some(state) = changes.next().await {
+                match state {
+                    VerificationRequestState::Ready { .. } => {
+                        if let Err(start_error) = request.start_sas().await {
+                            tracing::error!("Could not start SAS: {start_error}");
+                        }
+                    }
+                    VerificationRequestState::Transitioned {
+                        verification: Verification::SasV1(sas),
+                    } => {
+                        self.insert_sas(flow_id.to_owned(), sas.clone());
+                        if let Err(sas_error) = sas.accept().await {
+                            tracing::error!("Could not accept SAS: {sas_error}");
+                            return;
+                        }
+                        self.clone().follow_sas(flow_id.to_owned(), sas);
+                        return;
+                    }
+                    VerificationRequestState::Cancelled(info) => {
+                        let flow_id = flow_id.to_owned();
+                        self.emit(move |listener| {
+                            listener.on_cancelled(flow_id, info.reason().to_owned());
+                        });
+                        return;
+                    }
+                    _ => {}
+                }
+            }
+            return;
+        }
+
+        let sas = {
+            let flows = self.flows.lock().expect("mutex is not poisoned");
+            match flows.get(flow_id) {
+                Some(VerificationFlow::Sas(sas)) => Some(sas.clone()),
+                _ => None,
+            }
+        };
+        if let Some(sas) = sas {
+            if let Err(sas_error) = sas.accept().await {
+                tracing::error!("Could not accept SAS: {sas_error}");
+                return;
+            }
+            tracing::info!("SAS accepted for flow {flow_id}");
+            self.clone().follow_sas(flow_id.to_owned(), sas);
+        } else {
+            tracing::warn!("No flow found to accept for {flow_id}");
+        }
+    }
+
+    /// Follow a SAS to its end, reporting the emojis and the outcome.
+    fn follow_sas(
+        self: Arc<Self>,
+        flow_id: String,
+        sas: matrix_sdk::encryption::verification::SasVerification,
+    ) {
+        use futures_util::StreamExt;
+        use matrix_sdk::encryption::verification::SasState;
+
+        RUNTIME.spawn(async move {
+            let mut changes = sas.changes();
+            while let Some(state) = changes.next().await {
+                tracing::info!("SAS state for {flow_id}: {state:?}");
+                match state {
+                    SasState::KeysExchanged {
+                        emojis: Some(emojis),
+                        ..
+                    } => {
+                        let ffi: Vec<FfiSasEmoji> = emojis
+                            .emojis
+                            .iter()
+                            .map(|emoji| FfiSasEmoji {
+                                symbol: emoji.symbol.to_owned(),
+                                description: emoji.description.to_owned(),
+                            })
+                            .collect();
+                        let flow_id = flow_id.clone();
+                        self.emit(move |listener| listener.on_emojis(flow_id, ffi));
+                    }
+                    SasState::Done { .. } => {
+                        let flow_id = flow_id.clone();
+                        self.emit(move |listener| listener.on_done(flow_id));
+                        break;
+                    }
+                    SasState::Cancelled(info) => {
+                        let flow_id = flow_id.clone();
+                        let reason = info.reason().to_owned();
+                        self.emit(move |listener| listener.on_cancelled(flow_id, reason));
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        });
+    }
+
+    async fn confirm(&self, flow_id: &str) {
+        let sas = {
+            let flows = self.flows.lock().expect("mutex is not poisoned");
+            match flows.get(flow_id) {
+                Some(VerificationFlow::Sas(sas)) => Some(sas.clone()),
+                _ => None,
+            }
+        };
+        if let Some(sas) = sas
+            && let Err(confirm_error) = sas.confirm().await
+        {
+            tracing::error!("Could not confirm verification: {confirm_error}");
+        }
+    }
+
+    async fn cancel(&self, flow_id: &str) {
+        let flow = self
+            .flows
+            .lock()
+            .expect("mutex is not poisoned")
+            .remove(flow_id);
+        match flow {
+            Some(VerificationFlow::Request(request)) => {
+                let _ = request.cancel().await;
+            }
+            Some(VerificationFlow::Sas(sas)) => {
+                let _ = sas.cancel().await;
+            }
+            None => {}
+        }
+    }
+}
+
 async fn wait_for_ready_session(list: &SessionList) -> Session {
     let (entries, mut stream) = list.subscribe_entries();
 
@@ -1736,6 +2187,19 @@ fn ffi_state_change(
     }
 }
 
+/// How many replies sit in the thread rooted at the given content.
+fn ffi_thread_replies(content: &matrix_sdk_ui::timeline::TimelineItemContent) -> u64 {
+    use matrix_sdk_ui::timeline::TimelineItemContent;
+
+    match content {
+        TimelineItemContent::MsgLike(msg_like) => msg_like
+            .thread_summary
+            .as_ref()
+            .map_or(0, |summary| u64::from(summary.num_replies)),
+        _ => 0,
+    }
+}
+
 /// The reactions on the given content, aggregated per key.
 fn ffi_reactions(
     content: &matrix_sdk_ui::timeline::TimelineItemContent,
@@ -1855,13 +2319,7 @@ fn ffi_timeline_item(
                 _ => (FfiEventKind::Unsupported, String::new()),
             };
 
-            let thread_replies = match event.content() {
-                TimelineItemContent::MsgLike(msg_like) => msg_like
-                    .thread_summary
-                    .as_ref()
-                    .map_or(0, |summary| u64::from(summary.num_replies)),
-                _ => 0,
-            };
+            let thread_replies = ffi_thread_replies(event.content());
 
             let reactions = ffi_reactions(event.content(), own_user_id);
 

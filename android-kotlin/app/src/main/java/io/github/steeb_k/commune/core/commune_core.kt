@@ -632,6 +632,18 @@ internal interface UniffiCallbackInterfaceTimelineListenerMethod0 : com.sun.jna.
 internal interface UniffiCallbackInterfaceTypingListenerMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`userIds`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
+internal interface UniffiCallbackInterfaceVerificationListenerMethod0 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`flowId`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
+internal interface UniffiCallbackInterfaceVerificationListenerMethod1 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`flowId`: RustBuffer.ByValue,`emojis`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
+internal interface UniffiCallbackInterfaceVerificationListenerMethod2 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`flowId`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
+internal interface UniffiCallbackInterfaceVerificationListenerMethod3 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`flowId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "onUpdate")
 internal open class UniffiVTableCallbackInterfaceMemberListListener(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -708,6 +720,34 @@ internal open class UniffiVTableCallbackInterfaceTypingListener(
     }
 
 }
+@Structure.FieldOrder("uniffiFree", "uniffiClone", "onRequest", "onEmojis", "onDone", "onCancelled")
+internal open class UniffiVTableCallbackInterfaceVerificationListener(
+    @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+    @JvmField internal var `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+    @JvmField internal var `onRequest`: UniffiCallbackInterfaceVerificationListenerMethod0? = null,
+    @JvmField internal var `onEmojis`: UniffiCallbackInterfaceVerificationListenerMethod1? = null,
+    @JvmField internal var `onDone`: UniffiCallbackInterfaceVerificationListenerMethod2? = null,
+    @JvmField internal var `onCancelled`: UniffiCallbackInterfaceVerificationListenerMethod3? = null,
+) : Structure() {
+    class UniffiByValue(
+        `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+        `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+        `onRequest`: UniffiCallbackInterfaceVerificationListenerMethod0? = null,
+        `onEmojis`: UniffiCallbackInterfaceVerificationListenerMethod1? = null,
+        `onDone`: UniffiCallbackInterfaceVerificationListenerMethod2? = null,
+        `onCancelled`: UniffiCallbackInterfaceVerificationListenerMethod3? = null,
+    ): UniffiVTableCallbackInterfaceVerificationListener(`uniffiFree`,`uniffiClone`,`onRequest`,`onEmojis`,`onDone`,`onCancelled`,), Structure.ByValue
+
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceVerificationListener) {
+        `uniffiFree` = other.`uniffiFree`
+        `uniffiClone` = other.`uniffiClone`
+        `onRequest` = other.`onRequest`
+        `onEmojis` = other.`onEmojis`
+        `onDone` = other.`onDone`
+        `onCancelled` = other.`onCancelled`
+    }
+
+}
 
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
@@ -735,6 +775,10 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_func_init_core(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_accept_verification(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_cancel_verification(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_change_room_category(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_clear_member_list_listener(
@@ -742,6 +786,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_clear_pinned_listener(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_clear_thread_listener(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_confirm_verification(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_create_direct_chat(
     ): Short
@@ -772,6 +818,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_recovery_state(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_redact_event(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_request_verification(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_restore_sessions(
     ): Short
@@ -811,6 +859,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_typing_listener(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_verification_listener(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_toggle_reaction(
     ): Short
     external fun uniffi_commune_core_checksum_method_memberlistlistener_on_update(
@@ -820,6 +870,14 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_timelinelistener_on_update(
     ): Short
     external fun uniffi_commune_core_checksum_method_typinglistener_on_update(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_verificationlistener_on_request(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_verificationlistener_on_emojis(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_verificationlistener_on_done(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_verificationlistener_on_cancelled(
     ): Short
     external fun uniffi_commune_core_checksum_constructor_coreapp_new(
     ): Short
@@ -843,6 +901,7 @@ internal object UniffiLib {
         uniffiCallbackInterfaceRoomListListener.register(this)
         uniffiCallbackInterfaceTimelineListener.register(this)
         uniffiCallbackInterfaceTypingListener.register(this)
+        uniffiCallbackInterfaceVerificationListener.register(this)
         
     }
     external fun uniffi_commune_core_fn_clone_coreapp(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -850,6 +909,10 @@ internal object UniffiLib {
 external fun uniffi_commune_core_fn_free_coreapp(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_constructor_coreapp_new(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_accept_verification(`ptr`: Long,`flowId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_cancel_verification(`ptr`: Long,`flowId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_change_room_category(`ptr`: Long,`roomId`: RustBuffer.ByValue,`category`: RustBuffer.ByValue,
 ): Long
@@ -859,6 +922,8 @@ external fun uniffi_commune_core_fn_method_coreapp_clear_pinned_listener(`ptr`: 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_clear_thread_listener(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_confirm_verification(`ptr`: Long,`flowId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_create_direct_chat(`ptr`: Long,`userId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_edit_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`newBody`: RustBuffer.ByValue,
@@ -888,6 +953,8 @@ external fun uniffi_commune_core_fn_method_coreapp_recover(`ptr`: Long,`recovery
 external fun uniffi_commune_core_fn_method_coreapp_recovery_state(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_redact_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_request_verification(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
 ): Long
@@ -927,6 +994,8 @@ external fun uniffi_commune_core_fn_method_coreapp_set_typing_enabled(`ptr`: Lon
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_typing_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_set_verification_listener(`ptr`: Long,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_commune_core_fn_method_coreapp_toggle_reaction(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_clone_memberlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -960,6 +1029,20 @@ external fun uniffi_commune_core_fn_free_typinglistener(`handle`: Long,uniffi_ou
 external fun uniffi_commune_core_fn_init_callback_vtable_typinglistener(`vtable`: UniffiVTableCallbackInterfaceTypingListener,
 ): Unit
 external fun uniffi_commune_core_fn_method_typinglistener_on_update(`ptr`: Long,`userIds`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_clone_verificationlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_commune_core_fn_free_verificationlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_init_callback_vtable_verificationlistener(`vtable`: UniffiVTableCallbackInterfaceVerificationListener,
+): Unit
+external fun uniffi_commune_core_fn_method_verificationlistener_on_request(`ptr`: Long,`flowId`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_verificationlistener_on_emojis(`ptr`: Long,`flowId`: RustBuffer.ByValue,`emojis`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_verificationlistener_on_done(`ptr`: Long,`flowId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_verificationlistener_on_cancelled(`ptr`: Long,`flowId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_func_core_version(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1090,6 +1173,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_func_init_core() != 39848.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_accept_verification() != 31555.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_cancel_verification() != 42296.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_change_room_category() != 21179.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1100,6 +1189,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_clear_thread_listener() != 18100.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_confirm_verification() != 49493.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_create_direct_chat() != 36767.toShort()) {
@@ -1145,6 +1237,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_redact_event() != 51517.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_request_verification() != 29392.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_restore_sessions() != 15459.toShort()) {
@@ -1204,6 +1299,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_typing_listener() != 32255.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_verification_listener() != 62005.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_toggle_reaction() != 55807.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1217,6 +1315,18 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_typinglistener_on_update() != 31416.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_verificationlistener_on_request() != 26434.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_verificationlistener_on_emojis() != 28225.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_verificationlistener_on_done() != 17029.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_verificationlistener_on_cancelled() != 16373.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_constructor_coreapp_new() != 59711.toShort()) {
@@ -1701,6 +1811,18 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
 public interface CoreAppInterface {
     
     /**
+     * Accept the verification with the given flow ID; the emojis arrive
+     * through the listener when both sides are ready.
+     */
+    suspend fun `acceptVerification`(`flowId`: kotlin.String)
+    
+    /**
+     * Cancel the verification — the emojis did not match, or the user
+     * declined.
+     */
+    suspend fun `cancelVerification`(`flowId`: kotlin.String)
+    
+    /**
      * Move the given room to the given category: accepting an invite is a
      * move to Normal, declining it (or leaving) a move to Left.
      */
@@ -1720,6 +1842,11 @@ public interface CoreAppInterface {
      * Stop pushing thread updates.
      */
     fun `clearThreadListener`()
+    
+    /**
+     * Confirm that the emojis matched.
+     */
+    suspend fun `confirmVerification`(`flowId`: kotlin.String)
     
     /**
      * Open a direct chat with the given user: the existing one when
@@ -1807,6 +1934,13 @@ public interface CoreAppInterface {
      * Redact the given event in the given room.
      */
     suspend fun `redactEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String)
+    
+    /**
+     * Ask the account's verified sessions to verify this one. The flow
+     * then arrives through the listener like an incoming one: emojis,
+     * then done.
+     */
+    suspend fun `requestVerification`(): kotlin.String
     
     /**
      * Restore the sessions stored on this device.
@@ -1921,6 +2055,15 @@ public interface CoreAppInterface {
      * and on every change. Replaces any previous typing listener.
      */
     fun `setTypingListener`(`roomId`: kotlin.String, `listener`: TypingListener)
+    
+    /**
+     * Follow device verifications with the given listener, accepting
+     * the flows the listener's side approves.
+     *
+     * Replaces any previous listener; registering starts watching for
+     * incoming requests.
+     */
+    fun `setVerificationListener`(`listener`: VerificationListener)
     
     /**
      * Toggle the given reaction on the given event in the given room.
@@ -2042,6 +2185,56 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Accept the verification with the given flow ID; the emojis arrive
+     * through the listener when both sides are ready.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `acceptVerification`(`flowId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_accept_verification(
+                uniffiHandle,
+                FfiConverterString.lower(`flowId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Cancel the verification — the emojis did not match, or the user
+     * declined.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `cancelVerification`(`flowId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_cancel_verification(
+                uniffiHandle,
+                FfiConverterString.lower(`flowId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
      * Move the given room to the given category: accepting an invite is a
      * move to Normal, declining it (or leaving) a move to Left.
      */
@@ -2110,6 +2303,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     }
     
     
+
+    
+    /**
+     * Confirm that the emojis matched.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `confirmVerification`(`flowId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_confirm_verification(
+                uniffiHandle,
+                FfiConverterString.lower(`flowId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
     
     /**
@@ -2469,6 +2686,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Ask the account's verified sessions to verify this one. The flow
+     * then arrives through the listener like an incoming one: emojis,
+     * then done.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `requestVerification`() : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_request_verification(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Restore the sessions stored on this device.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -2819,6 +3062,25 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     UniffiLib.uniffi_commune_core_fn_method_coreapp_set_typing_listener(
         it,
         FfiConverterString.lower(`roomId`),FfiConverterTypeTypingListener.lower(`listener`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Follow device verifications with the given listener, accepting
+     * the flows the listener's side approves.
+     *
+     * Replaces any previous listener; registering starts watching for
+     * incoming requests.
+     */override fun `setVerificationListener`(`listener`: VerificationListener)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_set_verification_listener(
+        it,
+        FfiConverterTypeVerificationListener.lower(`listener`),_status)
 }
     }
     
@@ -4164,6 +4426,427 @@ public object FfiConverterTypeTypingListener: FfiConverter<TypingListener, Long>
 }
 
 
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+/**
+ * Something on the foreign side that wants to follow device
+ * verifications.
+ */
+public interface VerificationListener {
+    
+    /**
+     * Another session asked to verify with this one.
+     */
+    fun `onRequest`(`flowId`: kotlin.String, `userId`: kotlin.String)
+    
+    /**
+     * The short auth string is ready to compare.
+     */
+    fun `onEmojis`(`flowId`: kotlin.String, `emojis`: List<FfiSasEmoji>)
+    
+    /**
+     * The verification finished on both sides.
+     */
+    fun `onDone`(`flowId`: kotlin.String)
+    
+    /**
+     * The verification was cancelled.
+     */
+    fun `onCancelled`(`flowId`: kotlin.String, `reason`: kotlin.String)
+    
+    companion object
+}
+
+/**
+ * Something on the foreign side that wants to follow device
+ * verifications.
+ */
+open class VerificationListenerImpl: Disposable, AutoCloseable, VerificationListener
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = null
+    }
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable?
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_commune_core_fn_free_verificationlistener(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_commune_core_fn_clone_verificationlistener(handle, status)
+        }
+    }
+
+    
+    /**
+     * Another session asked to verify with this one.
+     */override fun `onRequest`(`flowId`: kotlin.String, `userId`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_verificationlistener_on_request(
+        it,
+        FfiConverterString.lower(`flowId`),FfiConverterString.lower(`userId`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * The short auth string is ready to compare.
+     */override fun `onEmojis`(`flowId`: kotlin.String, `emojis`: List<FfiSasEmoji>)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_verificationlistener_on_emojis(
+        it,
+        FfiConverterString.lower(`flowId`),FfiConverterSequenceTypeFfiSasEmoji.lower(`emojis`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * The verification finished on both sides.
+     */override fun `onDone`(`flowId`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_verificationlistener_on_done(
+        it,
+        FfiConverterString.lower(`flowId`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * The verification was cancelled.
+     */override fun `onCancelled`(`flowId`: kotlin.String, `reason`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_verificationlistener_on_cancelled(
+        it,
+        FfiConverterString.lower(`flowId`),FfiConverterString.lower(`reason`),_status)
+}
+    }
+    
+    
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+
+// Put the implementation in an object so we don't pollute the top-level namespace
+internal object uniffiCallbackInterfaceVerificationListener {
+    internal object `onRequest`: UniffiCallbackInterfaceVerificationListenerMethod0 {
+        override fun callback(`uniffiHandle`: Long,`flowId`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeVerificationListener.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onRequest`(
+                    FfiConverterString.lift(`flowId`),
+                    FfiConverterString.lift(`userId`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+    internal object `onEmojis`: UniffiCallbackInterfaceVerificationListenerMethod1 {
+        override fun callback(`uniffiHandle`: Long,`flowId`: RustBuffer.ByValue,`emojis`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeVerificationListener.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onEmojis`(
+                    FfiConverterString.lift(`flowId`),
+                    FfiConverterSequenceTypeFfiSasEmoji.lift(`emojis`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+    internal object `onDone`: UniffiCallbackInterfaceVerificationListenerMethod2 {
+        override fun callback(`uniffiHandle`: Long,`flowId`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeVerificationListener.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onDone`(
+                    FfiConverterString.lift(`flowId`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+    internal object `onCancelled`: UniffiCallbackInterfaceVerificationListenerMethod3 {
+        override fun callback(`uniffiHandle`: Long,`flowId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeVerificationListener.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onCancelled`(
+                    FfiConverterString.lift(`flowId`),
+                    FfiConverterString.lift(`reason`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
+        override fun callback(handle: Long) {
+            FfiConverterTypeVerificationListener.handleMap.remove(handle)
+        }
+    }
+
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypeVerificationListener.handleMap.clone(handle)
+        }
+    }
+
+    internal var vtable = UniffiVTableCallbackInterfaceVerificationListener.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `onRequest`,
+        `onEmojis`,
+        `onDone`,
+        `onCancelled`,
+    )
+
+    // Registers the foreign callback with the Rust side.
+    // This method is generated for each callback interface.
+    internal fun register(lib: UniffiLib) {
+        lib.uniffi_commune_core_fn_init_callback_vtable_verificationlistener(vtable)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeVerificationListener: FfiConverter<VerificationListener, Long> {
+    internal val handleMap = UniffiHandleMap<VerificationListener>()
+
+    override fun lower(value: VerificationListener): Long {
+        if (value is VerificationListenerImpl) {
+             // Rust-implemented object.  Clone the handle and return it
+            return value.uniffiCloneHandle()
+         } else {
+            // Kotlin object, generate a new vtable handle and return that.
+            return handleMap.insert(value)
+         }
+    }
+
+    override fun lift(value: Long): VerificationListener {
+        if ((value and 1.toLong()) == 0.toLong()) {
+            // Rust-generated handle, construct a new class that uses the handle to implement the
+            // interface
+            return VerificationListenerImpl(UniffiWithHandle, value)
+        } else {
+            // Kotlin-generated handle, get the object from the handle map
+            return handleMap.remove(value)
+        }
+    }
+
+    override fun read(buf: ByteBuffer): VerificationListener {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: VerificationListener) = 8UL
+
+    override fun write(value: VerificationListener, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
 
 /**
  * What the embedder tells the core about itself, over the FFI.
@@ -4532,6 +5215,53 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterULong.write(value.`latestActivity`, buf)
             FfiConverterOptionalString.write(value.`avatarUrl`, buf)
             FfiConverterULong.write(value.`joinedMembersCount`, buf)
+    }
+}
+
+
+
+/**
+ * One emoji of the short auth string.
+ */
+data class FfiSasEmoji (
+    /**
+     * The emoji symbol.
+     */
+    var `symbol`: kotlin.String
+    , 
+    /**
+     * The word naming it.
+     */
+    var `description`: kotlin.String
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiSasEmoji: FfiConverterRustBuffer<FfiSasEmoji> {
+    override fun read(buf: ByteBuffer): FfiSasEmoji {
+        return FfiSasEmoji(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiSasEmoji) = (
+            FfiConverterString.allocationSize(value.`symbol`) +
+            FfiConverterString.allocationSize(value.`description`)
+    )
+
+    override fun write(value: FfiSasEmoji, buf: ByteBuffer) {
+            FfiConverterString.write(value.`symbol`, buf)
+            FfiConverterString.write(value.`description`, buf)
     }
 }
 
@@ -6116,6 +6846,34 @@ public object FfiConverterSequenceTypeFfiRoom: FfiConverterRustBuffer<List<FfiRo
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiRoom.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiSasEmoji: FfiConverterRustBuffer<List<FfiSasEmoji>> {
+    override fun read(buf: ByteBuffer): List<FfiSasEmoji> {
+        val len = buf.getInt()
+        return List<FfiSasEmoji>(len) {
+            FfiConverterTypeFfiSasEmoji.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiSasEmoji>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiSasEmoji.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiSasEmoji>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiSasEmoji.write(it, buf)
         }
     }
 }

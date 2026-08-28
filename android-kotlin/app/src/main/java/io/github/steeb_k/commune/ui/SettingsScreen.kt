@@ -81,6 +81,25 @@ fun SettingsScreen(state: CommuneState) {
 
         SettingsGroup("Encryption")
         RecoveryRow(state)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Verify This Session", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Compare emoji with one of your other sessions",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = {
+                state.requestVerification()
+                state.closeSettings()
+            }) { Text("Verify") }
+        }
     }
 }
 

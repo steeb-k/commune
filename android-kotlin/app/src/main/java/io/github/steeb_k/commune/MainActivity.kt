@@ -23,6 +23,7 @@ import io.github.steeb_k.commune.ui.RoomDetailsScreen
 import io.github.steeb_k.commune.ui.RoomScreen
 import io.github.steeb_k.commune.ui.SettingsScreen
 import io.github.steeb_k.commune.ui.ThreadScreen
+import io.github.steeb_k.commune.ui.VerificationDialog
 import io.github.steeb_k.commune.ui.SidebarScreen
 
 class MainActivity : ComponentActivity() {
@@ -79,6 +80,7 @@ private fun CommuneApp(state: CommuneState) {
         Phase.Loading -> LoadingScreen()
         Phase.Login -> LoginFlow(state)
         Phase.Session -> {
+            VerificationDialog(state)
             val room = state.openRoom
             val viewerPath = state.viewerImagePath
             if (viewerPath != null) {
