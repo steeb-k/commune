@@ -65,7 +65,10 @@ pub enum AndroidJniError {
 /// Called by the JVM with a valid `JavaVM` pointer, per the JNI invocation
 /// contract.
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn JNI_OnLoad(vm: *mut jni::sys::JavaVM, _reserved: *mut c_void) -> jint {
+pub unsafe extern "system" fn JNI_OnLoad(
+    vm: *mut jni::sys::JavaVM,
+    _reserved: *mut c_void,
+) -> jint {
     // SAFETY: the JVM hands us its own valid, process-lifetime pointer.
     if let Ok(vm) = unsafe { JavaVM::from_raw(vm) } {
         let _ = JAVA_VM.set(vm);

@@ -540,9 +540,9 @@ impl UserFacingError for oo7::file::Error {
             Error::Portal(_) => String::from(
                 "An unexpected error occurred when interacting with the D-Bus Secret Portal backend.",
             ),
-            Error::WeakKey(_) => {
-                String::from("The Flatpak Secret Portal provided a key that is too weak to be secure.")
-            }
+            Error::WeakKey(_) => String::from(
+                "The Flatpak Secret Portal provided a key that is too weak to be secure.",
+            ),
             Error::Locked => String::from("The collection or item is locked."),
             // Can only occur when using the `replace_item_index` or `delete_item_index` methods.
             Error::InvalidItemIndex(_) => unreachable!(),
@@ -564,7 +564,9 @@ impl UserFacingError for oo7::dbus::Error {
                 ServiceError::NoSession(_) => {
                     String::from("The D-Bus Secret Service session does not exist.")
                 }
-                ServiceError::NoSuchObject(_) => String::from("The collection or item does not exist."),
+                ServiceError::NoSuchObject(_) => {
+                    String::from("The collection or item does not exist.")
+                }
             },
             Error::Dismissed => String::from(
                 "The request to the D-Bus Secret Service was cancelled. Make sure to accept any prompt asking to access it.",

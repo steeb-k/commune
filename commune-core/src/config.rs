@@ -76,8 +76,8 @@ pub fn init(config: CoreConfig) {
         settings_store,
     } = config;
 
-    let settings_store = settings_store
-        .unwrap_or_else(|| Arc::new(FileSettingsStore::new(&data_dir)));
+    let settings_store =
+        settings_store.unwrap_or_else(|| Arc::new(FileSettingsStore::new(&data_dir)));
 
     let _ = CONFIG.set(ResolvedConfig {
         app_id,

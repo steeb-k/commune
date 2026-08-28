@@ -409,7 +409,10 @@ impl SessionSettings {
 
     /// Set whether the section with the given name is expanded.
     pub fn set_section_expanded(&self, section_name: SidebarSectionName, expanded: bool) {
-        self.write(|s| s.sections_expanded.set_section_expanded(section_name, expanded));
+        self.write(|s| {
+            s.sections_expanded
+                .set_section_expanded(section_name, expanded)
+        });
     }
 
     /// Apply the migration of the stored settings from version 0 to
@@ -470,7 +473,9 @@ impl SessionListSettings {
 
     /// Load these settings from the settings store.
     pub fn load(&self) {
-        let serialized = config::settings_store().get(SESSIONS_KEY).unwrap_or_default();
+        let serialized = config::settings_store()
+            .get(SESSIONS_KEY)
+            .unwrap_or_default();
 
         let stored_sessions =
             match serde_json::from_str::<Vec<(String, StoredSessionSettings)>>(&serialized) {
@@ -609,7 +614,9 @@ mod tests {
 
         let settings = SessionListSettings::new();
         settings.load();
-        settings.get_or_create(&id_a).set_notifications_enabled(false);
+        settings
+            .get_or_create(&id_a)
+            .set_notifications_enabled(false);
         settings.get_or_create(&id_b).set_typing_enabled(false);
 
         let reloaded = SessionListSettings::new();
