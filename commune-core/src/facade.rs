@@ -534,6 +534,8 @@ pub struct CoreApp {
     typing_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
     /// The task pushing thread-timeline updates to the foreign listener.
     thread_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
+    /// The task feeding the pinned-events listener.
+    pinned_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
     /// The task feeding the member-list listener.
     member_list_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
 }
@@ -550,6 +552,7 @@ impl CoreApp {
             timeline_listener_handle: Mutex::new(None),
             typing_listener_handle: Mutex::new(None),
             thread_listener_handle: Mutex::new(None),
+            pinned_listener_handle: Mutex::new(None),
             member_list_listener_handle: Mutex::new(None),
         })
     }
@@ -647,6 +650,72 @@ impl CoreApp {
             .lock()
             .expect("mutex is not poisoned")
             .replace(handle)
+        {
+            previous.abort();
+        }
+    }
+
+    /// Give the room's pinned events to the given listener, now and on
+    /// every change.
+    ///
+    /// Replaces any previous pinned listener.
+    pub fn set_pinned_listener(&self, room_id: String, listener: Arc<dyn TimelineListener>) {
+        let session = self.first_ready_session();
+
+        let handle = RUNTIME
+            .spawn(async move {
+                let Some(session) = session else { return };
+                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
+                    return;
+                };
+                let Some(room) = session.room_list().get(&room_id) else {
+                    return;
+                };
+
+                let timeline = room.pinned_timeline();
+                let Some((items, mut stream)) = timeline.subscribe_items().await else {
+                    return;
+                };
+                let own_user_id = session.user_id().clone();
+                listener.on_update(
+                    items
+                        .iter()
+                        .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                        .collect(),
+                );
+
+                let mut items = items;
+                while let Some(diffs) = stream.next().await {
+                    for diff in diffs {
+                        diff.apply(&mut items);
+                    }
+                    listener.on_update(
+                        items
+                            .iter()
+                            .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                            .collect(),
+                    );
+                }
+            })
+            .abort_handle();
+
+        if let Some(previous) = self
+            .pinned_listener_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .replace(handle)
+        {
+            previous.abort();
+        }
+    }
+
+    /// Stop feeding the pinned-events listener.
+    pub fn clear_pinned_listener(&self) {
+        if let Some(previous) = self
+            .pinned_listener_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .take()
         {
             previous.abort();
         }

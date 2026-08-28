@@ -522,6 +522,15 @@ impl Room {
             .clone()
     }
 
+    /// A timeline of the room's pinned events.
+    ///
+    /// A fresh timeline each call; the caller keeps it as long as the
+    /// pinned view is open.
+    #[must_use]
+    pub fn pinned_timeline(&self) -> Timeline {
+        Timeline::with_focus(self.inner.matrix_room.clone(), TimelineFocusKind::Pinned)
+    }
+
     /// A timeline of the thread rooted at the given event.
     ///
     /// A fresh timeline each call; the caller keeps it as long as the

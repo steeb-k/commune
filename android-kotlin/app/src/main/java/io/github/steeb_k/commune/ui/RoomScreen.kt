@@ -280,6 +280,9 @@ private fun RoomHeader(state: CommuneState, room: FfiRoom, onBack: () -> Unit) {
             modifier = Modifier.weight(1f),
             maxLines = 1,
         )
+        IconButton(onClick = { state.openPinned() }) {
+            Text("📌", style = MaterialTheme.typography.titleMedium)
+        }
         IconButton(onClick = { state.openRoomDetails() }) {
             RoomAvatar(state, room, size = 32.dp)
         }
