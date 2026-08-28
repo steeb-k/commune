@@ -132,6 +132,14 @@ Decisions:
   or two AVDs.
 * **`minSdk = 29`** (Android 10, decided 27 Aug 2026): scoped storage is
   the baseline, which simplifies every attachment/media path.
+* **Material You dynamic color** (decided 27 Aug 2026): the Compose app
+  derives its palette from the user's wallpaper rather than carrying the
+  GTK accent — feeling native beats looking identical. Layout parity is
+  unaffected; the bubble tint formulas from `doc/chat-bubbles.md` apply to
+  whatever the scheme's accent is.
+* **Chat bubbles on by default** (decided 27 Aug 2026): bubbles are the
+  native messaging idiom on Android, so the Kotlin app inverts the GTK
+  default; the flat style remains the setting's other value.
 
 ## The UI contract
 
