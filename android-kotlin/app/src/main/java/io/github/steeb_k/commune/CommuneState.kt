@@ -76,6 +76,18 @@ class CommuneState(context: Context) {
     var members by mutableStateOf<List<FfiMember>>(emptyList())
         private set
 
+    /// The event whose long-press action sheet is showing, if any.
+    var actionSheetEvent by mutableStateOf<FfiTimelineItem.Event?>(null)
+        private set
+
+    /// The event a reply is being composed to, if any.
+    var replyingTo by mutableStateOf<FfiTimelineItem.Event?>(null)
+        private set
+
+    /// The event whose text is being edited, if any.
+    var editing by mutableStateOf<FfiTimelineItem.Event?>(null)
+        private set
+
     init {
         Native.seed(context.applicationContext)
         initCore(
@@ -228,6 +240,81 @@ class CommuneState(context: Context) {
         openThreadRoot = null
         threadItems = emptyList()
         app.clearThreadListener()
+    }
+
+    fun showActionSheet(event: FfiTimelineItem.Event) {
+        actionSheetEvent = event
+    }
+
+    fun dismissActionSheet() {
+        actionSheetEvent = null
+    }
+
+    fun startReply(event: FfiTimelineItem.Event) {
+        editing = null
+        replyingTo = event
+    }
+
+    fun startEdit(event: FfiTimelineItem.Event) {
+        replyingTo = null
+        editing = event
+    }
+
+    fun cancelComposerAction() {
+        replyingTo = null
+        editing = null
+    }
+
+    /// Send the composer's text: as a reply or edit when one is armed,
+    /// as a plain message otherwise.
+    fun sendFromComposer(body: String) {
+        val reply = replyingTo
+        val edit = editing
+        cancelComposerAction()
+        when {
+            reply?.eventId != null -> sendReply(reply.eventId!!, body)
+            edit?.eventId != null -> sendEdit(edit.eventId!!, body)
+            else -> send(body)
+        }
+    }
+
+    private fun sendReply(inReplyTo: String, body: String) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                try {
+                    app.sendReply(room.roomId, inReplyTo, body)
+                } catch (_: Exception) {
+                    // The next update reflects reality either way.
+                }
+            }
+        }
+    }
+
+    private fun sendEdit(eventId: String, body: String) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                try {
+                    app.editMessage(room.roomId, eventId, body)
+                } catch (_: Exception) {
+                    // The next update reflects reality either way.
+                }
+            }
+        }
+    }
+
+    fun redact(eventId: String) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                try {
+                    app.redactEvent(room.roomId, eventId)
+                } catch (_: Exception) {
+                    // The next update reflects reality either way.
+                }
+            }
+        }
     }
 
     fun toggleReaction(eventId: String, key: String) {

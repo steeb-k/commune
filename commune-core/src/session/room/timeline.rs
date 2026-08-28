@@ -321,6 +321,89 @@ impl Timeline {
         }
     }
 
+    /// Send the given plain-text message as a reply to the given event.
+    pub async fn send_reply(
+        &self,
+        in_reply_to: ruma::OwnedEventId,
+        body: String,
+    ) -> Result<(), ()> {
+        use ruma::events::room::message::RoomMessageEventContentWithoutRelation;
+
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return Err(());
+        };
+
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .send_reply(
+                    RoomMessageEventContentWithoutRelation::text_plain(body),
+                    in_reply_to,
+                )
+                .await
+        });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(()) => Ok(()),
+            Err(send_error) => {
+                error!("Could not send reply: {send_error}");
+                Err(())
+            }
+        }
+    }
+
+    /// Replace the given event's content with the given plain text.
+    pub async fn edit(&self, event_id: ruma::OwnedEventId, new_body: String) -> Result<(), ()> {
+        use matrix_sdk::room::edit::EditedContent;
+        use matrix_sdk_ui::timeline::TimelineEventItemId;
+        use ruma::events::room::message::RoomMessageEventContentWithoutRelation;
+
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return Err(());
+        };
+
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .edit(
+                    &TimelineEventItemId::EventId(event_id),
+                    EditedContent::RoomMessage(RoomMessageEventContentWithoutRelation::text_plain(
+                        new_body,
+                    )),
+                )
+                .await
+        });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(()) => Ok(()),
+            Err(edit_error) => {
+                error!("Could not edit message: {edit_error}");
+                Err(())
+            }
+        }
+    }
+
+    /// Redact the given event, without a reason.
+    pub async fn redact(&self, event_id: ruma::OwnedEventId) -> Result<(), ()> {
+        use matrix_sdk_ui::timeline::TimelineEventItemId;
+
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return Err(());
+        };
+
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .redact(&TimelineEventItemId::EventId(event_id), None)
+                .await
+        });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(()) => Ok(()),
+            Err(redact_error) => {
+                error!("Could not redact event: {redact_error}");
+                Err(())
+            }
+        }
+    }
+
     /// Toggle the given reaction key on the given event.
     pub async fn toggle_reaction(&self, event_id: ruma::OwnedEventId, key: &str) -> Result<(), ()> {
         let Some(matrix_timeline) = self.matrix_timeline().await else {

@@ -5,7 +5,9 @@
 package io.github.steeb_k.commune.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,12 +28,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +52,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -75,12 +81,127 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
             onOpenThread = { state.openThread(it) },
         )
         TypingLine(state.typingUsers)
+        ComposerActionBar(state)
         Composer(
-            onSend = { state.send(it) },
+            onSend = { state.sendFromComposer(it) },
             onTyping = { state.setTyping(it) },
             onAttach = state.pickAttachment,
         )
     }
+
+    EventActionSheet(state)
+}
+
+/// The bar above the composer naming the armed reply or edit.
+@Composable
+internal fun ComposerActionBar(state: CommuneState) {
+    val reply = state.replyingTo
+    val edit = state.editing
+    if (reply == null && edit == null) return
+
+    val label = if (reply != null) {
+        "Replying to ${reply.senderDisplayName ?: localpart(reply.sender)}"
+    } else {
+        "Editing message"
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                (reply ?: edit)?.body.orEmpty(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+        IconButton(onClick = { state.cancelComposerAction() }) {
+            Icon(Icons.Filled.Close, contentDescription = "Cancel")
+        }
+    }
+}
+
+/// The quick reactions the GTK context menu offers first.
+private val QUICK_REACTIONS = listOf("\uD83D\uDC4D", "\uD83D\uDC4E", "\u2764\uFE0F", "\uD83D\uDE02", "\uD83C\uDF89", "\uD83D\uDE2E")
+
+/// The long-press action sheet: quick reactions, then the event actions.
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+internal fun EventActionSheet(state: CommuneState) {
+    val event = state.actionSheetEvent ?: return
+    val clipboard = LocalClipboardManager.current
+
+    ModalBottomSheet(onDismissRequest = { state.dismissActionSheet() }) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            for (key in QUICK_REACTIONS) {
+                Text(
+                    key,
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable {
+                            event.eventId?.let { state.toggleReaction(it, key) }
+                            state.dismissActionSheet()
+                        }
+                        .padding(8.dp),
+                )
+            }
+        }
+        HorizontalDivider()
+
+        SheetAction("Reply") {
+            state.startReply(event)
+            state.dismissActionSheet()
+        }
+        if (event.isOwn && event.kind is FfiEventKind.Text) {
+            SheetAction("Edit") {
+                state.startEdit(event)
+                state.dismissActionSheet()
+            }
+        }
+        SheetAction("Copy Text") {
+            clipboard.setText(AnnotatedString(event.body))
+            state.dismissActionSheet()
+        }
+        if (event.isOwn) {
+            SheetAction("Remove", destructive = true) {
+                event.eventId?.let { state.redact(it) }
+                state.dismissActionSheet()
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun SheetAction(label: String, destructive: Boolean = false, onClick: () -> Unit) {
+    Text(
+        label,
+        style = MaterialTheme.typography.bodyLarge,
+        color = if (destructive) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 14.dp),
+    )
 }
 
 /// "bob is typing…" — the slide-up typing row, minimally.
@@ -232,6 +353,7 @@ internal fun stateSentence(event: FfiTimelineItem.Event): String {
 /// accent at 25% on the right with the timestamp outermost, others neutral
 /// on the left.
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 internal fun MessageBubble(
     state: CommuneState,
     room: FfiRoom,
@@ -267,6 +389,10 @@ internal fun MessageBubble(
                 .widthIn(max = 320.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(bubbleColor)
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = { state.showActionSheet(event) },
+                )
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalAlignment = if (own) Alignment.End else Alignment.Start,
         ) {
@@ -292,6 +418,28 @@ internal fun MessageBubble(
                     }
                 }
                 Spacer(Modifier.height(2.dp))
+            }
+
+            event.inReplyTo?.let { replyTo ->
+                Column(
+                    modifier = Modifier
+                        .padding(bottom = 4.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        replyTo.sender?.let(::localpart) ?: "In reply to",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        replyTo.body ?: "…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                    )
+                }
             }
 
             val mediaKind = event.kind as? FfiEventKind.Media

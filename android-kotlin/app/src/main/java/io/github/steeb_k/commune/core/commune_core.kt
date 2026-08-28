@@ -739,6 +739,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_clear_thread_listener(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_edit_message(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_avatar(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
@@ -755,6 +757,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_paginate_backwards(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_redact_event(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_restore_sessions(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_rooms(
@@ -762,6 +766,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_send_attachment(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_message(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_send_reply(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_thread_message(
     ): Short
@@ -833,6 +839,8 @@ external fun uniffi_commune_core_fn_method_coreapp_clear_member_list_listener(`p
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_clear_thread_listener(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_edit_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`newBody`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_avatar(`ptr`: Long,`mxcUri`: RustBuffer.ByValue,`size`: Int,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,`size`: Int,
@@ -849,6 +857,8 @@ external fun uniffi_commune_core_fn_method_coreapp_mark_room_read(`ptr`: Long,`r
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_paginate_backwards(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_redact_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -856,6 +866,8 @@ external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_
 external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_send_reply(`ptr`: Long,`roomId`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_thread_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`rootEventId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
 ): Long
@@ -1052,6 +1064,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_clear_thread_listener() != 18100.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_edit_message() != 19406.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_avatar() != 49706.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1076,6 +1091,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_paginate_backwards() != 11648.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_redact_event() != 51517.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_restore_sessions() != 15459.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1086,6 +1104,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 8707.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_reply() != 33697.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_thread_message() != 26693.toShort()) {
@@ -1634,6 +1655,11 @@ public interface CoreAppInterface {
     fun `clearThreadListener`()
     
     /**
+     * Replace the given event's content with the given plain text.
+     */
+    suspend fun `editMessage`(`roomId`: kotlin.String, `eventId`: kotlin.String, `newBody`: kotlin.String)
+    
+    /**
      * Fetch the avatar at the given MXC URI into a file, returning its
      * path.
      */
@@ -1684,6 +1710,11 @@ public interface CoreAppInterface {
     suspend fun `paginateBackwards`(`roomId`: kotlin.String)
     
     /**
+     * Redact the given event in the given room.
+     */
+    suspend fun `redactEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String)
+    
+    /**
      * Restore the sessions stored on this device.
      */
     suspend fun `restoreSessions`()
@@ -1702,6 +1733,11 @@ public interface CoreAppInterface {
      * Send a plain-text message to the given room.
      */
     suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String)
+    
+    /**
+     * Send a plain-text reply to the given event in the given room.
+     */
+    suspend fun `sendReply`(`roomId`: kotlin.String, `inReplyTo`: kotlin.String, `body`: kotlin.String)
     
     /**
      * Send a plain-text message into the thread rooted at the given
@@ -1934,6 +1970,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Replace the given event's content with the given plain text.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `editMessage`(`roomId`: kotlin.String, `eventId`: kotlin.String, `newBody`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_edit_message(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),FfiConverterString.lower(`newBody`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Fetch the avatar at the given MXC URI into a file, returning its
      * path.
      */
@@ -2118,6 +2179,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Redact the given event in the given room.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `redactEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_redact_event(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Restore the sessions stored on this device.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -2193,6 +2279,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_send_message(
                 uniffiHandle,
                 FfiConverterString.lower(`roomId`),FfiConverterString.lower(`body`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Send a plain-text reply to the given event in the given room.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `sendReply`(`roomId`: kotlin.String, `inReplyTo`: kotlin.String, `body`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_send_reply(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`inReplyTo`),FfiConverterString.lower(`body`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -3835,6 +3946,61 @@ public object FfiConverterTypeFfiCoreConfig: FfiConverterRustBuffer<FfiCoreConfi
 
 
 /**
+ * The reply context of an event: what it replies to.
+ */
+data class FfiInReplyTo (
+    /**
+     * The ID of the replied-to event.
+     */
+    var `eventId`: kotlin.String
+    , 
+    /**
+     * The sender of the replied-to event, when its details are loaded.
+     */
+    var `sender`: kotlin.String?
+    , 
+    /**
+     * The body of the replied-to event, when its details are loaded.
+     */
+    var `body`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiInReplyTo: FfiConverterRustBuffer<FfiInReplyTo> {
+    override fun read(buf: ByteBuffer): FfiInReplyTo {
+        return FfiInReplyTo(
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiInReplyTo) = (
+            FfiConverterString.allocationSize(value.`eventId`) +
+            FfiConverterOptionalString.allocationSize(value.`sender`) +
+            FfiConverterOptionalString.allocationSize(value.`body`)
+    )
+
+    override fun write(value: FfiInReplyTo, buf: ByteBuffer) {
+            FfiConverterString.write(value.`eventId`, buf)
+            FfiConverterOptionalString.write(value.`sender`, buf)
+            FfiConverterOptionalString.write(value.`body`, buf)
+    }
+}
+
+
+
+/**
  * A member of a room.
  */
 data class FfiMember (
@@ -4844,6 +5010,9 @@ public object FfiConverterTypeFfiRoomHighlight: FfiConverterRustBuffer<FfiRoomHi
 
 /**
  * A timeline item, as the message list needs it.
+ *
+ * The event variant is big and the virtual variants are tiny; uniffi
+ * lowers enums by value either way, so boxing would only move the cost.
  */
 sealed class FfiTimelineItem {
     
@@ -4867,6 +5036,10 @@ sealed class FfiTimelineItem {
          * The reactions on the event.
          */
         val `reactions`: List<io.github.steeb_k.commune.core.FfiReaction>, 
+        /**
+         * The reply context of the event, if it is a reply.
+         */
+        val `inReplyTo`: io.github.steeb_k.commune.core.FfiInReplyTo?, 
         /**
          * Whether the event was edited.
          */
@@ -4951,6 +5124,7 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 FfiConverterOptionalString.read(buf),
                 FfiConverterULong.read(buf),
                 FfiConverterSequenceTypeFfiReaction.read(buf),
+                FfiConverterOptionalTypeFfiInReplyTo.read(buf),
                 FfiConverterBoolean.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterOptionalString.read(buf),
@@ -4977,6 +5151,7 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 + FfiConverterOptionalString.allocationSize(value.`eventId`)
                 + FfiConverterULong.allocationSize(value.`threadReplies`)
                 + FfiConverterSequenceTypeFfiReaction.allocationSize(value.`reactions`)
+                + FfiConverterOptionalTypeFfiInReplyTo.allocationSize(value.`inReplyTo`)
                 + FfiConverterBoolean.allocationSize(value.`isEdited`)
                 + FfiConverterString.allocationSize(value.`sender`)
                 + FfiConverterOptionalString.allocationSize(value.`senderDisplayName`)
@@ -5015,6 +5190,7 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 FfiConverterOptionalString.write(value.`eventId`, buf)
                 FfiConverterULong.write(value.`threadReplies`, buf)
                 FfiConverterSequenceTypeFfiReaction.write(value.`reactions`, buf)
+                FfiConverterOptionalTypeFfiInReplyTo.write(value.`inReplyTo`, buf)
                 FfiConverterBoolean.write(value.`isEdited`, buf)
                 FfiConverterString.write(value.`sender`, buf)
                 FfiConverterOptionalString.write(value.`senderDisplayName`, buf)
@@ -5071,6 +5247,38 @@ public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?>
         } else {
             buf.put(1)
             FfiConverterString.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiInReplyTo: FfiConverterRustBuffer<FfiInReplyTo?> {
+    override fun read(buf: ByteBuffer): FfiInReplyTo? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiInReplyTo.read(buf)
+    }
+
+    override fun allocationSize(value: FfiInReplyTo?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiInReplyTo.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiInReplyTo?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiInReplyTo.write(value, buf)
         }
     }
 }
