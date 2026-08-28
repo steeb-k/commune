@@ -829,6 +829,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_scan_qr(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_search_room(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_attachment(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_message(
@@ -971,6 +973,8 @@ external fun uniffi_commune_core_fn_method_coreapp_room_members(`ptr`: Long,`roo
 external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_method_coreapp_scan_qr(`ptr`: Long,`flowId`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_search_room(`ptr`: Long,`roomId`: RustBuffer.ByValue,`searchTerm`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
 ): Long
@@ -1268,6 +1272,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_scan_qr() != 10266.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_search_room() != 20054.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_attachment() != 7086.toShort()) {
@@ -2010,6 +2017,13 @@ public interface CoreAppInterface {
      * ID. The outcome arrives through the listener: done, or cancelled.
      */
     suspend fun `scanQr`(`flowId`: kotlin.String, `data`: kotlin.ByteArray)
+    
+    /**
+     * Search the given room's messages on the server — the application's
+     * search criteria: message bodies, most recent first. Encrypted
+     * rooms cannot be searched by the server.
+     */
+    suspend fun `searchRoom`(`roomId`: kotlin.String, `searchTerm`: kotlin.String): List<FfiSearchResult>
     
     /**
      * Send the file at the given path as an attachment to the given room.
@@ -2865,6 +2879,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         // lift function
         { Unit },
         
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Search the given room's messages on the server — the application's
+     * search criteria: message bodies, most recent first. Encrypted
+     * rooms cannot be searched by the server.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `searchRoom`(`roomId`: kotlin.String, `searchTerm`: kotlin.String) : List<FfiSearchResult> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_search_room(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`searchTerm`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeFfiSearchResult.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -5446,6 +5486,69 @@ public object FfiConverterTypeFfiSasEmoji: FfiConverterRustBuffer<FfiSasEmoji> {
 
 
 /**
+ * One message found by an in-room search.
+ */
+data class FfiSearchResult (
+    /**
+     * The ID of the found event.
+     */
+    var `eventId`: kotlin.String
+    , 
+    /**
+     * The user that sent it.
+     */
+    var `sender`: kotlin.String
+    , 
+    /**
+     * The body of the message.
+     */
+    var `body`: kotlin.String
+    , 
+    /**
+     * The timestamp, in milliseconds since the Unix epoch.
+     */
+    var `timestamp`: kotlin.ULong
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiSearchResult: FfiConverterRustBuffer<FfiSearchResult> {
+    override fun read(buf: ByteBuffer): FfiSearchResult {
+        return FfiSearchResult(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiSearchResult) = (
+            FfiConverterString.allocationSize(value.`eventId`) +
+            FfiConverterString.allocationSize(value.`sender`) +
+            FfiConverterString.allocationSize(value.`body`) +
+            FfiConverterULong.allocationSize(value.`timestamp`)
+    )
+
+    override fun write(value: FfiSearchResult, buf: ByteBuffer) {
+            FfiConverterString.write(value.`eventId`, buf)
+            FfiConverterString.write(value.`sender`, buf)
+            FfiConverterString.write(value.`body`, buf)
+            FfiConverterULong.write(value.`timestamp`, buf)
+    }
+}
+
+
+
+/**
  * The toggleable per-session settings, as the settings screen needs
  * them.
  */
@@ -7131,6 +7234,34 @@ public object FfiConverterSequenceTypeFfiSasEmoji: FfiConverterRustBuffer<List<F
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiSasEmoji.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiSearchResult: FfiConverterRustBuffer<List<FfiSearchResult>> {
+    override fun read(buf: ByteBuffer): List<FfiSearchResult> {
+        val len = buf.getInt()
+        return List<FfiSearchResult>(len) {
+            FfiConverterTypeFfiSearchResult.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiSearchResult>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiSearchResult.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiSearchResult>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiSearchResult.write(it, buf)
         }
     }
 }

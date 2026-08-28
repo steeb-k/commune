@@ -398,6 +398,19 @@ pub enum FfiStateChange {
     Other,
 }
 
+/// One message found by an in-room search.
+#[derive(uniffi::Record)]
+pub struct FfiSearchResult {
+    /// The ID of the found event.
+    pub event_id: String,
+    /// The user that sent it.
+    pub sender: String,
+    /// The body of the message.
+    pub body: String,
+    /// The timestamp, in milliseconds since the Unix epoch.
+    pub timestamp: u64,
+}
+
 /// One room inside a space, as its hierarchy reports it.
 #[derive(uniffi::Record)]
 pub struct FfiSpaceChild {
@@ -1634,6 +1647,93 @@ impl CoreApp {
                 },
             );
         });
+    }
+
+    /// Search the given room's messages on the server — the application's
+    /// search criteria: message bodies, most recent first. Encrypted
+    /// rooms cannot be searched by the server.
+    pub async fn search_room(
+        &self,
+        room_id: String,
+        search_term: String,
+    ) -> Result<Vec<FfiSearchResult>, CoreError> {
+        use ruma::{
+            api::client::{
+                filter::RoomEventFilter,
+                search::search_events::{
+                    self,
+                    v3::{Categories, Criteria, EventContext, OrderBy, SearchKeys},
+                },
+            },
+            assign,
+            events::{AnySyncMessageLikeEvent, AnySyncTimelineEvent, MessageLikeEventType},
+            serde::Raw,
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let client = session.client();
+
+                let filter = assign!(RoomEventFilter::default(), {
+                    rooms: Some(vec![room_id]),
+                    types: Some(vec![MessageLikeEventType::RoomMessage.to_string()]),
+                    limit: Some(ruma::UInt::from(30u32)),
+                });
+                let criteria = assign!(Criteria::new(search_term), {
+                    keys: Some(vec![SearchKeys::ContentBody]),
+                    filter,
+                    order_by: Some(OrderBy::Recent),
+                    event_context: assign!(EventContext::new(), {
+                        before_limit: ruma::UInt::default(),
+                        after_limit: ruma::UInt::default(),
+                    }),
+                });
+                let categories = assign!(Categories::new(), { room_events: Some(criteria) });
+                let request = search_events::v3::Request::new(categories);
+
+                let response =
+                    client
+                        .send(request)
+                        .await
+                        .map_err(|search_error| CoreError::Failed {
+                            msg: format!("Could not search: {search_error}"),
+                        })?;
+
+                Ok(response
+                    .search_categories
+                    .room_events
+                    .results
+                    .iter()
+                    .filter_map(|result| result.result.as_ref())
+                    .map(Raw::cast_ref_unchecked::<AnySyncTimelineEvent>)
+                    .filter_map(|raw| raw.deserialize().ok())
+                    .filter_map(|event| match event {
+                        AnySyncTimelineEvent::MessageLike(
+                            AnySyncMessageLikeEvent::RoomMessage(message),
+                        ) => {
+                            let original = message.as_original()?;
+                            Some(FfiSearchResult {
+                                event_id: original.event_id.to_string(),
+                                sender: original.sender.to_string(),
+                                body: original.content.msgtype.body().to_owned(),
+                                timestamp: original.origin_server_ts.get().into(),
+                            })
+                        }
+                        _ => None,
+                    })
+                    .collect())
+            })
+            .await
+            .expect("task was not aborted")
     }
 
     /// Set the given room's name and topic.

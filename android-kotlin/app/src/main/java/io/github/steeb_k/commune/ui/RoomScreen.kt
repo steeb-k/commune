@@ -289,6 +289,15 @@ private fun RoomHeader(state: CommuneState, room: FfiRoom, onBack: () -> Unit) {
             modifier = Modifier.weight(1f),
             maxLines = 1,
         )
+        IconButton(onClick = { state.openRoomSearch() }) {
+            Icon(
+                androidx.compose.ui.res.painterResource(
+                    io.github.steeb_k.commune.R.drawable.ic_system_search_symbolic
+                ),
+                contentDescription = "Search in room",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         IconButton(onClick = { state.openPinned() }) {
             Icon(
                 Icons.Outlined.PushPin,

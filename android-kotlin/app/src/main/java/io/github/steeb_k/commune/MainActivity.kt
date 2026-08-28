@@ -19,6 +19,7 @@ import io.github.steeb_k.commune.ui.LoginFlow
 import io.github.steeb_k.commune.ui.MediaViewerScreen
 import io.github.steeb_k.commune.ui.MembersScreen
 import io.github.steeb_k.commune.ui.PinnedScreen
+import io.github.steeb_k.commune.ui.RoomSearchScreen
 import io.github.steeb_k.commune.ui.RoomDetailsScreen
 import io.github.steeb_k.commune.ui.RoomScreen
 import io.github.steeb_k.commune.ui.SettingsScreen
@@ -121,6 +122,9 @@ private fun CommuneApp(state: CommuneState) {
             } else if (state.roomDetailsOpen) {
                 BackHandler { state.closeRoomDetails() }
                 RoomDetailsScreen(state, room)
+            } else if (state.roomSearchOpen) {
+                BackHandler { state.closeRoomSearch() }
+                RoomSearchScreen(state, room)
             } else if (state.pinnedOpen) {
                 BackHandler { state.closePinned() }
                 PinnedScreen(state, room)
