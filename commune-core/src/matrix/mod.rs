@@ -33,6 +33,7 @@ use ruma::{
 use thiserror::Error;
 
 pub mod ext_traits;
+pub mod media;
 mod url_preview;
 
 pub use self::url_preview::previewable_url;

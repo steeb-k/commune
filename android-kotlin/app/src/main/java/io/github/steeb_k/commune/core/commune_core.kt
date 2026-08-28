@@ -713,6 +713,10 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_func_init_core(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_get_timeline_media(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_has_ready_session(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_has_sessions(
@@ -771,173 +775,177 @@ internal object UniffiLib {
         
     }
     external fun uniffi_commune_core_fn_clone_coreapp(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun uniffi_commune_core_fn_free_coreapp(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_commune_core_fn_constructor_coreapp_new(uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun uniffi_commune_core_fn_method_coreapp_has_ready_session(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Byte
-    external fun uniffi_commune_core_fn_method_coreapp_has_sessions(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Byte
-    external fun uniffi_commune_core_fn_method_coreapp_login_with_password(`ptr`: Long,`homeserver`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_commune_core_fn_method_coreapp_mark_room_read(`ptr`: Long,`roomId`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_commune_core_fn_method_coreapp_paginate_backwards(`ptr`: Long,`roomId`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
-    ): Long
-    external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
-    ): Long
-    external fun uniffi_commune_core_fn_method_coreapp_send_typing(`ptr`: Long,`roomId`: RustBuffer.ByValue,`isTyping`: Byte,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_commune_core_fn_method_coreapp_session_display_name(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun uniffi_commune_core_fn_method_coreapp_session_user_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun uniffi_commune_core_fn_method_coreapp_set_room_list_listener(`ptr`: Long,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_commune_core_fn_method_coreapp_set_timeline_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_commune_core_fn_method_coreapp_set_typing_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_commune_core_fn_clone_roomlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun uniffi_commune_core_fn_free_roomlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_commune_core_fn_init_callback_vtable_roomlistlistener(`vtable`: UniffiVTableCallbackInterfaceRoomListListener,
-    ): Unit
-    external fun uniffi_commune_core_fn_method_roomlistlistener_on_update(`ptr`: Long,`rooms`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_commune_core_fn_clone_timelinelistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun uniffi_commune_core_fn_free_timelinelistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_commune_core_fn_init_callback_vtable_timelinelistener(`vtable`: UniffiVTableCallbackInterfaceTimelineListener,
-    ): Unit
-    external fun uniffi_commune_core_fn_method_timelinelistener_on_update(`ptr`: Long,`items`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_commune_core_fn_clone_typinglistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun uniffi_commune_core_fn_free_typinglistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_commune_core_fn_init_callback_vtable_typinglistener(`vtable`: UniffiVTableCallbackInterfaceTypingListener,
-    ): Unit
-    external fun uniffi_commune_core_fn_method_typinglistener_on_update(`ptr`: Long,`userIds`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun uniffi_commune_core_fn_func_core_version(uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun uniffi_commune_core_fn_func_init_core(`ffiConfig`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun ffi_commune_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun ffi_commune_core_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun ffi_commune_core_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
-    external fun ffi_commune_core_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun ffi_commune_core_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_u8(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_u8(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Byte
-    external fun ffi_commune_core_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_i8(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_i8(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Byte
-    external fun ffi_commune_core_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_u16(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_u16(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Short
-    external fun ffi_commune_core_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_i16(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_i16(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Short
-    external fun ffi_commune_core_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_u32(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_u32(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Int
-    external fun ffi_commune_core_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_i32(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_i32(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Int
-    external fun ffi_commune_core_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_u64(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_u64(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun ffi_commune_core_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_i64(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_i64(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Long
-    external fun ffi_commune_core_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_f32(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_f32(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Float
-    external fun ffi_commune_core_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_f64(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_f64(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Double
-    external fun ffi_commune_core_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_rust_buffer(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_rust_buffer(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): RustBuffer.ByValue
-    external fun ffi_commune_core_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_cancel_void(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_free_void(`handle`: Long,
-    ): Unit
-    external fun ffi_commune_core_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
-    ): Unit
+): Long
+external fun uniffi_commune_core_fn_free_coreapp(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_constructor_coreapp_new(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_get_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,`size`: Int,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_get_timeline_media(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_has_ready_session(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_commune_core_fn_method_coreapp_has_sessions(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_commune_core_fn_method_coreapp_login_with_password(`ptr`: Long,`homeserver`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_mark_room_read(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_paginate_backwards(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_send_typing(`ptr`: Long,`roomId`: RustBuffer.ByValue,`isTyping`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_coreapp_session_display_name(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_method_coreapp_session_user_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_method_coreapp_set_room_list_listener(`ptr`: Long,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_coreapp_set_timeline_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_coreapp_set_typing_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_clone_roomlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_commune_core_fn_free_roomlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_init_callback_vtable_roomlistlistener(`vtable`: UniffiVTableCallbackInterfaceRoomListListener,
+): Unit
+external fun uniffi_commune_core_fn_method_roomlistlistener_on_update(`ptr`: Long,`rooms`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_clone_timelinelistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_commune_core_fn_free_timelinelistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_init_callback_vtable_timelinelistener(`vtable`: UniffiVTableCallbackInterfaceTimelineListener,
+): Unit
+external fun uniffi_commune_core_fn_method_timelinelistener_on_update(`ptr`: Long,`items`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_clone_typinglistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_commune_core_fn_free_typinglistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_init_callback_vtable_typinglistener(`vtable`: UniffiVTableCallbackInterfaceTypingListener,
+): Unit
+external fun uniffi_commune_core_fn_method_typinglistener_on_update(`ptr`: Long,`userIds`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_func_core_version(uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_func_init_core(`ffiConfig`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun ffi_commune_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun ffi_commune_core_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun ffi_commune_core_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun ffi_commune_core_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun ffi_commune_core_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_u8(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_u8(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun ffi_commune_core_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_i8(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_i8(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun ffi_commune_core_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_u16(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_u16(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Short
+external fun ffi_commune_core_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_i16(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_i16(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Short
+external fun ffi_commune_core_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_u32(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_u32(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun ffi_commune_core_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_i32(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_i32(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun ffi_commune_core_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_u64(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_u64(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun ffi_commune_core_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_i64(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_i64(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun ffi_commune_core_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_f32(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_f32(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Float
+external fun ffi_commune_core_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_f64(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_f64(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Double
+external fun ffi_commune_core_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_rust_buffer(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_rust_buffer(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun ffi_commune_core_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_cancel_void(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_free_void(`handle`: Long,
+): Unit
+external fun ffi_commune_core_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 
-        
+    
 }
 
 private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
@@ -955,6 +963,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_func_init_core() != 39848.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_get_room_avatar() != 19575.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_get_timeline_media() != 55281.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_has_ready_session() != 41393.toShort()) {
@@ -981,7 +995,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 8707.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_commune_core_checksum_method_coreapp_send_typing() != 6801.toShort()) {
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_typing() != 23463.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_session_display_name() != 11144.toShort()) {
@@ -1242,6 +1256,29 @@ private class JavaLangRefCleanable(
 /**
  * @suppress
  */
+public object FfiConverterUInt: FfiConverter<UInt, Int> {
+    override fun lift(value: Int): UInt {
+        return value.toUInt()
+    }
+
+    override fun read(buf: ByteBuffer): UInt {
+        return lift(buf.getInt())
+    }
+
+    override fun lower(value: UInt): Int {
+        return value.toInt()
+    }
+
+    override fun allocationSize(value: UInt) = 4UL
+
+    override fun write(value: UInt, buf: ByteBuffer) {
+        buf.putInt(value.toInt())
+    }
+}
+
+/**
+ * @suppress
+ */
 public object FfiConverterULong: FfiConverter<ULong, Long> {
     override fun lift(value: Long): ULong {
         return value.toULong()
@@ -1444,6 +1481,21 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
 public interface CoreAppInterface {
     
     /**
+     * Fetch the avatar of the given room into a file, returning its path.
+     */
+    suspend fun `getRoomAvatar`(`roomId`: kotlin.String, `size`: kotlin.UInt): kotlin.String?
+    
+    /**
+     * Fetch the image of the given timeline item into a file, returning
+     * its path.
+     *
+     * The item is looked up in the room's timeline so that encrypted
+     * sources come with their keys; only image messages are handled for
+     * now.
+     */
+    suspend fun `getTimelineMedia`(`roomId`: kotlin.String, `uniqueId`: kotlin.String): kotlin.String?
+    
+    /**
      * Whether a session is logged in and running.
      *
      * Restoration is asynchronous: after [`Self::restore_sessions()`] this
@@ -1489,6 +1541,8 @@ public interface CoreAppInterface {
     
     /**
      * Send a typing notification for the given room.
+     *
+     * Owned `String` because the FFI hands one over.
      */
     fun `sendTyping`(`roomId`: kotlin.String, `isTyping`: kotlin.Boolean)
     
@@ -1636,6 +1690,57 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         return uniffiRustCall() { status ->
             UniffiLib.uniffi_commune_core_fn_clone_coreapp(handle, status)
         }
+    }
+
+    
+    /**
+     * Fetch the avatar of the given room into a file, returning its path.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getRoomAvatar`(`roomId`: kotlin.String, `size`: kotlin.UInt) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_get_room_avatar(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterUInt.lower(`size`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Fetch the image of the given timeline item into a file, returning
+     * its path.
+     *
+     * The item is looked up in the room's timeline so that encrypted
+     * sources come with their keys; only image messages are handled for
+     * now.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getTimelineMedia`(`roomId`: kotlin.String, `uniqueId`: kotlin.String) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_get_timeline_media(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`uniqueId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
     }
 
     
@@ -1815,6 +1920,8 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     
     /**
      * Send a typing notification for the given room.
+     *
+     * Owned `String` because the FFI hands one over.
      */override fun `sendTyping`(`roomId`: kotlin.String, `isTyping`: kotlin.Boolean)
         = 
     callWithHandle {
@@ -3161,8 +3268,18 @@ sealed class FfiEventKind {
     /**
      * A media message; the body is the caption or filename.
      */
-    object Media : FfiEventKind()
-    
+    data class Media(
+        /**
+         * Whether the media is an image the timeline can show inline
+         * (fetch it with `get_timeline_media`).
+         */
+        val `isImage`: kotlin.Boolean) : FfiEventKind()
+        
+    {
+        
+
+        companion object
+    }
     
     /**
      * A sticker.
@@ -3245,7 +3362,9 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
     override fun read(buf: ByteBuffer): FfiEventKind {
         return when(buf.getInt()) {
             1 -> FfiEventKind.Text
-            2 -> FfiEventKind.Media
+            2 -> FfiEventKind.Media(
+                FfiConverterBoolean.read(buf),
+                )
             3 -> FfiEventKind.Sticker
             4 -> FfiEventKind.UnableToDecrypt
             5 -> FfiEventKind.Redacted
@@ -3273,6 +3392,7 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
+                + FfiConverterBoolean.allocationSize(value.`isImage`)
             )
         }
         is FfiEventKind.Sticker -> {
@@ -3330,6 +3450,7 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
             }
             is FfiEventKind.Media -> {
                 buf.putInt(2)
+                FfiConverterBoolean.write(value.`isImage`, buf)
                 Unit
             }
             is FfiEventKind.Sticker -> {

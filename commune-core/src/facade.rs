@@ -232,7 +232,11 @@ pub enum FfiEventKind {
     /// A text-like message (`m.text`, `m.notice`, `m.emote`).
     Text,
     /// A media message; the body is the caption or filename.
-    Media,
+    Media {
+        /// Whether the media is an image the timeline can show inline
+        /// (fetch it with `get_timeline_media`).
+        is_image: bool,
+    },
     /// A sticker.
     Sticker,
     /// A message that could not be decrypted.
@@ -547,6 +551,69 @@ impl CoreApp {
         room.send_typing_notification(is_typing);
     }
 
+    /// Fetch the image of the given timeline item into a file, returning
+    /// its path.
+    ///
+    /// The item is looked up in the room's timeline so that encrypted
+    /// sources come with their keys; only image messages are handled for
+    /// now.
+    pub async fn get_timeline_media(&self, room_id: String, unique_id: String) -> Option<String> {
+        use matrix_sdk_ui::timeline::{MsgLikeKind, TimelineItemContent};
+        use ruma::events::room::message::MessageType;
+
+        let session = self.first_ready_session()?;
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).ok()?;
+                let room = session.room_list().get(&room_id)?;
+                let matrix_timeline = room.live_timeline().matrix_timeline().await?;
+
+                let items = matrix_timeline.items().await;
+                let item = items.iter().find(|item| item.unique_id().0 == unique_id)?;
+                let event = item.as_event()?;
+
+                let TimelineItemContent::MsgLike(msg_like) = event.content() else {
+                    return None;
+                };
+                let MsgLikeKind::Message(message) = &msg_like.kind else {
+                    return None;
+                };
+                let MessageType::Image(image) = message.msgtype() else {
+                    return None;
+                };
+
+                let request = matrix_sdk::media::MediaRequestParameters {
+                    source: image.source.clone(),
+                    format: matrix_sdk::media::MediaFormat::File,
+                };
+
+                crate::matrix::media::get_media_file(&session.client(), request)
+                    .await
+                    .map(|path| path.to_string_lossy().into_owned())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Fetch the avatar of the given room into a file, returning its path.
+    pub async fn get_room_avatar(&self, room_id: String, size: u32) -> Option<String> {
+        let session = self.first_ready_session()?;
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).ok()?;
+                let room = session.room_list().get(&room_id)?;
+                let avatar_url = room.avatar_url()?;
+
+                crate::matrix::media::get_avatar_file(&session.client(), &avatar_url, size)
+                    .await
+                    .map(|path| path.to_string_lossy().into_owned())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Mark the given room as read, sending a read receipt at the end of
     /// its timeline.
     pub async fn mark_room_read(&self, room_id: String) {
@@ -775,7 +842,8 @@ fn ffi_timeline_item(item: &matrix_sdk_ui::timeline::TimelineItem) -> FfiTimelin
                             | MessageType::Notice(_)
                             | MessageType::Emote(_)
                             | MessageType::ServerNotice(_) => FfiEventKind::Text,
-                            _ => FfiEventKind::Media,
+                            MessageType::Image(_) => FfiEventKind::Media { is_image: true },
+                            _ => FfiEventKind::Media { is_image: false },
                         };
                         (kind, msgtype.body().to_owned())
                     }

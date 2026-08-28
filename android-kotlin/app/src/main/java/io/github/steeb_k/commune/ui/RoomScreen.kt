@@ -26,6 +26,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +43,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -59,8 +63,8 @@ private val DATE = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
 @Composable
 fun RoomScreen(state: CommuneState, room: FfiRoom) {
     Column(modifier = Modifier.fillMaxSize().imePadding()) {
-        RoomHeader(room, onBack = { state.closeRoom() })
-        Timeline(state.timeline, modifier = Modifier.weight(1f))
+        RoomHeader(state, room, onBack = { state.closeRoom() })
+        Timeline(state, room, modifier = Modifier.weight(1f))
         TypingLine(state.typingUsers)
         Composer(
             onSend = { state.send(it) },
@@ -92,7 +96,7 @@ private fun TypingLine(userIds: List<String>) {
 /// Back at the start, the room name centered — the GTK room header without
 /// its call/search/pin/thread buttons, which arrive with their features.
 @Composable
-private fun RoomHeader(room: FfiRoom, onBack: () -> Unit) {
+private fun RoomHeader(state: CommuneState, room: FfiRoom, onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -108,13 +112,14 @@ private fun RoomHeader(room: FfiRoom, onBack: () -> Unit) {
             modifier = Modifier.weight(1f),
             maxLines = 1,
         )
-        InitialsAvatar(identifier = room.roomId, name = roomName(room), size = 32.dp)
+        RoomAvatar(state, room, size = 32.dp)
         Spacer(Modifier.size(8.dp))
     }
 }
 
 @Composable
-private fun Timeline(items: List<FfiTimelineItem>, modifier: Modifier) {
+private fun Timeline(state: CommuneState, room: FfiRoom, modifier: Modifier) {
+    val items = state.timeline
     val listState = rememberLazyListState()
 
     // Open at the newest message, and follow it.
@@ -137,7 +142,12 @@ private fun Timeline(items: List<FfiTimelineItem>, modifier: Modifier) {
                         ?.takeIf { it.kind.isMessageLike() }
                         ?.sender
                     if (item.kind.isMessageLike()) {
-                        MessageBubble(item, showHeader = item.sender != previousSender)
+                        MessageBubble(
+                            state,
+                            room,
+                            item,
+                            showHeader = item.sender != previousSender,
+                        )
                     } else {
                         StateLine(item)
                     }
@@ -204,7 +214,12 @@ private fun stateSentence(event: FfiTimelineItem.Event): String {
 /// accent at 25% on the right with the timestamp outermost, others neutral
 /// on the left.
 @Composable
-private fun MessageBubble(event: FfiTimelineItem.Event, showHeader: Boolean) {
+private fun MessageBubble(
+    state: CommuneState,
+    room: FfiRoom,
+    event: FfiTimelineItem.Event,
+    showHeader: Boolean,
+) {
     val own = event.isOwn
     val bubbleColor = if (own) {
         MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
@@ -259,6 +274,33 @@ private fun MessageBubble(event: FfiTimelineItem.Event, showHeader: Boolean) {
                 }
                 Spacer(Modifier.height(2.dp))
             }
+
+            val mediaKind = event.kind as? FfiEventKind.Media
+            if (mediaKind?.isImage == true) {
+                var bitmap by remember(event.uniqueId) {
+                    mutableStateOf<android.graphics.Bitmap?>(null)
+                }
+                LaunchedEffect(event.uniqueId) {
+                    val path = state.app.getTimelineMedia(room.roomId, event.uniqueId)
+                    if (path != null) {
+                        bitmap = android.graphics.BitmapFactory.decodeFile(path)
+                    }
+                }
+
+                bitmap?.let {
+                    Image(
+                        it.asImageBitmap(),
+                        contentDescription = event.body,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .widthIn(max = 280.dp)
+                            .heightIn(max = 280.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .padding(bottom = 4.dp),
+                    )
+                }
+            }
+
             Text(
                 body,
                 style = MaterialTheme.typography.bodyLarge,

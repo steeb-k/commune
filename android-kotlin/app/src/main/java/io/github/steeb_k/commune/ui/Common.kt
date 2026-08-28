@@ -22,6 +22,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import io.github.steeb_k.commune.CommuneState
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRoomDisplayName
 
@@ -84,6 +93,38 @@ fun LoadingScreen() {
             "Fetching Account Data…",
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(top = 24.dp),
+        )
+    }
+}
+
+
+/// A room avatar: the picture when there is one, initials otherwise.
+@Composable
+fun RoomAvatar(state: CommuneState, room: FfiRoom, size: Dp) {
+    val avatarUrl = room.avatarUrl
+
+    if (avatarUrl == null) {
+        InitialsAvatar(identifier = room.roomId, name = roomName(room), size = size)
+        return
+    }
+
+    var bitmap by remember(avatarUrl) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(avatarUrl) {
+        val path = state.app.getRoomAvatar(room.roomId, 96u)
+        if (path != null) {
+            bitmap = android.graphics.BitmapFactory.decodeFile(path)
+        }
+    }
+
+    val loaded = bitmap
+    if (loaded == null) {
+        InitialsAvatar(identifier = room.roomId, name = roomName(room), size = size)
+    } else {
+        Image(
+            loaded.asImageBitmap(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(size).clip(CircleShape),
         )
     }
 }
