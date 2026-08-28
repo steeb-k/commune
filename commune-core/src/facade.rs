@@ -845,6 +845,45 @@ impl CoreApp {
             .await
             .expect("task was not aborted")
     }
+
+    /// Send the file at the given path as an attachment to the given room.
+    pub async fn send_attachment(
+        &self,
+        room_id: String,
+        file_path: String,
+        mime_type: String,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let mime = mime_type
+                    .parse::<mime::Mime>()
+                    .unwrap_or(mime::APPLICATION_OCTET_STREAM);
+
+                room.live_timeline()
+                    .send_attachment(file_path.into(), mime)
+                    .await
+                    .map_err(|()| CoreError::Failed {
+                        msg: "Could not send the attachment".to_owned(),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
 }
 
 impl CoreApp {

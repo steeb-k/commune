@@ -76,6 +76,7 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
         Composer(
             onSend = { state.send(it) },
             onTyping = { state.setTyping(it) },
+            onAttach = state.pickAttachment,
         )
     }
 }
@@ -393,7 +394,11 @@ internal fun CenteredDivider(label: String) {
 /// The composer: attach and emoji at the start (placeholders until their
 /// chunks), the entry, and the round send button — the GTK toolbar row.
 @Composable
-internal fun Composer(onSend: (String) -> Unit, onTyping: (Boolean) -> Unit) {
+internal fun Composer(
+    onSend: (String) -> Unit,
+    onTyping: (Boolean) -> Unit,
+    onAttach: (() -> Unit)? = null,
+) {
     var draft by remember { mutableStateOf("") }
 
     Row(
@@ -402,7 +407,7 @@ internal fun Composer(onSend: (String) -> Unit, onTyping: (Boolean) -> Unit) {
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
-        IconButton(onClick = {}, enabled = false) {
+        IconButton(onClick = { onAttach?.invoke() }, enabled = onAttach != null) {
             Icon(Icons.Filled.Add, contentDescription = "Attach")
         }
         IconButton(onClick = {}, enabled = false) {

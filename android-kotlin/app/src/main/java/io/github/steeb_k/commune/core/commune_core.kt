@@ -733,6 +733,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_rooms(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_send_attachment(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_message(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_thread_message(
@@ -814,6 +816,8 @@ external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_thread_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`rootEventId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
@@ -1021,6 +1025,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_rooms() != 14668.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_attachment() != 7086.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 8707.toShort()) {
@@ -1589,6 +1596,11 @@ public interface CoreAppInterface {
     fun `rooms`(): List<FfiRoom>
     
     /**
+     * Send the file at the given path as an attachment to the given room.
+     */
+    suspend fun `sendAttachment`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String)
+    
+    /**
      * Send a plain-text message to the given room.
      */
     suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String)
@@ -1992,6 +2004,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     )
     }
     
+
+    
+    /**
+     * Send the file at the given path as an attachment to the given room.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `sendAttachment`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_send_attachment(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`filePath`),FfiConverterString.lower(`mimeType`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
     
     /**

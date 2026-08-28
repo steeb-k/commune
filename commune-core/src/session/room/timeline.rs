@@ -320,6 +320,54 @@ impl Timeline {
             }
         }
     }
+
+    /// Send the file at the given path as an attachment to the room.
+    ///
+    /// The upload-size preflight and thumbnails arrive with the composer
+    /// chunk; until then the server stays the judge of size.
+    pub async fn send_attachment(
+        &self,
+        path: std::path::PathBuf,
+        mime: mime::Mime,
+    ) -> Result<(), ()> {
+        use matrix_sdk::attachment::{AttachmentInfo, BaseFileInfo, BaseImageInfo};
+        use matrix_sdk_ui::timeline::{AttachmentConfig, AttachmentSource};
+
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return Err(());
+        };
+
+        let size = std::fs::metadata(&path)
+            .ok()
+            .and_then(|metadata| metadata.len().try_into().ok());
+        let info = if mime.type_() == mime::IMAGE {
+            AttachmentInfo::Image(BaseImageInfo {
+                size,
+                ..Default::default()
+            })
+        } else {
+            AttachmentInfo::File(BaseFileInfo { size })
+        };
+        let config = AttachmentConfig {
+            info: Some(info),
+            ..Default::default()
+        };
+
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .send_attachment(AttachmentSource::File(path), mime, config)
+                .use_send_queue()
+                .await
+        });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(()) => Ok(()),
+            Err(send_error) => {
+                error!("Could not send attachment: {send_error}");
+                Err(())
+            }
+        }
+    }
 }
 
 /// Build the SDK timeline for the given room, with the application's
