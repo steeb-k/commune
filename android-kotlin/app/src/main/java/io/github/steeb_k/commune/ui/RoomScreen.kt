@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import io.github.steeb_k.commune.CommuneState
 import io.github.steeb_k.commune.core.FfiEventKind
+import io.github.steeb_k.commune.core.FfiMembershipChange
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiTimelineItem
 import java.text.SimpleDateFormat
@@ -128,12 +129,51 @@ private fun Timeline(items: List<FfiTimelineItem>, modifier: Modifier) {
 }
 
 private fun FfiEventKind.isMessageLike(): Boolean = when (this) {
-    FfiEventKind.TEXT,
-    FfiEventKind.MEDIA,
-    FfiEventKind.STICKER,
-    FfiEventKind.UNABLE_TO_DECRYPT,
-    FfiEventKind.REDACTED -> true
-    FfiEventKind.MEMBERSHIP, FfiEventKind.OTHER_STATE, FfiEventKind.UNSUPPORTED -> false
+    is FfiEventKind.Text,
+    is FfiEventKind.Media,
+    is FfiEventKind.Sticker,
+    is FfiEventKind.UnableToDecrypt,
+    is FfiEventKind.Redacted -> true
+    is FfiEventKind.Membership,
+    is FfiEventKind.ProfileChange,
+    is FfiEventKind.OtherState,
+    is FfiEventKind.Unsupported -> false
+}
+
+/// A short name for a Matrix user ID: the localpart.
+private fun localpart(userId: String): String =
+    userId.removePrefix("@").substringBefore(':')
+
+/// The sentence for a state event — the words the GTK app's state rows
+/// speak, minimally.
+private fun stateSentence(event: FfiTimelineItem.Event): String {
+    val sender = event.senderDisplayName ?: localpart(event.sender)
+
+    return when (val kind = event.kind) {
+        is FfiEventKind.Membership -> {
+            val user = localpart(kind.user)
+            when (kind.change) {
+                FfiMembershipChange.JOINED -> "$user joined this room."
+                FfiMembershipChange.LEFT -> "$user left this room."
+                FfiMembershipChange.BANNED -> "$user was banned by $sender."
+                FfiMembershipChange.UNBANNED -> "$user was unbanned by $sender."
+                FfiMembershipChange.KICKED -> "$user was removed by $sender."
+                FfiMembershipChange.INVITED -> "$sender invited $user."
+                FfiMembershipChange.KICKED_AND_BANNED -> "$user was removed and banned by $sender."
+                FfiMembershipChange.INVITATION_ACCEPTED -> "$user accepted the invite."
+                FfiMembershipChange.INVITATION_REJECTED -> "$user declined the invite."
+                FfiMembershipChange.INVITATION_REVOKED -> "The invite for $user was retracted."
+                FfiMembershipChange.KNOCKED -> "$user requested an invite."
+                FfiMembershipChange.KNOCK_ACCEPTED -> "The invite request of $user was accepted."
+                FfiMembershipChange.KNOCK_RETRACTED -> "$user retracted their invite request."
+                FfiMembershipChange.KNOCK_DENIED -> "The invite request of $user was declined."
+                FfiMembershipChange.UNKNOWN -> "The membership of $user changed."
+            }
+        }
+        is FfiEventKind.ProfileChange -> "${localpart(kind.user)} changed their profile."
+        is FfiEventKind.OtherState -> "$sender changed the room's settings."
+        else -> "$sender updated the room."
+    }
 }
 
 /// One message bubble, per doc/chat-bubbles.md: 12dp radius, own messages
@@ -149,14 +189,14 @@ private fun MessageBubble(event: FfiTimelineItem.Event, showHeader: Boolean) {
     }
 
     val body = when (event.kind) {
-        FfiEventKind.TEXT -> event.body
-        FfiEventKind.MEDIA -> "📎 ${event.body}"
-        FfiEventKind.STICKER -> "🏷 Sticker"
-        FfiEventKind.UNABLE_TO_DECRYPT -> "Could not decrypt this message"
-        FfiEventKind.REDACTED -> "Message removed"
+        is FfiEventKind.Text -> event.body
+        is FfiEventKind.Media -> "📎 ${event.body}"
+        is FfiEventKind.Sticker -> "🏷 Sticker"
+        is FfiEventKind.UnableToDecrypt -> "Could not decrypt this message"
+        is FfiEventKind.Redacted -> "Message removed"
         else -> return
     }
-    val muted = event.kind != FfiEventKind.TEXT && event.kind != FfiEventKind.MEDIA
+    val muted = event.kind !is FfiEventKind.Text && event.kind !is FfiEventKind.Media
 
     Row(
         modifier = Modifier
@@ -222,9 +262,8 @@ private fun BubbleTimestamp(time: String) {
 /// the state-event humanization chunk.
 @Composable
 private fun StateLine(event: FfiTimelineItem.Event) {
-    val who = event.senderDisplayName ?: event.sender
     Text(
-        "$who updated the room",
+        stateSentence(event),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier

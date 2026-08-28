@@ -61,7 +61,10 @@ use tracing::{debug, error, info};
 use url::Url;
 
 pub use self::{
-    room::{Room, RoomCategory, RoomDisplayName, RoomHighlight, TargetRoomCategory, Timeline},
+    room::{
+        ReceiptPosition, Room, RoomCategory, RoomDisplayName, RoomHighlight, TargetRoomCategory,
+        Timeline,
+    },
     room_list::{RoomList, RoomMetainfo},
     sidebar::SidebarSectionName,
 };

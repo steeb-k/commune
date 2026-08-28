@@ -31,6 +31,7 @@ use matrix_sdk::{
     Result as MatrixResult, RoomDisplayName as SdkRoomDisplayName, RoomInfo, RoomState,
     deserialized_responses::RawSyncOrStrippedState, room::Room as MatrixRoom,
 };
+use ruma::api::client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType;
 use ruma::{
     MilliSecondsSinceUnixEpoch, OwnedMxcUri, OwnedRoomId, OwnedUserId, RoomId,
     events::{
@@ -46,7 +47,7 @@ use tracing::{debug, error, warn};
 
 pub use self::{
     category::{RoomCategory, RoomHighlight, TargetRoomCategory},
-    timeline::Timeline,
+    timeline::{ReceiptPosition, Timeline},
 };
 use crate::{
     RUNTIME,
@@ -463,12 +464,40 @@ impl Room {
     }
 
     /// The live timeline of this room, created on first use.
+    ///
+    /// Creating it also starts the read-state watcher: from then on
+    /// `is_read`, the highlight and the latest activity follow the
+    /// timeline's items and our own read receipts, as the application's
+    /// read-change trigger does.
     #[must_use]
     pub fn live_timeline(&self) -> Timeline {
         self.inner
             .live_timeline
-            .get_or_init(|| Timeline::new(self.inner.matrix_room.clone()))
+            .get_or_init(|| {
+                let timeline = Timeline::new(self.inner.matrix_room.clone());
+                RoomInner::watch_read_state(&self.inner, &timeline);
+                timeline
+            })
             .clone()
+    }
+
+    /// Send the given receipt.
+    ///
+    /// The public-read-receipts setting decides whether a read receipt is
+    /// public or private, as in the application.
+    pub async fn send_receipt(&self, receipt_type: ApiReceiptType, position: ReceiptPosition) {
+        let send_public_receipt = self
+            .session()
+            .is_none_or(|session| session.settings().public_read_receipts_enabled());
+
+        let receipt_type = match receipt_type {
+            ApiReceiptType::Read if !send_public_receipt => ApiReceiptType::ReadPrivate,
+            t => t,
+        };
+
+        self.live_timeline()
+            .send_receipt_resolved(receipt_type, position)
+            .await;
     }
 
     /// Change the category of this room.
@@ -1116,6 +1145,53 @@ impl RoomInner {
         }
     }
 
+    /// Follow the timeline's items and our own read receipts, keeping
+    /// `is_read`, the highlight and the latest activity current — the
+    /// application's read-change trigger, headless.
+    fn watch_read_state(self: &Arc<Self>, timeline: &Timeline) {
+        let weak = Arc::downgrade(self);
+        let timeline = timeline.clone();
+
+        RUNTIME.spawn(async move {
+            let Some(mut receipts) = timeline.subscribe_own_read_receipts().await else {
+                return;
+            };
+            let Some((_, mut items)) = timeline.subscribe_items().await else {
+                return;
+            };
+
+            loop {
+                if let Some(inner) = weak.upgrade() {
+                    inner.update_read_state(&timeline).await;
+                } else {
+                    break;
+                }
+
+                tokio::select! {
+                    changed = receipts.next() => if changed.is_none() { break },
+                    changed = items.next() => if changed.is_none() { break },
+                }
+            }
+        });
+    }
+
+    /// Recompute the read state from the timeline.
+    async fn update_read_state(&self, timeline: &Timeline) {
+        if self.is_marked_unread.get() {
+            self.is_read.set_if_not_eq(false);
+        } else if let Some(has_unread) = timeline.has_unread_messages().await {
+            self.is_read.set_if_not_eq(!has_unread);
+        }
+
+        if let Some(latest_activity) = timeline.latest_activity().await {
+            let current = self.latest_activity.get();
+            self.latest_activity
+                .set_if_not_eq(current.max(latest_activity));
+        }
+
+        self.update_highlight();
+    }
+
     /// Watch the SDK's room info for changes to the room state.
     fn watch_room_info(self: &Arc<Self>) {
         let subscriber = self.matrix_room.subscribe_info();
@@ -1148,6 +1224,22 @@ impl RoomInner {
         Self::update_tombstone(self);
         self.set_joined_members_count(room_info.joined_members_count());
         self.update_is_encrypted().await;
+
+        // Without a built timeline there is no MSC2654 walk to decide
+        // `is_read`, so for rooms that were never opened the server's own
+        // notification accounting is the signal: notifications pending
+        // means unread. The application reaches the same states through
+        // its preloaded timelines; the read-state watcher takes over here
+        // the moment the room is opened.
+        if self
+            .matrix_room
+            .unread_notification_counts()
+            .notification_count
+            > 0
+        {
+            self.is_read.set_if_not_eq(false);
+        }
+        self.update_highlight();
         // The aliases, server notice, pinned events, join rule, guest access
         // and history visibility updates attach here with their chunks.
     }
