@@ -5570,6 +5570,11 @@ sealed class FfiTimelineItem {
          */
         val `isEdited`: kotlin.Boolean, 
         /**
+         * The users whose read receipts sit on this event, ourselves
+         * excluded by the SDK's own accounting.
+         */
+        val `receipts`: List<kotlin.String>, 
+        /**
          * The user that sent the event.
          */
         val `sender`: kotlin.String, 
@@ -5651,6 +5656,7 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 FfiConverterSequenceTypeFfiReaction.read(buf),
                 FfiConverterOptionalTypeFfiInReplyTo.read(buf),
                 FfiConverterBoolean.read(buf),
+                FfiConverterSequenceString.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterOptionalString.read(buf),
                 FfiConverterULong.read(buf),
@@ -5678,6 +5684,7 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 + FfiConverterSequenceTypeFfiReaction.allocationSize(value.`reactions`)
                 + FfiConverterOptionalTypeFfiInReplyTo.allocationSize(value.`inReplyTo`)
                 + FfiConverterBoolean.allocationSize(value.`isEdited`)
+                + FfiConverterSequenceString.allocationSize(value.`receipts`)
                 + FfiConverterString.allocationSize(value.`sender`)
                 + FfiConverterOptionalString.allocationSize(value.`senderDisplayName`)
                 + FfiConverterULong.allocationSize(value.`timestamp`)
@@ -5717,6 +5724,7 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 FfiConverterSequenceTypeFfiReaction.write(value.`reactions`, buf)
                 FfiConverterOptionalTypeFfiInReplyTo.write(value.`inReplyTo`, buf)
                 FfiConverterBoolean.write(value.`isEdited`, buf)
+                FfiConverterSequenceString.write(value.`receipts`, buf)
                 FfiConverterString.write(value.`sender`, buf)
                 FfiConverterOptionalString.write(value.`senderDisplayName`, buf)
                 FfiConverterULong.write(value.`timestamp`, buf)

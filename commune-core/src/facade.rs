@@ -418,6 +418,9 @@ pub enum FfiTimelineItem {
         in_reply_to: Option<FfiInReplyTo>,
         /// Whether the event was edited.
         is_edited: bool,
+        /// The users whose read receipts sit on this event, ourselves
+        /// excluded by the SDK's own accounting.
+        receipts: Vec<String>,
         /// The user that sent the event.
         sender: String,
         /// The display name of the sender, if it is known.
@@ -1793,6 +1796,11 @@ fn ffi_timeline_item(
                 reactions,
                 in_reply_to,
                 is_edited,
+                receipts: event
+                    .read_receipts()
+                    .keys()
+                    .map(ToString::to_string)
+                    .collect(),
                 sender: event.sender().to_string(),
                 sender_display_name,
                 timestamp: event.timestamp().get().into(),
