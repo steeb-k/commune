@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The activity theme; the v31 overlays add the splash attributes. -->
+    <style name="Theme.Commune.Starting" parent="android:Theme.DeviceDefault.NoActionBar" />
+</resources>

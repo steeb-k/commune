@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -83,17 +85,48 @@ fun InitialsAvatar(identifier: String, name: String, size: Dp) {
 /// The loading page: what the GTK window's `loading` stack page shows.
 @Composable
 fun LoadingScreen() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        CircularProgressIndicator()
-        Text(
-            "Fetching Account Data…",
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(top = 24.dp),
+    LoadingFace(modifier = Modifier.fillMaxSize())
+}
+
+/// The loading treatment everywhere something is not ready yet: the wavy
+/// Material progress indicator across the top (the View library's stable
+/// one) over the app's symbolic mark — never a blank page.
+@Composable
+fun LoadingFace(modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        androidx.compose.ui.viewinterop.AndroidView(
+            factory = { context ->
+                val themed = android.view.ContextThemeWrapper(
+                    context,
+                    com.google.android.material.R.style.Theme_Material3_DayNight_NoActionBar,
+                )
+                com.google.android.material.progressindicator.LinearProgressIndicator(themed)
+                    .apply {
+                        isIndeterminate = true
+                        with(density) {
+                            waveAmplitude = 3.dp.roundToPx()
+                            setWavelength(24.dp.roundToPx())
+                        }
+                    }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
         )
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                androidx.compose.ui.res.painterResource(
+                    io.github.steeb_k.commune.R.drawable.ic_app_symbolic
+                ),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.size(96.dp),
+            )
+        }
     }
 }
 

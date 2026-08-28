@@ -67,6 +67,8 @@ class CommuneState(context: Context) {
         private set
     var timeline by mutableStateOf<List<FfiTimelineItem>>(emptyList())
         private set
+    var timelineLoading by mutableStateOf(false)
+        private set
     var openRoom by mutableStateOf<FfiRoom?>(null)
         private set
     var loginBusy by mutableStateOf(false)
@@ -219,6 +221,7 @@ class CommuneState(context: Context) {
         }
         openRoom = room
         timeline = emptyList()
+        timelineLoading = true
         composerMembers = emptyList()
         thread {
             runBlocking {
@@ -237,6 +240,7 @@ class CommuneState(context: Context) {
                     main.post {
                         if (openRoom?.roomId == room.roomId) {
                             timeline = items
+                            timelineLoading = false
                             // The room is on screen at its newest message:
                             // reading it is what looking at it means.
                             markRead(room.roomId)

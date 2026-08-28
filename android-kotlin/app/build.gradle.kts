@@ -47,6 +47,9 @@ dependencies {
     implementation(composeBom)
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.compose.material3:material3")
+    // The stable home of the wavy progress indicator; Compose still gates
+    // it behind alphas, the View library shipped it in 1.13.
+    implementation("com.google.android.material:material:1.14.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
 }
