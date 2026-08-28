@@ -27,15 +27,33 @@ import io.github.steeb_k.commune.ui.SidebarScreen
 class MainActivity : ComponentActivity() {
     private lateinit var state: CommuneState
 
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
+
     private val attachmentPicker =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let { state.sendAttachmentFromUri(it) }
         }
 
+    override fun onStart() {
+        super.onStart()
+        if (::state.isInitialized) state.uiVisible = true
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (::state.isInitialized) state.uiVisible = false
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         state = CommuneState(this)
         state.pickAttachment = { attachmentPicker.launch("*/*") }
+
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+        SyncService.start(this)
 
         setContent {
             CommuneTheme {
