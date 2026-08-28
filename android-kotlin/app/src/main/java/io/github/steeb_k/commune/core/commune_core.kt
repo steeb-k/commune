@@ -739,6 +739,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_clear_member_list_listener(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_clear_pinned_listener(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_clear_thread_listener(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_create_direct_chat(
@@ -788,6 +790,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_set_member_list_listener(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_notifications_enabled(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_pinned_listener(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled(
     ): Short
@@ -845,6 +849,8 @@ external fun uniffi_commune_core_fn_method_coreapp_change_room_category(`ptr`: L
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_clear_member_list_listener(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_clear_pinned_listener(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_commune_core_fn_method_coreapp_clear_thread_listener(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_create_direct_chat(`ptr`: Long,`userId`: RustBuffer.ByValue,
@@ -894,6 +900,8 @@ external fun uniffi_commune_core_fn_method_coreapp_session_user_id(`ptr`: Long,u
 external fun uniffi_commune_core_fn_method_coreapp_set_member_list_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_notifications_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_coreapp_set_pinned_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_public_read_receipts_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1076,6 +1084,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_clear_member_list_listener() != 21403.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_clear_pinned_listener() != 9878.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_clear_thread_listener() != 18100.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1149,6 +1160,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_notifications_enabled() != 49241.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_pinned_listener() != 13189.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled() != 61979.toShort()) {
@@ -1677,6 +1691,11 @@ public interface CoreAppInterface {
     fun `clearMemberListListener`()
     
     /**
+     * Stop feeding the pinned-events listener.
+     */
+    fun `clearPinnedListener`()
+    
+    /**
      * Stop pushing thread updates.
      */
     fun `clearThreadListener`()
@@ -1819,6 +1838,14 @@ public interface CoreAppInterface {
      * Set whether notifications are enabled for this session.
      */
     fun `setNotificationsEnabled`(`enabled`: kotlin.Boolean)
+    
+    /**
+     * Give the room's pinned events to the given listener, now and on
+     * every change.
+     *
+     * Replaces any previous pinned listener.
+     */
+    fun `setPinnedListener`(`roomId`: kotlin.String, `listener`: TimelineListener)
     
     /**
      * Set whether read receipts are public for this session.
@@ -2011,6 +2038,21 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     callWithHandle {
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_commune_core_fn_method_coreapp_clear_member_list_listener(
+        it,
+        _status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Stop feeding the pinned-events listener.
+     */override fun `clearPinnedListener`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_clear_pinned_listener(
         it,
         _status)
 }
@@ -2552,6 +2594,24 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     UniffiLib.uniffi_commune_core_fn_method_coreapp_set_notifications_enabled(
         it,
         FfiConverterBoolean.lower(`enabled`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Give the room's pinned events to the given listener, now and on
+     * every change.
+     *
+     * Replaces any previous pinned listener.
+     */override fun `setPinnedListener`(`roomId`: kotlin.String, `listener`: TimelineListener)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_set_pinned_listener(
+        it,
+        FfiConverterString.lower(`roomId`),FfiConverterTypeTimelineListener.lower(`listener`),_status)
 }
     }
     

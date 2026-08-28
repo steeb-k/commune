@@ -54,6 +54,8 @@ pub enum TimelineFocusKind {
         /// The thread's root event.
         root: ruma::OwnedEventId,
     },
+    /// The room's pinned events.
+    Pinned,
 }
 
 #[derive(Debug)]
@@ -522,6 +524,7 @@ async fn build_sdk_timeline(
             TimelineFocusKind::Live => TimelineFocus::Live {
                 hide_threaded_events: true,
             },
+            TimelineFocusKind::Pinned => TimelineFocus::PinnedEvents,
             TimelineFocusKind::Thread { root } => TimelineFocus::Thread {
                 root_event_id: root,
             },

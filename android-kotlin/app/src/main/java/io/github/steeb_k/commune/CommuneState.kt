@@ -75,6 +75,10 @@ class CommuneState(context: Context) {
         private set
     var threadItems by mutableStateOf<List<FfiTimelineItem>>(emptyList())
         private set
+    var pinnedOpen by mutableStateOf(false)
+        private set
+    var pinnedItems by mutableStateOf<List<FfiTimelineItem>>(emptyList())
+        private set
     var settings by mutableStateOf<FfiSessionSettings?>(null)
         private set
     var viewerImagePath by mutableStateOf<String?>(null)
@@ -205,6 +209,7 @@ class CommuneState(context: Context) {
         typingUsers = emptyList()
         closeThread()
         closeMembers()
+        closePinned()
         roomDetailsOpen = false
     }
 
@@ -237,6 +242,29 @@ class CommuneState(context: Context) {
         membersOpen = false
         members = emptyList()
         app.clearMemberListListener()
+    }
+
+    fun openPinned() {
+        val room = openRoom ?: return
+        pinnedOpen = true
+        pinnedItems = emptyList()
+
+        app.setPinnedListener(
+            room.roomId,
+            object : TimelineListener {
+                override fun onUpdate(items: List<FfiTimelineItem>) {
+                    main.post {
+                        if (pinnedOpen) pinnedItems = items
+                    }
+                }
+            },
+        )
+    }
+
+    fun closePinned() {
+        pinnedOpen = false
+        pinnedItems = emptyList()
+        app.clearPinnedListener()
     }
 
     fun openThread(rootEventId: String) {
