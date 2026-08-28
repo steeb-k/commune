@@ -23,6 +23,7 @@ use matrix_sdk_ui::timeline::{
 };
 use ruma::{
     UserId,
+    api::client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
     events::{
         AnySyncMessageLikeEvent, AnySyncStateEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
         SyncStateEvent,
@@ -33,7 +34,7 @@ use ruma::{
 };
 use tracing::error;
 
-use crate::{spawn_tokio, utils::LoadingState};
+use crate::{matrix::ext_traits::TimelineItemContentExt, spawn_tokio, utils::LoadingState};
 
 /// The timeline of a room.
 ///
@@ -152,6 +153,125 @@ impl Timeline {
                 None
             }
         }
+    }
+
+    /// Send the given receipt through this timeline, its type already
+    /// resolved against the public-read-receipts setting (the room does
+    /// that resolution).
+    ///
+    /// The SDK scopes the receipt to what the timeline shows: sent through
+    /// a thread timeline, it is a receipt for that thread, not for the
+    /// room.
+    pub(crate) async fn send_receipt_resolved(
+        &self,
+        receipt_type: ApiReceiptType,
+        position: ReceiptPosition,
+    ) {
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return;
+        };
+
+        let handle = spawn_tokio!(async move {
+            match position {
+                ReceiptPosition::End => matrix_timeline.mark_as_read(receipt_type).await,
+                ReceiptPosition::Event(event_id) => {
+                    matrix_timeline
+                        .send_single_receipt(receipt_type, event_id)
+                        .await
+                }
+            }
+        });
+
+        if let Err(receipt_error) = handle.await.expect("task was not aborted") {
+            error!("Could not send read receipt: {receipt_error}");
+        }
+    }
+
+    /// Whether this timeline has unread messages.
+    ///
+    /// Returns `None` if it is not possible to know, for example if there
+    /// are no events in the timeline.
+    pub(crate) async fn has_unread_messages(&self) -> Option<bool> {
+        let matrix_timeline = self.matrix_timeline().await?;
+        let own_user_id = self.inner.matrix_room.own_user_id().to_owned();
+
+        let timeline = matrix_timeline.clone();
+        let own_user_id_clone = own_user_id.clone();
+        let user_receipt_item = spawn_tokio!(async move {
+            timeline
+                .latest_user_read_receipt_timeline_event_id(&own_user_id_clone)
+                .await
+        })
+        .await
+        .expect("task was not aborted");
+
+        let timeline = matrix_timeline.clone();
+        let items = spawn_tokio!(async move { timeline.items().await })
+            .await
+            .expect("task was not aborted");
+
+        for item in items.iter().rev() {
+            let Some(event) = item.as_event() else {
+                continue;
+            };
+            if !event.is_remote_event() {
+                continue;
+            }
+
+            if user_receipt_item.is_some()
+                && event.event_id().map(ToOwned::to_owned) == user_receipt_item
+            {
+                // The event is the oldest one, we have read it all.
+                return Some(false);
+            }
+            if event.content().counts_as_unread() {
+                // There is at least one unread event.
+                return Some(true);
+            }
+        }
+
+        // This should only happen if we do not have a read receipt item in
+        // the timeline, and there are not enough events in the timeline to
+        // know if there are unread messages.
+        None
+    }
+
+    /// A stream that fires when our own user's read receipt moves in this
+    /// timeline.
+    pub(crate) async fn subscribe_own_read_receipts(
+        &self,
+    ) -> Option<impl Stream<Item = ()> + use<>> {
+        let matrix_timeline = self.matrix_timeline().await?;
+
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .subscribe_own_user_read_receipts_changed()
+                .await
+        });
+
+        Some(handle.await.expect("task was not aborted"))
+    }
+
+    /// The latest activity among this timeline's current items, per the
+    /// application's `counts_as_activity` rules.
+    pub(crate) async fn latest_activity(&self) -> Option<u64> {
+        let matrix_timeline = self.matrix_timeline().await?;
+        let own_user_id = self.inner.matrix_room.own_user_id().to_owned();
+
+        let items = spawn_tokio!(async move { matrix_timeline.items().await })
+            .await
+            .expect("task was not aborted");
+
+        for item in items.iter().rev() {
+            let Some(event) = item.as_event() else {
+                continue;
+            };
+            if event.is_remote_event() && event.content().counts_as_activity(&own_user_id) {
+                return Some(event.timestamp().get().into());
+            }
+        }
+
+        None
     }
 
     /// Send the given plain-text message to the room.
@@ -325,4 +445,13 @@ fn show_in_timeline(
                 | AnySyncStateEvent::PolicyRuleServer(_)
         ),
     }
+}
+
+/// The position of the receipt to send.
+#[derive(Debug, Clone)]
+pub enum ReceiptPosition {
+    /// We are at the end of the timeline (bottom of the view).
+    End,
+    /// We are at the event with the given ID.
+    Event(ruma::OwnedEventId),
 }

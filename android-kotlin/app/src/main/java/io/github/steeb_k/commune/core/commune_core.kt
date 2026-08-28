@@ -697,6 +697,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_login_with_password(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_mark_room_read(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_paginate_backwards(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_restore_sessions(
@@ -750,6 +752,8 @@ internal object UniffiLib {
     external fun uniffi_commune_core_fn_method_coreapp_has_sessions(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Byte
     external fun uniffi_commune_core_fn_method_coreapp_login_with_password(`ptr`: Long,`homeserver`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
+    ): Long
+    external fun uniffi_commune_core_fn_method_coreapp_mark_room_read(`ptr`: Long,`roomId`: RustBuffer.ByValue,
     ): Long
     external fun uniffi_commune_core_fn_method_coreapp_paginate_backwards(`ptr`: Long,`roomId`: RustBuffer.ByValue,
     ): Long
@@ -919,6 +923,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_login_with_password() != 16278.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_mark_room_read() != 52026.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_paginate_backwards() != 11648.toShort()) {
@@ -1405,6 +1412,12 @@ public interface CoreAppInterface {
     suspend fun `loginWithPassword`(`homeserver`: kotlin.String, `username`: kotlin.String, `password`: kotlin.String)
     
     /**
+     * Mark the given room as read, sending a read receipt at the end of
+     * its timeline.
+     */
+    suspend fun `markRoomRead`(`roomId`: kotlin.String)
+    
+    /**
      * Paginate the given room's timeline backwards.
      */
     suspend fun `paginateBackwards`(`roomId`: kotlin.String)
@@ -1621,6 +1634,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         
         // Error FFI converter
         CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Mark the given room as read, sending a read receipt at the end of
+     * its timeline.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `markRoomRead`(`roomId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_mark_room_read(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
     )
     }
 
@@ -2701,42 +2739,253 @@ public object FfiConverterTypeCoreError : FfiConverterRustBuffer<CoreException> 
 /**
  * What kind of event a timeline item is.
  */
-
-enum class FfiEventKind {
+sealed class FfiEventKind {
     
     /**
      * A text-like message (`m.text`, `m.notice`, `m.emote`).
      */
-    TEXT,
+    object Text : FfiEventKind()
+    
+    
     /**
      * A media message; the body is the caption or filename.
      */
-    MEDIA,
+    object Media : FfiEventKind()
+    
+    
     /**
      * A sticker.
      */
-    STICKER,
+    object Sticker : FfiEventKind()
+    
+    
     /**
      * A message that could not be decrypted.
      */
-    UNABLE_TO_DECRYPT,
+    object UnableToDecrypt : FfiEventKind()
+    
+    
     /**
      * A redacted message.
      */
-    REDACTED,
+    object Redacted : FfiEventKind()
+    
+    
     /**
-     * A membership change or profile change; the body carries the raw
-     * facts until the state-event humanization is extracted.
+     * A membership change; the UI words the sentence.
      */
-    MEMBERSHIP,
+    data class Membership(
+        /**
+         * The user whose membership changed.
+         */
+        val `user`: kotlin.String, 
+        /**
+         * What happened.
+         */
+        val `change`: io.github.steeb_k.commune.core.FfiMembershipChange) : FfiEventKind()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A member changed their profile.
+     */
+    data class ProfileChange(
+        /**
+         * The user whose profile changed.
+         */
+        val `user`: kotlin.String) : FfiEventKind()
+        
+    {
+        
+
+        companion object
+    }
+    
     /**
      * Another state event.
      */
-    OTHER_STATE,
+    object OtherState : FfiEventKind()
+    
+    
     /**
      * Something not handled yet.
      */
-    UNSUPPORTED;
+    object Unsupported : FfiEventKind()
+    
+    
+
+    
+
+    
+    
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind>{
+    override fun read(buf: ByteBuffer): FfiEventKind {
+        return when(buf.getInt()) {
+            1 -> FfiEventKind.Text
+            2 -> FfiEventKind.Media
+            3 -> FfiEventKind.Sticker
+            4 -> FfiEventKind.UnableToDecrypt
+            5 -> FfiEventKind.Redacted
+            6 -> FfiEventKind.Membership(
+                FfiConverterString.read(buf),
+                FfiConverterTypeFfiMembershipChange.read(buf),
+                )
+            7 -> FfiEventKind.ProfileChange(
+                FfiConverterString.read(buf),
+                )
+            8 -> FfiEventKind.OtherState
+            9 -> FfiEventKind.Unsupported
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: FfiEventKind) = when(value) {
+        is FfiEventKind.Text -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiEventKind.Media -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiEventKind.Sticker -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiEventKind.UnableToDecrypt -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiEventKind.Redacted -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiEventKind.Membership -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`user`)
+                + FfiConverterTypeFfiMembershipChange.allocationSize(value.`change`)
+            )
+        }
+        is FfiEventKind.ProfileChange -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`user`)
+            )
+        }
+        is FfiEventKind.OtherState -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiEventKind.Unsupported -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: FfiEventKind, buf: ByteBuffer) {
+        when(value) {
+            is FfiEventKind.Text -> {
+                buf.putInt(1)
+                Unit
+            }
+            is FfiEventKind.Media -> {
+                buf.putInt(2)
+                Unit
+            }
+            is FfiEventKind.Sticker -> {
+                buf.putInt(3)
+                Unit
+            }
+            is FfiEventKind.UnableToDecrypt -> {
+                buf.putInt(4)
+                Unit
+            }
+            is FfiEventKind.Redacted -> {
+                buf.putInt(5)
+                Unit
+            }
+            is FfiEventKind.Membership -> {
+                buf.putInt(6)
+                FfiConverterString.write(value.`user`, buf)
+                FfiConverterTypeFfiMembershipChange.write(value.`change`, buf)
+                Unit
+            }
+            is FfiEventKind.ProfileChange -> {
+                buf.putInt(7)
+                FfiConverterString.write(value.`user`, buf)
+                Unit
+            }
+            is FfiEventKind.OtherState -> {
+                buf.putInt(8)
+                Unit
+            }
+            is FfiEventKind.Unsupported -> {
+                buf.putInt(9)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * What happened to a user's membership — semantic, the UI's sentence to
+ * make.
+ */
+
+enum class FfiMembershipChange {
+    
+    JOINED,
+    LEFT,
+    BANNED,
+    UNBANNED,
+    KICKED,
+    INVITED,
+    KICKED_AND_BANNED,
+    INVITATION_ACCEPTED,
+    INVITATION_REJECTED,
+    INVITATION_REVOKED,
+    KNOCKED,
+    KNOCK_ACCEPTED,
+    KNOCK_RETRACTED,
+    KNOCK_DENIED,
+    /**
+     * The change could not be computed (first event, redaction, or a kind
+     * this version does not know).
+     */
+    UNKNOWN;
 
     
 
@@ -2748,16 +2997,16 @@ enum class FfiEventKind {
 /**
  * @suppress
  */
-public object FfiConverterTypeFfiEventKind: FfiConverterRustBuffer<FfiEventKind> {
+public object FfiConverterTypeFfiMembershipChange: FfiConverterRustBuffer<FfiMembershipChange> {
     override fun read(buf: ByteBuffer) = try {
-        FfiEventKind.values()[buf.getInt() - 1]
+        FfiMembershipChange.values()[buf.getInt() - 1]
     } catch (e: IndexOutOfBoundsException) {
         throw RuntimeException("invalid enum value, something is very wrong!!", e)
     }
 
-    override fun allocationSize(value: FfiEventKind) = 4UL
+    override fun allocationSize(value: FfiMembershipChange) = 4UL
 
-    override fun write(value: FfiEventKind, buf: ByteBuffer) {
+    override fun write(value: FfiMembershipChange, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }

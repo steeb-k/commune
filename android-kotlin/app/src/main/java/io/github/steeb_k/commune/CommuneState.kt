@@ -112,7 +112,12 @@ class CommuneState(context: Context) {
             object : TimelineListener {
                 override fun onUpdate(items: List<FfiTimelineItem>) {
                     main.post {
-                        if (openRoom?.roomId == room.roomId) timeline = items
+                        if (openRoom?.roomId == room.roomId) {
+                            timeline = items
+                            // The room is on screen at its newest message:
+                            // reading it is what looking at it means.
+                            markRead(room.roomId)
+                        }
                     }
                 }
             },
@@ -125,6 +130,24 @@ class CommuneState(context: Context) {
     fun closeRoom() {
         openRoom = null
         timeline = emptyList()
+    }
+
+    private var markingRead = false
+
+    /// Send a read receipt for the given room, coalescing bursts.
+    private fun markRead(roomId: String) {
+        if (markingRead) return
+        markingRead = true
+        thread {
+            runBlocking {
+                try {
+                    app.markRoomRead(roomId)
+                } catch (_: Exception) {
+                    // Nothing to do; the next update tries again.
+                }
+            }
+            main.post { markingRead = false }
+        }
     }
 
     fun send(body: String) {

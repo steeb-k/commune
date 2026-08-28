@@ -239,13 +239,69 @@ pub enum FfiEventKind {
     UnableToDecrypt,
     /// A redacted message.
     Redacted,
-    /// A membership change or profile change; the body carries the raw
-    /// facts until the state-event humanization is extracted.
-    Membership,
+    /// A membership change; the UI words the sentence.
+    Membership {
+        /// The user whose membership changed.
+        user: String,
+        /// What happened.
+        change: FfiMembershipChange,
+    },
+    /// A member changed their profile.
+    ProfileChange {
+        /// The user whose profile changed.
+        user: String,
+    },
     /// Another state event.
     OtherState,
     /// Something not handled yet.
     Unsupported,
+}
+
+/// What happened to a user's membership — semantic, the UI's sentence to
+/// make.
+#[derive(uniffi::Enum)]
+pub enum FfiMembershipChange {
+    Joined,
+    Left,
+    Banned,
+    Unbanned,
+    Kicked,
+    Invited,
+    KickedAndBanned,
+    InvitationAccepted,
+    InvitationRejected,
+    InvitationRevoked,
+    Knocked,
+    KnockAccepted,
+    KnockRetracted,
+    KnockDenied,
+    /// The change could not be computed (first event, redaction, or a kind
+    /// this version does not know).
+    Unknown,
+}
+
+impl From<Option<matrix_sdk_ui::timeline::MembershipChange>> for FfiMembershipChange {
+    fn from(value: Option<matrix_sdk_ui::timeline::MembershipChange>) -> Self {
+        use matrix_sdk_ui::timeline::MembershipChange;
+
+        match value {
+            Some(MembershipChange::Joined) => Self::Joined,
+            Some(MembershipChange::Left) => Self::Left,
+            Some(MembershipChange::Banned) => Self::Banned,
+            Some(MembershipChange::Unbanned) => Self::Unbanned,
+            Some(MembershipChange::Kicked) => Self::Kicked,
+            Some(MembershipChange::Invited) => Self::Invited,
+            Some(MembershipChange::KickedAndBanned) => Self::KickedAndBanned,
+            Some(MembershipChange::InvitationAccepted) => Self::InvitationAccepted,
+            Some(MembershipChange::InvitationRejected) => Self::InvitationRejected,
+            Some(MembershipChange::InvitationRevoked) => Self::InvitationRevoked,
+            Some(MembershipChange::Knocked) => Self::Knocked,
+            Some(MembershipChange::KnockAccepted) => Self::KnockAccepted,
+            Some(MembershipChange::KnockRetracted) => Self::KnockRetracted,
+            Some(MembershipChange::KnockDenied) => Self::KnockDenied,
+            _ => Self::Unknown,
+        }
+    }
 }
 
 /// Something on the foreign side that wants to know when a room's timeline
@@ -421,6 +477,31 @@ impl CoreApp {
         {
             previous.abort();
         }
+    }
+
+    /// Mark the given room as read, sending a read receipt at the end of
+    /// its timeline.
+    pub async fn mark_room_read(&self, room_id: String) {
+        let Some(session) = self.first_ready_session() else {
+            return;
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
+                    return;
+                };
+                let Some(room) = session.room_list().get(&room_id) else {
+                    return;
+                };
+                room.send_receipt(
+                    ruma::api::client::receipt::create_receipt::v3::ReceiptType::Read,
+                    crate::session::ReceiptPosition::End,
+                )
+                .await;
+            })
+            .await
+            .expect("task was not aborted");
     }
 
     /// Paginate the given room's timeline backwards.
@@ -637,10 +718,19 @@ fn ffi_timeline_item(item: &matrix_sdk_ui::timeline::TimelineItem) -> FfiTimelin
                     }
                     _ => (FfiEventKind::Unsupported, String::new()),
                 },
-                TimelineItemContent::MembershipChange(_)
-                | TimelineItemContent::ProfileChange(_) => {
-                    (FfiEventKind::Membership, String::new())
-                }
+                TimelineItemContent::MembershipChange(membership) => (
+                    FfiEventKind::Membership {
+                        user: membership.user_id().to_string(),
+                        change: membership.change().into(),
+                    },
+                    String::new(),
+                ),
+                TimelineItemContent::ProfileChange(profile) => (
+                    FfiEventKind::ProfileChange {
+                        user: profile.user_id().to_string(),
+                    },
+                    String::new(),
+                ),
                 TimelineItemContent::OtherState(_) => (FfiEventKind::OtherState, String::new()),
                 _ => (FfiEventKind::Unsupported, String::new()),
             };
