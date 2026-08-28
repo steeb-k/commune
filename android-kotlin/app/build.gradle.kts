@@ -37,6 +37,7 @@ dependencies {
     implementation("net.java.dev.jna:jna:5.17.0@aar")
     // The uniffi-generated async functions are suspend functions.
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.media3:media3-exoplayer:1.6.1")
     implementation("androidx.media3:media3-ui:1.6.1")
 
