@@ -863,6 +863,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_verification_listener(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_space_children(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_toggle_reaction(
     ): Short
     external fun uniffi_commune_core_checksum_method_memberlistlistener_on_update(
@@ -1000,6 +1002,8 @@ external fun uniffi_commune_core_fn_method_coreapp_set_typing_listener(`ptr`: Lo
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_verification_listener(`ptr`: Long,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_space_children(`ptr`: Long,`spaceId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_toggle_reaction(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_clone_memberlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1307,6 +1311,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_verification_listener() != 62005.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_space_children() != 57237.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_toggle_reaction() != 55807.toShort()) {
@@ -2096,6 +2103,11 @@ public interface CoreAppInterface {
      * incoming requests.
      */
     fun `setVerificationListener`(`listener`: VerificationListener)
+    
+    /**
+     * The rooms inside the given space, from the server's hierarchy.
+     */
+    suspend fun `spaceChildren`(`spaceId`: kotlin.String): List<FfiSpaceChild>
     
     /**
      * Toggle the given reaction on the given event in the given room.
@@ -3143,6 +3155,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     }
     
     
+
+    
+    /**
+     * The rooms inside the given space, from the server's hierarchy.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `spaceChildren`(`spaceId`: kotlin.String) : List<FfiSpaceChild> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_space_children(
+                uniffiHandle,
+                FfiConverterString.lower(`spaceId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeFfiSpaceChild.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
     
     /**
@@ -5381,6 +5417,85 @@ public object FfiConverterTypeFfiSessionSettings: FfiConverterRustBuffer<FfiSess
 
 
 
+/**
+ * One room inside a space, as its hierarchy reports it.
+ */
+data class FfiSpaceChild (
+    /**
+     * The ID of the room.
+     */
+    var `roomId`: kotlin.String
+    , 
+    /**
+     * The name of the room, if it has one.
+     */
+    var `name`: kotlin.String?
+    , 
+    /**
+     * The topic of the room, if it has one.
+     */
+    var `topic`: kotlin.String?
+    , 
+    /**
+     * How many members have joined it.
+     */
+    var `numJoinedMembers`: kotlin.ULong
+    , 
+    /**
+     * Whether our own user has joined it.
+     */
+    var `isJoined`: kotlin.Boolean
+    , 
+    /**
+     * Whether this child is itself a space.
+     */
+    var `isSpace`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiSpaceChild: FfiConverterRustBuffer<FfiSpaceChild> {
+    override fun read(buf: ByteBuffer): FfiSpaceChild {
+        return FfiSpaceChild(
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiSpaceChild) = (
+            FfiConverterString.allocationSize(value.`roomId`) +
+            FfiConverterOptionalString.allocationSize(value.`name`) +
+            FfiConverterOptionalString.allocationSize(value.`topic`) +
+            FfiConverterULong.allocationSize(value.`numJoinedMembers`) +
+            FfiConverterBoolean.allocationSize(value.`isJoined`) +
+            FfiConverterBoolean.allocationSize(value.`isSpace`)
+    )
+
+    override fun write(value: FfiSpaceChild, buf: ByteBuffer) {
+            FfiConverterString.write(value.`roomId`, buf)
+            FfiConverterOptionalString.write(value.`name`, buf)
+            FfiConverterOptionalString.write(value.`topic`, buf)
+            FfiConverterULong.write(value.`numJoinedMembers`, buf)
+            FfiConverterBoolean.write(value.`isJoined`, buf)
+            FfiConverterBoolean.write(value.`isSpace`, buf)
+    }
+}
+
+
+
 
 
 /**
@@ -6932,6 +7047,34 @@ public object FfiConverterSequenceTypeFfiSasEmoji: FfiConverterRustBuffer<List<F
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiSasEmoji.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiSpaceChild: FfiConverterRustBuffer<List<FfiSpaceChild>> {
+    override fun read(buf: ByteBuffer): List<FfiSpaceChild> {
+        val len = buf.getInt()
+        return List<FfiSpaceChild>(len) {
+            FfiConverterTypeFfiSpaceChild.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiSpaceChild>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiSpaceChild.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiSpaceChild>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiSpaceChild.write(it, buf)
         }
     }
 }
