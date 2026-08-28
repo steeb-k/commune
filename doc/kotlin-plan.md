@@ -222,6 +222,11 @@ against this branch (all green 27 Aug 2026):
    warnings`, same shell.
 4. **The pre-commit hook** runs on every commit here anyway — style,
    template checks, doc freshness, machete, deny, POTFILES, markdown.
+   (`cargo test` is not one of the gates: on this machine the test
+   binaries link against a mismatched libadwaita out of the gvsbuild and
+   mingw64 prefixes, and they do so identically on main and on this
+   branch — verified 27 Aug 2026 — so it measures the environment, not
+   the code.)
 5. When Track 3 begins moving the GTK app onto the core, the eyeball
    checklists (`doc/eyeball-tests.md`, `doc/eyeball-android.md`) become
    the acceptance suite per migrated module, exactly as they were for the
