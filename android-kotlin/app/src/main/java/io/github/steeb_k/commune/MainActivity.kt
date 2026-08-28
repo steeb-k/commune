@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import io.github.steeb_k.commune.ui.CommuneTheme
 import io.github.steeb_k.commune.ui.LoadingScreen
 import io.github.steeb_k.commune.ui.LoginFlow
+import io.github.steeb_k.commune.ui.MediaViewerScreen
 import io.github.steeb_k.commune.ui.RoomScreen
 import io.github.steeb_k.commune.ui.SettingsScreen
 import io.github.steeb_k.commune.ui.ThreadScreen
@@ -51,7 +52,11 @@ private fun CommuneApp(state: CommuneState) {
         Phase.Login -> LoginFlow(state)
         Phase.Session -> {
             val room = state.openRoom
-            if (state.settingsOpen) {
+            val viewerPath = state.viewerImagePath
+            if (viewerPath != null) {
+                BackHandler { state.closeViewer() }
+                MediaViewerScreen(viewerPath, onClose = { state.closeViewer() })
+            } else if (state.settingsOpen) {
                 BackHandler { state.closeSettings() }
                 SettingsScreen(state)
             } else if (room == null) {

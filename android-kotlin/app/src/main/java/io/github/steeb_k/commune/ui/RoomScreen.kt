@@ -294,9 +294,13 @@ internal fun MessageBubble(
                 var bitmap by remember(event.uniqueId) {
                     mutableStateOf<android.graphics.Bitmap?>(null)
                 }
+                var mediaPath by remember(event.uniqueId) {
+                    mutableStateOf<String?>(null)
+                }
                 LaunchedEffect(event.uniqueId) {
                     val path = state.app.getTimelineMedia(room.roomId, event.uniqueId)
                     if (path != null) {
+                        mediaPath = path
                         bitmap = android.graphics.BitmapFactory.decodeFile(path)
                     }
                 }
@@ -310,6 +314,7 @@ internal fun MessageBubble(
                             .widthIn(max = 280.dp)
                             .heightIn(max = 280.dp)
                             .clip(RoundedCornerShape(8.dp))
+                            .clickable { mediaPath?.let(state::openViewer) }
                             .padding(bottom = 4.dp),
                     )
                 }
