@@ -54,6 +54,9 @@ class CommuneState(context: Context) {
     /// Set by the activity: opens the system file picker for an attachment.
     var pickAttachment: (() -> Unit)? = null
 
+    /// Set by the activity: opens the QR scanner for verification.
+    var scanQrCode: (() -> Unit)? = null
+
     val app: CoreApp
 
     var phase by mutableStateOf(Phase.Loading)
@@ -606,6 +609,20 @@ class CommuneState(context: Context) {
                     }
                 } catch (_: Exception) {
                     // Nothing to wait for.
+                }
+            }
+        }
+    }
+
+    /// Feed the scanned QR payload into the pending verification.
+    fun submitScannedQr(data: ByteArray) {
+        val flowId = verificationFlowId ?: return
+        thread {
+            runBlocking {
+                try {
+                    app.scanQr(flowId, data)
+                } catch (_: Exception) {
+                    // The listener reports the outcome either way.
                 }
             }
         }

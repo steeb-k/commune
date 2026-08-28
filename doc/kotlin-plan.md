@@ -313,6 +313,12 @@ session wants UI work sooner.
 13. Room details + account settings as native settings screens (the
     subpage inventory in the plan's companion report).
 14. Verification (SAS emoji + QR via CameraX) and crypto/recovery setup.
+    _(28 Aug: recovery done and round-trip verified; SAS emoji flows to
+    the KeysExchanged stage against a scripted peer, the final confirm
+    handshake awaits a real second client; QR scanning wired through
+    zxing-android-embedded and the SDK's scan_qr_code. Full desktop
+    feature parity is the standing requirement — no feature of the GTK
+    app gets skipped, per the user, 28 Aug.)_
 15. Notifications + background: UnifiedPush receiver, `MessagingStyle`
     notifications, foreground sync service fallback, Keystore-backed
     secret storage — porting the GTK port's Rust implementations or

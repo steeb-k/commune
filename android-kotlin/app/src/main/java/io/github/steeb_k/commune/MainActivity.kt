@@ -32,6 +32,14 @@ class MainActivity : ComponentActivity() {
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
+    private val qrScanner =
+        registerForActivityResult(com.journeyapps.barcodescanner.ScanContract()) { result ->
+            // Matrix QR payloads are binary; ISO-8859-1 keeps the bytes.
+            result.contents?.let {
+                state.submitScannedQr(it.toByteArray(Charsets.ISO_8859_1))
+            }
+        }
+
     private val attachmentPicker =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let { state.sendAttachmentFromUri(it) }
@@ -51,6 +59,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         state = CommuneState(this)
         state.pickAttachment = { attachmentPicker.launch("*/*") }
+        state.scanQrCode = {
+            qrScanner.launch(
+                com.journeyapps.barcodescanner.ScanOptions()
+                    .setDesiredBarcodeFormats(com.journeyapps.barcodescanner.ScanOptions.QR_CODE)
+                    .setPrompt("Scan the QR code shown on your other session")
+                    .setBeepEnabled(false)
+            )
+        }
 
         if (android.os.Build.VERSION.SDK_INT >= 33) {
             notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)

@@ -72,10 +72,12 @@ fun VerificationDialog(state: CommuneState) {
             text = {
                 Text(
                     "Accept the request on one of your other sessions to " +
-                        "compare emoji.",
+                        "compare emoji, or scan the QR code it shows.",
                 )
             },
-            confirmButton = {},
+            confirmButton = {
+                TextButton(onClick = { state.scanQrCode?.invoke() }) { Text("Scan QR") }
+            },
             dismissButton = {
                 TextButton(onClick = { state.cancelVerification() }) { Text("Cancel") }
             },

@@ -1575,6 +1575,72 @@ impl CoreApp {
         });
     }
 
+    /// Feed a scanned QR code into the verification with the given flow
+    /// ID. The outcome arrives through the listener: done, or cancelled.
+    pub async fn scan_qr(&self, flow_id: String, data: Vec<u8>) -> Result<(), CoreError> {
+        use matrix_sdk::encryption::verification::QrVerificationData;
+
+        let flows = self.verification.clone();
+
+        RUNTIME
+            .spawn(async move {
+                let request = {
+                    let map = flows.flows.lock().expect("mutex is not poisoned");
+                    match map.get(&flow_id) {
+                        Some(VerificationFlow::Request(request)) => request.clone(),
+                        _ => {
+                            return Err(CoreError::Failed {
+                                msg: "No verification in progress".to_owned(),
+                            });
+                        }
+                    }
+                };
+
+                let data =
+                    QrVerificationData::from_bytes(&data).map_err(|_| CoreError::Failed {
+                        msg: "Not a verification QR code".to_owned(),
+                    })?;
+                let qr = request
+                    .scan_qr_code(data)
+                    .await
+                    .map_err(|scan_error| CoreError::Failed {
+                        msg: format!("Could not scan the code: {scan_error}"),
+                    })?
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "The code belongs to another verification".to_owned(),
+                    })?;
+
+                let follow_flows = flows.clone();
+                RUNTIME.spawn(async move {
+                    use futures_util::StreamExt;
+                    use matrix_sdk::encryption::verification::QrVerificationState;
+
+                    let mut changes = qr.changes();
+                    while let Some(state) = changes.next().await {
+                        match state {
+                            QrVerificationState::Done { .. } => {
+                                let flow_id = flow_id.clone();
+                                follow_flows.emit(move |listener| listener.on_done(flow_id));
+                                break;
+                            }
+                            QrVerificationState::Cancelled(info) => {
+                                let flow_id = flow_id.clone();
+                                let reason = info.reason().to_owned();
+                                follow_flows
+                                    .emit(move |listener| listener.on_cancelled(flow_id, reason));
+                                break;
+                            }
+                            _ => {}
+                        }
+                    }
+                });
+
+                Ok(())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Ask the account's verified sessions to verify this one. The flow
     /// then arrives through the listener like an incoming one: emojis,
     /// then done.
