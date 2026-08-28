@@ -518,7 +518,9 @@ internal fun MessageBubble(
                         .padding(horizontal = 12.dp, vertical = 10.dp),
                 ) {
                     Icon(
-                        Icons.Filled.PlayArrow,
+                        androidx.compose.ui.res.painterResource(
+                            io.github.steeb_k.commune.R.drawable.ic_play_symbolic
+                        ),
                         contentDescription = "Play",
                         tint = MaterialTheme.colorScheme.primary,
                     )
@@ -606,7 +608,9 @@ internal fun MessageBubble(
                         .clickable { onOpenThread(eventId) },
                 ) {
                     Icon(
-                        Icons.AutoMirrored.Outlined.Chat,
+                        androidx.compose.ui.res.painterResource(
+                            io.github.steeb_k.commune.R.drawable.ic_thread_symbolic
+                        ),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(14.dp),
@@ -746,10 +750,20 @@ internal fun Composer(
         verticalAlignment = Alignment.Bottom,
     ) {
         IconButton(onClick = { onAttach?.invoke() }, enabled = onAttach != null) {
-            Icon(Icons.Filled.Add, contentDescription = "Attach")
+            Icon(
+                androidx.compose.ui.res.painterResource(
+                    io.github.steeb_k.commune.R.drawable.ic_attachment_symbolic
+                ),
+                contentDescription = "Attach",
+            )
         }
         IconButton(onClick = {}, enabled = false) {
-            Icon(Icons.Filled.Face, contentDescription = "Emoji")
+            Icon(
+                androidx.compose.ui.res.painterResource(
+                    io.github.steeb_k.commune.R.drawable.ic_emoji_symbolic
+                ),
+                contentDescription = "Emoji",
+            )
         }
         OutlinedTextField(
             value = draft,
@@ -780,7 +794,9 @@ internal fun Composer(
                 },
             ) {
                 Icon(
-                    Icons.AutoMirrored.Filled.Send,
+                    androidx.compose.ui.res.painterResource(
+                        io.github.steeb_k.commune.R.drawable.ic_send_symbolic
+                    ),
                     contentDescription = "Send",
                     tint = MaterialTheme.colorScheme.onPrimary,
                 )

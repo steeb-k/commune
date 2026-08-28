@@ -142,7 +142,9 @@ private fun SidebarHeader(
         Spacer(Modifier.weight(1f))
         IconButton(onClick = onToggleSearch) {
             Icon(
-                Icons.Filled.Search,
+                androidx.compose.ui.res.painterResource(
+                    io.github.steeb_k.commune.R.drawable.ic_system_search_symbolic
+                ),
                 contentDescription = "Search",
                 tint = if (searchOpen) {
                     MaterialTheme.colorScheme.primary
@@ -166,7 +168,12 @@ private fun PrimaryMenu(state: CommuneState) {
     var dialog by remember { mutableStateOf(MenuDialog.None) }
 
     IconButton(onClick = { menuOpen = true }) {
-        Icon(Icons.Filled.MoreVert, contentDescription = "Menu")
+        Icon(
+            androidx.compose.ui.res.painterResource(
+                io.github.steeb_k.commune.R.drawable.ic_menu_primary_symbolic
+            ),
+            contentDescription = "Menu",
+        )
     }
     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
         DropdownMenuItem(
