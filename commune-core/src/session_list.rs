@@ -329,6 +329,69 @@ impl SessionList {
         self.inner.state.set(LoadingState::Ready);
     }
 
+    /// Log in with a password and add the new session to the list.
+    ///
+    /// This is the core of the login flow: a throwaway in-memory client
+    /// performs the login, `Session::create` snapshots it into a stored
+    /// session backed by the real sqlite store, and the secret backend
+    /// keeps it for the next launch — the same order the application's
+    /// `login/` widgets drive.
+    pub async fn login_with_password(
+        &self,
+        homeserver: url::Url,
+        username: String,
+        password: String,
+    ) -> Result<Session, String> {
+        let login_client = spawn_tokio!(async move {
+            matrix_sdk::Client::builder()
+                .request_config(matrix_sdk::config::RequestConfig::new().retry_limit(2))
+                // Otherwise the SDK builds its own client with the TLS
+                // backend that does not work on Android. See `crate::tls`.
+                .http_client(crate::tls::matrix_client())
+                .homeserver_url(homeserver)
+                .build()
+                .await
+        })
+        .await
+        .expect("task was not aborted")
+        .map_err(|build_error| {
+            error!("Could not build login client: {build_error}");
+            "Could not connect to the homeserver".to_owned()
+        })?;
+
+        let client = login_client.clone();
+        spawn_tokio!(async move {
+            client
+                .matrix_auth()
+                .login_username(&username, &password)
+                .initial_device_display_name("Commune")
+                .send()
+                .await
+        })
+        .await
+        .expect("task was not aborted")
+        .map_err(|login_error| {
+            error!("Could not log in: {login_error}");
+            "Could not log in".to_owned()
+        })?;
+
+        let session = Session::create(&login_client, &self.inner.settings)
+            .await
+            .map_err(|create_error| {
+                error!("Could not create session: {create_error}");
+                "Could not create the session".to_owned()
+            })?;
+
+        if let Err(store_error) = Secret::store_session(session.info().clone()).await {
+            error!("Could not store session: {}", store_error.to_user_facing());
+        }
+
+        session.prepare().await;
+        self.insert(SessionEntry::Ready(session.clone()));
+
+        Ok(session)
+    }
+
     /// Restore a stored session.
     async fn restore_stored_session(&self, session_info: StoredSession) {
         let settings = self.inner.settings.get_or_create(&session_info.id);

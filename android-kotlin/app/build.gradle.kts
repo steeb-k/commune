@@ -30,4 +30,6 @@ android {
 dependencies {
     // What the uniffi-generated bindings load the native library with.
     implementation("net.java.dev.jna:jna:5.17.0@aar")
+    // The uniffi-generated async functions are suspend functions.
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 }
