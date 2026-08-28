@@ -537,8 +537,17 @@ impl Room {
 
     /// Send a typing notification for this room, with the given typing
     /// state.
+    ///
+    /// Does nothing when typing notifications are disabled in the session
+    /// settings.
     pub fn send_typing_notification(&self, is_typing: bool) {
         if self.inner.matrix_room.state() != RoomState::Joined {
+            return;
+        }
+        if self
+            .session()
+            .is_some_and(|session| !session.settings().typing_enabled())
+        {
             return;
         }
 

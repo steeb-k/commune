@@ -324,6 +324,18 @@ pub trait TypingListener: Send + Sync {
     fn on_update(&self, user_ids: Vec<String>);
 }
 
+/// The toggleable per-session settings, as the settings screen needs
+/// them.
+#[derive(uniffi::Record)]
+pub struct FfiSessionSettings {
+    /// Whether notifications are enabled for this session.
+    pub notifications_enabled: bool,
+    /// Whether read receipts are public.
+    pub public_read_receipts_enabled: bool,
+    /// Whether typing notifications are sent.
+    pub typing_enabled: bool,
+}
+
 /// The core, as one object the foreign side holds.
 #[derive(uniffi::Object)]
 pub struct CoreApp {
@@ -491,6 +503,40 @@ impl CoreApp {
             .replace(handle)
         {
             previous.abort();
+        }
+    }
+
+    /// The current session's settings.
+    #[must_use]
+    pub fn session_settings(&self) -> Option<FfiSessionSettings> {
+        let session = self.first_ready_session()?;
+        let settings = session.settings();
+
+        Some(FfiSessionSettings {
+            notifications_enabled: settings.notifications_enabled(),
+            public_read_receipts_enabled: settings.public_read_receipts_enabled(),
+            typing_enabled: settings.typing_enabled(),
+        })
+    }
+
+    /// Set whether notifications are enabled for this session.
+    pub fn set_notifications_enabled(&self, enabled: bool) {
+        if let Some(session) = self.first_ready_session() {
+            session.settings().set_notifications_enabled(enabled);
+        }
+    }
+
+    /// Set whether read receipts are public for this session.
+    pub fn set_public_read_receipts_enabled(&self, enabled: bool) {
+        if let Some(session) = self.first_ready_session() {
+            session.settings().set_public_read_receipts_enabled(enabled);
+        }
+    }
+
+    /// Set whether typing notifications are sent for this session.
+    pub fn set_typing_enabled(&self, enabled: bool) {
+        if let Some(session) = self.first_ready_session() {
+            session.settings().set_typing_enabled(enabled);
         }
     }
 
