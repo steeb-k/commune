@@ -411,7 +411,7 @@ impl SessionSettings {
     pub fn set_section_expanded(&self, section_name: SidebarSectionName, expanded: bool) {
         self.write(|s| {
             s.sections_expanded
-                .set_section_expanded(section_name, expanded)
+                .set_section_expanded(section_name, expanded);
         });
     }
 

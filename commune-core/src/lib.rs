@@ -11,6 +11,7 @@ use std::sync::LazyLock;
 
 pub mod config;
 pub mod events;
+pub mod facade;
 pub mod http;
 pub mod matrix;
 pub mod paths;
