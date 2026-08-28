@@ -122,6 +122,26 @@ class CommuneState(context: Context) {
     var editing by mutableStateOf<FfiTimelineItem.Event?>(null)
         private set
 
+    /// The room-list bridge. The core binds a listener to one session, so
+    /// it must be re-armed whenever a new session replaces an old one —
+    /// after a fresh login, not just at startup.
+    private val roomListListener = object : RoomListListener {
+        override fun onUpdate(rooms: List<FfiRoom>) {
+            main.post {
+                this@CommuneState.rooms = rooms
+                // The open room rides along with its list entry, so a
+                // category flip (accepted invite) reaches the screen.
+                openRoom?.let { current ->
+                    rooms.find { it.roomId == current.roomId }?.let { openRoom = it }
+                }
+                if (ownUserId == null) ownUserId = app.sessionUserId()
+                if (settings == null) settings = app.sessionSettings()
+                notifier.enabled = settings?.notificationsEnabled != false
+                notifier.update(rooms)
+            }
+        }
+    }
+
     init {
         Native.seed(context.applicationContext)
         initCore(
@@ -134,22 +154,7 @@ class CommuneState(context: Context) {
         )
         app = CoreApp()
 
-        app.setRoomListListener(object : RoomListListener {
-            override fun onUpdate(rooms: List<FfiRoom>) {
-                main.post {
-                    this@CommuneState.rooms = rooms
-                    // The open room rides along with its list entry, so a
-                    // category flip (accepted invite) reaches the screen.
-                    openRoom?.let { current ->
-                        rooms.find { it.roomId == current.roomId }?.let { openRoom = it }
-                    }
-                    if (ownUserId == null) ownUserId = app.sessionUserId()
-                    if (settings == null) settings = app.sessionSettings()
-                    notifier.enabled = settings?.notificationsEnabled != false
-                    notifier.update(rooms)
-                }
-            }
-        })
+        app.setRoomListListener(roomListListener)
 
         thread {
             runBlocking {
@@ -173,6 +178,8 @@ class CommuneState(context: Context) {
                     main.post {
                         loginBusy = false
                         phase = Phase.Session
+                        // The old listener task died with the old session.
+                        app.setRoomListListener(roomListListener)
                         watchVerifications()
                     }
                 } catch (failure: Exception) {
