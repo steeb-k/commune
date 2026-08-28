@@ -2,7 +2,8 @@
 //! request from the app: it recovers cross-signing with the recovery key,
 //! waits for the request, walks the SAS to Done, and signs the new device.
 //!
-//! Usage: `cargo run --example verify_driver -- <homeserver> <user> <password> <recovery-key>`
+//! Usage: `cargo run --example verify_driver -- <homeserver> <user> <password>
+//! <recovery-key>`
 #![recursion_limit = "512"]
 
 use std::sync::Arc;
