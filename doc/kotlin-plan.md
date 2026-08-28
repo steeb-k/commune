@@ -193,7 +193,8 @@ demonstrable. Order matters only within a track; the two tracks interleave.
    `session/mod.rs`; session-change/token watching; a headless `Session`.
 4. ✅ _(27 Aug, v1)_ Rooms: `Room` minus GObject (43 properties → fields + watch), category
    and sidebar sectioning rules as pure functions over room state.
-5. Timeline: `matrix_sdk_ui::Timeline` orchestration with `VectorDiff`
+5. ✅ _(27 Aug, v1: live timeline, read + send + paginate; focused/pinned/thread
+   timelines and receipts pending)_ Timeline: `matrix_sdk_ui::Timeline` orchestration with `VectorDiff`
    passthrough; the diff minimizer gets a generic sink trait instead of the
    GListModel one.
 6. The rest of the logic tier as needed by UI chunks: permissions/roles,

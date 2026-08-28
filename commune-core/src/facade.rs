@@ -194,6 +194,68 @@ pub trait RoomListListener: Send + Sync {
     fn on_update(&self, rooms: Vec<FfiRoom>);
 }
 
+/// A timeline item, as the message list needs it.
+#[derive(uniffi::Enum)]
+pub enum FfiTimelineItem {
+    /// A message-like event.
+    Event {
+        /// The unique ID of the item within its timeline.
+        unique_id: String,
+        /// The user that sent the event.
+        sender: String,
+        /// The display name of the sender, if it is known.
+        sender_display_name: Option<String>,
+        /// The timestamp of the event, in milliseconds since the Unix
+        /// epoch.
+        timestamp: u64,
+        /// Whether our own user sent the event.
+        is_own: bool,
+        /// What kind of event this is.
+        kind: FfiEventKind,
+        /// The text of the event, as far as it has one.
+        body: String,
+    },
+    /// A divider between two days.
+    DateDivider {
+        /// The timestamp of the day, in milliseconds since the Unix epoch.
+        timestamp: u64,
+    },
+    /// The position of our own user's read marker.
+    ReadMarker,
+    /// The start of the timeline.
+    TimelineStart,
+}
+
+/// What kind of event a timeline item is.
+#[derive(uniffi::Enum)]
+pub enum FfiEventKind {
+    /// A text-like message (`m.text`, `m.notice`, `m.emote`).
+    Text,
+    /// A media message; the body is the caption or filename.
+    Media,
+    /// A sticker.
+    Sticker,
+    /// A message that could not be decrypted.
+    UnableToDecrypt,
+    /// A redacted message.
+    Redacted,
+    /// A membership change or profile change; the body carries the raw
+    /// facts until the state-event humanization is extracted.
+    Membership,
+    /// Another state event.
+    OtherState,
+    /// Something not handled yet.
+    Unsupported,
+}
+
+/// Something on the foreign side that wants to know when a room's timeline
+/// changes.
+#[uniffi::export(with_foreign)]
+pub trait TimelineListener: Send + Sync {
+    /// The timeline changed; here is all of it.
+    fn on_update(&self, items: Vec<FfiTimelineItem>);
+}
+
 /// The core, as one object the foreign side holds.
 #[derive(uniffi::Object)]
 pub struct CoreApp {
@@ -201,6 +263,8 @@ pub struct CoreApp {
     session_list: SessionList,
     /// The task pushing room updates to the foreign listener.
     listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
+    /// The task pushing timeline updates to the foreign listener.
+    timeline_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
 }
 
 #[uniffi::export]
@@ -212,6 +276,7 @@ impl CoreApp {
         Arc::new(Self {
             session_list: SessionList::new(),
             listener_handle: Mutex::new(None),
+            timeline_listener_handle: Mutex::new(None),
         })
     }
 
@@ -297,6 +362,102 @@ impl CoreApp {
         {
             previous.abort();
         }
+    }
+
+    /// Give the timeline of the given room to the given listener, now and
+    /// on every change.
+    ///
+    /// Replaces any previous timeline listener; v1 watches one room at a
+    /// time, which is what one screen shows.
+    pub fn set_timeline_listener(&self, room_id: String, listener: Arc<dyn TimelineListener>) {
+        let session = self.first_ready_session();
+
+        let handle = RUNTIME
+            .spawn(async move {
+                let Some(session) = session else { return };
+                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
+                    return;
+                };
+                let Some(room) = session.room_list().get(&room_id) else {
+                    return;
+                };
+
+                let timeline = room.live_timeline();
+                let Some((items, mut stream)) = timeline.subscribe_items().await else {
+                    return;
+                };
+
+                listener.on_update(items.iter().map(|item| ffi_timeline_item(item)).collect());
+
+                let mut items = items;
+                while let Some(diffs) = stream.next().await {
+                    for diff in diffs {
+                        diff.apply(&mut items);
+                    }
+                    listener.on_update(items.iter().map(|item| ffi_timeline_item(item)).collect());
+                }
+            })
+            .abort_handle();
+
+        if let Some(previous) = self
+            .timeline_listener_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .replace(handle)
+        {
+            previous.abort();
+        }
+    }
+
+    /// Paginate the given room's timeline backwards.
+    pub async fn paginate_backwards(&self, room_id: String) {
+        let Some(session) = self.first_ready_session() else {
+            return;
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
+                    return;
+                };
+                let Some(room) = session.room_list().get(&room_id) else {
+                    return;
+                };
+                room.live_timeline().paginate_backwards(20).await;
+            })
+            .await
+            .expect("task was not aborted");
+    }
+
+    /// Send a plain-text message to the given room.
+    pub async fn send_message(&self, room_id: String, body: String) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                room.live_timeline()
+                    .send_text(body)
+                    .await
+                    .map_err(|()| CoreError::Failed {
+                        msg: "Could not send the message".to_owned(),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
     }
 }
 
@@ -425,4 +586,67 @@ fn watch_room(room: &Room, notify_tx: &mpsc::UnboundedSender<()>) {
     forward!(room.subscribe_latest_activity());
     forward!(room.subscribe_is_read());
     forward!(room.subscribe_avatar_url());
+}
+
+/// Convert an SDK timeline item for the FFI.
+fn ffi_timeline_item(item: &matrix_sdk_ui::timeline::TimelineItem) -> FfiTimelineItem {
+    use matrix_sdk_ui::timeline::{
+        MsgLikeKind, TimelineDetails, TimelineItemContent, TimelineItemKind, VirtualTimelineItem,
+    };
+
+    match item.kind() {
+        TimelineItemKind::Event(event) => {
+            let sender_display_name = match event.sender_profile() {
+                TimelineDetails::Ready(profile) => profile.display_name.clone(),
+                _ => None,
+            };
+
+            let (kind, body) = match event.content() {
+                TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
+                    MsgLikeKind::Message(message) => {
+                        use ruma::events::room::message::MessageType;
+
+                        let msgtype = message.msgtype();
+                        let kind = match msgtype {
+                            MessageType::Text(_)
+                            | MessageType::Notice(_)
+                            | MessageType::Emote(_)
+                            | MessageType::ServerNotice(_) => FfiEventKind::Text,
+                            _ => FfiEventKind::Media,
+                        };
+                        (kind, msgtype.body().to_owned())
+                    }
+                    MsgLikeKind::Sticker(_) => (FfiEventKind::Sticker, String::new()),
+                    MsgLikeKind::Redacted => (FfiEventKind::Redacted, String::new()),
+                    MsgLikeKind::UnableToDecrypt(_) => {
+                        (FfiEventKind::UnableToDecrypt, String::new())
+                    }
+                    _ => (FfiEventKind::Unsupported, String::new()),
+                },
+                TimelineItemContent::MembershipChange(_)
+                | TimelineItemContent::ProfileChange(_) => {
+                    (FfiEventKind::Membership, String::new())
+                }
+                TimelineItemContent::OtherState(_) => (FfiEventKind::OtherState, String::new()),
+                _ => (FfiEventKind::Unsupported, String::new()),
+            };
+
+            FfiTimelineItem::Event {
+                unique_id: item.unique_id().0.clone(),
+                sender: event.sender().to_string(),
+                sender_display_name,
+                timestamp: event.timestamp().get().into(),
+                is_own: event.is_own(),
+                kind,
+                body,
+            }
+        }
+        TimelineItemKind::Virtual(virtual_item) => match virtual_item {
+            VirtualTimelineItem::DateDivider(timestamp) => FfiTimelineItem::DateDivider {
+                timestamp: timestamp.get().into(),
+            },
+            VirtualTimelineItem::ReadMarker => FfiTimelineItem::ReadMarker,
+            VirtualTimelineItem::TimelineStart => FfiTimelineItem::TimelineStart,
+        },
+    }
 }

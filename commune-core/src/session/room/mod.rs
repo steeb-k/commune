@@ -18,6 +18,7 @@
 //! [`RoomDisplayName`] — "Empty Room (was X)" is the UI's sentence to make.
 
 mod category;
+mod timeline;
 
 use std::sync::{
     Arc, Mutex, Weak,
@@ -43,7 +44,10 @@ use serde::Deserialize;
 use tokio::task::AbortHandle;
 use tracing::{debug, error, warn};
 
-pub use self::category::{RoomCategory, RoomHighlight, TargetRoomCategory};
+pub use self::{
+    category::{RoomCategory, RoomHighlight, TargetRoomCategory},
+    timeline::Timeline,
+};
 use crate::{
     RUNTIME,
     session::{Session, WeakSession, room_list::RoomMetainfo},
@@ -169,6 +173,8 @@ struct RoomInner {
     attempted_auto_join: AtomicBool,
     /// The task watching the SDK's room info.
     room_info_handle: Mutex<Option<AbortHandle>>,
+    /// The live timeline of this room.
+    live_timeline: std::sync::OnceLock<Timeline>,
 }
 
 impl Drop for RoomInner {
@@ -215,6 +221,7 @@ impl Room {
             is_room_info_initialized: SharedObservable::new(false),
             attempted_auto_join: AtomicBool::new(false),
             room_info_handle: Mutex::new(None),
+            live_timeline: std::sync::OnceLock::new(),
         });
 
         let this = Self { inner };
@@ -453,6 +460,15 @@ impl Room {
     /// Whether this room was forgotten.
     pub(crate) fn subscribe_forgotten(&self) -> Subscriber<bool> {
         self.inner.forgotten.subscribe()
+    }
+
+    /// The live timeline of this room, created on first use.
+    #[must_use]
+    pub fn live_timeline(&self) -> Timeline {
+        self.inner
+            .live_timeline
+            .get_or_init(|| Timeline::new(self.inner.matrix_room.clone()))
+            .clone()
     }
 
     /// Change the category of this room.
