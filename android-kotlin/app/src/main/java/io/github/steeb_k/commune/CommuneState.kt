@@ -34,6 +34,10 @@ enum class Phase {
 
 class CommuneState(context: Context) {
     private val main = Handler(Looper.getMainLooper())
+    private val appContext = context.applicationContext
+
+    /// Set by the activity: opens the system file picker for an attachment.
+    var pickAttachment: (() -> Unit)? = null
 
     val app: CoreApp
 
@@ -183,6 +187,36 @@ class CommuneState(context: Context) {
         openThreadRoot = null
         threadItems = emptyList()
         app.clearThreadListener()
+    }
+
+    fun sendAttachmentFromUri(uri: android.net.Uri) {
+        val room = openRoom ?: return
+        val resolver = appContext.contentResolver
+        val mime = resolver.getType(uri) ?: "application/octet-stream"
+
+        thread {
+            try {
+                var name = "attachment"
+                resolver.query(uri, null, null, null, null)?.use { cursor ->
+                    val index =
+                        cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (index >= 0 && cursor.moveToFirst()) {
+                        name = cursor.getString(index) ?: name
+                    }
+                }
+
+                val dir = java.io.File(appContext.cacheDir, "outgoing")
+                dir.mkdirs()
+                val file = java.io.File(dir, name)
+                resolver.openInputStream(uri)?.use { input ->
+                    file.outputStream().use { output -> input.copyTo(output) }
+                } ?: return@thread
+
+                runBlocking { app.sendAttachment(room.roomId, file.absolutePath, mime) }
+            } catch (_: Exception) {
+                // The timeline reflects what actually sent.
+            }
+        }
     }
 
     fun sendInThread(body: String) {

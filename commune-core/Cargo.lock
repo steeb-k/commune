@@ -734,6 +734,7 @@ dependencies = [
  "matrix-sdk",
  "matrix-sdk-store-encryption",
  "matrix-sdk-ui",
+ "mime",
  "oo7",
  "rand 0.10.2",
  "rmp-serde",

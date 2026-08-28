@@ -19,6 +19,9 @@ extend-ignore-re = [
   # forms: the marker line and the published-page checksums.
   "commit [0-9a-f]{7,40}",
   "sha256 [0-9a-f]{64}",
+  # uniffi-bindgen writes this comment into the generated Kotlin bindings,
+  # typo and all; regeneration would undo a hand-correction.
+  "different implmentations available",
 ]
 
 [default.extend-words]

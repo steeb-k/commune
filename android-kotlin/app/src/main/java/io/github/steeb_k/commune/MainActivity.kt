@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.MaterialTheme
@@ -24,9 +25,15 @@ import io.github.steeb_k.commune.ui.SidebarScreen
 class MainActivity : ComponentActivity() {
     private lateinit var state: CommuneState
 
+    private val attachmentPicker =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let { state.sendAttachmentFromUri(it) }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         state = CommuneState(this)
+        state.pickAttachment = { attachmentPicker.launch("*/*") }
 
         setContent {
             CommuneTheme {

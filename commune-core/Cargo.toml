@@ -48,6 +48,7 @@ eyeball-im = { version = "0.8.0", default-features = false, features = ["tracing
 futures-util = "0.3"
 indexmap = "2"
 linkify = "0.11"
+mime = "0.3"
 rand = "0.10"
 rmp-serde = "1"
 serde = "1"
