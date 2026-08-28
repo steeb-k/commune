@@ -827,6 +827,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_redact_event(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_remove_push_gateway(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_request_verification(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_restore_sessions(
@@ -870,6 +872,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_set_pinned_listener(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_push_gateway(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_room_details(
     ): Short
@@ -986,6 +990,8 @@ external fun uniffi_commune_core_fn_method_coreapp_recovery_state(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_redact_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_remove_push_gateway(`ptr`: Long,`pushkey`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_request_verification(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
@@ -1030,6 +1036,8 @@ external fun uniffi_commune_core_fn_method_coreapp_set_pinned_listener(`ptr`: Lo
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_public_read_receipts_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_set_push_gateway(`ptr`: Long,`gatewayUrl`: RustBuffer.ByValue,`pushkey`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_room_details(`ptr`: Long,`roomId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`topic`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_room_list_listener(`ptr`: Long,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1303,6 +1311,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_redact_event() != 51517.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_remove_push_gateway() != 35864.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_request_verification() != 29392.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1367,6 +1378,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled() != 61979.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_push_gateway() != 59473.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_details() != 28546.toShort()) {
@@ -2065,6 +2079,12 @@ public interface CoreAppInterface {
     suspend fun `redactEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String)
     
     /**
+     * Remove the pusher with the given pushkey, so the homeserver stops
+     * pushing to it.
+     */
+    suspend fun `removePushGateway`(`pushkey`: kotlin.String)
+    
+    /**
      * Ask the account's verified sessions to verify this one. The flow
      * then arrives through the listener like an incoming one: emojis,
      * then done.
@@ -2205,6 +2225,14 @@ public interface CoreAppInterface {
      * Set whether read receipts are public for this session.
      */
     fun `setPublicReadReceiptsEnabled`(`enabled`: kotlin.Boolean)
+    
+    /**
+     * Point the homeserver's push at the given gateway.
+     *
+     * `gateway_url` is the Matrix push gateway (`.../_matrix/push/v1/notify`)
+     * and `pushkey` the UnifiedPush endpoint that identifies this device.
+     */
+    suspend fun `setPushGateway`(`gatewayUrl`: kotlin.String, `pushkey`: kotlin.String)
     
     /**
      * Set the given room's name and topic.
@@ -2955,6 +2983,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Remove the pusher with the given pushkey, so the homeserver stops
+     * pushing to it.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `removePushGateway`(`pushkey`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_remove_push_gateway(
+                uniffiHandle,
+                FfiConverterString.lower(`pushkey`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Ask the account's verified sessions to verify this one. The flow
      * then arrives through the listener like an incoming one: emojis,
      * then done.
@@ -3440,6 +3494,34 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     }
     
     
+
+    
+    /**
+     * Point the homeserver's push at the given gateway.
+     *
+     * `gateway_url` is the Matrix push gateway (`.../_matrix/push/v1/notify`)
+     * and `pushkey` the UnifiedPush endpoint that identifies this device.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setPushGateway`(`gatewayUrl`: kotlin.String, `pushkey`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_push_gateway(
+                uniffiHandle,
+                FfiConverterString.lower(`gatewayUrl`),FfiConverterString.lower(`pushkey`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
     
     /**

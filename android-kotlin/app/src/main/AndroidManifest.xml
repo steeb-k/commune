@@ -25,6 +25,13 @@
         <!-- Keeps the process (and with it the core's sync loop) alive while
              the UI is backgrounded, so messages keep arriving and notifying. -->
         <service
+            android:name=".Push"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="org.unifiedpush.android.connector.PUSH_EVENT" />
+            </intent-filter>
+        </service>
+        <service
             android:name=".SyncService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />

@@ -635,6 +635,86 @@ class CommuneState(context: Context) {
         false
     }
 
+    // How notifications arrive: UnifiedPush (ntfy) preferred, the
+    // foreground sync as fallback. MODE_UNSET means the onboarding page
+    // has not been answered yet.
+    var pushMode by mutableStateOf(PushManager.mode(context.applicationContext))
+        private set
+    var pushError by mutableStateOf<String?>(null)
+        private set
+    var pushBusy by mutableStateOf(false)
+        private set
+
+    fun refreshPushMode() {
+        pushMode = PushManager.mode(appContext)
+    }
+
+    /// Register with the distributor, then point the homeserver at its
+    /// Matrix gateway.
+    fun connectUnifiedPush() {
+        pushBusy = true
+        pushError = null
+        PushManager.onEndpoint = { endpoint ->
+            thread {
+                runBlocking {
+                    val result = try {
+                        val url = java.net.URL(endpoint)
+                        val gateway = "${url.protocol}://${url.authority}/_matrix/push/v1/notify"
+                        app.setPushGateway(gateway, endpoint)
+                        null
+                    } catch (failure: Exception) {
+                        failure.message ?: "Could not set up the pusher"
+                    }
+                    main.post {
+                        pushBusy = false
+                        if (result == null) {
+                            PushManager.setMode(appContext, PushManager.MODE_UNIFIEDPUSH)
+                            pushMode = PushManager.MODE_UNIFIEDPUSH
+                            appContext.stopService(
+                                android.content.Intent(appContext, SyncService::class.java)
+                            )
+                        } else {
+                            pushError = result
+                        }
+                    }
+                }
+            }
+        }
+        PushManager.onFailed = { reason ->
+            main.post {
+                pushBusy = false
+                pushError = "Registration failed: $reason"
+            }
+        }
+        PushManager.connect(appContext)
+    }
+
+    /// Keep the foreground sync; it is already running.
+    fun chooseBackgroundSync() {
+        PushManager.setMode(appContext, PushManager.MODE_SYNC)
+        pushMode = PushManager.MODE_SYNC
+    }
+
+    /// Re-open the onboarding page, from settings. Leaving UnifiedPush
+    /// removes the pusher and restarts the sync first.
+    fun reopenPushOnboarding() {
+        val endpoint = PushManager.endpoint(appContext)
+        if (pushMode == PushManager.MODE_UNIFIEDPUSH && endpoint != null) {
+            thread {
+                runBlocking {
+                    try {
+                        app.removePushGateway(endpoint)
+                    } catch (_: Exception) {
+                    }
+                }
+            }
+            PushManager.disconnect(appContext)
+            SyncService.start(appContext)
+        }
+        PushManager.setMode(appContext, PushManager.MODE_UNSET)
+        pushMode = PushManager.MODE_UNSET
+    }
+
     fun openRoomDetails() {
         roomDetailsOpen = true
     }
