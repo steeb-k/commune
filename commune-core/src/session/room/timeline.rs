@@ -321,6 +321,31 @@ impl Timeline {
         }
     }
 
+    /// Toggle the given reaction key on the given event.
+    pub async fn toggle_reaction(&self, event_id: ruma::OwnedEventId, key: &str) -> Result<(), ()> {
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return Err(());
+        };
+
+        let key = key.to_owned();
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .toggle_reaction(
+                    &matrix_sdk_ui::timeline::TimelineEventItemId::EventId(event_id),
+                    &key,
+                )
+                .await
+        });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(_) => Ok(()),
+            Err(toggle_error) => {
+                error!("Could not toggle reaction: {toggle_error}");
+                Err(())
+            }
+        }
+    }
+
     /// Send the file at the given path as an attachment to the room.
     ///
     /// The upload-size preflight and thumbnails arrive with the composer

@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -323,16 +325,29 @@ internal fun MessageBubble(
                 }
             }
 
-            Text(
-                body,
-                style = MaterialTheme.typography.bodyLarge,
-                fontStyle = if (muted) FontStyle.Italic else FontStyle.Normal,
-                color = if (muted) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-            )
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    body,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontStyle = if (muted) FontStyle.Italic else FontStyle.Normal,
+                    color = if (muted) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (event.isEdited) {
+                    Spacer(Modifier.size(4.dp))
+                    Text(
+                        "(edited)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            ReactionChips(state, event)
 
             val eventId = event.eventId
             if (event.threadReplies > 0uL && eventId != null && onOpenThread != null) {
@@ -357,6 +372,34 @@ private fun BubbleTimestamp(time: String) {
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+}
+
+/// The reactions on an event, as toggleable chips under the bubble body.
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ReactionChips(state: CommuneState, event: FfiTimelineItem.Event) {
+    if (event.reactions.isEmpty()) return
+    val eventId = event.eventId ?: return
+
+    FlowRow(modifier = Modifier.padding(top = 4.dp)) {
+        for (reaction in event.reactions) {
+            val background = if (reaction.isOwn) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
+            Text(
+                "${reaction.key} ${reaction.count}",
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier
+                    .padding(end = 6.dp, bottom = 2.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(background)
+                    .clickable { state.toggleReaction(eventId, reaction.key) }
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+            )
+        }
+    }
 }
 
 /// A state event, as a dim centered line — the sentence itself arrives with

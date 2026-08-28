@@ -789,6 +789,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_typing_listener(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_toggle_reaction(
+    ): Short
     external fun uniffi_commune_core_checksum_method_memberlistlistener_on_update(
     ): Short
     external fun uniffi_commune_core_checksum_method_roomlistlistener_on_update(
@@ -881,6 +883,8 @@ external fun uniffi_commune_core_fn_method_coreapp_set_typing_enabled(`ptr`: Lon
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_typing_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_toggle_reaction(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_clone_memberlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_commune_core_fn_free_memberlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1121,6 +1125,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_typing_listener() != 32255.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_toggle_reaction() != 55807.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_memberlistlistener_on_update() != 20923.toShort()) {
@@ -1777,6 +1784,11 @@ public interface CoreAppInterface {
      */
     fun `setTypingListener`(`roomId`: kotlin.String, `listener`: TypingListener)
     
+    /**
+     * Toggle the given reaction on the given event in the given room.
+     */
+    suspend fun `toggleReaction`(`roomId`: kotlin.String, `eventId`: kotlin.String, `key`: kotlin.String)
+    
     companion object
 }
 
@@ -2417,6 +2429,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     }
     
     
+
+    
+    /**
+     * Toggle the given reaction on the given event in the given room.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `toggleReaction`(`roomId`: kotlin.String, `eventId`: kotlin.String, `key`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_toggle_reaction(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),FfiConverterString.lower(`key`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
     
 
@@ -3885,6 +3922,61 @@ public object FfiConverterTypeFfiMember: FfiConverterRustBuffer<FfiMember> {
 
 
 /**
+ * One reaction key on an event, aggregated over its senders.
+ */
+data class FfiReaction (
+    /**
+     * The reaction key — usually an emoji.
+     */
+    var `key`: kotlin.String
+    , 
+    /**
+     * How many users sent this reaction.
+     */
+    var `count`: kotlin.ULong
+    , 
+    /**
+     * Whether our own user is among them.
+     */
+    var `isOwn`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiReaction: FfiConverterRustBuffer<FfiReaction> {
+    override fun read(buf: ByteBuffer): FfiReaction {
+        return FfiReaction(
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiReaction) = (
+            FfiConverterString.allocationSize(value.`key`) +
+            FfiConverterULong.allocationSize(value.`count`) +
+            FfiConverterBoolean.allocationSize(value.`isOwn`)
+    )
+
+    override fun write(value: FfiReaction, buf: ByteBuffer) {
+            FfiConverterString.write(value.`key`, buf)
+            FfiConverterULong.write(value.`count`, buf)
+            FfiConverterBoolean.write(value.`isOwn`, buf)
+    }
+}
+
+
+
+/**
  * A room, as the sidebar needs it.
  */
 data class FfiRoom (
@@ -4772,6 +4864,14 @@ sealed class FfiTimelineItem {
          */
         val `threadReplies`: kotlin.ULong, 
         /**
+         * The reactions on the event.
+         */
+        val `reactions`: List<io.github.steeb_k.commune.core.FfiReaction>, 
+        /**
+         * Whether the event was edited.
+         */
+        val `isEdited`: kotlin.Boolean, 
+        /**
          * The user that sent the event.
          */
         val `sender`: kotlin.String, 
@@ -4850,6 +4950,8 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 FfiConverterString.read(buf),
                 FfiConverterOptionalString.read(buf),
                 FfiConverterULong.read(buf),
+                FfiConverterSequenceTypeFfiReaction.read(buf),
+                FfiConverterBoolean.read(buf),
                 FfiConverterString.read(buf),
                 FfiConverterOptionalString.read(buf),
                 FfiConverterULong.read(buf),
@@ -4874,6 +4976,8 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 + FfiConverterString.allocationSize(value.`uniqueId`)
                 + FfiConverterOptionalString.allocationSize(value.`eventId`)
                 + FfiConverterULong.allocationSize(value.`threadReplies`)
+                + FfiConverterSequenceTypeFfiReaction.allocationSize(value.`reactions`)
+                + FfiConverterBoolean.allocationSize(value.`isEdited`)
                 + FfiConverterString.allocationSize(value.`sender`)
                 + FfiConverterOptionalString.allocationSize(value.`senderDisplayName`)
                 + FfiConverterULong.allocationSize(value.`timestamp`)
@@ -4910,6 +5014,8 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 FfiConverterString.write(value.`uniqueId`, buf)
                 FfiConverterOptionalString.write(value.`eventId`, buf)
                 FfiConverterULong.write(value.`threadReplies`, buf)
+                FfiConverterSequenceTypeFfiReaction.write(value.`reactions`, buf)
+                FfiConverterBoolean.write(value.`isEdited`, buf)
                 FfiConverterString.write(value.`sender`, buf)
                 FfiConverterOptionalString.write(value.`senderDisplayName`, buf)
                 FfiConverterULong.write(value.`timestamp`, buf)
@@ -5053,6 +5159,34 @@ public object FfiConverterSequenceTypeFfiMember: FfiConverterRustBuffer<List<Ffi
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiMember.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiReaction: FfiConverterRustBuffer<List<FfiReaction>> {
+    override fun read(buf: ByteBuffer): List<FfiReaction> {
+        val len = buf.getInt()
+        return List<FfiReaction>(len) {
+            FfiConverterTypeFfiReaction.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiReaction>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiReaction.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiReaction>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiReaction.write(it, buf)
         }
     }
 }
