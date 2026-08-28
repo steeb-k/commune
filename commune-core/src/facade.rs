@@ -2348,6 +2348,200 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// Log the session out and remove it from the app.
+    ///
+    /// The pusher, if one was set, must be removed before this: logging
+    /// out invalidates the access token that could remove it.
+    pub async fn logout(&self) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        let session_id = session.session_id().to_owned();
+        RUNTIME
+            .spawn(async move {
+                session
+                    .log_out()
+                    .await
+                    .map_err(|logout_error| CoreError::Failed { msg: logout_error })
+            })
+            .await
+            .expect("task was not aborted")?;
+
+        self.session_list.remove(&session_id);
+        Ok(())
+    }
+
+    /// The account's current profile.
+    pub async fn account_profile(&self) -> Option<FfiProfile> {
+        let session = self.first_ready_session()?;
+
+        RUNTIME
+            .spawn(async move {
+                let profile = session.client().account().fetch_user_profile().await.ok()?;
+                Some(FfiProfile {
+                    display_name: profile
+                        .get_static::<ruma::api::client::profile::DisplayName>()
+                        .ok()
+                        .flatten(),
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Change the account's display name.
+    pub async fn set_display_name(&self, name: String) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                session
+                    .client()
+                    .account()
+                    .set_display_name(Some(name.trim()))
+                    .await
+                    .map_err(|profile_error| CoreError::Failed {
+                        msg: format!("Could not change the display name: {profile_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Upload the file at the given path as the account's avatar.
+    pub async fn set_account_avatar(
+        &self,
+        file_path: String,
+        mime_type: String,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let bytes = std::fs::read(&file_path).map_err(|read_error| CoreError::Failed {
+                    msg: format!("Could not read the image: {read_error}"),
+                })?;
+                let mime = mime_type.parse::<mime::Mime>().unwrap_or(mime::IMAGE_JPEG);
+
+                session
+                    .client()
+                    .account()
+                    .upload_avatar(&mime, bytes)
+                    .await
+                    .map(|_| ())
+                    .map_err(|avatar_error| CoreError::Failed {
+                        msg: format!("Could not upload the avatar: {avatar_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Invite the given user to the given room.
+    pub async fn invite_user(&self, room_id: String, user_id: String) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let user_id =
+                    ruma::UserId::parse(user_id.trim()).map_err(|_| CoreError::Failed {
+                        msg: "That is not a valid user ID".to_owned(),
+                    })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                room.matrix_room()
+                    .invite_user_by_id(&user_id)
+                    .await
+                    .map_err(|invite_error| CoreError::Failed {
+                        msg: format!("Could not invite: {invite_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Create a room, as the application's create dialog does: private
+    /// rooms can be encrypted from birth, public rooms get an alias.
+    ///
+    /// Returns the new room's ID.
+    pub async fn create_room(
+        &self,
+        name: String,
+        topic: Option<String>,
+        public: bool,
+        encrypted: bool,
+        alias: Option<String>,
+    ) -> Result<String, CoreError> {
+        use ruma::{
+            api::client::room::{Visibility, create_room},
+            assign,
+            events::{InitialStateEvent, room::encryption::RoomEncryptionEventContent},
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let mut request = assign!(create_room::v3::Request::new(), {
+                    name: Some(name.trim().to_owned()),
+                    topic: topic.filter(|t| !t.trim().is_empty()),
+                });
+
+                if public {
+                    request.visibility = Visibility::Public;
+                    request.room_alias_name =
+                        alias.map(|a| a.trim().trim_start_matches('#').to_owned());
+                } else {
+                    request.visibility = Visibility::Private;
+                    if encrypted {
+                        let event = InitialStateEvent::with_empty_state_key(
+                            RoomEncryptionEventContent::with_recommended_defaults(),
+                        );
+                        request.initial_state = vec![event.to_raw_any()];
+                    }
+                }
+
+                let room = session
+                    .client()
+                    .create_room(request)
+                    .await
+                    .map_err(|create_error| CoreError::Failed {
+                        msg: format!("Could not create the room: {create_error}"),
+                    })?;
+
+                Ok(room.room_id().to_string())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Retry the messages that failed to send, by waking the send queue
     /// back up.
     ///
@@ -2622,6 +2816,13 @@ pub struct FfiHistoryEvent {
     pub size: Option<u64>,
     /// Whether a Media event is a video rather than an image.
     pub is_video: bool,
+}
+
+/// The account's profile, as far as the server tells it.
+#[derive(uniffi::Record)]
+pub struct FfiProfile {
+    /// The display name, when one is set.
+    pub display_name: Option<String>,
 }
 
 /// One room of the public directory.

@@ -779,6 +779,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_accept_verification(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_account_profile(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_cancel_verification(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_change_room_category(
@@ -792,6 +794,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_confirm_verification(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_create_direct_chat(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_create_room(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_edit_message(
     ): Short
@@ -813,9 +817,13 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_has_sessions(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_invite_user(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_join_room(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_login_with_password(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_logout(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_mark_room_read(
     ): Short
@@ -864,6 +872,10 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_session_settings(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_session_user_id(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_account_avatar(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_display_name(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_member_list_listener(
     ): Short
@@ -942,6 +954,8 @@ external fun uniffi_commune_core_fn_constructor_coreapp_new(uniffi_out_err: Unif
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_accept_verification(`ptr`: Long,`flowId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_account_profile(`ptr`: Long,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_cancel_verification(`ptr`: Long,`flowId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_change_room_category(`ptr`: Long,`roomId`: RustBuffer.ByValue,`category`: RustBuffer.ByValue,
@@ -955,6 +969,8 @@ external fun uniffi_commune_core_fn_method_coreapp_clear_thread_listener(`ptr`: 
 external fun uniffi_commune_core_fn_method_coreapp_confirm_verification(`ptr`: Long,`flowId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_create_direct_chat(`ptr`: Long,`userId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_create_room(`ptr`: Long,`name`: RustBuffer.ByValue,`topic`: RustBuffer.ByValue,`public`: Byte,`encrypted`: Byte,`alias`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_edit_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`newBody`: RustBuffer.ByValue,
 ): Long
@@ -976,9 +992,13 @@ external fun uniffi_commune_core_fn_method_coreapp_has_ready_session(`ptr`: Long
 ): Byte
 external fun uniffi_commune_core_fn_method_coreapp_has_sessions(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_commune_core_fn_method_coreapp_invite_user(`ptr`: Long,`roomId`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_join_room(`ptr`: Long,`roomIdOrAlias`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_login_with_password(`ptr`: Long,`homeserver`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_logout(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_mark_room_read(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
@@ -1028,6 +1048,10 @@ external fun uniffi_commune_core_fn_method_coreapp_session_settings(`ptr`: Long,
 ): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_method_coreapp_session_user_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_method_coreapp_set_account_avatar(`ptr`: Long,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_set_display_name(`ptr`: Long,`name`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_member_list_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_notifications_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
@@ -1239,6 +1263,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_accept_verification() != 31555.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_account_profile() != 32239.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_cancel_verification() != 42296.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1258,6 +1285,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_create_direct_chat() != 36767.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_create_room() != 41384.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_edit_message() != 19406.toShort()) {
@@ -1290,10 +1320,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_has_sessions() != 62270.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_invite_user() != 63980.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_join_room() != 20793.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_login_with_password() != 16278.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_logout() != 48517.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_mark_room_read() != 52026.toShort()) {
@@ -1368,6 +1404,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_session_user_id() != 13656.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_account_avatar() != 55349.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_display_name() != 56959.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_member_list_listener() != 42898.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1380,7 +1422,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled() != 61979.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_commune_core_checksum_method_coreapp_set_push_gateway() != 59473.toShort()) {
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_push_gateway() != 7158.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_details() != 28546.toShort()) {
@@ -1941,6 +1983,11 @@ public interface CoreAppInterface {
     suspend fun `acceptVerification`(`flowId`: kotlin.String)
     
     /**
+     * The account's current profile.
+     */
+    suspend fun `accountProfile`(): FfiProfile?
+    
+    /**
      * Cancel the verification — the emojis did not match, or the user
      * declined.
      */
@@ -1978,6 +2025,14 @@ public interface CoreAppInterface {
      * room ID.
      */
     suspend fun `createDirectChat`(`userId`: kotlin.String): kotlin.String
+    
+    /**
+     * Create a room, as the application's create dialog does: private
+     * rooms can be encrypted from birth, public rooms get an alias.
+     *
+     * Returns the new room's ID.
+     */
+    suspend fun `createRoom`(`name`: kotlin.String, `topic`: kotlin.String?, `public`: kotlin.Boolean, `encrypted`: kotlin.Boolean, `alias`: kotlin.String?): kotlin.String
     
     /**
      * Replace the given event's content with the given plain text.
@@ -2043,6 +2098,11 @@ public interface CoreAppInterface {
     fun `hasSessions`(): kotlin.Boolean
     
     /**
+     * Invite the given user to the given room.
+     */
+    suspend fun `inviteUser`(`roomId`: kotlin.String, `userId`: kotlin.String)
+    
+    /**
      * Join the room with the given ID or alias. Returns the room ID.
      */
     suspend fun `joinRoom`(`roomIdOrAlias`: kotlin.String): kotlin.String
@@ -2051,6 +2111,14 @@ public interface CoreAppInterface {
      * Log in with a password on the given homeserver.
      */
     suspend fun `loginWithPassword`(`homeserver`: kotlin.String, `username`: kotlin.String, `password`: kotlin.String)
+    
+    /**
+     * Log the session out and remove it from the app.
+     *
+     * The pusher, if one was set, must be removed before this: logging
+     * out invalidates the access token that could remove it.
+     */
+    suspend fun `logout`()
     
     /**
      * Mark the given room as read, sending a read receipt at the end of
@@ -2200,6 +2268,16 @@ public interface CoreAppInterface {
     fun `sessionUserId`(): kotlin.String?
     
     /**
+     * Upload the file at the given path as the account's avatar.
+     */
+    suspend fun `setAccountAvatar`(`filePath`: kotlin.String, `mimeType`: kotlin.String)
+    
+    /**
+     * Change the account's display name.
+     */
+    suspend fun `setDisplayName`(`name`: kotlin.String)
+    
+    /**
      * Give the member list of the given room to the given listener, now
      * and on every change.
      *
@@ -2230,7 +2308,7 @@ public interface CoreAppInterface {
      * Point the homeserver's push at the given gateway.
      *
      * `gateway_url` is the Matrix push gateway (`.../_matrix/push/v1/notify`)
-     * and `pushkey` the UnifiedPush endpoint that identifies this device.
+     * and `pushkey` the `UnifiedPush` endpoint that identifies this device.
      */
     suspend fun `setPushGateway`(`gatewayUrl`: kotlin.String, `pushkey`: kotlin.String)
     
@@ -2432,6 +2510,29 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * The account's current profile.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `accountProfile`() : FfiProfile? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_account_profile(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeFfiProfile.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
      * Cancel the verification — the emojis did not match, or the user
      * declined.
      */
@@ -2564,6 +2665,33 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_create_direct_chat(
                 uniffiHandle,
                 FfiConverterString.lower(`userId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Create a room, as the application's create dialog does: private
+     * rooms can be encrypted from birth, public rooms get an alias.
+     *
+     * Returns the new room's ID.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `createRoom`(`name`: kotlin.String, `topic`: kotlin.String?, `public`: kotlin.Boolean, `encrypted`: kotlin.Boolean, `alias`: kotlin.String?) : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_create_room(
+                uniffiHandle,
+                FfiConverterString.lower(`name`),FfiConverterOptionalString.lower(`topic`),FfiConverterBoolean.lower(`public`),FfiConverterBoolean.lower(`encrypted`),FfiConverterOptionalString.lower(`alias`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -2812,6 +2940,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Invite the given user to the given room.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `inviteUser`(`roomId`: kotlin.String, `userId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_invite_user(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`userId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Join the room with the given ID or alias. Returns the room ID.
      */
     @Throws(CoreException::class)
@@ -2846,6 +2999,34 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_login_with_password(
                 uniffiHandle,
                 FfiConverterString.lower(`homeserver`),FfiConverterString.lower(`username`),FfiConverterString.lower(`password`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Log the session out and remove it from the app.
+     *
+     * The pusher, if one was set, must be removed before this: logging
+     * out invalidates the access token that could remove it.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `logout`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_logout(
+                uniffiHandle,
+                
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -3430,6 +3611,56 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Upload the file at the given path as the account's avatar.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setAccountAvatar`(`filePath`: kotlin.String, `mimeType`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_account_avatar(
+                uniffiHandle,
+                FfiConverterString.lower(`filePath`),FfiConverterString.lower(`mimeType`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Change the account's display name.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setDisplayName`(`name`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_display_name(
+                uniffiHandle,
+                FfiConverterString.lower(`name`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Give the member list of the given room to the given listener, now
      * and on every change.
      *
@@ -3500,7 +3731,7 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
      * Point the homeserver's push at the given gateway.
      *
      * `gateway_url` is the Matrix push gateway (`.../_matrix/push/v1/notify`)
-     * and `pushkey` the UnifiedPush endpoint that identifies this device.
+     * and `pushkey` the `UnifiedPush` endpoint that identifies this device.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -5945,6 +6176,45 @@ public object FfiConverterTypeFfiMember: FfiConverterRustBuffer<FfiMember> {
 
 
 /**
+ * The account's profile, as far as the server tells it.
+ */
+data class FfiProfile (
+    /**
+     * The display name, when one is set.
+     */
+    var `displayName`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiProfile: FfiConverterRustBuffer<FfiProfile> {
+    override fun read(buf: ByteBuffer): FfiProfile {
+        return FfiProfile(
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiProfile) = (
+            FfiConverterOptionalString.allocationSize(value.`displayName`)
+    )
+
+    override fun write(value: FfiProfile, buf: ByteBuffer) {
+            FfiConverterOptionalString.write(value.`displayName`, buf)
+    }
+}
+
+
+
+/**
  * One room of the public directory.
  */
 data class FfiPublicRoom (
@@ -8046,6 +8316,38 @@ public object FfiConverterOptionalTypeFfiInReplyTo: FfiConverterRustBuffer<FfiIn
         } else {
             buf.put(1)
             FfiConverterTypeFfiInReplyTo.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiProfile: FfiConverterRustBuffer<FfiProfile?> {
+    override fun read(buf: ByteBuffer): FfiProfile? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiProfile.read(buf)
+    }
+
+    override fun allocationSize(value: FfiProfile?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiProfile.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiProfile?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiProfile.write(value, buf)
         }
     }
 }

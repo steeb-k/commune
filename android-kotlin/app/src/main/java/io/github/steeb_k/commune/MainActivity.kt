@@ -50,6 +50,11 @@ class MainActivity : ComponentActivity() {
             uri?.let { state.sendAttachmentFromUri(it) }
         }
 
+    private val avatarPicker =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let { state.setAvatarFromUri(it) }
+        }
+
     override fun onStart() {
         super.onStart()
         if (::state.isInitialized) state.uiVisible = true
@@ -64,6 +69,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         state = CommuneState(this)
         state.pickAttachment = { attachmentPicker.launch("*/*") }
+        state.pickAvatar = { avatarPicker.launch("image/*") }
         state.scanQrCode = {
             qrScanner.launch(
                 com.journeyapps.barcodescanner.ScanOptions()

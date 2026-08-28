@@ -718,6 +718,141 @@ class CommuneState(context: Context) {
         pushMode = PushManager.MODE_UNSET
     }
 
+    // The account: profile, and the way out.
+    var profileName by mutableStateOf<String?>(null)
+        private set
+
+    fun loadProfile() {
+        thread {
+            runBlocking {
+                val profile = try {
+                    app.accountProfile()
+                } catch (_: Exception) {
+                    null
+                }
+                main.post { profileName = profile?.displayName }
+            }
+        }
+    }
+
+    fun setDisplayName(name: String, onDone: (String?) -> Unit) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.setDisplayName(name)
+                    null
+                } catch (failure: Exception) {
+                    failure.message ?: "Could not change the display name"
+                }
+                main.post {
+                    if (error == null) profileName = name.trim()
+                    onDone(error)
+                }
+            }
+        }
+    }
+
+    /// Set by the activity: opens the image picker for a new avatar.
+    var pickAvatar: (() -> Unit)? = null
+
+    fun setAvatarFromUri(uri: android.net.Uri) {
+        val resolver = appContext.contentResolver
+        val mime = resolver.getType(uri) ?: "image/jpeg"
+        thread {
+            try {
+                val dir = java.io.File(appContext.cacheDir, "outgoing")
+                dir.mkdirs()
+                val file = java.io.File(dir, "avatar")
+                resolver.openInputStream(uri)?.use { input ->
+                    file.outputStream().use { output -> input.copyTo(output) }
+                } ?: return@thread
+                runBlocking { app.setAccountAvatar(file.absolutePath, mime) }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    /// Log out: pusher first (its removal needs the access token that
+    /// logout invalidates), then the session, then back to the login page.
+    fun logout() {
+        thread {
+            runBlocking {
+                PushManager.endpoint(appContext)?.let { endpoint ->
+                    try {
+                        app.removePushGateway(endpoint)
+                    } catch (_: Exception) {
+                    }
+                }
+                if (pushMode == PushManager.MODE_UNIFIEDPUSH) {
+                    PushManager.disconnect(appContext)
+                }
+                try {
+                    app.logout()
+                } catch (_: Exception) {
+                }
+                main.post {
+                    PushManager.setMode(appContext, PushManager.MODE_UNSET)
+                    pushMode = PushManager.MODE_UNSET
+                    appContext.stopService(
+                        android.content.Intent(appContext, SyncService::class.java)
+                    )
+                    openRoom = null
+                    rooms = emptyList()
+                    timeline = emptyList()
+                    settingsOpen = false
+                    phase = Phase.Login
+                }
+            }
+        }
+    }
+
+    /// Invite a user to the open room.
+    fun inviteUser(userId: String, onDone: (String?) -> Unit) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val error = try {
+                    app.inviteUser(room.roomId, userId)
+                    null
+                } catch (failure: Exception) {
+                    failure.message ?: "Could not invite"
+                }
+                main.post { onDone(error) }
+            }
+        }
+    }
+
+    /// Create a room and open it once it appears in the list.
+    fun createRoom(
+        name: String,
+        topic: String,
+        public: Boolean,
+        encrypted: Boolean,
+        alias: String,
+        onDone: (String?) -> Unit,
+    ) {
+        thread {
+            runBlocking {
+                val result = try {
+                    app.createRoom(
+                        name,
+                        topic.ifBlank { null },
+                        public,
+                        encrypted,
+                        alias.ifBlank { null },
+                    )
+                } catch (failure: Exception) {
+                    main.post { onDone(failure.message ?: "Could not create the room") }
+                    return@runBlocking
+                }
+                main.post {
+                    onDone(null)
+                    openRoomWhenListed(result)
+                }
+            }
+        }
+    }
+
     fun openRoomDetails() {
         roomDetailsOpen = true
     }
