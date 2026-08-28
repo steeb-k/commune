@@ -66,6 +66,7 @@ import io.github.steeb_k.commune.core.FfiMediaKind
 import io.github.steeb_k.commune.core.FfiMembershipChange
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRoomCategory
+import io.github.steeb_k.commune.core.FfiStateChange
 import io.github.steeb_k.commune.core.FfiTimelineItem
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -384,7 +385,23 @@ internal fun stateSentence(event: FfiTimelineItem.Event): String {
             }
         }
         is FfiEventKind.ProfileChange -> "${localpart(kind.user)} changed their profile."
-        is FfiEventKind.OtherState -> "$sender changed the room's settings."
+        is FfiEventKind.OtherState -> when (val change = kind.change) {
+            is FfiStateChange.Name ->
+                change.name?.let { "$sender named the room \"$it\"." }
+                    ?: "$sender removed the room name."
+            is FfiStateChange.Topic ->
+                change.topic?.let { "$sender set the topic to \"$it\"." }
+                    ?: "$sender removed the topic."
+            is FfiStateChange.Avatar -> "$sender changed the room's picture."
+            is FfiStateChange.Create -> "$sender created this room."
+            is FfiStateChange.Encryption -> "$sender enabled encryption."
+            is FfiStateChange.JoinRules -> "$sender changed who can join."
+            is FfiStateChange.HistoryVisibility ->
+                "$sender changed who can read the history."
+            is FfiStateChange.CanonicalAlias -> "$sender changed the room's address."
+            is FfiStateChange.PinnedEvents -> "$sender changed the pinned messages."
+            is FfiStateChange.Other -> "$sender changed the room's settings."
+        }
         else -> "$sender updated the room."
     }
 }

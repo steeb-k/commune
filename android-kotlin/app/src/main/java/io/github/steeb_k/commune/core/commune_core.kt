@@ -4638,8 +4638,17 @@ sealed class FfiEventKind {
     /**
      * Another state event.
      */
-    object OtherState : FfiEventKind()
-    
+    data class OtherState(
+        /**
+         * What changed.
+         */
+        val `change`: io.github.steeb_k.commune.core.FfiStateChange) : FfiEventKind()
+        
+    {
+        
+
+        companion object
+    }
     
     /**
      * Something not handled yet.
@@ -4677,7 +4686,9 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
             7 -> FfiEventKind.ProfileChange(
                 FfiConverterString.read(buf),
                 )
-            8 -> FfiEventKind.OtherState
+            8 -> FfiEventKind.OtherState(
+                FfiConverterTypeFfiStateChange.read(buf),
+                )
             9 -> FfiEventKind.Unsupported
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
@@ -4734,6 +4745,7 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
+                + FfiConverterTypeFfiStateChange.allocationSize(value.`change`)
             )
         }
         is FfiEventKind.Unsupported -> {
@@ -4780,6 +4792,7 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
             }
             is FfiEventKind.OtherState -> {
                 buf.putInt(8)
+                FfiConverterTypeFfiStateChange.write(value.`change`, buf)
                 Unit
             }
             is FfiEventKind.Unsupported -> {
@@ -5227,6 +5240,241 @@ public object FfiConverterTypeFfiRoomHighlight: FfiConverterRustBuffer<FfiRoomHi
 
     override fun write(value: FfiRoomHighlight, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * What a state event changed — the ones the timeline words, with the
+ * strings the sentence needs.
+ */
+sealed class FfiStateChange {
+    
+    /**
+     * The room name changed.
+     */
+    data class Name(
+        /**
+         * The new name; unset when it was removed.
+         */
+        val `name`: kotlin.String?) : FfiStateChange()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The room topic changed.
+     */
+    data class Topic(
+        /**
+         * The new topic; unset when it was removed.
+         */
+        val `topic`: kotlin.String?) : FfiStateChange()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * The room avatar changed.
+     */
+    object Avatar : FfiStateChange()
+    
+    
+    /**
+     * The room was created.
+     */
+    object Create : FfiStateChange()
+    
+    
+    /**
+     * Encryption was enabled.
+     */
+    object Encryption : FfiStateChange()
+    
+    
+    /**
+     * The join rules changed.
+     */
+    object JoinRules : FfiStateChange()
+    
+    
+    /**
+     * The history visibility changed.
+     */
+    object HistoryVisibility : FfiStateChange()
+    
+    
+    /**
+     * The canonical alias changed.
+     */
+    object CanonicalAlias : FfiStateChange()
+    
+    
+    /**
+     * The pinned events changed.
+     */
+    object PinnedEvents : FfiStateChange()
+    
+    
+    /**
+     * Something the timeline has no words for yet.
+     */
+    object Other : FfiStateChange()
+    
+    
+
+    
+
+    
+    
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiStateChange : FfiConverterRustBuffer<FfiStateChange>{
+    override fun read(buf: ByteBuffer): FfiStateChange {
+        return when(buf.getInt()) {
+            1 -> FfiStateChange.Name(
+                FfiConverterOptionalString.read(buf),
+                )
+            2 -> FfiStateChange.Topic(
+                FfiConverterOptionalString.read(buf),
+                )
+            3 -> FfiStateChange.Avatar
+            4 -> FfiStateChange.Create
+            5 -> FfiStateChange.Encryption
+            6 -> FfiStateChange.JoinRules
+            7 -> FfiStateChange.HistoryVisibility
+            8 -> FfiStateChange.CanonicalAlias
+            9 -> FfiStateChange.PinnedEvents
+            10 -> FfiStateChange.Other
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: FfiStateChange) = when(value) {
+        is FfiStateChange.Name -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterOptionalString.allocationSize(value.`name`)
+            )
+        }
+        is FfiStateChange.Topic -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterOptionalString.allocationSize(value.`topic`)
+            )
+        }
+        is FfiStateChange.Avatar -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiStateChange.Create -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiStateChange.Encryption -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiStateChange.JoinRules -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiStateChange.HistoryVisibility -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiStateChange.CanonicalAlias -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiStateChange.PinnedEvents -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiStateChange.Other -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: FfiStateChange, buf: ByteBuffer) {
+        when(value) {
+            is FfiStateChange.Name -> {
+                buf.putInt(1)
+                FfiConverterOptionalString.write(value.`name`, buf)
+                Unit
+            }
+            is FfiStateChange.Topic -> {
+                buf.putInt(2)
+                FfiConverterOptionalString.write(value.`topic`, buf)
+                Unit
+            }
+            is FfiStateChange.Avatar -> {
+                buf.putInt(3)
+                Unit
+            }
+            is FfiStateChange.Create -> {
+                buf.putInt(4)
+                Unit
+            }
+            is FfiStateChange.Encryption -> {
+                buf.putInt(5)
+                Unit
+            }
+            is FfiStateChange.JoinRules -> {
+                buf.putInt(6)
+                Unit
+            }
+            is FfiStateChange.HistoryVisibility -> {
+                buf.putInt(7)
+                Unit
+            }
+            is FfiStateChange.CanonicalAlias -> {
+                buf.putInt(8)
+                Unit
+            }
+            is FfiStateChange.PinnedEvents -> {
+                buf.putInt(9)
+                Unit
+            }
+            is FfiStateChange.Other -> {
+                buf.putInt(10)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
 }
 
