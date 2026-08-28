@@ -276,9 +276,12 @@ demonstrable. Order matters only within a track; the two tracks interleave.
    read-state watcher, typing both ways, semantic membership sentences;
    27 Aug late: thread focus (`TimelineFocusKind`), thread reply counts,
    thread send, and `send_attachment` through the send queue;
-   pinned timelines pending)_ Timeline: `matrix_sdk_ui::Timeline` orchestration with `VectorDiff`
-   passthrough; the diff minimizer gets a generic sink trait instead of the
-   GListModel one.
+   28 Aug: E2EE verified end-to-end against a matrix-nio client —
+   both directions decrypt, `m.megolm.v1.aes-sha2` on the wire,
+   `kotlin-e2ee-decrypted.png`; pinned timelines
+   pending)_ Timeline: `matrix_sdk_ui::Timeline` orchestration with
+   `VectorDiff` passthrough; the diff minimizer gets a generic sink trait
+   instead of the GListModel one.
 6. The rest of the logic tier as needed by UI chunks: permissions/roles,
    search merge, push-rules vocabulary, notification bodies, verification
    state machine, state-event humanization (extracted from
