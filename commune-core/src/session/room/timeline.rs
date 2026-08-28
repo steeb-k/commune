@@ -44,10 +44,24 @@ pub struct Timeline {
     inner: Arc<TimelineInner>,
 }
 
+/// What a timeline shows.
+#[derive(Debug, Clone)]
+pub enum TimelineFocusKind {
+    /// The room's live timeline.
+    Live,
+    /// The thread rooted at the given event.
+    Thread {
+        /// The thread's root event.
+        root: ruma::OwnedEventId,
+    },
+}
+
 #[derive(Debug)]
 struct TimelineInner {
     /// The room API of the SDK.
     matrix_room: matrix_sdk::room::Room,
+    /// What this timeline shows.
+    focus: TimelineFocusKind,
     /// The underlying SDK timeline.
     matrix_timeline: tokio::sync::OnceCell<Arc<SdkTimeline>>,
     /// The loading state of the timeline.
@@ -59,9 +73,18 @@ struct TimelineInner {
 impl Timeline {
     /// Create the live timeline of the given room.
     pub(crate) fn new(matrix_room: matrix_sdk::room::Room) -> Self {
+        Self::with_focus(matrix_room, TimelineFocusKind::Live)
+    }
+
+    /// Create a timeline of the given room with the given focus.
+    pub(crate) fn with_focus(
+        matrix_room: matrix_sdk::room::Room,
+        focus: TimelineFocusKind,
+    ) -> Self {
         Self {
             inner: Arc::new(TimelineInner {
                 matrix_room,
+                focus,
                 matrix_timeline: tokio::sync::OnceCell::new(),
                 state: SharedObservable::new(LoadingState::Initial),
                 has_reached_start: SharedObservable::new(false),
@@ -98,7 +121,7 @@ impl Timeline {
             .get_or_try_init(|| async {
                 inner.state.set_if_not_eq(LoadingState::Loading);
 
-                match build_sdk_timeline(inner.matrix_room.clone()).await {
+                match build_sdk_timeline(inner.matrix_room.clone(), inner.focus.clone()).await {
                     Ok(timeline) => {
                         inner.state.set_if_not_eq(LoadingState::Ready);
                         Ok(Arc::new(timeline))
@@ -299,10 +322,11 @@ impl Timeline {
     }
 }
 
-/// Build the SDK timeline for the given room, live-focused, with the
-/// application's event filter.
+/// Build the SDK timeline for the given room, with the application's
+/// event filter and the given focus.
 async fn build_sdk_timeline(
     matrix_room: matrix_sdk::room::Room,
+    focus: TimelineFocusKind,
 ) -> Result<SdkTimeline, matrix_sdk_ui::timeline::Error> {
     let own_user_id = matrix_room.own_user_id().to_owned();
 
@@ -335,16 +359,23 @@ async fn build_sdk_timeline(
         // means something: an invalid or empty `m.room.policy` content
         // unsets the room's policy server, per the spec, and deserves its
         // sentence. The UI-side filter hides the rest.
+        let sdk_focus = match focus {
+            // Threaded events are hidden from the live timeline: since a
+            // thread can be opened from its root, they have somewhere
+            // better to be read.
+            TimelineFocusKind::Live => TimelineFocus::Live {
+                hide_threaded_events: true,
+            },
+            TimelineFocusKind::Thread { root } => TimelineFocus::Thread {
+                root_event_id: root,
+            },
+        };
+
         matrix_room
             .timeline_builder()
             .event_filter(filter)
             .add_failed_to_parse(true)
-            // Threaded events are hidden from the live timeline: since a
-            // thread can be opened from its root, they have somewhere
-            // better to be read.
-            .with_focus(TimelineFocus::Live {
-                hide_threaded_events: true,
-            })
+            .with_focus(sdk_focus)
             .build()
             .await
     });

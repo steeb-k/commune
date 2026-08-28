@@ -48,7 +48,7 @@ use tracing::{debug, error, warn};
 
 pub use self::{
     category::{RoomCategory, RoomHighlight, TargetRoomCategory},
-    timeline::{ReceiptPosition, Timeline},
+    timeline::{ReceiptPosition, Timeline, TimelineFocusKind},
 };
 use crate::{
     RUNTIME,
@@ -496,6 +496,18 @@ impl Room {
                 timeline
             })
             .clone()
+    }
+
+    /// A timeline of the thread rooted at the given event.
+    ///
+    /// A fresh timeline each call; the caller keeps it as long as the
+    /// thread is open.
+    #[must_use]
+    pub fn thread_timeline(&self, root: ruma::OwnedEventId) -> Timeline {
+        Timeline::with_focus(
+            self.inner.matrix_room.clone(),
+            TimelineFocusKind::Thread { root },
+        )
     }
 
     /// Send the given receipt.

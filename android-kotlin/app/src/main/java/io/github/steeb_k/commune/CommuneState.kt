@@ -55,6 +55,10 @@ class CommuneState(context: Context) {
         private set
     var settingsOpen by mutableStateOf(false)
         private set
+    var openThreadRoot by mutableStateOf<String?>(null)
+        private set
+    var threadItems by mutableStateOf<List<FfiTimelineItem>>(emptyList())
+        private set
     var settings by mutableStateOf<FfiSessionSettings?>(null)
         private set
 
@@ -152,6 +156,45 @@ class CommuneState(context: Context) {
         openRoom = null
         timeline = emptyList()
         typingUsers = emptyList()
+        closeThread()
+    }
+
+    fun openThread(rootEventId: String) {
+        val room = openRoom ?: return
+        openThreadRoot = rootEventId
+        threadItems = emptyList()
+
+        app.setThreadListener(
+            room.roomId,
+            rootEventId,
+            object : TimelineListener {
+                override fun onUpdate(items: List<FfiTimelineItem>) {
+                    main.post {
+                        if (openThreadRoot == rootEventId) threadItems = items
+                    }
+                }
+            },
+        )
+    }
+
+    fun closeThread() {
+        openThreadRoot = null
+        threadItems = emptyList()
+        app.clearThreadListener()
+    }
+
+    fun sendInThread(body: String) {
+        val room = openRoom ?: return
+        val root = openThreadRoot ?: return
+        thread {
+            runBlocking {
+                try {
+                    app.sendThreadMessage(room.roomId, root, body)
+                } catch (_: Exception) {
+                    // The next update reflects reality either way.
+                }
+            }
+        }
     }
 
     private var wasTyping = false
