@@ -829,6 +829,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_restore_sessions(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_retry_sends(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_room_media_history(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_room_members(
@@ -985,6 +987,8 @@ external fun uniffi_commune_core_fn_method_coreapp_redact_event(`ptr`: Long,`roo
 external fun uniffi_commune_core_fn_method_coreapp_request_verification(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_retry_sends(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_room_media_history(`ptr`: Long,`roomId`: RustBuffer.ByValue,`from`: RustBuffer.ByValue,
 ): Long
@@ -1296,6 +1300,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_restore_sessions() != 15459.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_retry_sends() != 53459.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_room_media_history() != 24819.toShort()) {
@@ -2061,6 +2068,15 @@ public interface CoreAppInterface {
      * Restore the sessions stored on this device.
      */
     suspend fun `restoreSessions`()
+    
+    /**
+     * Retry the messages that failed to send, by waking the send queue
+     * back up.
+     *
+     * The queue disables itself on a recoverable error; re-enabling it
+     * respawns the sending tasks for everything still unsent.
+     */
+    suspend fun `retrySends`()
     
     /**
      * One page of the room's media history, walking backward from
@@ -2965,6 +2981,34 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_commune_core_fn_method_coreapp_restore_sessions(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Retry the messages that failed to send, by waking the send queue
+     * back up.
+     *
+     * The queue disables itself on a recoverable error; re-enabling it
+     * respawns the sending tasks for everything still unsent.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `retrySends`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_retry_sends(
                 uniffiHandle,
                 
             )
@@ -7219,6 +7263,57 @@ public object FfiConverterTypeFfiRoomHighlight: FfiConverterRustBuffer<FfiRoomHi
 
 
 /**
+ * How far a locally sent event has got.
+ */
+
+enum class FfiSendState {
+    
+    /**
+     * Waiting in the send queue.
+     */
+    SENDING,
+    /**
+     * The send failed, and re-enabling the queue can retry it.
+     */
+    RECOVERABLE_ERROR,
+    /**
+     * The send failed for good (for example, too large).
+     */
+    PERMANENT_ERROR,
+    /**
+     * The server acknowledged the event.
+     */
+    SENT;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiSendState: FfiConverterRustBuffer<FfiSendState> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiSendState.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiSendState) = 4UL
+
+    override fun write(value: FfiSendState, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
  * What a state event changed — the ones the timeline words, with the
  * strings the sentence needs.
  */
@@ -7569,7 +7664,11 @@ sealed class FfiTimelineItem {
         /**
          * The text of the event, as far as it has one.
          */
-        val `body`: kotlin.String) : FfiTimelineItem()
+        val `body`: kotlin.String, 
+        /**
+         * How far a locally sent event got, `None` for remote echoes.
+         */
+        val `sendState`: io.github.steeb_k.commune.core.FfiSendState?) : FfiTimelineItem()
         
     {
         
@@ -7634,6 +7733,7 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 FfiConverterBoolean.read(buf),
                 FfiConverterTypeFfiEventKind.read(buf),
                 FfiConverterString.read(buf),
+                FfiConverterOptionalTypeFfiSendState.read(buf),
                 )
             2 -> FfiTimelineItem.DateDivider(
                 FfiConverterULong.read(buf),
@@ -7662,6 +7762,7 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 + FfiConverterBoolean.allocationSize(value.`isOwn`)
                 + FfiConverterTypeFfiEventKind.allocationSize(value.`kind`)
                 + FfiConverterString.allocationSize(value.`body`)
+                + FfiConverterOptionalTypeFfiSendState.allocationSize(value.`sendState`)
             )
         }
         is FfiTimelineItem.DateDivider -> {
@@ -7702,6 +7803,7 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 FfiConverterBoolean.write(value.`isOwn`, buf)
                 FfiConverterTypeFfiEventKind.write(value.`kind`, buf)
                 FfiConverterString.write(value.`body`, buf)
+                FfiConverterOptionalTypeFfiSendState.write(value.`sendState`, buf)
                 Unit
             }
             is FfiTimelineItem.DateDivider -> {
@@ -7847,6 +7949,38 @@ public object FfiConverterOptionalTypeFfiSessionSettings: FfiConverterRustBuffer
         } else {
             buf.put(1)
             FfiConverterTypeFfiSessionSettings.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiSendState: FfiConverterRustBuffer<FfiSendState?> {
+    override fun read(buf: ByteBuffer): FfiSendState? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiSendState.read(buf)
+    }
+
+    override fun allocationSize(value: FfiSendState?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiSendState.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiSendState?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiSendState.write(value, buf)
         }
     }
 }

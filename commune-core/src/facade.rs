@@ -526,6 +526,8 @@ pub enum FfiTimelineItem {
         kind: FfiEventKind,
         /// The text of the event, as far as it has one.
         body: String,
+        /// How far a locally sent event got, `None` for remote echoes.
+        send_state: Option<FfiSendState>,
     },
     /// A divider between two days.
     DateDivider {
@@ -536,6 +538,19 @@ pub enum FfiTimelineItem {
     ReadMarker,
     /// The start of the timeline.
     TimelineStart,
+}
+
+/// How far a locally sent event has got.
+#[derive(uniffi::Enum, Clone, Copy)]
+pub enum FfiSendState {
+    /// Waiting in the send queue.
+    Sending,
+    /// The send failed, and re-enabling the queue can retry it.
+    RecoverableError,
+    /// The send failed for good (for example, too large).
+    PermanentError,
+    /// The server acknowledged the event.
+    Sent,
 }
 
 /// What kind of event a timeline item is.
@@ -2316,6 +2331,29 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// Retry the messages that failed to send, by waking the send queue
+    /// back up.
+    ///
+    /// The queue disables itself on a recoverable error; re-enabling it
+    /// respawns the sending tasks for everything still unsent.
+    pub async fn retry_sends(&self) {
+        let Some(session) = self.first_ready_session() else {
+            return;
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                client.send_queue().set_enabled(true).await;
+                client
+                    .send_queue()
+                    .respawn_tasks_for_rooms_with_unsent_requests()
+                    .await;
+            })
+            .await
+            .expect("task was not aborted");
+    }
+
     /// One page of the public room directory, optionally filtered by a
     /// search term, continuing from `since` when given.
     pub async fn explore_rooms(
@@ -3031,6 +3069,25 @@ fn ffi_in_reply_to(content: &matrix_sdk_ui::timeline::TimelineItemContent) -> Op
     })
 }
 
+/// Map the SDK's send state to the FFI's.
+fn ffi_send_state(
+    send_state: Option<&matrix_sdk_ui::timeline::EventSendState>,
+) -> Option<FfiSendState> {
+    use matrix_sdk_ui::timeline::EventSendState;
+
+    Some(match send_state? {
+        EventSendState::NotSentYet { .. } => FfiSendState::Sending,
+        EventSendState::SendingFailed { is_recoverable, .. } => {
+            if *is_recoverable {
+                FfiSendState::RecoverableError
+            } else {
+                FfiSendState::PermanentError
+            }
+        }
+        EventSendState::Sent { .. } => FfiSendState::Sent,
+    })
+}
+
 fn ffi_timeline_item(
     item: &matrix_sdk_ui::timeline::TimelineItem,
     own_user_id: Option<&ruma::UserId>,
@@ -3130,6 +3187,7 @@ fn ffi_timeline_item(
                 is_own: event.is_own(),
                 kind,
                 body,
+                send_state: ffi_send_state(event.send_state()),
             }
         }
         TimelineItemKind::Virtual(virtual_item) => match virtual_item {

@@ -579,6 +579,11 @@ class CommuneState(context: Context) {
         }
     }
 
+    /// Wake the send queue back up so failed messages go out again.
+    fun retrySends() {
+        thread { runBlocking { try { app.retrySends() } catch (_: Exception) {} } }
+    }
+
     fun openRoomDetails() {
         roomDetailsOpen = true
     }

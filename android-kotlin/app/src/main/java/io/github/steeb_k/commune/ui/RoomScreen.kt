@@ -595,6 +595,26 @@ internal fun MessageBubble(
                 }
             }
 
+            when (event.sendState) {
+                io.github.steeb_k.commune.core.FfiSendState.SENDING -> Text(
+                    "Sending…",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                io.github.steeb_k.commune.core.FfiSendState.RECOVERABLE_ERROR -> Text(
+                    "Not sent — tap to retry",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.clickable { state.retrySends() },
+                )
+                io.github.steeb_k.commune.core.FfiSendState.PERMANENT_ERROR -> Text(
+                    "Could not be sent",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                else -> {}
+            }
+
             ReactionChips(state, event)
 
             if (event.isOwn && event.receipts.isNotEmpty()) {
