@@ -312,6 +312,14 @@ pub trait TimelineListener: Send + Sync {
     fn on_update(&self, items: Vec<FfiTimelineItem>);
 }
 
+/// Something on the foreign side that wants to know who is typing in a
+/// room.
+#[uniffi::export(with_foreign)]
+pub trait TypingListener: Send + Sync {
+    /// The set of typing users changed; our own user is never included.
+    fn on_update(&self, user_ids: Vec<String>);
+}
+
 /// The core, as one object the foreign side holds.
 #[derive(uniffi::Object)]
 pub struct CoreApp {
@@ -321,6 +329,8 @@ pub struct CoreApp {
     listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
     /// The task pushing timeline updates to the foreign listener.
     timeline_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
+    /// The task pushing typing updates to the foreign listener.
+    typing_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
 }
 
 #[uniffi::export]
@@ -333,6 +343,7 @@ impl CoreApp {
             session_list: SessionList::new(),
             listener_handle: Mutex::new(None),
             timeline_listener_handle: Mutex::new(None),
+            typing_listener_handle: Mutex::new(None),
         })
     }
 
@@ -477,6 +488,63 @@ impl CoreApp {
         {
             previous.abort();
         }
+    }
+
+    /// Give the typing users of the given room to the given listener, now
+    /// and on every change. Replaces any previous typing listener.
+    pub fn set_typing_listener(&self, room_id: String, listener: Arc<dyn TypingListener>) {
+        let session = self.first_ready_session();
+
+        let handle = RUNTIME
+            .spawn(async move {
+                let Some(session) = session else { return };
+                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
+                    return;
+                };
+                let Some(room) = session.room_list().get(&room_id) else {
+                    return;
+                };
+
+                let mut subscriber = room.subscribe_typing();
+                listener.on_update(
+                    room.typing_users()
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect(),
+                );
+
+                while let Some(typing) = subscriber.next().await {
+                    listener.on_update(typing.iter().map(ToString::to_string).collect());
+                }
+            })
+            .abort_handle();
+
+        if let Some(previous) = self
+            .typing_listener_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .replace(handle)
+        {
+            previous.abort();
+        }
+    }
+
+    /// Send a typing notification for the given room.
+    ///
+    /// Owned `String` because the FFI hands one over.
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn send_typing(&self, room_id: String, is_typing: bool) {
+        let Some(session) = self.first_ready_session() else {
+            return;
+        };
+        let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
+            return;
+        };
+        let Some(room) = session.room_list().get(&room_id) else {
+            return;
+        };
+
+        room.send_typing_notification(is_typing);
     }
 
     /// Mark the given room as read, sending a read receipt at the end of
