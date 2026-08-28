@@ -295,7 +295,9 @@ session wants UI work sooner.
     notifications, foreground sync service fallback, Keystore-backed
     secret storage — porting the GTK port's Rust implementations or
     redoing them natively, per module.
-16. Media: Coil for images/blurhash placeholders, media viewer with
+16. ✅ _(27 Aug, v1: core media fetch to cache files, inline timeline
+    images, room avatars with the direct-member fallback; viewer,
+    video/voice, attachments and history viewers pending)_ Media: images/blurhash placeholders, media viewer with
     zoom-from-thumbnail, video/voice playback (ExoPlayer — no GStreamer on
     this variant), attachments dialog, media history viewers.
 17. The tail: spaces, explore/directory, invites and knocks, image packs,

@@ -133,6 +133,8 @@ struct RoomInner {
     is_direct: SharedObservable<bool>,
     /// The other user, if this room is a direct chat with one other user.
     direct_member_user_id: SharedObservable<Option<OwnedUserId>>,
+    /// The display name of the direct member, if it is known.
+    direct_member_display_name: SharedObservable<Option<String>>,
     /// Whether this room has been upgraded.
     is_tombstoned: SharedObservable<bool>,
     /// The ID of the room that was upgraded and that this one replaces.
@@ -214,6 +216,7 @@ impl Room {
             tag_order: SharedObservable::new(NO_TAG_ORDER),
             is_direct: SharedObservable::new(false),
             direct_member_user_id: SharedObservable::new(None),
+            direct_member_display_name: SharedObservable::new(None),
             is_tombstoned: SharedObservable::new(false),
             predecessor_id: std::sync::OnceLock::new(),
             successor_id: std::sync::OnceLock::new(),
@@ -515,6 +518,13 @@ impl Room {
     }
 
     /// The users currently typing in this room, our own user excluded.
+    /// The display name of the direct member, if this is a direct chat
+    /// and it is known.
+    #[must_use]
+    pub fn direct_member_display_name(&self) -> Option<String> {
+        self.inner.direct_member_display_name.get()
+    }
+
     #[must_use]
     pub fn typing_users(&self) -> Vec<OwnedUserId> {
         self.inner.typing.get()
@@ -641,12 +651,16 @@ impl RoomInner {
     /// Update the avatar of the room.
     ///
     /// The core hands out the MXC URI; turning it into pixels is the UI's
-    /// business, and the direct member's avatar fallback follows with the
-    /// member model.
+    /// business. When the room has no avatar of its own, the direct
+    /// member's avatar fills in — `update_direct_member` owns the
+    /// observable in that case, so it is left alone here.
     fn update_avatar(&self) {
         let avatar_url = self.matrix_room.avatar_url();
         self.has_avatar.set_if_not_eq(avatar_url.is_some());
-        self.avatar_url.set_if_not_eq(avatar_url);
+
+        if avatar_url.is_some() {
+            self.avatar_url.set_if_not_eq(avatar_url);
+        }
     }
 
     /// Update the topic of this room.
@@ -888,7 +902,35 @@ impl RoomInner {
     /// and there is only one other member.
     async fn update_direct_member(&self) {
         let direct_user_id = self.direct_user_id().await;
-        self.direct_member_user_id.set_if_not_eq(direct_user_id);
+        self.direct_member_user_id
+            .set_if_not_eq(direct_user_id.clone());
+
+        let Some(direct_user_id) = direct_user_id else {
+            self.direct_member_display_name.set_if_not_eq(None);
+            return;
+        };
+
+        // The one bit of member data the sidebar needs today: the person's
+        // name and picture. The full member model comes with its chunk.
+        let matrix_room = self.matrix_room.clone();
+        let handle =
+            spawn_tokio!(async move { matrix_room.get_member_no_sync(&direct_user_id).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(Some(member)) => {
+                self.direct_member_display_name
+                    .set_if_not_eq(member.display_name().map(ToOwned::to_owned));
+
+                if !self.has_avatar.get() {
+                    self.avatar_url
+                        .set_if_not_eq(member.avatar_url().map(ToOwned::to_owned));
+                }
+            }
+            Ok(None) => {}
+            Err(member_error) => {
+                error!("Could not get direct member: {member_error}");
+            }
+        }
     }
 
     /// Update the tombstone for this room.

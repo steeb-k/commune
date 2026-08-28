@@ -77,7 +77,7 @@ fun SidebarScreen(state: CommuneState) {
 
                 if (!isCollapsed) {
                     items(section.size, key = { section[it].roomId }) { index ->
-                        RoomRow(section[index]) { state.openRoom(section[index]) }
+                        RoomRow(state, section[index]) { state.openRoom(section[index]) }
                     }
                 }
             }
@@ -151,7 +151,7 @@ private fun SectionHeader(
 }
 
 @Composable
-private fun RoomRow(room: FfiRoom, onClick: () -> Unit) {
+private fun RoomRow(state: CommuneState, room: FfiRoom, onClick: () -> Unit) {
     val name = roomName(room)
 
     Row(
@@ -161,7 +161,7 @@ private fun RoomRow(room: FfiRoom, onClick: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        InitialsAvatar(identifier = room.roomId, name = name, size = 40.dp)
+        RoomAvatar(state, room, size = 40.dp)
         Spacer(Modifier.size(12.dp))
         Text(
             name,
