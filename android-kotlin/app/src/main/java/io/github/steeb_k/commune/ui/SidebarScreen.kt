@@ -164,7 +164,7 @@ private fun SidebarHeader(
 }
 
 /// Which dialog of the primary menu is open.
-private enum class MenuDialog { None, DirectChat, JoinRoom }
+private enum class MenuDialog { None, DirectChat, JoinRoom, NewRoom }
 
 /// The primary menu: New Direct Chat and Join Room, as the GTK menu
 /// leads; the rest of its entries arrive with their features.
@@ -187,6 +187,13 @@ private fun PrimaryMenu(state: CommuneState) {
             onClick = {
                 menuOpen = false
                 dialog = MenuDialog.DirectChat
+            },
+        )
+        DropdownMenuItem(
+            text = { Text("New Room") },
+            onClick = {
+                menuOpen = false
+                dialog = MenuDialog.NewRoom
             },
         )
         DropdownMenuItem(
@@ -214,6 +221,7 @@ private fun PrimaryMenu(state: CommuneState) {
             onConfirm = { input, done -> state.startDirectChat(input, done) },
             onDismiss = { dialog = MenuDialog.None },
         )
+        MenuDialog.NewRoom -> CreateRoomDialog(state, onDismiss = { dialog = MenuDialog.None })
         MenuDialog.JoinRoom -> ConversationDialog(
             state = state,
             title = "Join Room",
@@ -410,4 +418,86 @@ private fun RoomRowMenu(
             },
         )
     }
+}
+
+
+/// Name, optional topic, visibility, and encryption for private rooms —
+/// the GTK create dialog's essentials.
+@Composable
+private fun CreateRoomDialog(state: CommuneState, onDismiss: () -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var topic by remember { mutableStateOf("") }
+    var isPublic by remember { mutableStateOf(false) }
+    var encrypted by remember { mutableStateOf(false) }
+    var alias by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New Room") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name") },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = topic,
+                    onValueChange = { topic = it },
+                    label = { Text("Topic (optional)") },
+                    singleLine = true,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Switch(
+                        checked = isPublic,
+                        onCheckedChange = { isPublic = it },
+                    )
+                    Text("  Public room")
+                }
+                if (isPublic) {
+                    OutlinedTextField(
+                        value = alias,
+                        onValueChange = { alias = it },
+                        label = { Text("Address") },
+                        placeholder = { Text("my-room") },
+                        singleLine = true,
+                    )
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.Switch(
+                            checked = encrypted,
+                            onCheckedChange = { encrypted = it },
+                        )
+                        Text("  End-to-end encrypted")
+                    }
+                }
+                error?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                enabled = name.isNotBlank() && !busy,
+                onClick = {
+                    busy = true
+                    error = null
+                    state.createRoom(name, topic, isPublic, encrypted, alias) { failure ->
+                        busy = false
+                        if (failure == null) onDismiss() else error = failure
+                    }
+                },
+            ) { Text(if (busy) "Creating…" else "Create") }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }

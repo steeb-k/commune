@@ -59,6 +59,9 @@ fun SettingsScreen(state: CommuneState) {
             )
         }
 
+        SettingsGroup("Profile")
+        ProfileRows(state)
+
         SettingsGroup("Notifications")
         SettingSwitch(
             title = "Enable Notifications for This Account",
@@ -127,6 +130,139 @@ fun SettingsScreen(state: CommuneState) {
                 state.closeSettings()
             }) { Text("Verify") }
         }
+
+        SettingsGroup("Account")
+        LogoutRow(state)
+    }
+}
+
+/// Display name (tap to edit) and avatar.
+@Composable
+private fun ProfileRows(state: CommuneState) {
+    var editOpen by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) { state.loadProfile() }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Display Name", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                state.profileName ?: state.ownUserId.orEmpty(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(onClick = { editOpen = true }) { Text("Edit") }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Avatar", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                "Pick a new profile picture",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(onClick = { state.pickAvatar?.invoke() }) { Text("Change") }
+    }
+
+    if (editOpen) {
+        var name by remember { mutableStateOf(state.profileName.orEmpty()) }
+        var error by remember { mutableStateOf<String?>(null) }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { editOpen = false },
+            title = { Text("Display Name") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        singleLine = true,
+                    )
+                    error?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = name.isNotBlank(),
+                    onClick = {
+                        state.setDisplayName(name) { failure ->
+                            if (failure == null) editOpen = false else error = failure
+                        }
+                    },
+                ) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editOpen = false }) { Text("Cancel") }
+            },
+        )
+    }
+}
+
+/// Log out, behind a confirmation.
+@Composable
+private fun LogoutRow(state: CommuneState) {
+    var confirmOpen by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "Log Out",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error,
+            )
+            Text(
+                "End this session on this device",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(onClick = { confirmOpen = true }) {
+            Text("Log Out", color = MaterialTheme.colorScheme.error)
+        }
+    }
+
+    if (confirmOpen) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmOpen = false },
+            title = { Text("Log Out?") },
+            text = {
+                Text(
+                    "Make sure your recovery key is saved: without another " +
+                        "verified session, it is the only way back into your " +
+                        "encrypted messages."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmOpen = false
+                    state.logout()
+                }) { Text("Log Out", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmOpen = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 

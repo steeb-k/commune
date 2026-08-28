@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,7 +58,7 @@ fun MembersScreen(state: CommuneState, room: FfiRoom) {
             IconButton(onClick = { state.closeMembers() }) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
             }
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text("Members", style = MaterialTheme.typography.titleMedium)
                 Text(
                     roomName(room),
@@ -65,6 +66,16 @@ fun MembersScreen(state: CommuneState, room: FfiRoom) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                 )
+            }
+            var inviteOpen by remember { mutableStateOf(false) }
+            IconButton(onClick = { inviteOpen = true }) {
+                Icon(
+                    Icons.Filled.PersonAdd,
+                    contentDescription = "Invite a user",
+                )
+            }
+            if (inviteOpen) {
+                InviteDialog(state, onDismiss = { inviteOpen = false })
             }
         }
 
@@ -173,4 +184,51 @@ private fun MemberAvatar(state: CommuneState, member: FfiMember, size: androidx.
             modifier = Modifier.size(size).clip(CircleShape),
         )
     }
+}
+
+
+/// Ask for a user ID and send the invite.
+@Composable
+private fun InviteDialog(state: CommuneState, onDismiss: () -> Unit) {
+    var userId by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Invite a User") },
+        text = {
+            Column {
+                androidx.compose.material3.OutlinedTextField(
+                    value = userId,
+                    onValueChange = { userId = it },
+                    placeholder = { Text("@user:example.org") },
+                    singleLine = true,
+                )
+                error?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                enabled = userId.isNotBlank() && !busy,
+                onClick = {
+                    busy = true
+                    error = null
+                    state.inviteUser(userId.trim()) { failure ->
+                        busy = false
+                        if (failure == null) onDismiss() else error = failure
+                    }
+                },
+            ) { Text("Invite") }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }
