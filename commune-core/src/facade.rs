@@ -306,6 +306,17 @@ pub trait MemberListListener: Send + Sync {
     fn on_update(&self, members: Vec<FfiMember>);
 }
 
+/// The reply context of an event: what it replies to.
+#[derive(uniffi::Record)]
+pub struct FfiInReplyTo {
+    /// The ID of the replied-to event.
+    pub event_id: String,
+    /// The sender of the replied-to event, when its details are loaded.
+    pub sender: Option<String>,
+    /// The body of the replied-to event, when its details are loaded.
+    pub body: Option<String>,
+}
+
 /// One reaction key on an event, aggregated over its senders.
 #[derive(uniffi::Record)]
 pub struct FfiReaction {
@@ -318,6 +329,10 @@ pub struct FfiReaction {
 }
 
 /// A timeline item, as the message list needs it.
+///
+/// The event variant is big and the virtual variants are tiny; uniffi
+/// lowers enums by value either way, so boxing would only move the cost.
+#[allow(clippy::large_enum_variant)]
 #[derive(uniffi::Enum)]
 pub enum FfiTimelineItem {
     /// A message-like event.
@@ -330,6 +345,8 @@ pub enum FfiTimelineItem {
         thread_replies: u64,
         /// The reactions on the event.
         reactions: Vec<FfiReaction>,
+        /// The reply context of the event, if it is a reply.
+        in_reply_to: Option<FfiInReplyTo>,
         /// Whether the event was edited.
         is_edited: bool,
         /// The user that sent the event.
@@ -1110,6 +1127,49 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// Send a plain-text reply to the given event in the given room.
+    pub async fn send_reply(
+        &self,
+        room_id: String,
+        in_reply_to: String,
+        body: String,
+    ) -> Result<(), CoreError> {
+        self.with_room_event(room_id, in_reply_to, move |room, event_id| async move {
+            room.live_timeline().send_reply(event_id, body).await
+        })
+        .await
+        .map_err(|()| CoreError::Failed {
+            msg: "Could not send the reply".to_owned(),
+        })
+    }
+
+    /// Replace the given event's content with the given plain text.
+    pub async fn edit_message(
+        &self,
+        room_id: String,
+        event_id: String,
+        new_body: String,
+    ) -> Result<(), CoreError> {
+        self.with_room_event(room_id, event_id, move |room, event_id| async move {
+            room.live_timeline().edit(event_id, new_body).await
+        })
+        .await
+        .map_err(|()| CoreError::Failed {
+            msg: "Could not edit the message".to_owned(),
+        })
+    }
+
+    /// Redact the given event in the given room.
+    pub async fn redact_event(&self, room_id: String, event_id: String) -> Result<(), CoreError> {
+        self.with_room_event(room_id, event_id, move |room, event_id| async move {
+            room.live_timeline().redact(event_id).await
+        })
+        .await
+        .map_err(|()| CoreError::Failed {
+            msg: "Could not redact the event".to_owned(),
+        })
+    }
+
     /// Send the file at the given path as an attachment to the given room.
     pub async fn send_attachment(
         &self,
@@ -1151,6 +1211,33 @@ impl CoreApp {
 }
 
 impl CoreApp {
+    /// Run the given action with the room and parsed event ID, off the
+    /// runtime.
+    async fn with_room_event<F, Fut>(
+        &self,
+        room_id: String,
+        event_id: String,
+        action: F,
+    ) -> Result<(), ()>
+    where
+        F: FnOnce(crate::session::Room, ruma::OwnedEventId) -> Fut + Send + 'static,
+        Fut: std::future::Future<Output = Result<(), ()>> + Send,
+    {
+        let Some(session) = self.first_ready_session() else {
+            return Err(());
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| ())?;
+                let event_id = ruma::EventId::parse(&event_id).map_err(|_| ())?;
+                let room = session.room_list().get(&room_id).ok_or(())?;
+                action(room, event_id).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// The first session that is ready, if any.
     fn first_ready_session(&self) -> Option<Session> {
         self.session_list
@@ -1278,6 +1365,33 @@ fn watch_room(room: &Room, notify_tx: &mpsc::UnboundedSender<()>) {
 }
 
 /// Convert an SDK timeline item for the FFI.
+/// The reply context of the given content, if it is a reply.
+fn ffi_in_reply_to(content: &matrix_sdk_ui::timeline::TimelineItemContent) -> Option<FfiInReplyTo> {
+    use matrix_sdk_ui::timeline::{MsgLikeKind, TimelineDetails, TimelineItemContent};
+
+    let TimelineItemContent::MsgLike(msg_like) = content else {
+        return None;
+    };
+
+    msg_like.in_reply_to.as_ref().map(|details| {
+        let embedded = match &details.event {
+            TimelineDetails::Ready(embedded) => Some(embedded),
+            _ => None,
+        };
+        FfiInReplyTo {
+            event_id: details.event_id.to_string(),
+            sender: embedded.map(|event| event.sender.to_string()),
+            body: embedded.and_then(|event| match &event.content {
+                TimelineItemContent::MsgLike(reply_like) => match &reply_like.kind {
+                    MsgLikeKind::Message(message) => Some(message.msgtype().body().to_owned()),
+                    _ => None,
+                },
+                _ => None,
+            }),
+        }
+    })
+}
+
 fn ffi_timeline_item(
     item: &matrix_sdk_ui::timeline::TimelineItem,
     own_user_id: Option<&ruma::UserId>,
@@ -1359,11 +1473,14 @@ fn ffi_timeline_item(
                 event.content().is_edited()
             };
 
+            let in_reply_to = ffi_in_reply_to(event.content());
+
             FfiTimelineItem::Event {
                 unique_id: item.unique_id().0.clone(),
                 event_id: event.event_id().map(ToString::to_string),
                 thread_replies,
                 reactions,
+                in_reply_to,
                 is_edited,
                 sender: event.sender().to_string(),
                 sender_display_name,
