@@ -3,7 +3,9 @@
 // GTK sidebar's layout in Material clothes.
 package io.github.steeb_k.commune.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
@@ -47,6 +48,7 @@ import io.github.steeb_k.commune.CommuneState
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRoomCategory
 import io.github.steeb_k.commune.core.FfiRoomHighlight
+import io.github.steeb_k.commune.core.FfiTargetRoomCategory
 
 /// The sidebar's section order and titles, as the GTK app shows them.
 private val SECTIONS = listOf(
@@ -63,14 +65,38 @@ private val SECTIONS = listOf(
 @Composable
 fun SidebarScreen(state: CommuneState) {
     val collapsed = remember { mutableStateMapOf<FfiRoomCategory, Boolean>() }
+    var searchOpen by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        SidebarHeader(state)
+        SidebarHeader(
+            state,
+            searchOpen = searchOpen,
+            onToggleSearch = {
+                searchOpen = !searchOpen
+                if (!searchOpen) query = ""
+            },
+        )
+
+        if (searchOpen) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = { Text("Search rooms") },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             for ((category, title) in SECTIONS) {
                 val section = state.rooms
                     .filter { it.category == category }
+                    .filter {
+                        query.isBlank() || roomName(it).contains(query.trim(), ignoreCase = true)
+                    }
                     .sortedByDescending { it.latestActivity }
                 if (section.isEmpty()) continue
 
@@ -97,7 +123,11 @@ fun SidebarScreen(state: CommuneState) {
 /// Header bar: account avatar at the start, search and primary menu at the
 /// end (both placeholders until their features arrive).
 @Composable
-private fun SidebarHeader(state: CommuneState) {
+private fun SidebarHeader(
+    state: CommuneState,
+    searchOpen: Boolean,
+    onToggleSearch: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -110,15 +140,18 @@ private fun SidebarHeader(state: CommuneState) {
             InitialsAvatar(identifier = userId, name = localpart, size = 32.dp)
         }
         Spacer(Modifier.weight(1f))
-        HeaderIcon(Icons.Filled.Search)
+        IconButton(onClick = onToggleSearch) {
+            Icon(
+                Icons.Filled.Search,
+                contentDescription = "Search",
+                tint = if (searchOpen) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+            )
+        }
         PrimaryMenu(state)
-    }
-}
-
-@Composable
-private fun HeaderIcon(icon: ImageVector) {
-    IconButton(onClick = {}, enabled = false) {
-        Icon(icon, contentDescription = null)
     }
 }
 
@@ -259,14 +292,19 @@ private fun SectionHeader(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun RoomRow(state: CommuneState, room: FfiRoom, onClick: () -> Unit) {
     val name = roomName(room)
+    var menuOpen by remember { mutableStateOf(false) }
 
+    Box {
+        RoomRowMenu(state, room, menuOpen, onDismiss = { menuOpen = false })
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -294,5 +332,62 @@ private fun RoomRow(state: CommuneState, room: FfiRoom, onClick: () -> Unit) {
                     .background(MaterialTheme.colorScheme.primary)
             )
         }
+    }
+}
+
+
+/// The sidebar row's long-press menu: the category moves and mark-as-read,
+/// as the GTK sidebar's context menu offers them.
+@Composable
+private fun RoomRowMenu(
+    state: CommuneState,
+    room: FfiRoom,
+    open: Boolean,
+    onDismiss: () -> Unit,
+) {
+    DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
+        if (!room.isRead) {
+            DropdownMenuItem(
+                text = { Text("Mark as Read") },
+                onClick = {
+                    onDismiss()
+                    state.markRead(room.roomId)
+                },
+            )
+        }
+        if (room.category == FfiRoomCategory.NORMAL || room.category == FfiRoomCategory.LOW_PRIORITY) {
+            DropdownMenuItem(
+                text = { Text("Move to Favorites") },
+                onClick = {
+                    onDismiss()
+                    state.changeRoomCategory(room.roomId, FfiTargetRoomCategory.FAVORITE)
+                },
+            )
+        }
+        if (room.category == FfiRoomCategory.FAVORITE || room.category == FfiRoomCategory.LOW_PRIORITY) {
+            DropdownMenuItem(
+                text = { Text("Move to Rooms") },
+                onClick = {
+                    onDismiss()
+                    state.changeRoomCategory(room.roomId, FfiTargetRoomCategory.NORMAL)
+                },
+            )
+        }
+        if (room.category == FfiRoomCategory.NORMAL || room.category == FfiRoomCategory.FAVORITE) {
+            DropdownMenuItem(
+                text = { Text("Move to Low Priority") },
+                onClick = {
+                    onDismiss()
+                    state.changeRoomCategory(room.roomId, FfiTargetRoomCategory.LOW_PRIORITY)
+                },
+            )
+        }
+        DropdownMenuItem(
+            text = { Text("Leave Room") },
+            onClick = {
+                onDismiss()
+                state.changeRoomCategory(room.roomId, FfiTargetRoomCategory.LEFT)
+            },
+        )
     }
 }
