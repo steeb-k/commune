@@ -19,6 +19,7 @@ import io.github.steeb_k.commune.core.FfiMember
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRecoveryState
 import io.github.steeb_k.commune.core.FfiSasEmoji
+import io.github.steeb_k.commune.core.FfiPublicRoom
 import io.github.steeb_k.commune.core.FfiRoomCategory
 import io.github.steeb_k.commune.core.FfiSearchResult
 import io.github.steeb_k.commune.core.FfiSessionSettings
@@ -501,6 +502,78 @@ class CommuneState(context: Context) {
                 main.post {
                     if (path != null) historyMedia[eventId] = path
                     onDone?.invoke(path)
+                }
+            }
+        }
+    }
+
+    // The public room directory — the GTK Explore page.
+    var exploreOpen by mutableStateOf(false)
+        private set
+    var exploreRooms by mutableStateOf<List<FfiPublicRoom>>(emptyList())
+        private set
+    var exploreBusy by mutableStateOf(false)
+        private set
+    private var exploreQuery: String? = null
+    private var exploreNextBatch: String? = null
+    private var exploreDone = false
+
+    fun openExplore() {
+        exploreOpen = true
+        searchExplore(null)
+    }
+
+    fun closeExplore() {
+        exploreOpen = false
+        exploreRooms = emptyList()
+    }
+
+    fun searchExplore(query: String?) {
+        exploreQuery = query?.takeIf { it.isNotBlank() }
+        exploreRooms = emptyList()
+        exploreNextBatch = null
+        exploreDone = false
+        loadMoreExplore()
+    }
+
+    fun loadMoreExplore() {
+        if (exploreBusy || exploreDone) return
+        val query = exploreQuery
+        exploreBusy = true
+        thread {
+            runBlocking {
+                val page = try {
+                    app.exploreRooms(query, exploreNextBatch)
+                } catch (_: Exception) {
+                    null
+                }
+                main.post {
+                    if (exploreOpen && query == exploreQuery) {
+                        if (page != null) {
+                            exploreRooms = exploreRooms + page.rooms
+                            exploreNextBatch = page.nextBatch
+                            exploreDone = page.nextBatch == null
+                        }
+                        exploreBusy = false
+                    }
+                }
+            }
+        }
+    }
+
+    /// Join a room from the directory, flipping its row when the server
+    /// confirms.
+    fun joinExploreRoom(room: FfiPublicRoom) {
+        thread {
+            runBlocking {
+                try {
+                    app.joinRoom(room.roomId)
+                    main.post {
+                        exploreRooms = exploreRooms.map {
+                            if (it.roomId == room.roomId) it.copy(isJoined = true) else it
+                        }
+                    }
+                } catch (_: Exception) {
                 }
             }
         }

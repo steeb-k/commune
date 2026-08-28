@@ -795,6 +795,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_enable_recovery(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_explore_rooms(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_fetch_gif_preview(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_avatar(
@@ -949,6 +951,8 @@ external fun uniffi_commune_core_fn_method_coreapp_create_direct_chat(`ptr`: Lon
 external fun uniffi_commune_core_fn_method_coreapp_edit_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`newBody`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_enable_recovery(`ptr`: Long,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_explore_rooms(`ptr`: Long,`search`: RustBuffer.ByValue,`since`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_fetch_gif_preview(`ptr`: Long,`url`: RustBuffer.ByValue,
 ): Long
@@ -1241,6 +1245,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_enable_recovery() != 5558.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_explore_rooms() != 15182.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_fetch_gif_preview() != 17739.toShort()) {
@@ -1955,6 +1962,12 @@ public interface CoreAppInterface {
     suspend fun `enableRecovery`(): kotlin.String
     
     /**
+     * One page of the public room directory, optionally filtered by a
+     * search term, continuing from `since` when given.
+     */
+    suspend fun `exploreRooms`(`search`: kotlin.String?, `since`: kotlin.String?): FfiPublicRoomPage
+    
+    /**
      * Download the preview of a GIF, so the picker can present it.
      *
      * Downloading through the core keeps one HTTP stack, one TLS
@@ -2556,6 +2569,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * One page of the public room directory, optionally filtered by a
+     * search term, continuing from `since` when given.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `exploreRooms`(`search`: kotlin.String?, `since`: kotlin.String?) : FfiPublicRoomPage {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_explore_rooms(
+                uniffiHandle,
+                FfiConverterOptionalString.lower(`search`),FfiConverterOptionalString.lower(`since`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiPublicRoomPage.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -5774,6 +5812,132 @@ public object FfiConverterTypeFfiMember: FfiConverterRustBuffer<FfiMember> {
 
 
 /**
+ * One room of the public directory.
+ */
+data class FfiPublicRoom (
+    /**
+     * The ID of the room.
+     */
+    var `roomId`: kotlin.String
+    , 
+    /**
+     * The public name of the room, when it has one.
+     */
+    var `name`: kotlin.String?
+    , 
+    /**
+     * The topic of the room, when it has one.
+     */
+    var `topic`: kotlin.String?
+    , 
+    /**
+     * The canonical alias of the room, when it has one.
+     */
+    var `alias`: kotlin.String?
+    , 
+    /**
+     * How many members the room has.
+     */
+    var `joinedMembers`: kotlin.ULong
+    , 
+    /**
+     * Whether this session is already in the room.
+     */
+    var `isJoined`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiPublicRoom: FfiConverterRustBuffer<FfiPublicRoom> {
+    override fun read(buf: ByteBuffer): FfiPublicRoom {
+        return FfiPublicRoom(
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiPublicRoom) = (
+            FfiConverterString.allocationSize(value.`roomId`) +
+            FfiConverterOptionalString.allocationSize(value.`name`) +
+            FfiConverterOptionalString.allocationSize(value.`topic`) +
+            FfiConverterOptionalString.allocationSize(value.`alias`) +
+            FfiConverterULong.allocationSize(value.`joinedMembers`) +
+            FfiConverterBoolean.allocationSize(value.`isJoined`)
+    )
+
+    override fun write(value: FfiPublicRoom, buf: ByteBuffer) {
+            FfiConverterString.write(value.`roomId`, buf)
+            FfiConverterOptionalString.write(value.`name`, buf)
+            FfiConverterOptionalString.write(value.`topic`, buf)
+            FfiConverterOptionalString.write(value.`alias`, buf)
+            FfiConverterULong.write(value.`joinedMembers`, buf)
+            FfiConverterBoolean.write(value.`isJoined`, buf)
+    }
+}
+
+
+
+/**
+ * One page of the public directory.
+ */
+data class FfiPublicRoomPage (
+    /**
+     * The rooms of this page.
+     */
+    var `rooms`: List<FfiPublicRoom>
+    , 
+    /**
+     * The token to request the next page with, absent at the end.
+     */
+    var `nextBatch`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiPublicRoomPage: FfiConverterRustBuffer<FfiPublicRoomPage> {
+    override fun read(buf: ByteBuffer): FfiPublicRoomPage {
+        return FfiPublicRoomPage(
+            FfiConverterSequenceTypeFfiPublicRoom.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiPublicRoomPage) = (
+            FfiConverterSequenceTypeFfiPublicRoom.allocationSize(value.`rooms`) +
+            FfiConverterOptionalString.allocationSize(value.`nextBatch`)
+    )
+
+    override fun write(value: FfiPublicRoomPage, buf: ByteBuffer) {
+            FfiConverterSequenceTypeFfiPublicRoom.write(value.`rooms`, buf)
+            FfiConverterOptionalString.write(value.`nextBatch`, buf)
+    }
+}
+
+
+
+/**
  * One reaction key on an event, aggregated over its senders.
  */
 data class FfiReaction (
@@ -7795,6 +7959,34 @@ public object FfiConverterSequenceTypeFfiMember: FfiConverterRustBuffer<List<Ffi
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiMember.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiPublicRoom: FfiConverterRustBuffer<List<FfiPublicRoom>> {
+    override fun read(buf: ByteBuffer): List<FfiPublicRoom> {
+        val len = buf.getInt()
+        return List<FfiPublicRoom>(len) {
+            FfiConverterTypeFfiPublicRoom.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiPublicRoom>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiPublicRoom.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiPublicRoom>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiPublicRoom.write(it, buf)
         }
     }
 }
