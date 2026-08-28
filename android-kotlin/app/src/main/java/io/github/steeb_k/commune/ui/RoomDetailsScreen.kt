@@ -12,8 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
+import io.github.steeb_k.commune.core.FfiHistoryKind
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -83,6 +87,24 @@ fun RoomDetailsScreen(state: CommuneState, room: FfiRoom) {
             title = "Members",
             value = room.joinedMembersCount.toString(),
             onClick = { state.openMembers() },
+        )
+        DetailsRow(
+            icon = { Icon(Icons.Filled.Image, contentDescription = null) },
+            title = "Media",
+            value = "",
+            onClick = { state.openHistory(FfiHistoryKind.MEDIA) },
+        )
+        DetailsRow(
+            icon = { Icon(Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = null) },
+            title = "Files",
+            value = "",
+            onClick = { state.openHistory(FfiHistoryKind.FILE) },
+        )
+        DetailsRow(
+            icon = { Icon(Icons.Filled.MusicNote, contentDescription = null) },
+            title = "Audio",
+            value = "",
+            onClick = { state.openHistory(FfiHistoryKind.AUDIO) },
         )
     }
 }

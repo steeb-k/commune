@@ -799,6 +799,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_avatar(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_get_history_media(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_timeline_media(
@@ -824,6 +826,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_request_verification(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_restore_sessions(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_room_media_history(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_room_members(
     ): Short
@@ -950,6 +954,8 @@ external fun uniffi_commune_core_fn_method_coreapp_fetch_gif_preview(`ptr`: Long
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_avatar(`ptr`: Long,`mxcUri`: RustBuffer.ByValue,`size`: Int,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_get_history_media(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,`size`: Int,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_timeline_media(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,
@@ -975,6 +981,8 @@ external fun uniffi_commune_core_fn_method_coreapp_redact_event(`ptr`: Long,`roo
 external fun uniffi_commune_core_fn_method_coreapp_request_verification(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_room_media_history(`ptr`: Long,`roomId`: RustBuffer.ByValue,`from`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_room_members(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
@@ -1241,6 +1249,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_avatar() != 49706.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_get_history_media() != 7757.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_room_avatar() != 19575.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1278,6 +1289,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_restore_sessions() != 15459.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_room_media_history() != 24819.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_room_members() != 65362.toShort()) {
@@ -1955,6 +1969,11 @@ public interface CoreAppInterface {
     suspend fun `getAvatar`(`mxcUri`: kotlin.String, `size`: kotlin.UInt): kotlin.String?
     
     /**
+     * Fetch the media of a history event into a file, returning its path.
+     */
+    suspend fun `getHistoryMedia`(`roomId`: kotlin.String, `eventId`: kotlin.String): kotlin.String?
+    
+    /**
      * Fetch the avatar of the given room into a file, returning its path.
      */
     suspend fun `getRoomAvatar`(`roomId`: kotlin.String, `size`: kotlin.UInt): kotlin.String?
@@ -2029,6 +2048,17 @@ public interface CoreAppInterface {
      * Restore the sessions stored on this device.
      */
     suspend fun `restoreSessions`()
+    
+    /**
+     * One page of the room's media history, walking backward from
+     * `from`, or from the end of the room when it is `None`.
+     *
+     * This is the application's history viewer pagination: `/messages`
+     * filtered to message events — with a URL filter where the server can
+     * see the content, without one in encrypted rooms — then classified
+     * by message type on our side.
+     */
+    suspend fun `roomMediaHistory`(`roomId`: kotlin.String, `from`: kotlin.String?): FfiHistoryPage
     
     /**
      * A snapshot of the given room's members, loading the list on first
@@ -2584,6 +2614,29 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Fetch the media of a history event into a file, returning its path.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getHistoryMedia`(`roomId`: kotlin.String, `eventId`: kotlin.String) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_get_history_media(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
      * Fetch the avatar of the given room into a file, returning its path.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -2886,6 +2939,36 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * One page of the room's media history, walking backward from
+     * `from`, or from the end of the room when it is `None`.
+     *
+     * This is the application's history viewer pagination: `/messages`
+     * filtered to message events — with a URL filter where the server can
+     * see the content, without one in encrypted rooms — then classified
+     * by message type on our side.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `roomMediaHistory`(`roomId`: kotlin.String, `from`: kotlin.String?) : FfiHistoryPage {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_room_media_history(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterOptionalString.lower(`from`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiHistoryPage.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
     )
     }
 
@@ -5406,6 +5489,149 @@ public object FfiConverterTypeFfiGifPage: FfiConverterRustBuffer<FfiGifPage> {
 
 
 /**
+ * One event of the media history.
+ */
+data class FfiHistoryEvent (
+    /**
+     * The ID of the event.
+     */
+    var `eventId`: kotlin.String
+    , 
+    /**
+     * The user that sent it.
+     */
+    var `sender`: kotlin.String
+    , 
+    /**
+     * When it was sent, in milliseconds since the epoch.
+     */
+    var `timestamp`: kotlin.ULong
+    , 
+    /**
+     * The page it belongs on.
+     */
+    var `kind`: FfiHistoryKind
+    , 
+    /**
+     * The filename, or the body when no filename travelled.
+     */
+    var `body`: kotlin.String
+    , 
+    /**
+     * The MIME type, when the sender declared one.
+     */
+    var `mimeType`: kotlin.String?
+    , 
+    /**
+     * The size in bytes, when the sender declared one.
+     */
+    var `size`: kotlin.ULong?
+    , 
+    /**
+     * Whether a Media event is a video rather than an image.
+     */
+    var `isVideo`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiHistoryEvent: FfiConverterRustBuffer<FfiHistoryEvent> {
+    override fun read(buf: ByteBuffer): FfiHistoryEvent {
+        return FfiHistoryEvent(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterTypeFfiHistoryKind.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiHistoryEvent) = (
+            FfiConverterString.allocationSize(value.`eventId`) +
+            FfiConverterString.allocationSize(value.`sender`) +
+            FfiConverterULong.allocationSize(value.`timestamp`) +
+            FfiConverterTypeFfiHistoryKind.allocationSize(value.`kind`) +
+            FfiConverterString.allocationSize(value.`body`) +
+            FfiConverterOptionalString.allocationSize(value.`mimeType`) +
+            FfiConverterOptionalULong.allocationSize(value.`size`) +
+            FfiConverterBoolean.allocationSize(value.`isVideo`)
+    )
+
+    override fun write(value: FfiHistoryEvent, buf: ByteBuffer) {
+            FfiConverterString.write(value.`eventId`, buf)
+            FfiConverterString.write(value.`sender`, buf)
+            FfiConverterULong.write(value.`timestamp`, buf)
+            FfiConverterTypeFfiHistoryKind.write(value.`kind`, buf)
+            FfiConverterString.write(value.`body`, buf)
+            FfiConverterOptionalString.write(value.`mimeType`, buf)
+            FfiConverterOptionalULong.write(value.`size`, buf)
+            FfiConverterBoolean.write(value.`isVideo`, buf)
+    }
+}
+
+
+
+/**
+ * One page of the media history.
+ */
+data class FfiHistoryPage (
+    /**
+     * The media events of this page, newest first.
+     */
+    var `events`: List<FfiHistoryEvent>
+    , 
+    /**
+     * The token to request the next page with, absent at the start of
+     * the room.
+     */
+    var `nextToken`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiHistoryPage: FfiConverterRustBuffer<FfiHistoryPage> {
+    override fun read(buf: ByteBuffer): FfiHistoryPage {
+        return FfiHistoryPage(
+            FfiConverterSequenceTypeFfiHistoryEvent.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiHistoryPage) = (
+            FfiConverterSequenceTypeFfiHistoryEvent.allocationSize(value.`events`) +
+            FfiConverterOptionalString.allocationSize(value.`nextToken`)
+    )
+
+    override fun write(value: FfiHistoryPage, buf: ByteBuffer) {
+            FfiConverterSequenceTypeFfiHistoryEvent.write(value.`events`, buf)
+            FfiConverterOptionalString.write(value.`nextToken`, buf)
+    }
+}
+
+
+
+/**
  * The reply context of an event: what it replies to.
  */
 data class FfiInReplyTo (
@@ -6282,6 +6508,53 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * What kind of history page an event belongs on.
+ */
+
+enum class FfiHistoryKind {
+    
+    /**
+     * An image or a video, for the media grid.
+     */
+    MEDIA,
+    /**
+     * A generic file.
+     */
+    FILE,
+    /**
+     * An audio file.
+     */
+    AUDIO;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiHistoryKind: FfiConverterRustBuffer<FfiHistoryKind> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiHistoryKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiHistoryKind) = 4UL
+
+    override fun write(value: FfiHistoryKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 
@@ -7292,6 +7565,38 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
 /**
  * @suppress
  */
+public object FfiConverterOptionalULong: FfiConverterRustBuffer<kotlin.ULong?> {
+    override fun read(buf: ByteBuffer): kotlin.ULong? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterULong.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.ULong?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterULong.allocationSize(value)
+        }
+    }
+
+    override fun write(value: kotlin.ULong?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterULong.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?> {
     override fun read(buf: ByteBuffer): kotlin.String? {
         if (buf.get().toInt() == 0) {
@@ -7434,6 +7739,34 @@ public object FfiConverterSequenceTypeFfiGif: FfiConverterRustBuffer<List<FfiGif
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiGif.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiHistoryEvent: FfiConverterRustBuffer<List<FfiHistoryEvent>> {
+    override fun read(buf: ByteBuffer): List<FfiHistoryEvent> {
+        val len = buf.getInt()
+        return List<FfiHistoryEvent>(len) {
+            FfiConverterTypeFfiHistoryEvent.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiHistoryEvent>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiHistoryEvent.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiHistoryEvent>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiHistoryEvent.write(it, buf)
         }
     }
 }
