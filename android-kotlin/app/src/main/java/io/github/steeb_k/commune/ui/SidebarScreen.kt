@@ -90,6 +90,12 @@ fun SidebarScreen(state: CommuneState) {
             )
         }
 
+        if (state.rooms.isEmpty()) {
+            // The first sync is still on its way; never a blank list.
+            LoadingFace(modifier = Modifier.fillMaxSize())
+            return@Column
+        }
+
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             for ((category, title) in SECTIONS) {
                 val section = state.rooms

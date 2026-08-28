@@ -81,13 +81,17 @@ private val DATE = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
 fun RoomScreen(state: CommuneState, room: FfiRoom) {
     Column(modifier = Modifier.fillMaxSize().imePadding()) {
         RoomHeader(state, room, onBack = { state.closeRoom() })
-        Timeline(
-            state,
-            room,
-            items = state.timeline,
-            modifier = Modifier.weight(1f),
-            onOpenThread = { state.openThread(it) },
-        )
+        if (state.timelineLoading && state.timeline.isEmpty()) {
+            LoadingFace(modifier = Modifier.weight(1f))
+        } else {
+            Timeline(
+                state,
+                room,
+                items = state.timeline,
+                modifier = Modifier.weight(1f),
+                onOpenThread = { state.openThread(it) },
+            )
+        }
         TypingLine(state.typingUsers)
         if (room.category == FfiRoomCategory.INVITED) {
             InviteBanner(state)
@@ -244,6 +248,7 @@ private fun SheetAction(label: String, destructive: Boolean = false, onClick: ()
             .padding(horizontal = 24.dp, vertical = 14.dp),
     )
 }
+
 
 /// "bob is typing…" — the slide-up typing row, minimally.
 @Composable

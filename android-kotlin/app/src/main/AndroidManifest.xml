@@ -10,7 +10,7 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="Commune"
-        android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+        android:theme="@style/Theme.Commune.Starting"
         android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
