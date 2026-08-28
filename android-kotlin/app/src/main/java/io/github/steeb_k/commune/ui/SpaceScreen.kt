@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,12 +49,7 @@ fun SpaceScreen(state: CommuneState, space: FfiRoom) {
         }
 
         when {
-            state.spaceLoading -> Row(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+            state.spaceLoading -> LoadingFace(modifier = Modifier.fillMaxSize())
 
             state.spaceChildren.isEmpty() -> Text(
                 "This space has no rooms",

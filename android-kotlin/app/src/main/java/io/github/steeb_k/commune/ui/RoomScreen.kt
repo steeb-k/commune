@@ -101,12 +101,16 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
                 onSend = { state.sendFromComposer(it) },
                 onTyping = { state.setTyping(it) },
                 onAttach = state.pickAttachment,
+                onGif = { state.openGifPicker() },
                 members = state.composerMembers,
             )
         }
     }
 
     EventActionSheet(state)
+    if (state.gifPickerOpen) {
+        GifPickerSheet(state)
+    }
 }
 
 /// Accept or decline, where the composer would be — an invite is a
@@ -719,6 +723,7 @@ internal fun Composer(
     onSend: (String) -> Unit,
     onTyping: (Boolean) -> Unit,
     onAttach: (() -> Unit)? = null,
+    onGif: (() -> Unit)? = null,
     members: List<io.github.steeb_k.commune.core.FfiMember> = emptyList(),
 ) {
     var draft by remember {
@@ -771,12 +776,14 @@ internal fun Composer(
                 contentDescription = "Attach",
             )
         }
-        IconButton(onClick = {}, enabled = false) {
+        // Emoji come from the keyboard on Android; the picker button is the
+        // sticker/GIF one, as in the GTK message toolbar.
+        IconButton(onClick = { onGif?.invoke() }, enabled = onGif != null) {
             Icon(
                 androidx.compose.ui.res.painterResource(
-                    io.github.steeb_k.commune.R.drawable.ic_emoji_symbolic
+                    io.github.steeb_k.commune.R.drawable.ic_sticker_symbolic
                 ),
-                contentDescription = "Emoji",
+                contentDescription = "GIFs",
             )
         }
         OutlinedTextField(

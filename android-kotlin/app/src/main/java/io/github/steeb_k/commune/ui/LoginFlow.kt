@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -202,7 +201,7 @@ private fun PasswordPage(state: CommuneState, homeserver: String) {
 
         Spacer(Modifier.height(24.dp))
         if (state.loginBusy) {
-            CircularProgressIndicator(modifier = Modifier.size(32.dp))
+            LoadingRing(modifier = Modifier.size(56.dp))
         } else {
             Button(
                 onClick = { state.login(homeserver, username, password) },

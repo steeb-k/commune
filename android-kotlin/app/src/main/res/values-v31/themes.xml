@@ -3,5 +3,8 @@
     <style name="Theme.Commune.Starting" parent="android:Theme.DeviceDefault.NoActionBar">
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_symbolic</item>
         <item name="android:windowSplashScreenBackground">#F7F9FC</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 </resources>

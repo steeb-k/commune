@@ -483,6 +483,53 @@ impl Timeline {
             }
         }
     }
+
+    /// Send already-downloaded image bytes as an attachment, with their
+    /// dimensions.
+    ///
+    /// This is the GIF picker's path: the file exists only as a download from
+    /// the GIF service, so there is no path to hand over, and the dimensions
+    /// are known from the API rather than read from the file.
+    pub async fn send_image_bytes(
+        &self,
+        bytes: Vec<u8>,
+        filename: String,
+        mime: mime::Mime,
+        width: u32,
+        height: u32,
+    ) -> Result<(), ()> {
+        use matrix_sdk::attachment::{AttachmentInfo, BaseImageInfo};
+        use matrix_sdk_ui::timeline::{AttachmentConfig, AttachmentSource};
+
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return Err(());
+        };
+
+        let config = AttachmentConfig {
+            info: Some(AttachmentInfo::Image(BaseImageInfo {
+                width: Some(width.into()),
+                height: Some(height.into()),
+                size: bytes.len().try_into().ok(),
+                ..Default::default()
+            })),
+            ..Default::default()
+        };
+
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .send_attachment(AttachmentSource::Data { bytes, filename }, mime, config)
+                .use_send_queue()
+                .await
+        });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(()) => Ok(()),
+            Err(send_error) => {
+                error!("Could not send image: {send_error}");
+                Err(())
+            }
+        }
+    }
 }
 
 /// Build the SDK timeline for the given room, with the application's
