@@ -191,7 +191,7 @@ demonstrable. Order matters only within a track; the two tracks interleave.
    `session_list/` (multi-account discovery and ordering).
 3. ✅ _(27 Aug)_ Sync: the sync loop with backoff and offline detection out of
    `session/mod.rs`; session-change/token watching; a headless `Session`.
-4. Rooms: `Room` minus GObject (43 properties → fields + watch), category
+4. ✅ _(27 Aug, v1)_ Rooms: `Room` minus GObject (43 properties → fields + watch), category
    and sidebar sectioning rules as pure functions over room state.
 5. Timeline: `matrix_sdk_ui::Timeline` orchestration with `VectorDiff`
    passthrough; the diff minimizer gets a generic sink trait instead of the

@@ -17,16 +17,17 @@
 //!   calls whenever the platform reports a connectivity change (GTK from
 //!   `NetworkMonitor`, Android from `ConnectivityManager`).
 //!
-//! The subsystems the application hangs off its session — room list,
-//! verification, notifications, presence, image packs, account data, calls —
-//! arrive with their own extraction chunks. Until the room list lands, the
-//! sync loop's room updates buffer in the channel behind
-//! [`Session::take_room_updates()`].
+//! The subsystems the application hangs off its session — verification,
+//! notifications, presence, image packs, account data, calls — arrive with
+//! their own extraction chunks. The room list is here: `prepare()` loads it
+//! and feeds it the sync loop's room updates.
 //!
 //! Every async method here must run inside the core's tokio runtime (the
 //! sync loop sleeps and dials sockets). `SessionList` already does; the FFI
 //! facade will wrap calls in `RUNTIME.spawn`.
 
+mod room;
+mod room_list;
 mod sidebar;
 
 use std::{
@@ -59,7 +60,11 @@ use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, info};
 use url::Url;
 
-pub use self::sidebar::SidebarSectionName;
+pub use self::{
+    room::{Room, RoomCategory, RoomDisplayName, RoomHighlight, TargetRoomCategory},
+    room_list::{RoomList, RoomMetainfo},
+    sidebar::SidebarSectionName,
+};
 use crate::{
     RUNTIME,
     matrix::{self, ClientSetupError},
@@ -113,6 +118,21 @@ pub struct Session {
     inner: Arc<SessionInner>,
 }
 
+/// A weak reference to a [`Session`].
+///
+/// What everything owned by the session holds, so that dropping the session
+/// actually drops it.
+#[derive(Debug, Clone)]
+pub struct WeakSession(std::sync::Weak<SessionInner>);
+
+impl WeakSession {
+    /// The session, if it is still alive.
+    #[must_use]
+    pub fn upgrade(&self) -> Option<Session> {
+        self.0.upgrade().map(|inner| Session { inner })
+    }
+}
+
 #[derive(Debug)]
 struct SessionInner {
     /// The stored session this was restored from.
@@ -145,6 +165,10 @@ struct SessionInner {
     room_updates_tx: mpsc::UnboundedSender<RoomUpdates>,
     /// The receiving end, until the room list takes it.
     room_updates_rx: Mutex<Option<mpsc::UnboundedReceiver<RoomUpdates>>>,
+    /// The room list of this session.
+    room_list: std::sync::OnceLock<RoomList>,
+    /// The task feeding the room list from the sync loop.
+    room_updates_handle: Mutex<Option<AbortHandle>>,
 }
 
 impl Drop for SessionInner {
@@ -153,6 +177,7 @@ impl Drop for SessionInner {
             &mut self.sync_handle,
             &mut self.session_changes_handle,
             &mut self.reachability_retry_handle,
+            &mut self.room_updates_handle,
         ] {
             if let Ok(Some(handle)) = slot.get_mut().map(Option::take) {
                 handle.abort();
@@ -209,6 +234,8 @@ impl Session {
             reachability_lock: tokio::sync::Mutex::new(()),
             room_updates_tx,
             room_updates_rx: Mutex::new(Some(room_updates_rx)),
+            room_list: std::sync::OnceLock::new(),
+            room_updates_handle: Mutex::new(None),
         });
 
         Ok(Self { inner })
@@ -243,8 +270,11 @@ impl Session {
         SessionInner::watch_session_changes(inner);
         SessionInner::update_homeserver_reachable(inner).await;
 
-        // The room list load and the verification, calls and security
-        // subsystems attach here once their chunks are extracted.
+        self.room_list().load().await;
+        self.consume_room_updates();
+
+        // The verification, calls and security subsystems attach here once
+        // their chunks are extracted.
 
         let client = self.client();
         spawn_tokio!(async move {
@@ -354,16 +384,49 @@ impl Session {
         self.inner.profile.subscribe()
     }
 
-    /// Take the stream of room updates from the sync loop.
-    ///
-    /// The room list consumes this; it can be taken once.
+    /// A weak reference to this session.
     #[must_use]
-    pub fn take_room_updates(&self) -> Option<mpsc::UnboundedReceiver<RoomUpdates>> {
+    pub fn downgrade(&self) -> WeakSession {
+        WeakSession(Arc::downgrade(&self.inner))
+    }
+
+    /// The room list of this session.
+    #[must_use]
+    pub fn room_list(&self) -> &RoomList {
         self.inner
+            .room_list
+            .get_or_init(|| RoomList::new(self.downgrade()))
+    }
+
+    /// Feed the room list from the sync loop's room updates.
+    fn consume_room_updates(&self) {
+        let Some(mut receiver) = self
+            .inner
             .room_updates_rx
             .lock()
             .expect("mutex is not poisoned")
             .take()
+        else {
+            return;
+        };
+
+        let weak = self.downgrade();
+        let handle = RUNTIME
+            .spawn(async move {
+                while let Some(updates) = receiver.recv().await {
+                    let Some(session) = weak.upgrade() else {
+                        break;
+                    };
+                    session.room_list().handle_room_updates(updates);
+                }
+            })
+            .abort_handle();
+
+        *self
+            .inner
+            .room_updates_handle
+            .lock()
+            .expect("mutex is not poisoned") = Some(handle);
     }
 
     /// Tell the session that the platform's network connectivity changed.
@@ -645,9 +708,7 @@ impl SessionInner {
                 // Make sure that the event cache is subscribed to sync responses to benefit
                 // from it.
                 if let Err(subscribe_error) = client.event_cache().subscribe() {
-                    error!(
-                        "Could not subscribe event cache to sync responses: {subscribe_error}"
-                    );
+                    error!("Could not subscribe event cache to sync responses: {subscribe_error}");
                 }
 
                 // TODO: only create the filter once and reuse it in the future
@@ -721,7 +782,10 @@ impl SessionInner {
                         .store(missed_sync_count + 1, Ordering::Relaxed);
                 }
 
-                error!(session = self.info.id, "Could not perform sync: {sync_error}");
+                error!(
+                    session = self.info.id,
+                    "Could not perform sync: {sync_error}"
+                );
 
                 // Sleep a little between attempts.
                 let delay = MISSED_SYNC_DELAYS[missed_sync_count];
@@ -772,7 +836,8 @@ impl SessionInner {
             .client
             .account()
             .fetch_user_profile()
-            .await.and_then(|response| {
+            .await
+            .and_then(|response| {
                 let mut profile = UserProfile::new();
                 profile.displayname = response.get_static::<DisplayName>()?;
                 profile.avatar_url = response.get_static::<AvatarUrl>()?;
@@ -852,7 +917,10 @@ impl SessionInner {
 
         // The notification withdrawal attaches here with its chunk.
 
-        debug!(session = self.info.id, "The logged out session was cleaned up");
+        debug!(
+            session = self.info.id,
+            "The logged out session was cleaned up"
+        );
     }
 }
 

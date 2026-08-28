@@ -18,12 +18,12 @@ use tracing::{error, info};
 use crate::{
     RUNTIME, UserFacingError,
     matrix::ClientSetupError,
+    paths::DataType,
     secret::{Secret, SecretExt, StoredSession},
     session::{Session, SessionState},
     settings::SessionListSettings,
     spawn_tokio,
     utils::LoadingState,
-    paths::DataType,
 };
 
 /// A session in the list, at whatever stage of restoration it has reached.
@@ -128,13 +128,20 @@ impl SessionList {
     /// The error message, if the state is [`LoadingState::Error`].
     #[must_use]
     pub fn error(&self) -> Option<String> {
-        self.inner.error.lock().expect("mutex is not poisoned").clone()
+        self.inner
+            .error
+            .lock()
+            .expect("mutex is not poisoned")
+            .clone()
     }
 
     /// The current entries, and a stream of the changes that follow them.
     pub fn subscribe_entries(
         &self,
-    ) -> (Vector<SessionEntry>, impl Stream<Item = VectorDiff<SessionEntry>> + use<>) {
+    ) -> (
+        Vector<SessionEntry>,
+        impl Stream<Item = VectorDiff<SessionEntry>> + use<>,
+    ) {
         let entries = self.inner.entries.lock().expect("mutex is not poisoned");
         let subscriber = entries.subscribe();
         (entries.clone(), subscriber.into_stream())
@@ -400,8 +407,14 @@ mod tests {
         let (initial, mut stream) = list.subscribe_entries();
         assert!(initial.is_empty());
 
-        assert_eq!(list.insert(SessionEntry::Loading(stored_session("aaaaaaaa"))), 0);
-        assert_eq!(list.insert(SessionEntry::Loading(stored_session("bbbbbbbb"))), 1);
+        assert_eq!(
+            list.insert(SessionEntry::Loading(stored_session("aaaaaaaa"))),
+            0
+        );
+        assert_eq!(
+            list.insert(SessionEntry::Loading(stored_session("bbbbbbbb"))),
+            1
+        );
         // Same ID: replaced in place, not appended.
         assert_eq!(
             list.insert(SessionEntry::Failed {
