@@ -125,9 +125,32 @@ class MainActivity : ComponentActivity() {
         if (::state.isInitialized) state.uiVisible = false
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        // The state outlives this window now, so every hook that closes
+        // over the activity has to be handed back — otherwise a destroyed
+        // activity, and its dead result launchers, stay reachable from the
+        // process-wide session. A replacement window sets its own in
+        // onCreate, which Android runs after this.
+        if (::state.isInitialized) {
+            state.pickAttachment = null
+            state.pickAvatar = null
+            state.pickRoomAvatar = null
+            state.pickImagePackFile = null
+            state.pickKeyFile = null
+            state.ensureMicPermission = null
+            state.ensureLocationPermission = null
+            state.ensureCameraPermission = null
+            state.scanQrCode = null
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        state = CommuneState(this)
+        // The session belongs to the process; this window only borrows it,
+        // and lends it the pickers and permission prompts that need an
+        // activity to run on.
+        state = (application as CommuneApplication).state
         state.pickAttachment = { attachmentPicker.launch("*/*") }
         state.pickAvatar = { avatarPicker.launch("image/*") }
         state.pickRoomAvatar = { roomAvatarPicker.launch("image/*") }
