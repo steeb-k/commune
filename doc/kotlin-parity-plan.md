@@ -7,12 +7,11 @@ is read out of the GTK sources and mirrored, never improvised** — every
 chunk below names the GTK module that is its specification. UI is
 Android-native; the events are Commune's.
 
-Workflow per chunk: mirror the GTK module → facade additions → bindings
-
-* `.so` rebuild → Kotlin UI → verify against the local homeserver
-(alice/bob, `testing/local-homeserver.sh` has the credentials) → commit,
-push, update the memory ledger. Batch facade work inside a chunk into
-one bindings cycle.
+Workflow per chunk: mirror the GTK module, add the facade surface,
+regenerate the bindings and the `.so`, build the Kotlin UI, verify
+against the local homeserver (alice/bob; `testing/local-homeserver.sh`
+has the credentials), then commit, push, and update the memory ledger.
+Batch facade work inside a chunk into one bindings cycle.
 
 ## 1. Pusher privacy (tiny — do first)
 
