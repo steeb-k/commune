@@ -177,6 +177,9 @@ fun MediaImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     targetSizePx: Int = 1080,
+    // Fixed frames — avatars, grid tiles — crop to fill rather than
+    // letterbox; free-height bubbles keep the whole picture.
+    fill: Boolean = false,
 ) {
     val drawable by androidx.compose.runtime.produceState<
         android.graphics.drawable.Drawable?,
@@ -212,8 +215,12 @@ fun MediaImage(
     androidx.compose.ui.viewinterop.AndroidView(
         factory = { context ->
             android.widget.ImageView(context).apply {
-                adjustViewBounds = true
-                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                adjustViewBounds = !fill
+                scaleType = if (fill) {
+                    android.widget.ImageView.ScaleType.CENTER_CROP
+                } else {
+                    android.widget.ImageView.ScaleType.FIT_CENTER
+                }
                 this.contentDescription = contentDescription
             }
         },

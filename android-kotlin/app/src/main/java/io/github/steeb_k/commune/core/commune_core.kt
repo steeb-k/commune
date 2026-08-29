@@ -1406,7 +1406,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_logout() != 48517.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_commune_core_checksum_method_coreapp_mark_room_read() != 52026.toShort()) {
+    if (lib.uniffi_commune_core_checksum_method_coreapp_mark_room_read() != 44162.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_paginate_backwards() != 11648.toShort()) {
@@ -2252,8 +2252,9 @@ public interface CoreAppInterface {
     suspend fun `logout`()
     
     /**
-     * Mark the given room as read, sending a read receipt at the end of
-     * its timeline.
+     * Mark the given room as read, sending a read receipt and moving the
+     * fully-read marker to the end of its timeline, as the application's
+     * room history does when the newest message is looked at.
      */
     suspend fun `markRoomRead`(`roomId`: kotlin.String)
     
@@ -3367,8 +3368,9 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
-     * Mark the given room as read, sending a read receipt at the end of
-     * its timeline.
+     * Mark the given room as read, sending a read receipt and moving the
+     * fully-read marker to the end of its timeline, as the application's
+     * room history does when the newest message is looked at.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
     override suspend fun `markRoomRead`(`roomId`: kotlin.String) {
@@ -7465,6 +7467,12 @@ data class FfiSticker (
      * The MIME type, when the pack declares one.
      */
     var `mimeType`: kotlin.String?
+    , 
+    /**
+     * The pack image's raw `info` JSON, sent whole with the sticker —
+     * the application sends everything the pack declared.
+     */
+    var `infoJson`: kotlin.String?
     
 ){
     
@@ -7486,6 +7494,7 @@ public object FfiConverterTypeFfiSticker: FfiConverterRustBuffer<FfiSticker> {
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -7494,7 +7503,8 @@ public object FfiConverterTypeFfiSticker: FfiConverterRustBuffer<FfiSticker> {
             FfiConverterString.allocationSize(value.`url`) +
             FfiConverterOptionalUInt.allocationSize(value.`width`) +
             FfiConverterOptionalUInt.allocationSize(value.`height`) +
-            FfiConverterOptionalString.allocationSize(value.`mimeType`)
+            FfiConverterOptionalString.allocationSize(value.`mimeType`) +
+            FfiConverterOptionalString.allocationSize(value.`infoJson`)
     )
 
     override fun write(value: FfiSticker, buf: ByteBuffer) {
@@ -7503,6 +7513,7 @@ public object FfiConverterTypeFfiSticker: FfiConverterRustBuffer<FfiSticker> {
             FfiConverterOptionalUInt.write(value.`width`, buf)
             FfiConverterOptionalUInt.write(value.`height`, buf)
             FfiConverterOptionalString.write(value.`mimeType`, buf)
+            FfiConverterOptionalString.write(value.`infoJson`, buf)
     }
 }
 

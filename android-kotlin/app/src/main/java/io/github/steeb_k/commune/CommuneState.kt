@@ -488,6 +488,19 @@ class CommuneState(context: Context) {
         }
     }
 
+    /// A brief user-facing notice — refusals the timeline cannot show,
+    /// like the upload-size preflight turning a file down.
+    private fun toast(message: String) {
+        main.post {
+            android.widget.Toast
+                .makeText(appContext, message, android.widget.Toast.LENGTH_LONG)
+                .show()
+        }
+    }
+
+    private fun coreMessage(error: Exception, fallback: String): String =
+        (error as? io.github.steeb_k.commune.core.CoreException.Failed)?.msg ?: fallback
+
     fun sendGif(gif: FfiGif) {
         val room = openRoom ?: return
         closeGifPicker()
@@ -495,7 +508,8 @@ class CommuneState(context: Context) {
             runBlocking {
                 try {
                     app.sendGif(room.roomId, gif)
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not send the GIF"))
                 }
             }
         }
@@ -1249,7 +1263,8 @@ class CommuneState(context: Context) {
                         "audio/ogg",
                         durationMs.toULong(),
                     )
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not send the voice message"))
                 }
             }
         }
@@ -1561,8 +1576,10 @@ class CommuneState(context: Context) {
                 } ?: return@thread
 
                 runBlocking { app.sendAttachment(room.roomId, file.absolutePath, mime) }
-            } catch (_: Exception) {
-                // The timeline reflects what actually sent.
+            } catch (e: Exception) {
+                // Queue failures show in the timeline; the preflight's
+                // refusal happens before any of that and needs a voice.
+                toast(coreMessage(e, "Could not send the file"))
             }
         }
     }

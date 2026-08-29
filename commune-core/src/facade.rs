@@ -2203,6 +2203,11 @@ impl CoreApp {
                     .parse::<mime::Mime>()
                     .unwrap_or(mime::APPLICATION_OCTET_STREAM);
 
+                let size = std::fs::metadata(&file_path)
+                    .ok()
+                    .map(|metadata| metadata.len());
+                check_upload_size(&session.client(), size).await?;
+
                 room.live_timeline()
                     .send_attachment(file_path.into(), mime)
                     .await
@@ -2314,6 +2319,7 @@ impl CoreApp {
                 // The application sends a GIF as a sticker: uploaded, never
                 // linked, encrypted where the room is.
                 let client = session.client();
+                check_upload_size(&client, Some(bytes.len() as u64)).await?;
                 let source = if room.is_encrypted() {
                     let mut cursor = std::io::Cursor::new(bytes.clone());
                     let file = client.upload_encrypted_file(&mut cursor).await.map_err(
@@ -3002,6 +3008,11 @@ impl CoreApp {
                     .parse::<mime::Mime>()
                     .unwrap_or(mime::APPLICATION_OCTET_STREAM);
 
+                let size = std::fs::metadata(&file_path)
+                    .ok()
+                    .map(|metadata| metadata.len());
+                check_upload_size(&session.client(), size).await?;
+
                 room.live_timeline()
                     .send_voice(file_path.into(), mime, duration_ms)
                     .await
@@ -3108,10 +3119,13 @@ impl CoreApp {
                         msg: "Unknown room".to_owned(),
                     })?;
                 let url = ruma::OwnedMxcUri::from(sticker.url);
-                let mut info = ImageInfo::new();
-                info.width = sticker.width.map(Into::into);
-                info.height = sticker.height.map(Into::into);
-                info.mimetype = sticker.mime_type;
+                // The event carries the pack image's declared `info`
+                // whole, as the application's `sticker_content` does.
+                let info = sticker
+                    .info_json
+                    .as_deref()
+                    .and_then(|json| serde_json::from_str::<ImageInfo>(json).ok())
+                    .unwrap_or_default();
 
                 room.matrix_room()
                     .send(StickerEventContent::new(sticker.body, info, url))
@@ -3482,6 +3496,9 @@ pub struct FfiSticker {
     pub height: Option<u32>,
     /// The MIME type, when the pack declares one.
     pub mime_type: Option<String>,
+    /// The pack image's raw `info` JSON, sent whole with the sticker —
+    /// the application sends everything the pack declared.
+    pub info_json: Option<String>,
 }
 
 /// Collect the room packs the account enabled globally — the stable
@@ -3536,6 +3553,47 @@ async fn collect_enabled_packs(
                 }
             }
         }
+    }
+}
+
+/// Ask the homeserver's upload limit before sending, rather than
+/// uploading the whole file to be told no at the end, as the
+/// application's message toolbar does. The SDK caches the answer after
+/// the first ask; when it cannot be had, the upload proceeds and the
+/// server stays the judge.
+async fn check_upload_size(
+    client: &matrix_sdk::Client,
+    size: Option<u64>,
+) -> Result<(), CoreError> {
+    let Some(size) = size else {
+        return Ok(());
+    };
+    if let Ok(max_upload_size) = client.load_or_fetch_max_upload_size().await
+        && size > u64::from(max_upload_size)
+    {
+        return Err(CoreError::Failed {
+            msg: format!(
+                "This file is too large, the homeserver takes up to {}",
+                format_size(u64::from(max_upload_size))
+            ),
+        });
+    }
+    Ok(())
+}
+
+/// A byte count in decimal units, as the application's toast renders it.
+fn format_size(bytes: u64) -> String {
+    const UNITS: [&str; 5] = ["bytes", "kB", "MB", "GB", "TB"];
+    let mut value = bytes as f64;
+    let mut unit = 0;
+    while value >= 1000.0 && unit < UNITS.len() - 1 {
+        value /= 1000.0;
+        unit += 1;
+    }
+    if unit == 0 {
+        format!("{bytes} bytes")
+    } else {
+        format!("{value:.1} {}", UNITS[unit])
     }
 }
 
@@ -3594,6 +3652,7 @@ fn parse_sticker_pack(value: &serde_json::Value, fallback_name: &str) -> Option<
                     .pointer("/info/mimetype")
                     .and_then(|mime| mime.as_str())
                     .map(ToOwned::to_owned),
+                info_json: image.get("info").map(ToString::to_string),
             })
         })
         .collect();
