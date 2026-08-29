@@ -117,7 +117,9 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
                     onAttach = state.pickAttachment,
                     onGif = { state.openGifPicker() },
                     onVoice = { state.startVoiceRecording() },
+                    onLocation = { state.shareLocation() },
                     members = state.composerMembers,
+                    emoticons = state.composerEmoticons,
                 )
             }
         }
@@ -125,9 +127,86 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
 
     EventActionSheet(state)
     EventSourceDialog(state)
+    AttachmentPreviewDialog(state)
+    LocationPreviewDialog(state)
     if (state.gifPickerOpen) {
         GifPickerSheet(state)
     }
+}
+
+/// The picked file, shown before anything is sent — the GTK attachment
+/// dialog: a preview for pictures, the name and size for the rest.
+@Composable
+private fun AttachmentPreviewDialog(state: CommuneState) {
+    val pending = state.pendingAttachment ?: return
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { state.cancelPendingAttachment() },
+        title = { Text("Send File?") },
+        text = {
+            Column {
+                if (pending.mime.startsWith("image/")) {
+                    MediaImage(
+                        pending.path,
+                        contentDescription = pending.name,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 280.dp),
+                        targetSizePx = 720,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+                Text(pending.name, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    android.text.format.Formatter
+                        .formatFileSize(androidx.compose.ui.platform.LocalContext.current,
+                            pending.size),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                onClick = { state.confirmPendingAttachment() },
+            ) { Text("Send") }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(
+                onClick = { state.cancelPendingAttachment() },
+            ) { Text("Cancel") }
+        },
+    )
+}
+
+/// Your location before it goes anywhere: the fix as it converges, sent
+/// only on confirmation — the GTK location dialog.
+@Composable
+private fun LocationPreviewDialog(state: CommuneState) {
+    val pending = state.pendingLocation ?: return
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { state.cancelPendingLocation() },
+        title = { Text("Your Location") },
+        text = {
+            if (pending.isBlank()) {
+                Text("Finding your location…")
+            } else {
+                Text(pending, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                enabled = pending.isNotBlank(),
+                onClick = { state.confirmPendingLocation() },
+            ) { Text("Send") }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(
+                onClick = { state.cancelPendingLocation() },
+            ) { Text("Cancel") }
+        },
+    )
 }
 
 /// Accept or decline, where the composer would be — an invite is a
@@ -1098,7 +1177,57 @@ internal fun MessageBubble(
             ReactionChips(state, event)
 
             if (event.isOwn && event.receipts.isNotEmpty()) {
-                Row(modifier = Modifier.padding(top = 2.dp)) {
+                // Tapping the little avatars names the readers.
+                var receiptsOpen by remember { mutableStateOf(false) }
+                if (receiptsOpen) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { receiptsOpen = false },
+                        title = { Text("Read By") },
+                        text = {
+                            Column {
+                                for (userId in event.receipts) {
+                                    val name = state.composerMembers
+                                        .find { it.userId == userId }
+                                        ?.displayName
+                                        ?: localpart(userId)
+                                    Row(
+                                        modifier = Modifier.padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        InitialsAvatar(
+                                            identifier = userId,
+                                            name = name,
+                                            size = 24.dp,
+                                        )
+                                        Spacer(Modifier.size(8.dp))
+                                        Column {
+                                            Text(
+                                                name,
+                                                style = MaterialTheme.typography.bodyLarge,
+                                            )
+                                            Text(
+                                                userId,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color =
+                                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            androidx.compose.material3.TextButton(
+                                onClick = { receiptsOpen = false },
+                            ) { Text("Close") }
+                        },
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .clickable { receiptsOpen = true },
+                ) {
                     for (userId in event.receipts.take(5)) {
                         InitialsAvatar(
                             identifier = userId,
@@ -1280,7 +1409,9 @@ internal fun Composer(
     onAttach: (() -> Unit)? = null,
     onGif: (() -> Unit)? = null,
     onVoice: (() -> Unit)? = null,
+    onLocation: (() -> Unit)? = null,
     members: List<io.github.steeb_k.commune.core.FfiMember> = emptyList(),
+    emoticons: List<io.github.steeb_k.commune.core.FfiSticker> = emptyList(),
 ) {
     var draft by remember {
         mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(""))
@@ -1318,19 +1449,81 @@ internal fun Composer(
         }
     }
 
+    // Emoticon completion: `:shortcode` completes from the image packs.
+    val emoticonQuery = currentWord
+        .takeIf { it.startsWith(":") && it.length > 1 && !it.endsWith(":") }
+        ?.drop(1)
+    val emoticonMatches = emoticonQuery?.let { query ->
+        emoticons.filter { it.shortcode.startsWith(query, ignoreCase = true) }.take(4)
+    }.orEmpty()
+
+    if (emoticonMatches.isNotEmpty()) {
+        Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)) {
+            for (emoticon in emoticonMatches) {
+                Text(
+                    ":${emoticon.shortcode}:",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .padding(end = 8.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable {
+                            val text = draft.text.dropLast(currentWord.length) +
+                                ":" + emoticon.shortcode + ": "
+                            draft = androidx.compose.ui.text.input.TextFieldValue(
+                                text,
+                                androidx.compose.ui.text.TextRange(text.length),
+                            )
+                        }
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
-        IconButton(onClick = { onAttach?.invoke() }, enabled = onAttach != null) {
-            Icon(
-                androidx.compose.ui.res.painterResource(
-                    io.github.steeb_k.commune.R.drawable.ic_attachment_symbolic
-                ),
-                contentDescription = "Attach",
-            )
+        var attachMenuOpen by remember { mutableStateOf(false) }
+        Box {
+            IconButton(
+                onClick = { attachMenuOpen = true },
+                enabled = onAttach != null || onLocation != null,
+            ) {
+                Icon(
+                    androidx.compose.ui.res.painterResource(
+                        io.github.steeb_k.commune.R.drawable.ic_attachment_symbolic
+                    ),
+                    contentDescription = "Attach",
+                )
+            }
+            androidx.compose.material3.DropdownMenu(
+                expanded = attachMenuOpen,
+                onDismissRequest = { attachMenuOpen = false },
+            ) {
+                if (onAttach != null) {
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Attach File") },
+                        onClick = {
+                            attachMenuOpen = false
+                            onAttach()
+                        },
+                    )
+                }
+                if (onLocation != null) {
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Share Location") },
+                        onClick = {
+                            attachMenuOpen = false
+                            onLocation()
+                        },
+                    )
+                }
+            }
         }
         // Emoji come from the keyboard on Android; the picker button is the
         // sticker/GIF one, as in the GTK message toolbar.
