@@ -726,6 +726,9 @@ pub struct CoreApp {
     verification: Arc<VerificationFlows>,
     /// The task feeding the member-list listener.
     member_list_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
+    /// The client a login flow built at discovery, kept for the flow's
+    /// next step (SSO, OAuth, registration, password reset).
+    pending_login: Mutex<Option<matrix_sdk::Client>>,
 }
 
 #[uniffi::export]
@@ -743,6 +746,7 @@ impl CoreApp {
             pinned_listener_handle: Mutex::new(None),
             verification: Arc::new(VerificationFlows::default()),
             member_list_listener_handle: Mutex::new(None),
+            pending_login: Mutex::new(None),
         })
     }
 
@@ -805,6 +809,328 @@ impl CoreApp {
             .expect("task was not aborted")?;
 
         Ok(())
+    }
+
+    /// What the given homeserver offers for logging in, per the
+    /// application's discovery: the OAuth 2.0 API when its metadata
+    /// resolves, the Matrix native flows otherwise. The client built
+    /// here is kept for the flow's next step.
+    pub async fn discover_login(&self, homeserver: String) -> Result<FfiLoginMethods, CoreError> {
+        use ruma::api::client::session::get_login_types::v3::LoginType;
+
+        let (client, methods) = RUNTIME
+            .spawn(async move {
+                let client = matrix_sdk::Client::builder()
+                    .request_config(matrix_sdk::config::RequestConfig::new().retry_limit(2))
+                    .http_client(crate::tls::matrix_client())
+                    .server_name_or_homeserver_url(homeserver)
+                    .build()
+                    .await
+                    .map_err(|build_error| CoreError::Failed {
+                        msg: format!("Could not reach the homeserver: {build_error}"),
+                    })?;
+
+                let supports_oauth = client.oauth().server_metadata().await.is_ok();
+
+                let (supports_password, supports_sso) = if supports_oauth {
+                    (false, false)
+                } else {
+                    let flows = client
+                        .matrix_auth()
+                        .get_login_types()
+                        .await
+                        .map_err(|types_error| CoreError::Failed {
+                            msg: format!("Could not ask how to log in: {types_error}"),
+                        })?
+                        .flows;
+                    (
+                        flows
+                            .iter()
+                            .any(|login_type| matches!(login_type, LoginType::Password(_))),
+                        flows
+                            .iter()
+                            .any(|login_type| matches!(login_type, LoginType::Sso(_))),
+                    )
+                };
+
+                let methods = FfiLoginMethods {
+                    homeserver_url: client.homeserver().to_string(),
+                    supports_password,
+                    supports_sso,
+                    supports_oauth,
+                };
+                Ok::<_, CoreError>((client, methods))
+            })
+            .await
+            .expect("task was not aborted")?;
+
+        *self.pending_login.lock().expect("mutex is not poisoned") = Some(client);
+        Ok(methods)
+    }
+
+    /// The Matrix SSO URL to open in the browser; the redirect carries
+    /// the login token back on the application's fixed Android scheme.
+    pub async fn sso_login_url(&self) -> Result<String, CoreError> {
+        let client = self.pending_login_client()?;
+
+        RUNTIME
+            .spawn(async move {
+                client
+                    .matrix_auth()
+                    .get_sso_login_url(ANDROID_REDIRECT_URI, None)
+                    .await
+                    .map_err(|url_error| CoreError::Failed {
+                        msg: format!("Could not build the SSO URL: {url_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Finish a Matrix SSO login with the token the redirect carried.
+    pub async fn finish_sso_login(&self, login_token: String) -> Result<(), CoreError> {
+        let client = self.pending_login_client()?;
+        let list = self.session_list.clone();
+
+        RUNTIME
+            .spawn(async move {
+                client
+                    .matrix_auth()
+                    .login_token(&login_token)
+                    .initial_device_display_name("Commune")
+                    .send()
+                    .await
+                    .map_err(|login_error| CoreError::Failed {
+                        msg: format!("Could not log in: {login_error}"),
+                    })?;
+                list.adopt_logged_in_client(client)
+                    .await
+                    .map(|_| ())
+                    .map_err(|adopt_error| CoreError::Failed { msg: adopt_error })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The OAuth 2.0 authorization URL to open in the browser, with the
+    /// application's exact client registration.
+    pub async fn oauth_login_url(&self) -> Result<String, CoreError> {
+        let client = self.pending_login_client()?;
+
+        RUNTIME
+            .spawn(async move {
+                let redirect =
+                    url::Url::parse(ANDROID_REDIRECT_URI).expect("redirect URI is valid");
+                let oauth = client.oauth();
+                let data = oauth
+                    .login(redirect, None, Some(oauth_client_registration_data()), None)
+                    .build()
+                    .await
+                    .map_err(|url_error| CoreError::Failed {
+                        msg: format!("Could not set up login: {url_error}"),
+                    })?;
+                Ok(data.url.to_string())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Finish an OAuth 2.0 login with the query string the redirect
+    /// carried.
+    pub async fn finish_oauth_login(&self, redirect_query: String) -> Result<(), CoreError> {
+        use matrix_sdk::utils::UrlOrQuery;
+
+        let client = self.pending_login_client()?;
+        let list = self.session_list.clone();
+
+        RUNTIME
+            .spawn(async move {
+                client
+                    .oauth()
+                    .finish_login(UrlOrQuery::Query(redirect_query))
+                    .await
+                    .map_err(|login_error| CoreError::Failed {
+                        msg: format!("Could not log in: {login_error}"),
+                    })?;
+                list.adopt_logged_in_client(client)
+                    .await
+                    .map(|_| ())
+                    .map_err(|adopt_error| CoreError::Failed { msg: adopt_error })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Create an account on the discovered homeserver, walking the
+    /// stages a headless client can answer (dummy, and terms — creating
+    /// the account is accepting them). Anything more wants a browser.
+    pub async fn register_user(&self, username: String, password: String) -> Result<(), CoreError> {
+        use ruma::api::client::{
+            account::register,
+            uiaa::{AuthData, Dummy},
+        };
+
+        let client = self.pending_login_client()?;
+        let list = self.session_list.clone();
+
+        RUNTIME
+            .spawn(async move {
+                let build_request = |auth: Option<AuthData>| {
+                    let mut request = register::v3::Request::new();
+                    request.username = Some(username.clone());
+                    request.password = Some(password.clone());
+                    request.initial_device_display_name = Some("Commune".to_owned());
+                    request.auth = auth;
+                    request
+                };
+
+                let mut auth = None;
+                for _attempt in 0..4 {
+                    match client.matrix_auth().register(build_request(auth.take())).await {
+                        Ok(_) => {
+                            return list
+                                .adopt_logged_in_client(client)
+                                .await
+                                .map(|_| ())
+                                .map_err(|adopt_error| CoreError::Failed { msg: adopt_error });
+                        }
+                        Err(register_error) => {
+                            let Some(uiaa) = register_error.as_uiaa_response() else {
+                                return Err(CoreError::Failed {
+                                    msg: format!("Could not create account: {register_error}"),
+                                });
+                            };
+                            let next_stage = uiaa
+                                .flows
+                                .iter()
+                                .filter_map(|flow| {
+                                    flow.stages
+                                        .iter()
+                                        .find(|stage| !uiaa.completed.contains(stage))
+                                })
+                                .find(|stage| {
+                                    stage.as_str() == "m.login.dummy"
+                                        || stage.as_str() == "m.login.terms"
+                                });
+                            auth = match next_stage.map(|stage| stage.as_str()) {
+                                Some("m.login.dummy") => {
+                                    let mut dummy = Dummy::new();
+                                    dummy.session = uiaa.session.clone();
+                                    Some(AuthData::Dummy(dummy))
+                                }
+                                Some("m.login.terms") => AuthData::new(
+                                    "m.login.terms",
+                                    uiaa.session.clone(),
+                                    serde_json::Map::new(),
+                                )
+                                .ok(),
+                                _ => {
+                                    return Err(CoreError::Failed {
+                                        msg: "This homeserver asks for steps this app cannot answer yet"
+                                            .to_owned(),
+                                    });
+                                }
+                            };
+                        }
+                    }
+                }
+                Err(CoreError::Failed {
+                    msg: "Could not create account".to_owned(),
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Ask the homeserver to email a password-reset link.
+    pub async fn request_password_reset(&self, email: String) -> Result<FfiResetHandle, CoreError> {
+        use ruma::api::client::account::request_password_change_token_via_email;
+
+        let client = self.pending_login_client()?;
+
+        RUNTIME
+            .spawn(async move {
+                let client_secret = ruma::ClientSecret::new();
+                let request = request_password_change_token_via_email::v3::Request::new(
+                    client_secret.clone(),
+                    email,
+                    1u32.into(),
+                );
+                let response =
+                    client
+                        .send(request)
+                        .await
+                        .map_err(|send_error| CoreError::Failed {
+                            msg: format!("Could not send the email: {send_error}"),
+                        })?;
+                Ok(FfiResetHandle {
+                    sid: response.sid.to_string(),
+                    client_secret: client_secret.to_string(),
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Set the new password once the emailed link was opened, signing
+    /// every other session out, as the application does.
+    pub async fn reset_password(
+        &self,
+        new_password: String,
+        handle: FfiResetHandle,
+    ) -> Result<(), CoreError> {
+        use ruma::api::client::{
+            account::change_password,
+            uiaa::{AuthData, ThirdpartyIdCredentials},
+        };
+
+        let client = self.pending_login_client()?;
+
+        RUNTIME
+            .spawn(async move {
+                let sid = ruma::SessionId::parse(handle.sid).map_err(|_| CoreError::Failed {
+                    msg: "Invalid reset session".to_owned(),
+                })?;
+                let client_secret =
+                    ruma::ClientSecret::parse(handle.client_secret).map_err(|_| {
+                        CoreError::Failed {
+                            msg: "Invalid reset secret".to_owned(),
+                        }
+                    })?;
+                let credentials = ThirdpartyIdCredentials::new(sid, client_secret);
+                let credentials =
+                    serde_json::to_value(&credentials).map_err(|_| CoreError::Failed {
+                        msg: "Could not build the reset".to_owned(),
+                    })?;
+                let mut data = serde_json::Map::new();
+                data.insert("threepid_creds".to_owned(), credentials);
+                let auth = AuthData::new("m.login.email.identity", None, data).map_err(|_| {
+                    CoreError::Failed {
+                        msg: "Could not build the reset".to_owned(),
+                    }
+                })?;
+
+                let mut request = change_password::v3::Request::new(new_password);
+                // The account has been out of the owner's hands for as
+                // long as the password was unknown; every other session
+                // goes.
+                request.logout_devices = true;
+                request.auth = Some(auth);
+
+                client
+                    .send(request)
+                    .await
+                    .map(|_| ())
+                    .map_err(|send_error| CoreError::Failed {
+                        msg: if send_error.as_uiaa_response().is_some() {
+                            "Open the link in the email first, then try again".to_owned()
+                        } else {
+                            format!("Could not reset the password: {send_error}")
+                        },
+                    })
+            })
+            .await
+            .expect("task was not aborted")
     }
 
     /// The rooms of the first ready session, as of now.
@@ -5508,6 +5834,58 @@ pub struct FfiUpgradeInfo {
     pub can_upgrade: bool,
 }
 
+/// The fixed Android redirect URI login flows come back on — the
+/// application's own, from its `login/local_server.rs`.
+const ANDROID_REDIRECT_URI: &str = "io.github.steeb-k.commune:/oauth2redirect";
+
+/// The application's OAuth 2.0 client registration, exactly as its
+/// `client_registration_data` builds it for Android.
+fn oauth_client_registration_data() -> matrix_sdk::authentication::oauth::ClientRegistrationData {
+    use matrix_sdk::authentication::oauth::registration::{
+        ApplicationType, ClientMetadata, Localized, OAuthGrantType,
+    };
+
+    let redirect_uris = vec![url::Url::parse(ANDROID_REDIRECT_URI).expect("redirect URI is valid")];
+    // matrix.org's authorization server requires the client URI to match
+    // the redirect scheme read as reverse DNS.
+    let client_uri = url::Url::parse("https://steeb-k.github.io/").expect("client URI is valid");
+
+    let mut client_metadata = ClientMetadata::new(
+        ApplicationType::Native,
+        vec![OAuthGrantType::AuthorizationCode { redirect_uris }],
+        Localized::new(client_uri, None),
+    );
+    client_metadata.client_name = Some(Localized::new("Commune".to_owned(), None));
+
+    ruma::serde::Raw::new(&client_metadata)
+        .expect("client metadata serializes")
+        .into()
+}
+
+/// What a homeserver offers for logging in.
+#[derive(uniffi::Record)]
+pub struct FfiLoginMethods {
+    /// The resolved homeserver URL after discovery.
+    pub homeserver_url: String,
+    /// Whether password login is offered.
+    pub supports_password: bool,
+    /// Whether Matrix SSO is offered.
+    pub supports_sso: bool,
+    /// Whether the homeserver speaks the OAuth 2.0 API (which then
+    /// replaces the Matrix flows).
+    pub supports_oauth: bool,
+}
+
+/// The server-side session of a password reset, carried between the
+/// email ask and the new password.
+#[derive(uniffi::Record, Clone)]
+pub struct FfiResetHandle {
+    /// The session ID the homeserver opened.
+    pub sid: String,
+    /// The client secret that pairs with it.
+    pub client_secret: String,
+}
+
 /// Read one global account-data event as plain JSON, `None` when it is
 /// absent or unreadable.
 async fn read_account_data(
@@ -5748,6 +6126,20 @@ impl Drop for CoreApp {
 
 /// Wait until the session list has a ready session, and return it.
 /// The verification flows in progress and their listener.
+impl CoreApp {
+    /// The login client the discovery step built, for the flow's next
+    /// step.
+    fn pending_login_client(&self) -> Result<matrix_sdk::Client, CoreError> {
+        self.pending_login
+            .lock()
+            .expect("mutex is not poisoned")
+            .clone()
+            .ok_or_else(|| CoreError::Failed {
+                msg: "No login in progress".to_owned(),
+            })
+    }
+}
+
 #[derive(Default)]
 struct VerificationFlows {
     listener: Mutex<Option<Arc<dyn VerificationListener>>>,

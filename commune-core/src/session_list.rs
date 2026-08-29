@@ -375,6 +375,16 @@ impl SessionList {
             "Could not log in".to_owned()
         })?;
 
+        self.adopt_logged_in_client(login_client).await
+    }
+
+    /// Adopt an already-authenticated client as a stored session — the
+    /// tail of every login flow, whatever authenticated it: snapshot it
+    /// into a stored session, seal it for the next launch, prepare it.
+    pub async fn adopt_logged_in_client(
+        &self,
+        login_client: matrix_sdk::Client,
+    ) -> Result<Session, String> {
         let session = Session::create(&login_client, &self.inner.settings)
             .await
             .map_err(|create_error| {

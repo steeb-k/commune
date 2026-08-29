@@ -772,245 +772,261 @@ internal object IntegrityCheckingUniffiLib {
         uniffiCheckApiChecksums(this)
     }
     external fun uniffi_commune_core_checksum_func_core_version(
-    ): Short
-    external fun uniffi_commune_core_checksum_func_decode_blurhash(
-    ): Short
-    external fun uniffi_commune_core_checksum_func_init_core(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_accept_verification(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_account_profile(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_add_notification_keyword(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_ban_user(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_cancel_verification(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_change_room_category(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_clear_member_list_listener(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_clear_pinned_listener(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_clear_thread_listener(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_confirm_verification(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_create_direct_chat(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_create_room(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_discard_local_echo(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_edit_message(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_emoticon_packs(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_enable_recovery(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_event_permalink(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_event_source(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_explore_rooms(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_export_room_keys(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_fetch_gif_preview(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_forward_event(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_get_avatar(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_get_history_media(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_get_mxc_media(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_get_timeline_media(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_has_ready_session(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_has_sessions(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_ignore_user(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_ignored_users(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_import_room_keys(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_invite_user(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_join_room(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_kick_user(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_list_devices(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_login_with_password(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_logout(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_mark_room_read(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_notification_keywords(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_paginate_backwards(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_recover(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_recovery_state(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_redact_event(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_remove_notification_keyword(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_remove_push_gateway(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_remove_room_avatar(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_rename_device(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_report_event(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_request_user_verification(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_request_verification(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_restore_sessions(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_retry_sends(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_room_addresses(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_room_history_visibility(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_room_join_rule(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_room_media_history(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_room_members(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_room_notification_mode(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_room_permissions_matrix(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_room_server_acl(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_room_upgrade_info(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_rooms(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_scan_qr(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_search_gifs(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_search_room(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_send_attachment(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_send_gif(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_send_location(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_send_message(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_send_reply(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_send_sticker(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_send_thread_message(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_send_typing(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_send_voice_message(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_session_display_name(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_session_settings(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_session_user_id(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_account_avatar(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_display_name(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_member_list_listener(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_member_power_level(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_notifications_enabled(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_pinned_listener(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_push_gateway(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_room_address(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_room_avatar(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_room_details(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_room_history_visibility(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_room_join_rule(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_room_list_listener(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_room_notification_mode(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_room_permissions_matrix(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_room_server_acl(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_thread_listener(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_timeline_listener(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_typing_enabled(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_typing_listener(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_set_verification_listener(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_sign_out_device(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_space_children(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_sticker_packs(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_toggle_reaction(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_unignore_user(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_coreapp_upgrade_room(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_memberlistlistener_on_update(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_roomlistlistener_on_update(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_timelinelistener_on_update(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_typinglistener_on_update(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_verificationlistener_on_request(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_verificationlistener_on_emojis(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_verificationlistener_on_done(
-    ): Short
-    external fun uniffi_commune_core_checksum_method_verificationlistener_on_cancelled(
-    ): Short
-    external fun uniffi_commune_core_checksum_constructor_coreapp_new(
-    ): Short
-    external fun ffi_commune_core_uniffi_contract_version(
-    ): Int
+): Short
+external fun uniffi_commune_core_checksum_func_decode_blurhash(
+): Short
+external fun uniffi_commune_core_checksum_func_init_core(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_accept_verification(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_account_profile(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_add_notification_keyword(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_ban_user(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_cancel_verification(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_change_room_category(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_clear_member_list_listener(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_clear_pinned_listener(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_clear_thread_listener(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_confirm_verification(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_create_direct_chat(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_create_room(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_discard_local_echo(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_discover_login(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_edit_message(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_emoticon_packs(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_enable_recovery(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_event_permalink(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_event_source(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_explore_rooms(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_export_room_keys(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_fetch_gif_preview(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_finish_oauth_login(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_finish_sso_login(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_forward_event(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_get_avatar(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_get_history_media(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_get_mxc_media(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_get_timeline_media(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_has_ready_session(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_has_sessions(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_ignore_user(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_ignored_users(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_import_room_keys(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_invite_user(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_join_room(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_kick_user(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_list_devices(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_login_with_password(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_logout(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_mark_room_read(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_notification_keywords(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_oauth_login_url(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_paginate_backwards(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_recover(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_recovery_state(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_redact_event(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_register_user(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_remove_notification_keyword(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_remove_push_gateway(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_remove_room_avatar(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_rename_device(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_report_event(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_request_password_reset(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_request_user_verification(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_request_verification(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_reset_password(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_restore_sessions(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_retry_sends(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_room_addresses(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_room_history_visibility(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_room_join_rule(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_room_media_history(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_room_members(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_room_notification_mode(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_room_permissions_matrix(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_room_server_acl(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_room_upgrade_info(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_rooms(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_scan_qr(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_search_gifs(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_search_room(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_attachment(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_gif(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_location(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_message(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_reply(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_sticker(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_thread_message(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_typing(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_voice_message(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_session_display_name(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_session_settings(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_session_user_id(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_account_avatar(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_display_name(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_member_list_listener(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_member_power_level(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_notifications_enabled(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_pinned_listener(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_public_read_receipts_enabled(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_push_gateway(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_room_address(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_room_avatar(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_room_details(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_room_history_visibility(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_room_join_rule(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_room_list_listener(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_room_notification_mode(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_room_permissions_matrix(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_room_server_acl(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_thread_listener(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_timeline_listener(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_typing_enabled(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_typing_listener(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_verification_listener(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_sign_out_device(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_space_children(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_sso_login_url(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_sticker_packs(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_toggle_reaction(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_unignore_user(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_upgrade_room(
+): Short
+external fun uniffi_commune_core_checksum_method_memberlistlistener_on_update(
+): Short
+external fun uniffi_commune_core_checksum_method_roomlistlistener_on_update(
+): Short
+external fun uniffi_commune_core_checksum_method_timelinelistener_on_update(
+): Short
+external fun uniffi_commune_core_checksum_method_typinglistener_on_update(
+): Short
+external fun uniffi_commune_core_checksum_method_verificationlistener_on_request(
+): Short
+external fun uniffi_commune_core_checksum_method_verificationlistener_on_emojis(
+): Short
+external fun uniffi_commune_core_checksum_method_verificationlistener_on_done(
+): Short
+external fun uniffi_commune_core_checksum_method_verificationlistener_on_cancelled(
+): Short
+external fun uniffi_commune_core_checksum_constructor_coreapp_new(
+): Short
+external fun ffi_commune_core_uniffi_contract_version(
+): Int
 
-        
+    
 }
 
 internal object UniffiLib {
@@ -1062,6 +1078,8 @@ external fun uniffi_commune_core_fn_method_coreapp_create_room(`ptr`: Long,`name
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_discard_local_echo(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_discover_login(`ptr`: Long,`homeserver`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_edit_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`newBody`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_emoticon_packs(`ptr`: Long,
@@ -1077,6 +1095,10 @@ external fun uniffi_commune_core_fn_method_coreapp_explore_rooms(`ptr`: Long,`se
 external fun uniffi_commune_core_fn_method_coreapp_export_room_keys(`ptr`: Long,`path`: RustBuffer.ByValue,`passphrase`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_fetch_gif_preview(`ptr`: Long,`url`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_finish_oauth_login(`ptr`: Long,`redirectQuery`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_finish_sso_login(`ptr`: Long,`loginToken`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_forward_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`targetRoomId`: RustBuffer.ByValue,
 ): Long
@@ -1116,6 +1138,8 @@ external fun uniffi_commune_core_fn_method_coreapp_mark_room_read(`ptr`: Long,`r
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_notification_keywords(`ptr`: Long,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_oauth_login_url(`ptr`: Long,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_paginate_backwards(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_recover(`ptr`: Long,`recoveryKey`: RustBuffer.ByValue,
@@ -1123,6 +1147,8 @@ external fun uniffi_commune_core_fn_method_coreapp_recover(`ptr`: Long,`recovery
 external fun uniffi_commune_core_fn_method_coreapp_recovery_state(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_redact_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_register_user(`ptr`: Long,`username`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_remove_notification_keyword(`ptr`: Long,`keyword`: RustBuffer.ByValue,
 ): Long
@@ -1134,9 +1160,13 @@ external fun uniffi_commune_core_fn_method_coreapp_rename_device(`ptr`: Long,`de
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_report_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_request_password_reset(`ptr`: Long,`email`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_request_user_verification(`ptr`: Long,`userId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_request_verification(`ptr`: Long,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_reset_password(`ptr`: Long,`newPassword`: RustBuffer.ByValue,`handle`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
 ): Long
@@ -1239,6 +1269,8 @@ external fun uniffi_commune_core_fn_method_coreapp_set_verification_listener(`pt
 external fun uniffi_commune_core_fn_method_coreapp_sign_out_device(`ptr`: Long,`deviceId`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_space_children(`ptr`: Long,`spaceId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_sso_login_url(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_sticker_packs(`ptr`: Long,
 ): Long
@@ -1467,6 +1499,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_discard_local_echo() != 49737.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_discover_login() != 389.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_edit_message() != 19406.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1489,6 +1524,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_fetch_gif_preview() != 17739.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_finish_oauth_login() != 59415.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_finish_sso_login() != 8946.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_forward_event() != 52545.toShort()) {
@@ -1548,6 +1589,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_notification_keywords() != 22967.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_oauth_login_url() != 24481.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_paginate_backwards() != 11648.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1558,6 +1602,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_redact_event() != 51517.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_register_user() != 30294.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_remove_notification_keyword() != 45534.toShort()) {
@@ -1575,10 +1622,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_report_event() != 3178.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_request_password_reset() != 2498.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_request_user_verification() != 21365.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_request_verification() != 29392.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_reset_password() != 65144.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_restore_sessions() != 15459.toShort()) {
@@ -1732,6 +1785,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_space_children() != 57237.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_sso_login_url() != 45559.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_sticker_packs() != 31430.toShort()) {
@@ -2349,6 +2405,14 @@ public interface CoreAppInterface {
     suspend fun `discardLocalEcho`(`roomId`: kotlin.String, `uniqueId`: kotlin.String)
     
     /**
+     * What the given homeserver offers for logging in, per the
+     * application's discovery: the OAuth 2.0 API when its metadata
+     * resolves, the Matrix native flows otherwise. The client built
+     * here is kept for the flow's next step.
+     */
+    suspend fun `discoverLogin`(`homeserver`: kotlin.String): FfiLoginMethods
+    
+    /**
      * Replace the given event's content with the given plain text.
      */
     suspend fun `editMessage`(`roomId`: kotlin.String, `eventId`: kotlin.String, `newBody`: kotlin.String)
@@ -2395,6 +2459,17 @@ public interface CoreAppInterface {
      * configuration and one size guard for everything the app fetches.
      */
     suspend fun `fetchGifPreview`(`url`: kotlin.String): kotlin.ByteArray
+    
+    /**
+     * Finish an OAuth 2.0 login with the query string the redirect
+     * carried.
+     */
+    suspend fun `finishOauthLogin`(`redirectQuery`: kotlin.String)
+    
+    /**
+     * Finish a Matrix SSO login with the token the redirect carried.
+     */
+    suspend fun `finishSsoLogin`(`loginToken`: kotlin.String)
     
     /**
      * Send the given event's content to another room, verbatim.
@@ -2516,6 +2591,12 @@ public interface CoreAppInterface {
     suspend fun `notificationKeywords`(): List<kotlin.String>
     
     /**
+     * The OAuth 2.0 authorization URL to open in the browser, with the
+     * application's exact client registration.
+     */
+    suspend fun `oauthLoginUrl`(): kotlin.String
+    
+    /**
      * Paginate the given room's timeline backwards.
      */
     suspend fun `paginateBackwards`(`roomId`: kotlin.String)
@@ -2534,6 +2615,13 @@ public interface CoreAppInterface {
      * Redact the given event in the given room.
      */
     suspend fun `redactEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String)
+    
+    /**
+     * Create an account on the discovered homeserver, walking the
+     * stages a headless client can answer (dummy, and terms — creating
+     * the account is accepting them). Anything more wants a browser.
+     */
+    suspend fun `registerUser`(`username`: kotlin.String, `password`: kotlin.String)
     
     /**
      * Remove a keyword from the notification triggers, returning the
@@ -2564,6 +2652,11 @@ public interface CoreAppInterface {
     suspend fun `reportEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String, `reason`: kotlin.String?)
     
     /**
+     * Ask the homeserver to email a password-reset link.
+     */
+    suspend fun `requestPasswordReset`(`email`: kotlin.String): FfiResetHandle
+    
+    /**
      * Ask another user to verify: the request goes into the direct
      * chat as a message, and the flow then runs like any other SAS.
      */
@@ -2575,6 +2668,12 @@ public interface CoreAppInterface {
      * then done.
      */
     suspend fun `requestVerification`(): kotlin.String
+    
+    /**
+     * Set the new password once the emailed link was opened, signing
+     * every other session out, as the application does.
+     */
+    suspend fun `resetPassword`(`newPassword`: kotlin.String, `handle`: FfiResetHandle)
     
     /**
      * Restore the sessions stored on this device.
@@ -2900,6 +2999,12 @@ public interface CoreAppInterface {
      * The rooms inside the given space, from the server's hierarchy.
      */
     suspend fun `spaceChildren`(`spaceId`: kotlin.String): List<FfiSpaceChild>
+    
+    /**
+     * The Matrix SSO URL to open in the browser; the redirect carries
+     * the login token back on the application's fixed Android scheme.
+     */
+    suspend fun `ssoLoginUrl`(): kotlin.String
     
     /**
      * The sticker packs on the account, as the application resolves
@@ -3340,6 +3445,33 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * What the given homeserver offers for logging in, per the
+     * application's discovery: the OAuth 2.0 API when its metadata
+     * resolves, the Matrix native flows otherwise. The client built
+     * here is kept for the flow's next step.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `discoverLogin`(`homeserver`: kotlin.String) : FfiLoginMethods {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_discover_login(
+                uniffiHandle,
+                FfiConverterString.lower(`homeserver`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiLoginMethods.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Replace the given event's content with the given plain text.
      */
     @Throws(CoreException::class)
@@ -3534,6 +3666,57 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterByteArray.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Finish an OAuth 2.0 login with the query string the redirect
+     * carried.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `finishOauthLogin`(`redirectQuery`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_finish_oauth_login(
+                uniffiHandle,
+                FfiConverterString.lower(`redirectQuery`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Finish a Matrix SSO login with the token the redirect carried.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `finishSsoLogin`(`loginToken`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_finish_sso_login(
+                uniffiHandle,
+                FfiConverterString.lower(`loginToken`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -4004,6 +4187,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * The OAuth 2.0 authorization URL to open in the browser, with the
+     * application's exact client registration.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `oauthLoginUrl`() : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_oauth_login_url(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Paginate the given room's timeline backwards.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -4086,6 +4294,33 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_redact_event(
                 uniffiHandle,
                 FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Create an account on the discovered homeserver, walking the
+     * stages a headless client can answer (dummy, and terms — creating
+     * the account is accepting them). Anything more wants a browser.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `registerUser`(`username`: kotlin.String, `password`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_register_user(
+                uniffiHandle,
+                FfiConverterString.lower(`username`),FfiConverterString.lower(`password`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -4228,6 +4463,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Ask the homeserver to email a password-reset link.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `requestPasswordReset`(`email`: kotlin.String) : FfiResetHandle {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_request_password_reset(
+                uniffiHandle,
+                FfiConverterString.lower(`email`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiResetHandle.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Ask another user to verify: the request goes into the direct
      * chat as a message, and the flow then runs like any other SAS.
      */
@@ -4272,6 +4531,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Set the new password once the emailed link was opened, signing
+     * every other session out, as the application does.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `resetPassword`(`newPassword`: kotlin.String, `handle`: FfiResetHandle) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_reset_password(
+                uniffiHandle,
+                FfiConverterString.lower(`newPassword`),FfiConverterTypeFfiResetHandle.lower(`handle`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -5455,6 +5740,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterSequenceTypeFfiSpaceChild.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The Matrix SSO URL to open in the browser; the redirect carries
+     * the login token back on the application's fixed Android scheme.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `ssoLoginUrl`() : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_sso_login_url(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -7925,6 +8235,70 @@ public object FfiConverterTypeFfiJoinRuleInfo: FfiConverterRustBuffer<FfiJoinRul
 
 
 /**
+ * What a homeserver offers for logging in.
+ */
+data class FfiLoginMethods (
+    /**
+     * The resolved homeserver URL after discovery.
+     */
+    var `homeserverUrl`: kotlin.String
+    , 
+    /**
+     * Whether password login is offered.
+     */
+    var `supportsPassword`: kotlin.Boolean
+    , 
+    /**
+     * Whether Matrix SSO is offered.
+     */
+    var `supportsSso`: kotlin.Boolean
+    , 
+    /**
+     * Whether the homeserver speaks the OAuth 2.0 API (which then
+     * replaces the Matrix flows).
+     */
+    var `supportsOauth`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiLoginMethods: FfiConverterRustBuffer<FfiLoginMethods> {
+    override fun read(buf: ByteBuffer): FfiLoginMethods {
+        return FfiLoginMethods(
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiLoginMethods) = (
+            FfiConverterString.allocationSize(value.`homeserverUrl`) +
+            FfiConverterBoolean.allocationSize(value.`supportsPassword`) +
+            FfiConverterBoolean.allocationSize(value.`supportsSso`) +
+            FfiConverterBoolean.allocationSize(value.`supportsOauth`)
+    )
+
+    override fun write(value: FfiLoginMethods, buf: ByteBuffer) {
+            FfiConverterString.write(value.`homeserverUrl`, buf)
+            FfiConverterBoolean.write(value.`supportsPassword`, buf)
+            FfiConverterBoolean.write(value.`supportsSso`, buf)
+            FfiConverterBoolean.write(value.`supportsOauth`, buf)
+    }
+}
+
+
+
+/**
  * A member of a room.
  */
 data class FfiMember (
@@ -8466,6 +8840,54 @@ public object FfiConverterTypeFfiReaction: FfiConverterRustBuffer<FfiReaction> {
             FfiConverterString.write(value.`key`, buf)
             FfiConverterULong.write(value.`count`, buf)
             FfiConverterBoolean.write(value.`isOwn`, buf)
+    }
+}
+
+
+
+/**
+ * The server-side session of a password reset, carried between the
+ * email ask and the new password.
+ */
+data class FfiResetHandle (
+    /**
+     * The session ID the homeserver opened.
+     */
+    var `sid`: kotlin.String
+    , 
+    /**
+     * The client secret that pairs with it.
+     */
+    var `clientSecret`: kotlin.String
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiResetHandle: FfiConverterRustBuffer<FfiResetHandle> {
+    override fun read(buf: ByteBuffer): FfiResetHandle {
+        return FfiResetHandle(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiResetHandle) = (
+            FfiConverterString.allocationSize(value.`sid`) +
+            FfiConverterString.allocationSize(value.`clientSecret`)
+    )
+
+    override fun write(value: FfiResetHandle, buf: ByteBuffer) {
+            FfiConverterString.write(value.`sid`, buf)
+            FfiConverterString.write(value.`clientSecret`, buf)
     }
 }
 
