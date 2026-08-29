@@ -86,6 +86,9 @@ struct SessionListInner {
     error: std::sync::Mutex<Option<String>>,
     /// The settings of the sessions.
     settings: SessionListSettings,
+    /// The session everything session-scoped resolves to, when many
+    /// are logged in. Unset (or gone) falls back to the first ready.
+    active_session_id: std::sync::Mutex<Option<String>>,
 }
 
 impl Default for SessionList {
@@ -104,6 +107,7 @@ impl SessionList {
                 state: SharedObservable::new(LoadingState::default()),
                 error: std::sync::Mutex::new(None),
                 settings: SessionListSettings::new(),
+                active_session_id: std::sync::Mutex::new(None),
             }),
         }
     }
@@ -159,6 +163,39 @@ impl SessionList {
 
     /// The session with the given ID, if any.
     #[must_use]
+    /// Make the given session the one everything resolves to.
+    pub fn set_active(&self, session_id: Option<String>) {
+        *self
+            .inner
+            .active_session_id
+            .lock()
+            .expect("mutex is not poisoned") = session_id;
+    }
+
+    /// The active session — or, when none was chosen or the chosen one
+    /// is gone, the first session that is ready.
+    #[must_use]
+    pub fn active_session(&self) -> Option<Session> {
+        let entries = self.inner.entries.lock().expect("mutex is not poisoned");
+        let active = self
+            .inner
+            .active_session_id
+            .lock()
+            .expect("mutex is not poisoned")
+            .clone();
+
+        if let Some(active_id) = active
+            && let Some(session) = entries
+                .iter()
+                .filter(|entry| entry.session_id() == active_id)
+                .find_map(|entry| entry.session().cloned())
+        {
+            return Some(session);
+        }
+
+        entries.iter().find_map(|entry| entry.session().cloned())
+    }
+
     pub fn get(&self, session_id: &str) -> Option<SessionEntry> {
         self.inner
             .entries

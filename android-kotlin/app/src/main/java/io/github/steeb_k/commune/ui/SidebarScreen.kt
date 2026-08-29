@@ -68,6 +68,8 @@ fun SidebarScreen(state: CommuneState) {
     var searchOpen by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
 
+    AccountSwitcherSheet(state)
+
     Column(modifier = Modifier.fillMaxSize()) {
         SidebarHeader(
             state,
@@ -91,8 +93,22 @@ fun SidebarScreen(state: CommuneState) {
         }
 
         if (state.rooms.isEmpty()) {
-            // The first sync is still on its way; never a blank list.
-            LoadingFace(modifier = Modifier.fillMaxSize())
+            if (!state.roomsLoaded) {
+                // The first sync is still on its way; never a blank list.
+                LoadingFace(modifier = Modifier.fillMaxSize())
+            } else {
+                // An account can simply have no rooms yet.
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "No rooms yet",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             return@Column
         }
 
@@ -126,6 +142,78 @@ fun SidebarScreen(state: CommuneState) {
     }
 }
 
+/// The account switcher: every session on this device, tap to switch,
+/// Add Account into the login flow — the application's account_switcher.
+@androidx.compose.runtime.Composable
+@kotlin.OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+private fun AccountSwitcherSheet(state: CommuneState) {
+    if (!state.accountSwitcherOpen) return
+
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = { state.closeAccountSwitcher() },
+    ) {
+        for (account in state.accounts) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = account.ready) {
+                        state.switchAccount(account.sessionId)
+                    }
+                    .padding(horizontal = 24.dp, vertical = 10.dp),
+            ) {
+                InitialsAvatar(
+                    identifier = account.userId.ifEmpty { account.sessionId },
+                    name = account.userId.removePrefix("@").substringBefore(':')
+                        .ifEmpty { "?" },
+                    size = 36.dp,
+                )
+                Spacer(Modifier.size(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        account.userId.ifEmpty { "Restoring…" },
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        account.homeserver,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                androidx.compose.material3.RadioButton(
+                    selected = account.active,
+                    onClick = { state.switchAccount(account.sessionId) },
+                    enabled = account.ready,
+                )
+            }
+        }
+        androidx.compose.material3.HorizontalDivider(
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
+        Text(
+            "Add Account",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { state.startAddAccount() }
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+        )
+        Text(
+            "Account Settings",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    state.closeAccountSwitcher()
+                    state.openSettings()
+                }
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+        )
+        Spacer(Modifier.size(24.dp))
+    }
+}
+
 /// Header bar: account avatar at the start, search and primary menu at the
 /// end (both placeholders until their features arrive).
 @Composable
@@ -147,7 +235,7 @@ private fun SidebarHeader(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-                .clickable { state.openSettings() }
+                .clickable { state.openAccountSwitcher() }
                 .padding(horizontal = 6.dp, vertical = 4.dp),
         ) {
             val avatarPath = state.profileAvatarPath

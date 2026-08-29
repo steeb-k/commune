@@ -25,6 +25,13 @@ class Notifier(private val context: Context) {
     var enabled: Boolean = true
     var visibleRoomId: String? = null
 
+    /// The active account, keying the bookkeeping: what was announced
+    /// for one account must not silence another's.
+    var accountKey: String = ""
+
+    private fun postedKey(roomId: String) =
+        if (accountKey.isEmpty()) roomId else "$accountKey|$roomId"
+
     init {
         manager.createNotificationChannel(
             NotificationChannel(
@@ -39,18 +46,18 @@ class Notifier(private val context: Context) {
     fun update(rooms: List<FfiRoom>) {
         for (room in rooms) {
             val count = room.notificationCount.toLong()
-            val known = posted.getLong(room.roomId, 0L)
+            val known = posted.getLong(postedKey(room.roomId), 0L)
             when {
                 count == 0L || room.roomId == visibleRoomId || !enabled -> {
                     if (known != 0L) {
-                        posted.edit().remove(room.roomId).apply()
+                        posted.edit().remove(postedKey(room.roomId)).apply()
                         manager.cancel(room.roomId.hashCode())
                     }
                 }
                 // Only more unread than last announced is news; the same
                 // count after a restart is not.
                 count > known -> {
-                    posted.edit().putLong(room.roomId, count).apply()
+                    posted.edit().putLong(postedKey(room.roomId), count).apply()
                     manager.notify(
                         room.roomId.hashCode(),
                         build(room, room.notificationCount),

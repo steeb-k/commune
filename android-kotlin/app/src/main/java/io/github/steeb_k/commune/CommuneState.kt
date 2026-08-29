@@ -85,6 +85,11 @@ class CommuneState(context: Context) {
         private set
     var loginError by mutableStateOf<String?>(null)
         private set
+    /// Whether the room list has been delivered for the current
+    /// session: an account with no rooms is loaded, not loading.
+    var roomsLoaded by mutableStateOf(false)
+        private set
+
     var ownUserId by mutableStateOf<String?>(null)
         private set
     var typingUsers by mutableStateOf<List<String>>(emptyList())
@@ -136,6 +141,9 @@ class CommuneState(context: Context) {
                 openRoom?.let { current ->
                     rooms.find { it.roomId == current.roomId }?.let { openRoom = it }
                 }
+                // The list arrived, so this session is ready — even
+                // when it carries no rooms at all.
+                roomsLoaded = true
                 if (ownUserId == null) ownUserId = app.sessionUserId()
                 if (settings == null) settings = app.sessionSettings()
                 // The first delivery proves the session is ready; the
@@ -197,11 +205,79 @@ class CommuneState(context: Context) {
     /// The tail of every successful login, whatever authenticated it.
     private fun finishLogin() {
         loginBusy = false
+        addingAccount = false
         phase = Phase.Session
+        rooms = emptyList()
+        roomsLoaded = false
+        ownUserId = null
+        profileName = null
+        profileAvatarPath = null
+        settings = null
+        savedScroll.clear()
         // The old listener task died with the old session.
         app.setRoomListListener(roomListListener)
         watchVerifications()
         loadProfile()
+        refreshAccounts()
+    }
+
+    // The account switcher: every session on the device, the active one
+    // marked, switching re-arming the listeners like a login does.
+    var accountSwitcherOpen by mutableStateOf(false)
+        private set
+    var accounts by mutableStateOf<List<io.github.steeb_k.commune.core.FfiSessionInfo>>(
+        emptyList()
+    )
+        private set
+    var addingAccount by mutableStateOf(false)
+        private set
+
+    fun refreshAccounts() {
+        thread {
+            val list = app.sessions()
+            main.post {
+                accounts = list
+                // Notification bookkeeping is per-account.
+                notifier.accountKey = list.find { it.active }?.sessionId.orEmpty()
+            }
+        }
+    }
+
+    fun openAccountSwitcher() {
+        refreshAccounts()
+        accountSwitcherOpen = true
+    }
+
+    fun closeAccountSwitcher() {
+        accountSwitcherOpen = false
+    }
+
+    fun switchAccount(sessionId: String) {
+        closeAccountSwitcher()
+        closeRoom()
+        app.setActiveSession(sessionId)
+        // Everything session-scoped belongs to the account that was
+        // active; the new one's arrives with its first room list.
+        rooms = emptyList()
+        roomsLoaded = false
+        ownUserId = null
+        profileName = null
+        profileAvatarPath = null
+        settings = null
+        savedScroll.clear()
+        app.setRoomListListener(roomListListener)
+        watchVerifications()
+        loadProfile()
+        refreshAccounts()
+    }
+
+    fun startAddAccount() {
+        closeAccountSwitcher()
+        addingAccount = true
+    }
+
+    fun cancelAddAccount() {
+        addingAccount = false
     }
 
     /// What the homeserver said it offers, after discovery.
