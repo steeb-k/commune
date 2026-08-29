@@ -157,6 +157,9 @@ private fun CommuneApp(state: CommuneState) {
             } else if (state.devicesOpen) {
                 BackHandler { state.closeDevices() }
                 DevicesScreen(state)
+            } else if (state.ignoredUsersOpen) {
+                BackHandler { state.closeIgnoredUsers() }
+                io.github.steeb_k.commune.ui.IgnoredUsersScreen(state)
             } else if (state.settingsOpen) {
                 BackHandler { state.closeSettings() }
                 SettingsScreen(state)

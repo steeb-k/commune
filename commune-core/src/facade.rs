@@ -2869,6 +2869,164 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// The users the account ignores, as `m.ignored_user_list` lists
+    /// them — the application's safety page order.
+    pub async fn ignored_users(&self) -> Vec<String> {
+        use ruma::events::ignored_user_list::IgnoredUserListEventContent;
+
+        let Some(session) = self.first_ready_session() else {
+            return Vec::new();
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let Ok(Some(raw)) = session
+                    .client()
+                    .account()
+                    .account_data::<IgnoredUserListEventContent>()
+                    .await
+                else {
+                    return Vec::new();
+                };
+                raw.deserialize()
+                    .map(|content| {
+                        content
+                            .ignored_users
+                            .into_keys()
+                            .map(|user_id| user_id.to_string())
+                            .collect()
+                    })
+                    .unwrap_or_default()
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Ignore the given user: their messages disappear everywhere.
+    pub async fn ignore_user(&self, user_id: String) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let user_id = ruma::UserId::parse(&user_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid user ID".to_owned(),
+                })?;
+                session
+                    .client()
+                    .account()
+                    .ignore_user(&user_id)
+                    .await
+                    .map_err(|ignore_error| CoreError::Failed {
+                        msg: format!("Could not ignore the user: {ignore_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Stop ignoring the given user.
+    pub async fn unignore_user(&self, user_id: String) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let user_id = ruma::UserId::parse(&user_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid user ID".to_owned(),
+                })?;
+                session
+                    .client()
+                    .account()
+                    .unignore_user(&user_id)
+                    .await
+                    .map_err(|unignore_error| CoreError::Failed {
+                        msg: format!("Could not stop ignoring the user: {unignore_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The keywords that trigger notifications, from the account's
+    /// enabled keyword push rules.
+    pub async fn notification_keywords(&self) -> Vec<String> {
+        let Some(session) = self.first_ready_session() else {
+            return Vec::new();
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let settings = session.client().notification_settings().await;
+                settings.enabled_keywords().await.into_iter().collect()
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Add a keyword that triggers notifications, returning the updated
+    /// list.
+    ///
+    /// The updated list comes from the same settings instance that made
+    /// the change: a fresh read would race the sync echo of the rules.
+    pub async fn add_notification_keyword(
+        &self,
+        keyword: String,
+    ) -> Result<Vec<String>, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let settings = session.client().notification_settings().await;
+                settings
+                    .add_keyword(keyword)
+                    .await
+                    .map_err(|keyword_error| CoreError::Failed {
+                        msg: format!("Could not add the keyword: {keyword_error}"),
+                    })?;
+                Ok(settings.enabled_keywords().await.into_iter().collect())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Remove a keyword from the notification triggers, returning the
+    /// updated list.
+    pub async fn remove_notification_keyword(
+        &self,
+        keyword: String,
+    ) -> Result<Vec<String>, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let settings = session.client().notification_settings().await;
+                settings
+                    .remove_keyword(&keyword)
+                    .await
+                    .map_err(|keyword_error| CoreError::Failed {
+                        msg: format!("Could not remove the keyword: {keyword_error}"),
+                    })?;
+                Ok(settings.enabled_keywords().await.into_iter().collect())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Kick the given user from the given room.
     pub async fn kick_user(
         &self,
