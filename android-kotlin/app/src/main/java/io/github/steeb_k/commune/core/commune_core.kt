@@ -781,6 +781,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_account_profile(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_add_notification_keyword(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_ban_user(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_cancel_verification(
@@ -823,6 +825,10 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_has_sessions(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_ignore_user(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_ignored_users(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_import_room_keys(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_invite_user(
@@ -839,6 +845,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_mark_room_read(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_notification_keywords(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_paginate_backwards(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_recover(
@@ -846,6 +854,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_recovery_state(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_redact_event(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_remove_notification_keyword(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_remove_push_gateway(
     ): Short
@@ -933,6 +943,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_toggle_reaction(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_unignore_user(
+    ): Short
     external fun uniffi_commune_core_checksum_method_memberlistlistener_on_update(
     ): Short
     external fun uniffi_commune_core_checksum_method_roomlistlistener_on_update(
@@ -984,6 +996,8 @@ external fun uniffi_commune_core_fn_method_coreapp_accept_verification(`ptr`: Lo
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_account_profile(`ptr`: Long,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_add_notification_keyword(`ptr`: Long,`keyword`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_ban_user(`ptr`: Long,`roomId`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_cancel_verification(`ptr`: Long,`flowId`: RustBuffer.ByValue,
@@ -1026,6 +1040,10 @@ external fun uniffi_commune_core_fn_method_coreapp_has_ready_session(`ptr`: Long
 ): Byte
 external fun uniffi_commune_core_fn_method_coreapp_has_sessions(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
+external fun uniffi_commune_core_fn_method_coreapp_ignore_user(`ptr`: Long,`userId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_ignored_users(`ptr`: Long,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_import_room_keys(`ptr`: Long,`path`: RustBuffer.ByValue,`passphrase`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_invite_user(`ptr`: Long,`roomId`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,
@@ -1042,6 +1060,8 @@ external fun uniffi_commune_core_fn_method_coreapp_logout(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_mark_room_read(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_notification_keywords(`ptr`: Long,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_paginate_backwards(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_recover(`ptr`: Long,`recoveryKey`: RustBuffer.ByValue,
@@ -1049,6 +1069,8 @@ external fun uniffi_commune_core_fn_method_coreapp_recover(`ptr`: Long,`recovery
 external fun uniffi_commune_core_fn_method_coreapp_recovery_state(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_redact_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_remove_notification_keyword(`ptr`: Long,`keyword`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_remove_push_gateway(`ptr`: Long,`pushkey`: RustBuffer.ByValue,
 ): Long
@@ -1135,6 +1157,8 @@ external fun uniffi_commune_core_fn_method_coreapp_space_children(`ptr`: Long,`s
 external fun uniffi_commune_core_fn_method_coreapp_sticker_packs(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_toggle_reaction(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_unignore_user(`ptr`: Long,`userId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_clone_memberlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
@@ -1322,6 +1346,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_account_profile() != 32239.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_add_notification_keyword() != 44092.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_ban_user() != 41618.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1385,6 +1412,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_has_sessions() != 62270.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_ignore_user() != 53227.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_ignored_users() != 61338.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_import_room_keys() != 5468.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1409,6 +1442,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_mark_room_read() != 44162.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_notification_keywords() != 22967.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_paginate_backwards() != 11648.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1419,6 +1455,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_redact_event() != 51517.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_remove_notification_keyword() != 45534.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_remove_push_gateway() != 35864.toShort()) {
@@ -1548,6 +1587,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_toggle_reaction() != 55807.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_unignore_user() != 53552.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_memberlistlistener_on_update() != 20923.toShort()) {
@@ -2086,6 +2128,15 @@ public interface CoreAppInterface {
     suspend fun `accountProfile`(): FfiProfile?
     
     /**
+     * Add a keyword that triggers notifications, returning the updated
+     * list.
+     *
+     * The updated list comes from the same settings instance that made
+     * the change: a fresh read would race the sync echo of the rules.
+     */
+    suspend fun `addNotificationKeyword`(`keyword`: kotlin.String): List<kotlin.String>
+    
+    /**
      * Ban the given user from the given room.
      */
     suspend fun `banUser`(`roomId`: kotlin.String, `userId`: kotlin.String, `reason`: kotlin.String?)
@@ -2212,6 +2263,17 @@ public interface CoreAppInterface {
     fun `hasSessions`(): kotlin.Boolean
     
     /**
+     * Ignore the given user: their messages disappear everywhere.
+     */
+    suspend fun `ignoreUser`(`userId`: kotlin.String)
+    
+    /**
+     * The users the account ignores, as `m.ignored_user_list` lists
+     * them — the application's safety page order.
+     */
+    suspend fun `ignoredUsers`(): List<kotlin.String>
+    
+    /**
      * Import room keys from an encrypted export at the given path.
      *
      * Returns how many keys came in.
@@ -2259,6 +2321,12 @@ public interface CoreAppInterface {
     suspend fun `markRoomRead`(`roomId`: kotlin.String)
     
     /**
+     * The keywords that trigger notifications, from the account's
+     * enabled keyword push rules.
+     */
+    suspend fun `notificationKeywords`(): List<kotlin.String>
+    
+    /**
      * Paginate the given room's timeline backwards.
      */
     suspend fun `paginateBackwards`(`roomId`: kotlin.String)
@@ -2277,6 +2345,12 @@ public interface CoreAppInterface {
      * Redact the given event in the given room.
      */
     suspend fun `redactEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String)
+    
+    /**
+     * Remove a keyword from the notification triggers, returning the
+     * updated list.
+     */
+    suspend fun `removeNotificationKeyword`(`keyword`: kotlin.String): List<kotlin.String>
     
     /**
      * Remove the pusher with the given pushkey, so the homeserver stops
@@ -2547,6 +2621,11 @@ public interface CoreAppInterface {
      */
     suspend fun `toggleReaction`(`roomId`: kotlin.String, `eventId`: kotlin.String, `key`: kotlin.String)
     
+    /**
+     * Stop ignoring the given user.
+     */
+    suspend fun `unignoreUser`(`userId`: kotlin.String)
+    
     companion object
 }
 
@@ -2705,6 +2784,34 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { FfiConverterOptionalTypeFfiProfile.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Add a keyword that triggers notifications, returning the updated
+     * list.
+     *
+     * The updated list comes from the same settings instance that made
+     * the change: a fresh read would race the sync echo of the rules.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `addNotificationKeyword`(`keyword`: kotlin.String) : List<kotlin.String> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_add_notification_keyword(
+                uniffiHandle,
+                FfiConverterString.lower(`keyword`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
     )
     }
 
@@ -3191,6 +3298,55 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Ignore the given user: their messages disappear everywhere.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `ignoreUser`(`userId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_ignore_user(
+                uniffiHandle,
+                FfiConverterString.lower(`userId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The users the account ignores, as `m.ignored_user_list` lists
+     * them — the application's safety page order.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `ignoredUsers`() : List<kotlin.String> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_ignored_users(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
      * Import room keys from an encrypted export at the given path.
      *
      * Returns how many keys came in.
@@ -3394,6 +3550,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * The keywords that trigger notifications, from the account's
+     * enabled keyword push rules.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `notificationKeywords`() : List<kotlin.String> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_notification_keywords(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
      * Paginate the given room's timeline backwards.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -3484,6 +3664,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         // lift function
         { Unit },
         
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Remove a keyword from the notification triggers, returning the
+     * updated list.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `removeNotificationKeyword`(`keyword`: kotlin.String) : List<kotlin.String> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_remove_notification_keyword(
+                uniffiHandle,
+                FfiConverterString.lower(`keyword`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceString.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -4446,6 +4651,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_toggle_reaction(
                 uniffiHandle,
                 FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),FfiConverterString.lower(`key`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Stop ignoring the given user.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `unignoreUser`(`userId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_unignore_user(
+                uniffiHandle,
+                FfiConverterString.lower(`userId`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },

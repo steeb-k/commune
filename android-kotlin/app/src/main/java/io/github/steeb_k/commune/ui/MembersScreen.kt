@@ -53,6 +53,8 @@ fun MembersScreen(state: CommuneState, room: FfiRoom) {
     acting?.let { member ->
         MemberActionsDialog(state, member, onDismiss = { acting = null })
     }
+    // The actions dialog offers Ignore or Stop Ignoring by this list.
+    LaunchedEffect(Unit) { state.refreshIgnoredUsers() }
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -282,6 +284,22 @@ private fun MemberActionsDialog(
                 androidx.compose.material3.TextButton(
                     onClick = { state.banUser(member.userId, done) },
                 ) { Text("Ban", color = MaterialTheme.colorScheme.error) }
+                val ignored = state.ignoredUsers.contains(member.userId)
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        if (ignored) {
+                            state.unignoreUser(member.userId)
+                        } else {
+                            state.ignoreUser(member.userId)
+                        }
+                        onDismiss()
+                    },
+                ) {
+                    Text(
+                        if (ignored) "Stop Ignoring" else "Ignore",
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
                 error?.let {
                     Text(
                         it,

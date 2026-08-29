@@ -942,6 +942,103 @@ class CommuneState(context: Context) {
         }
     }
 
+    // The users the account ignores, and the safety subpage showing them.
+    var ignoredUsersOpen by mutableStateOf(false)
+        private set
+    var ignoredUsers by mutableStateOf<List<String>>(emptyList())
+        private set
+
+    fun openIgnoredUsers() {
+        ignoredUsersOpen = true
+        refreshIgnoredUsers()
+    }
+
+    fun closeIgnoredUsers() {
+        ignoredUsersOpen = false
+    }
+
+    fun refreshIgnoredUsers() {
+        thread {
+            runBlocking {
+                val list = try {
+                    app.ignoredUsers()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                main.post { ignoredUsers = list }
+            }
+        }
+    }
+
+    fun ignoreUser(userId: String) {
+        thread {
+            runBlocking {
+                try {
+                    app.ignoreUser(userId)
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not ignore the user"))
+                }
+                main.post { refreshIgnoredUsers() }
+            }
+        }
+    }
+
+    fun unignoreUser(userId: String) {
+        thread {
+            runBlocking {
+                try {
+                    app.unignoreUser(userId)
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not stop ignoring the user"))
+                }
+                main.post { refreshIgnoredUsers() }
+            }
+        }
+    }
+
+    // The keywords that trigger notifications.
+    var notificationKeywords by mutableStateOf<List<String>>(emptyList())
+        private set
+
+    fun loadNotificationKeywords() {
+        thread {
+            runBlocking {
+                val list = try {
+                    app.notificationKeywords()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                main.post { notificationKeywords = list }
+            }
+        }
+    }
+
+    fun addNotificationKeyword(keyword: String) {
+        thread {
+            runBlocking {
+                try {
+                    val list = app.addNotificationKeyword(keyword)
+                    main.post { notificationKeywords = list }
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not add the keyword"))
+                }
+            }
+        }
+    }
+
+    fun removeNotificationKeyword(keyword: String) {
+        thread {
+            runBlocking {
+                try {
+                    val list = app.removeNotificationKeyword(keyword)
+                    main.post { notificationKeywords = list }
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not remove the keyword"))
+                }
+            }
+        }
+    }
+
     // The account's sessions.
     var devicesOpen by mutableStateOf(false)
         private set

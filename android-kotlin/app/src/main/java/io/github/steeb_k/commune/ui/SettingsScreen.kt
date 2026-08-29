@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -73,21 +74,6 @@ fun SettingsScreen(state: CommuneState) {
             checked = settings?.notificationsEnabled == true,
             onChange = { state.setNotificationsEnabled(it) },
         )
-
-        SettingsGroup("Safety")
-        SettingSwitch(
-            title = "Send Read Receipts",
-            subtitle = "Turned off, receipts are still sent privately",
-            checked = settings?.publicReadReceiptsEnabled == true,
-            onChange = { state.setPublicReadReceiptsEnabled(it) },
-        )
-        SettingSwitch(
-            title = "Send Typing Notifications",
-            checked = settings?.typingEnabled == true,
-            onChange = { state.setTypingEnabled(it) },
-        )
-
-        SettingsGroup("Notifications")
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -112,6 +98,36 @@ fun SettingsScreen(state: CommuneState) {
                 state.reopenPushOnboarding()
                 state.closeSettings()
             }) { Text("Change") }
+        }
+        KeywordRows(state)
+
+        SettingsGroup("Safety")
+        SettingSwitch(
+            title = "Send Read Receipts",
+            subtitle = "Turned off, receipts are still sent privately",
+            checked = settings?.publicReadReceiptsEnabled == true,
+            onChange = { state.setPublicReadReceiptsEnabled(it) },
+        )
+        SettingSwitch(
+            title = "Send Typing Notifications",
+            checked = settings?.typingEnabled == true,
+            onChange = { state.setTypingEnabled(it) },
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Ignored Users", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Users whose messages are hidden everywhere",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = { state.openIgnoredUsers() }) { Text("Open") }
         }
 
         SettingsGroup("Sessions")
@@ -157,6 +173,63 @@ fun SettingsScreen(state: CommuneState) {
 
         SettingsGroup("Account")
         LogoutRow(state)
+    }
+}
+
+/// The keywords that trigger notifications: the GTK notifications
+/// page's list, with an add row at the end.
+@Composable
+private fun KeywordRows(state: CommuneState) {
+    androidx.compose.runtime.LaunchedEffect(Unit) { state.loadNotificationKeywords() }
+    var newKeyword by remember { mutableStateOf("") }
+
+    Text(
+        "Keywords that trigger notifications",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+    )
+    for (keyword in state.notificationKeywords) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                keyword,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = { state.removeNotificationKeyword(keyword) }) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "Remove “$keyword”",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedTextField(
+            value = newKeyword,
+            onValueChange = { newKeyword = it },
+            placeholder = { Text("Add a keyword") },
+            singleLine = true,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(
+            enabled = newKeyword.isNotBlank(),
+            onClick = {
+                state.addNotificationKeyword(newKeyword.trim())
+                newKeyword = ""
+            },
+        ) { Text("Add") }
     }
 }
 
