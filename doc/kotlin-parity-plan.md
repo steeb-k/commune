@@ -204,3 +204,24 @@ stable point rather than only at the end.
   entry point findable afterwards.
 * **QR scanning must stay portrait** — the zxing scan activity forces
   landscape today; lock it to the app's orientation instead.
+
+## Where this ended up
+
+Chunks 1–12 are done and on `fractal-kotlin`, along with both
+post-plan items. Calls landed as the split above describes: the core
+speaks `m.call.*` (version 1, party IDs, invitee, candidates in both
+spellings, straight-to-homeserver sends) and Android carries the media
+with WebRTC, a full-screen incoming-call notification, the system
+ringtone, and a `phoneCall` foreground service.
+
+Still open, in the order they matter:
+
+* **Video calls.** Voice is done end to end; the camera is not wired.
+  The engine already builds with the video encoder/decoder factories,
+  so this is a track and a renderer, not a redesign.
+* **A call row in the timeline.** A finished call leaves nothing
+  behind in the room the way `room_history/call_row` does.
+* **`m.call.negotiate`.** Renegotiation mid-call — which the GTK app
+  uses when a camera comes on partway through — waits on video.
+* **Audio actually flowing** between two endpoints is a hardware
+  test; the emulator can prove the signalling and not the media.
