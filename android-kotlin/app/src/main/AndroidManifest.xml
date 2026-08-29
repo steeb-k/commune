@@ -15,16 +15,15 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <application
+        android:name=".CommuneApplication"
         android:icon="@mipmap/ic_launcher"
         android:label="Commune"
         android:theme="@style/Theme.Commune.Starting"
         android:usesCleartextTraffic="true">
-        <!-- The activity builds its CommuneState in onCreate, so letting
-             Android recreate it on a rotation throws the whole session away
-             and rebuilds it empty. During a call that dropped the caller
-             back into the chat while the call itself carried on inside the
-             service, with nothing left to reach it by. Compose handles
-             these configuration changes itself. -->
+        <!-- The session lives in CommuneApplication, so a recreation no
+             longer loses it. Handling these changes in place is still the
+             better behaviour — Compose does it without tearing the tree
+             down and rebuilding it. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -57,7 +57,7 @@ object IncomingCallNotification {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
-        val notification = Notification.Builder(context, CHANNEL_ID)
+        val builder = Notification.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notify_symbolic)
             .setContentTitle("Incoming call")
             .setContentText(name)
@@ -67,15 +67,33 @@ object IncomingCallNotification {
             // The whole screen when the phone is idle, a banner when it
             // is not — which is what a ringing phone does.
             .setFullScreenIntent(open, true)
-            .addAction(
-                Notification.Action.Builder(null, "Decline", decline).build()
-            )
-            .addAction(
-                Notification.Action.Builder(null, "Answer", answer).build()
-            )
-            .build()
 
-        manager.notify(NOTIFICATION_ID, notification)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            // A plain high-importance notification gets swept into
+            // Android's automatic group once the app has a few of them,
+            // and a grouped notification does not pop up — which is how a
+            // ringing phone came to show a silent line in the shade
+            // instead. CallStyle is ranked as a call: never auto-grouped,
+            // always at the top, and drawn with the answer and decline
+            // buttons the system uses for every other call.
+            val caller = android.app.Person.Builder()
+                .setName(name)
+                .setImportant(true)
+                .build()
+            builder.setStyle(
+                Notification.CallStyle.forIncomingCall(caller, decline, answer)
+            )
+        } else {
+            builder
+                .addAction(
+                    Notification.Action.Builder(null, "Decline", decline).build()
+                )
+                .addAction(
+                    Notification.Action.Builder(null, "Answer", answer).build()
+                )
+        }
+
+        manager.notify(NOTIFICATION_ID, builder.build())
     }
 
     fun dismiss(context: Context) {

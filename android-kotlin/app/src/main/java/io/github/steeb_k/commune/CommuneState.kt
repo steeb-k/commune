@@ -56,8 +56,9 @@ class CommuneState(context: Context) {
     private val notifier = Notifier(appContext)
 
     /// Whether the activity is in the foreground; backgrounded, the open
-    /// room notifies like any other.
-    var uiVisible: Boolean = true
+    /// room notifies like any other. False until a window says otherwise:
+    /// the process can now exist with no activity at all, woken by a push.
+    var uiVisible: Boolean = false
         set(value) {
             field = value
             notifier.visibleRoomId = if (value) openRoom?.roomId else null
