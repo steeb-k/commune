@@ -150,6 +150,8 @@ private fun postFromPayload(context: Context, payload: String) {
             .setContentText(text)
             .setContentIntent(openApp)
             .setAutoCancel(true)
+            .setVisibility(Notification.VISIBILITY_PRIVATE)
+            .setPublicVersion(redactedNotification(context, "messages"))
             .build(),
     )
 }
