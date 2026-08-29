@@ -2915,6 +2915,20 @@ class CommuneState(context: Context) {
     var call by mutableStateOf<ActiveCall?>(null)
         private set
 
+    /// Whether the call has been pushed aside to read the room behind it.
+    /// The call carries on; only its screen steps out of the way, and the
+    /// banner at the top of every page brings it back.
+    var callMinimized by mutableStateOf(false)
+        private set
+
+    fun minimizeCall() {
+        callMinimized = true
+    }
+
+    fun restoreCall() {
+        callMinimized = false
+    }
+
     data class ActiveCall(
         val callId: String,
         val roomId: String,
@@ -3406,6 +3420,7 @@ class CommuneState(context: Context) {
         gatheredCandidates.clear()
         pendingGatheringDone = false
         call = null
+        callMinimized = false
         audioForCall(false)
         CallService.stop(appContext)
     }

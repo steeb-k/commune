@@ -1201,8 +1201,18 @@ impl CoreApp {
                             return;
                         }
                         let call_id = event.content.call_id.to_string();
-                        tracing::info!("Incoming call {call_id} from {}", event.sender);
                         flows.note_outcome(&call_id, FfiCallOutcome::Ringing);
+                        // The same invite reaches this end more than once —
+                        // a sync replay, or the room's own echo. Registering
+                        // it again mints a fresh party ID, while the answer
+                        // already went out under the old one; the caller's
+                        // select_answer then names a party this end no
+                        // longer claims, and the call we just answered ends
+                        // itself as "answered elsewhere".
+                        if flows.has(&call_id) {
+                            return;
+                        }
+                        tracing::info!("Incoming call {call_id} from {}", event.sender);
                         flows.insert(
                             call_id.clone(),
                             CallFlow {
@@ -1215,6 +1225,7 @@ impl CoreApp {
                                     .map(ToString::to_string),
                                 remote_user_id: event.sender.to_string(),
                                 outgoing: false,
+                                answer_selected: false,
                             },
                         );
                         flows.emit(|listener| {
@@ -1232,7 +1243,8 @@ impl CoreApp {
             let answer_flows = flows.clone();
             let answer_own = own_user_id.clone();
             handles.push(
-                client.add_event_handler(move |event: OriginalSyncCallAnswerEvent| {
+                client.add_event_handler(
+                    move |event: OriginalSyncCallAnswerEvent, room: matrix_sdk::Room| {
                     let flows = answer_flows.clone();
                     let own_user_id = answer_own.clone();
                     async move {
@@ -1254,15 +1266,53 @@ impl CoreApp {
                             return;
                         }
                         flows.note_outcome(&call_id, FfiCallOutcome::Answered);
-                        flows.set_remote_party(
-                            &call_id,
-                            event.content.party_id.as_ref().map(ToString::to_string),
-                        );
+
+                        let their_party =
+                            event.content.party_id.as_ref().map(ToString::to_string);
+
+                        if flows.is_outgoing(&call_id) {
+                            let Some(our_party) = flows.take_answer_selection(&call_id) else {
+                                // Two of their devices answered. The first
+                                // one won; this one was told so by the
+                                // `m.call.select_answer` already sent. Going
+                                // further would apply a second remote
+                                // description over a live call.
+                                return;
+                            };
+                            // Version 1 asks the caller to say which answer
+                            // it took, so the devices that did not win stop
+                            // ringing.
+                            if let Some(their_party) = their_party.clone() {
+                                let content = ruma::events::call::select_answer::CallSelectAnswerEventContent::version_1(
+                                    ruma::OwnedVoipId::from(call_id.clone()),
+                                    ruma::OwnedVoipId::from(our_party),
+                                    ruma::OwnedVoipId::from(their_party),
+                                );
+                                // The handler is handed the SDK's own room,
+                                // which is what `send_call_event` unwraps
+                                // to anyway.
+                                if let Err(error) = room
+                                    .send(
+                                        ruma::events::AnyMessageLikeEventContent::CallSelectAnswer(
+                                            content,
+                                        ),
+                                    )
+                                    .await
+                                {
+                                    tracing::warn!(
+                                        "Could not select the answer for call {call_id}: {error}"
+                                    );
+                                }
+                            }
+                        }
+
+                        flows.set_remote_party(&call_id, their_party);
                         flows.emit(|listener| {
                             listener.on_answer(call_id.clone(), event.content.answer.sdp.clone());
                         });
                     }
-                }),
+                },
+                ),
             );
 
             let candidate_flows = flows.clone();
@@ -1391,12 +1441,26 @@ impl CoreApp {
             ));
 
             let select_flows = flows.clone();
+            let select_own = own_user_id.clone();
             handles.push(client.add_event_handler(
                 move |event: OriginalSyncCallSelectAnswerEvent| {
                     let flows = select_flows.clone();
+                    let own_user_id = select_own.clone();
                     async move {
+                        // The caller sends this, to tell the callee's other
+                        // devices that they lost. Our own copy echoing back
+                        // through sync names the callee's party, never
+                        // ours, so acting on it tears down the very call we
+                        // just placed.
+                        if event.sender == own_user_id {
+                            return;
+                        }
                         let call_id = event.content.call_id.to_string();
                         flows.note_outcome(&call_id, FfiCallOutcome::Answered);
+                        // Only a callee acts on this. The caller sent it.
+                        if flows.is_outgoing(&call_id) {
+                            return;
+                        }
                         let Some(party_id) = flows.party_id(&call_id) else {
                             return;
                         };
@@ -1480,6 +1544,7 @@ impl CoreApp {
                         remote_party_id: None,
                         remote_user_id: invitee,
                         outgoing: true,
+                        answer_selected: false,
                     },
                 );
 
@@ -7481,6 +7546,9 @@ struct CallFlow {
     remote_party_id: Option<String>,
     remote_user_id: String,
     outgoing: bool,
+    /// Whether this end, as the caller, has already picked an answer and
+    /// said so. The first answer wins; every later one is ignored.
+    answer_selected: bool,
 }
 
 /// How many calls the timeline remembers the outcome of.
@@ -7586,6 +7654,28 @@ impl CallFlows {
             .expect("mutex is not poisoned")
             .get(call_id)
             .map(|flow| flow.party_id.clone())
+    }
+
+    fn is_outgoing(&self, call_id: &str) -> bool {
+        self.calls
+            .lock()
+            .expect("mutex is not poisoned")
+            .get(call_id)
+            .is_some_and(|flow| flow.outgoing)
+    }
+
+    /// Claim the right to answer for this call: returns our own party ID
+    /// the first time an answer arrives for a call we placed, and nothing
+    /// afterwards. Claiming and marking are one step so that two answers
+    /// landing together cannot both win.
+    fn take_answer_selection(&self, call_id: &str) -> Option<String> {
+        let mut calls = self.calls.lock().expect("mutex is not poisoned");
+        let flow = calls.get_mut(call_id)?;
+        if !flow.outgoing || flow.answer_selected {
+            return None;
+        }
+        flow.answer_selected = true;
+        Some(flow.party_id.clone())
     }
 
     fn set_remote_party(&self, call_id: &str, remote_party_id: Option<String>) {
