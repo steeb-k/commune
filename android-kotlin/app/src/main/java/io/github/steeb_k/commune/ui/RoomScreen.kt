@@ -94,6 +94,7 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
                 items = state.timeline,
                 modifier = Modifier.weight(1f),
                 onOpenThread = { state.openThread(it) },
+                live = true,
             )
         }
         TypingLine(state.typingUsers)
@@ -325,6 +326,15 @@ private fun RoomHeader(state: CommuneState, room: FfiRoom, onBack: () -> Unit) {
     }
 }
 
+/// The stable identity of a timeline item, for the list to anchor on
+/// when history is prepended.
+private fun timelineKey(item: FfiTimelineItem): Any = when (item) {
+    is FfiTimelineItem.Event -> item.uniqueId
+    is FfiTimelineItem.DateDivider -> "date-${item.timestamp}"
+    is FfiTimelineItem.ReadMarker -> "read-marker"
+    is FfiTimelineItem.TimelineStart -> "timeline-start"
+}
+
 @Composable
 internal fun Timeline(
     state: CommuneState,
@@ -332,12 +342,178 @@ internal fun Timeline(
     items: List<FfiTimelineItem>,
     modifier: Modifier,
     onOpenThread: ((String) -> Unit)? = null,
+    live: Boolean = false,
 ) {
     val listState = rememberLazyListState()
+    val roomId = room.roomId
+    val currentItems by androidx.compose.runtime.rememberUpdatedState(items)
 
-    // Open at the newest message, and follow it.
-    LaunchedEffect(items.size) {
-        if (items.isNotEmpty()) listState.scrollToItem(items.size - 1)
+    // The live room view opens at the newest message — unless it was left
+    // at another spot (that spot comes back), or a notification tap asked
+    // for the oldest unread (the read marker). Once placed, the view
+    // follows new messages only while the newest one is on screen.
+    var positioned by remember(roomId) { mutableStateOf(!live) }
+    var searchPages by remember(roomId) { mutableStateOf(0) }
+    var prevSize by remember(roomId) { mutableStateOf(0) }
+    var prevLastKey by remember(roomId) { mutableStateOf<Any?>(null) }
+
+    // A notification jump holds onto the first unread it landed on: the
+    // timeline's read marker can open stale (cached account data) and
+    // relocate moments later, and the view follows it — until the user
+    // scrolls somewhere themselves.
+    var jumpAnchor by remember(roomId) { mutableStateOf<String?>(null) }
+    var userScrolled by remember(roomId) { mutableStateOf(false) }
+    LaunchedEffect(roomId) {
+        listState.interactionSource.interactions.collect {
+            if (it is androidx.compose.foundation.interaction.DragInteraction.Start) {
+                userScrolled = true
+            }
+        }
+    }
+
+    LaunchedEffect(items) {
+        if (items.isEmpty()) return@LaunchedEffect
+        val before = prevSize
+        prevSize = items.size
+        val lastKeyBefore = prevLastKey
+        prevLastKey = timelineKey(items.last())
+
+        if (!positioned) {
+            // More pages may hold the target; the timeline start, or
+            // enough fruitless pages, means it is not coming.
+            val exhausted = items.firstOrNull() is FfiTimelineItem.TimelineStart ||
+                searchPages >= 4
+            val saved = state.savedScroll[roomId]
+            when {
+                state.jumpToUnread -> {
+                    val marker =
+                        items.indexOfFirst { it is FfiTimelineItem.ReadMarker }
+                    when {
+                        marker >= 0 -> {
+                            // Anchor on the first unread event, not the
+                            // virtual marker: marking read removes the
+                            // marker item, and a vanished anchor lets
+                            // concurrent pagination drag the viewport
+                            // off. The negative offset keeps the divider
+                            // peeking in above it.
+                            val firstUnread = (marker + 1 until items.size)
+                                .firstOrNull { items[it] is FfiTimelineItem.Event }
+                                ?: marker
+                            listState.scrollToItem(firstUnread, -130)
+                            jumpAnchor = (items.getOrNull(firstUnread)
+                                as? FfiTimelineItem.Event)?.eventId
+                            positioned = true
+                            state.completeUnreadJump()
+                        }
+                        exhausted -> {
+                            listState.scrollToItem(items.size - 1)
+                            positioned = true
+                            state.completeUnreadJump()
+                        }
+                        else -> {
+                            searchPages += 1
+                            state.paginateOlder()
+                            // Nothing arriving means the page is not
+                            // coming; land at the bottom instead of
+                            // hanging unplaced.
+                            kotlinx.coroutines.delay(5_000)
+                            listState.scrollToItem(currentItems.size - 1)
+                            positioned = true
+                            state.completeUnreadJump()
+                        }
+                    }
+                }
+                saved != null -> {
+                    val (anchor, offset) = saved
+                    val target = items.indexOfFirst {
+                        (it as? FfiTimelineItem.Event)?.eventId == anchor
+                    }
+                    when {
+                        target >= 0 -> {
+                            listState.scrollToItem(target, offset)
+                            positioned = true
+                        }
+                        exhausted -> {
+                            listState.scrollToItem(items.size - 1)
+                            positioned = true
+                        }
+                        else -> {
+                            searchPages += 1
+                            state.paginateOlder()
+                            kotlinx.coroutines.delay(5_000)
+                            listState.scrollToItem(currentItems.size - 1)
+                            positioned = true
+                        }
+                    }
+                }
+                else -> {
+                    listState.scrollToItem(items.size - 1)
+                    positioned = true
+                }
+            }
+        } else if (!live) {
+            // Threads and pinned views just follow the end.
+            listState.scrollToItem(items.size - 1)
+        } else if (jumpAnchor != null && !userScrolled) {
+            // The read marker settled somewhere else: follow it there.
+            val marker = items.indexOfFirst { it is FfiTimelineItem.ReadMarker }
+            if (marker >= 0) {
+                val firstUnread = (marker + 1 until items.size)
+                    .firstOrNull { items[it] is FfiTimelineItem.Event } ?: marker
+                val id = (items.getOrNull(firstUnread)
+                    as? FfiTimelineItem.Event)?.eventId
+                if (id != null && id != jumpAnchor) {
+                    listState.scrollToItem(firstUnread, -130)
+                    jumpAnchor = id
+                }
+            }
+        } else if (items.size > before && lastKeyBefore != null) {
+            val wasAtBottom =
+                listState.layoutInfo.visibleItemsInfo.any { it.key == lastKeyBefore }
+            if (wasAtBottom) listState.scrollToItem(items.size - 1)
+        }
+    }
+
+    if (live) {
+        // Reading further back pulls more history in as the top nears,
+        // until the start of the timeline is loaded.
+        LaunchedEffect(roomId) {
+            androidx.compose.runtime.snapshotFlow { listState.firstVisibleItemIndex }
+                .collect { first ->
+                    if (positioned && first <= 2 &&
+                        currentItems.firstOrNull() !is FfiTimelineItem.TimelineStart
+                    ) {
+                        state.paginateOlder()
+                    }
+                }
+        }
+
+        // Leaving the room remembers where it was left — nothing to
+        // remember when it was left at the bottom.
+        androidx.compose.runtime.DisposableEffect(roomId) {
+            onDispose {
+                val visible = listState.layoutInfo.visibleItemsInfo
+                val snapshot = currentItems
+                val atBottom = visible.any { it.index >= snapshot.size - 1 }
+                val anchor = if (atBottom) {
+                    null
+                } else {
+                    // Media items measure asynchronously, so a pixel
+                    // offset overshoots on reopen — anchoring the first
+                    // visible event at the viewport top is stable.
+                    visible.firstNotNullOfOrNull { info ->
+                        (snapshot.getOrNull(info.index) as? FfiTimelineItem.Event)
+                            ?.eventId
+                            ?.let { it to 0 }
+                    }
+                }
+                if (anchor != null) {
+                    state.savedScroll[roomId] = anchor
+                } else {
+                    state.savedScroll.remove(roomId)
+                }
+            }
+        }
     }
 
     // The keyboard resizing the viewport must not hide the newest
@@ -360,7 +536,7 @@ internal fun Timeline(
         modifier = modifier.fillMaxWidth(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp),
     ) {
-        items(items.size) { index ->
+        items(items.size, key = { timelineKey(items[it]) }) { index ->
             val item = items[index]
             val previous = items.getOrNull(index - 1)
 
@@ -383,7 +559,10 @@ internal fun Timeline(
                 }
                 is FfiTimelineItem.DateDivider ->
                     CenteredDivider(DATE.format(Date(item.timestamp.toLong())))
-                is FfiTimelineItem.ReadMarker -> {}
+                // A visible line, and the anchor a notification jump
+                // scrolls to — a zero-height marker cannot hold the
+                // viewport while images around it measure in.
+                is FfiTimelineItem.ReadMarker -> NewMessagesDivider()
                 is FfiTimelineItem.TimelineStart ->
                     CenteredDivider("The conversation starts here")
             }
@@ -779,6 +958,32 @@ internal fun StateLine(event: FfiTimelineItem.Event) {
             .padding(horizontal = 16.dp, vertical = 4.dp),
         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
     )
+}
+
+/// The unread boundary: the date divider's shape in the accent color.
+@Composable
+internal fun NewMessagesDivider() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            "New messages",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 12.dp),
+        )
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
 }
 
 @Composable

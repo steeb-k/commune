@@ -1206,8 +1206,9 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
-    /// Mark the given room as read, sending a read receipt at the end of
-    /// its timeline.
+    /// Mark the given room as read, sending a read receipt and moving the
+    /// fully-read marker to the end of its timeline, as the application's
+    /// room history does when the newest message is looked at.
     pub async fn mark_room_read(&self, room_id: String) {
         let Some(session) = self.first_ready_session() else {
             return;
@@ -1223,6 +1224,11 @@ impl CoreApp {
                 };
                 room.send_receipt(
                     ruma::api::client::receipt::create_receipt::v3::ReceiptType::Read,
+                    crate::session::ReceiptPosition::End,
+                )
+                .await;
+                room.send_receipt(
+                    ruma::api::client::receipt::create_receipt::v3::ReceiptType::FullyRead,
                     crate::session::ReceiptPosition::End,
                 )
                 .await;
