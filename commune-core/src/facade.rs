@@ -1720,6 +1720,44 @@ impl CoreApp {
                 },
             );
 
+            // A verification request from another user arrives in the
+            // direct chat as a message, per the application's
+            // identity_verification_view.
+            let flows_for_room = flows.clone();
+            client.add_event_handler(
+                move |event: ruma::events::room::message::OriginalSyncRoomMessageEvent,
+                      client: matrix_sdk::Client| {
+                    let flows = flows_for_room.clone();
+                    async move {
+                        use ruma::events::room::message::MessageType;
+
+                        if !matches!(event.content.msgtype, MessageType::VerificationRequest(_)) {
+                            return;
+                        }
+                        if client.user_id().is_some_and(|own| own == event.sender) {
+                            return;
+                        }
+                        let flow_id = event.event_id.to_string();
+                        tracing::info!(
+                            "In-room verification request from {}: {flow_id}",
+                            event.sender
+                        );
+                        let Some(request) = client
+                            .encryption()
+                            .get_verification_request(&event.sender, &event.event_id)
+                            .await
+                        else {
+                            tracing::warn!("In-room request {flow_id} not found in the SDK");
+                            return;
+                        };
+                        flows.insert_request(flow_id.clone(), request);
+                        flows.emit(|listener| {
+                            listener.on_request(flow_id.clone(), event.sender.to_string());
+                        });
+                    }
+                },
+            );
+
             let flows_for_start = flows.clone();
             client.add_event_handler(
                 move |event: ToDeviceKeyVerificationStartEvent, client: matrix_sdk::Client| {
@@ -2024,6 +2062,83 @@ impl CoreApp {
                     .flatten()
                     .ok_or_else(|| CoreError::Failed {
                         msg: "No identity to verify against".to_owned(),
+                    })?;
+
+                let request = identity
+                    .request_verification()
+                    .await
+                    .map_err(|request_error| CoreError::Failed {
+                        msg: format!("Could not request verification: {request_error}"),
+                    })?;
+                let flow_id = request.flow_id().to_owned();
+                flows.insert_request(flow_id.clone(), request.clone());
+
+                // As the requester we wait for the other side to accept and
+                // start; the SAS is then followed like any other.
+                let follow_flows = flows.clone();
+                let follow_flow_id = flow_id.clone();
+                RUNTIME.spawn(async move {
+                    use futures_util::StreamExt;
+                    use matrix_sdk::encryption::verification::{
+                        Verification, VerificationRequestState,
+                    };
+
+                    let mut changes = request.changes();
+                    while let Some(state) = changes.next().await {
+                        match state {
+                            VerificationRequestState::Transitioned {
+                                verification: Verification::SasV1(sas),
+                            } => {
+                                follow_flows.insert_sas(follow_flow_id.clone(), sas.clone());
+                                if let Err(sas_error) = sas.accept().await {
+                                    tracing::error!("Could not accept SAS: {sas_error}");
+                                    return;
+                                }
+                                follow_flows.clone().follow_sas(follow_flow_id, sas);
+                                return;
+                            }
+                            VerificationRequestState::Cancelled(info) => {
+                                let reason = info.reason().to_owned();
+                                follow_flows.emit(move |listener| {
+                                    listener.on_cancelled(follow_flow_id, reason);
+                                });
+                                return;
+                            }
+                            _ => {}
+                        }
+                    }
+                });
+
+                Ok(flow_id)
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Ask another user to verify: the request goes into the direct
+    /// chat as a message, and the flow then runs like any other SAS.
+    pub async fn request_user_verification(&self, user_id: String) -> Result<String, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+        let flows = self.verification.clone();
+
+        RUNTIME
+            .spawn(async move {
+                let user_id = ruma::UserId::parse(&user_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid user ID".to_owned(),
+                })?;
+                let client = session.client();
+                let identity = client
+                    .encryption()
+                    .get_user_identity(&user_id)
+                    .await
+                    .ok()
+                    .flatten()
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "This user has no cross-signing identity yet".to_owned(),
                     })?;
 
                 let request = identity
