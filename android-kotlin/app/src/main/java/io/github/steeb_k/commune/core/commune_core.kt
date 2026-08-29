@@ -875,6 +875,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_report_event(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_request_user_verification(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_request_verification(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_restore_sessions(
@@ -1131,6 +1133,8 @@ external fun uniffi_commune_core_fn_method_coreapp_remove_room_avatar(`ptr`: Lon
 external fun uniffi_commune_core_fn_method_coreapp_rename_device(`ptr`: Long,`deviceId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_report_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_request_user_verification(`ptr`: Long,`userId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_request_verification(`ptr`: Long,
 ): Long
@@ -1569,6 +1573,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_report_event() != 3178.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_request_user_verification() != 21365.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_request_verification() != 29392.toShort()) {
@@ -2555,6 +2562,12 @@ public interface CoreAppInterface {
      * application's report action does.
      */
     suspend fun `reportEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String, `reason`: kotlin.String?)
+    
+    /**
+     * Ask another user to verify: the request goes into the direct
+     * chat as a message, and the flow then runs like any other SAS.
+     */
+    suspend fun `requestUserVerification`(`userId`: kotlin.String): kotlin.String
     
     /**
      * Ask the account's verified sessions to verify this one. The flow
@@ -4208,6 +4221,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         // lift function
         { Unit },
         
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Ask another user to verify: the request goes into the direct
+     * chat as a message, and the flow then runs like any other SAS.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `requestUserVerification`(`userId`: kotlin.String) : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_request_user_verification(
+                uniffiHandle,
+                FfiConverterString.lower(`userId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )

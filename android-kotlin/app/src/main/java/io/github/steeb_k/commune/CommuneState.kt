@@ -2240,6 +2240,25 @@ class CommuneState(context: Context) {
     }
 
     /// Ask the account's other (verified) sessions to verify this one.
+    fun requestUserVerification(userId: String) {
+        thread {
+            runBlocking {
+                try {
+                    val flowId = app.requestUserVerification(userId)
+                    main.post {
+                        verificationFlowId = flowId
+                        verificationUser = userId
+                        verificationEmojis = emptyList()
+                        verificationDone = false
+                        verificationOutgoing = true
+                    }
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not request verification"))
+                }
+            }
+        }
+    }
+
     fun requestVerification() {
         thread {
             runBlocking {

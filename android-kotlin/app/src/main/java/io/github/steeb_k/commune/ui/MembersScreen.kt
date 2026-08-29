@@ -284,6 +284,12 @@ private fun MemberActionsDialog(
                 androidx.compose.material3.TextButton(
                     onClick = { state.banUser(member.userId, done) },
                 ) { Text("Ban", color = MaterialTheme.colorScheme.error) }
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        state.requestUserVerification(member.userId)
+                        onDismiss()
+                    },
+                ) { Text("Verify User") }
                 val ignored = state.ignoredUsers.contains(member.userId)
                 androidx.compose.material3.TextButton(
                     onClick = {
