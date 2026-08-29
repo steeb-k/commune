@@ -83,6 +83,15 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         intent.getStringExtra("room_id")?.let { state.openRoomById(it) }
+        handleRedirect(intent)
+    }
+
+    /// A browser login coming back on the app's custom scheme.
+    private fun handleRedirect(intent: android.content.Intent?) {
+        val uri = intent?.data ?: return
+        if (uri.scheme == "io.github.steeb-k.commune") {
+            state.handleLoginRedirect(uri)
+        }
     }
 
     override fun onStart() {
@@ -138,6 +147,7 @@ class MainActivity : ComponentActivity() {
             SyncService.start(this)
         }
         intent?.getStringExtra("room_id")?.let { state.openRoomById(it) }
+        handleRedirect(intent)
 
         setContent {
             CommuneTheme {

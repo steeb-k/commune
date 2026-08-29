@@ -183,19 +183,153 @@ class CommuneState(context: Context) {
             runBlocking {
                 try {
                     app.loginWithPassword(homeserver, username, password)
-                    main.post {
-                        loginBusy = false
-                        phase = Phase.Session
-                        // The old listener task died with the old session.
-                        app.setRoomListListener(roomListListener)
-                        watchVerifications()
-                        loadProfile()
-                    }
+                    main.post { finishLogin() }
                 } catch (failure: Exception) {
                     main.post {
                         loginBusy = false
                         loginError = failure.message ?: "Could not log in"
                     }
+                }
+            }
+        }
+    }
+
+    /// The tail of every successful login, whatever authenticated it.
+    private fun finishLogin() {
+        loginBusy = false
+        phase = Phase.Session
+        // The old listener task died with the old session.
+        app.setRoomListListener(roomListListener)
+        watchVerifications()
+        loadProfile()
+    }
+
+    /// What the homeserver said it offers, after discovery.
+    var loginMethods by mutableStateOf<io.github.steeb_k.commune.core.FfiLoginMethods?>(null)
+        private set
+
+    fun discoverLogin(homeserver: String, onDone: (Boolean) -> Unit) {
+        loginBusy = true
+        loginError = null
+        thread {
+            runBlocking {
+                try {
+                    val methods = app.discoverLogin(homeserver)
+                    main.post {
+                        loginBusy = false
+                        loginMethods = methods
+                        onDone(true)
+                    }
+                } catch (failure: Exception) {
+                    main.post {
+                        loginBusy = false
+                        loginError = coreMessage(failure, "Could not reach the homeserver")
+                        onDone(false)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Open the SSO (or OAuth) page in the browser; the redirect comes
+    /// back through the app's custom scheme.
+    fun startBrowserLogin(oauth: Boolean) {
+        thread {
+            runBlocking {
+                try {
+                    val url = if (oauth) app.oauthLoginUrl() else app.ssoLoginUrl()
+                    main.post {
+                        val intent = android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(url),
+                        ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        appContext.startActivity(intent)
+                    }
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not set up login"))
+                }
+            }
+        }
+    }
+
+    /// A redirect landed on the app's login scheme: a Matrix SSO login
+    /// token, or an OAuth authorization response.
+    fun handleLoginRedirect(uri: android.net.Uri) {
+        val loginToken = uri.getQueryParameter("loginToken")
+        loginBusy = true
+        loginError = null
+        thread {
+            runBlocking {
+                try {
+                    if (loginToken != null) {
+                        app.finishSsoLogin(loginToken)
+                    } else {
+                        app.finishOauthLogin(uri.encodedQuery.orEmpty())
+                    }
+                    main.post { finishLogin() }
+                } catch (failure: Exception) {
+                    main.post {
+                        loginBusy = false
+                        loginError = coreMessage(
+                            failure,
+                            "Could not log in",
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun register(username: String, password: String) {
+        loginBusy = true
+        loginError = null
+        thread {
+            runBlocking {
+                try {
+                    app.registerUser(username, password)
+                    main.post { finishLogin() }
+                } catch (failure: Exception) {
+                    main.post {
+                        loginBusy = false
+                        loginError = coreMessage(failure, "Could not create account")
+                    }
+                }
+            }
+        }
+    }
+
+    /// The reset flow's server-side session, once the email was asked.
+    var resetHandle by mutableStateOf<io.github.steeb_k.commune.core.FfiResetHandle?>(null)
+        private set
+
+    fun requestPasswordReset(email: String, onDone: (String?) -> Unit) {
+        thread {
+            runBlocking {
+                val error = try {
+                    val handle = app.requestPasswordReset(email)
+                    main.post { resetHandle = handle }
+                    null
+                } catch (failure: Exception) {
+                    coreMessage(failure, "Could not send the email")
+                }
+                main.post { onDone(error) }
+            }
+        }
+    }
+
+    fun resetPassword(newPassword: String, onDone: (String?) -> Unit) {
+        val handle = resetHandle ?: return
+        thread {
+            runBlocking {
+                val error = try {
+                    app.resetPassword(newPassword, handle)
+                    null
+                } catch (failure: Exception) {
+                    coreMessage(failure, "Could not reset the password")
+                }
+                main.post {
+                    if (error == null) resetHandle = null
+                    onDone(error)
                 }
             }
         }
