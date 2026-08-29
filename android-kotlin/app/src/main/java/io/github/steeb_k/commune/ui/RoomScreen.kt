@@ -601,9 +601,13 @@ private fun RoomHeader(state: CommuneState, room: FfiRoom, onBack: () -> Unit) {
             modifier = Modifier.weight(1f),
             maxLines = 1,
         )
-        // A direct chat is the one place a 1:1 call has a person to
-        // reach; a group call is the GTK app's business too, later.
-        if (room.isDirect) {
+        // Two joined members is the test, not whether anybody marked the
+        // room a direct chat — the GTK `can_call` rule verbatim. Two
+        // people in a room nobody tagged can still call each other, and a
+        // direct chat that grew a third member cannot. (GTK also refuses
+        // where it cannot send a message, which catches the server-notices
+        // room; the Kotlin core has no permissions layer to ask yet.)
+        if (room.joinedMembersCount == 2UL) {
             IconButton(onClick = { state.placeCallInRoom(room) }) {
                 Icon(
                     androidx.compose.material.icons.Icons.Filled.Call,
@@ -664,20 +668,16 @@ internal fun Timeline(
     val roomId = room.roomId
     val currentItems by androidx.compose.runtime.rememberUpdatedState(items)
 
-    // The live room view opens at the newest message — unless it was left
-    // at another spot (that spot comes back), or a notification tap asked
-    // for the oldest unread (the read marker). Once placed, the view
-    // follows new messages only while the newest one is on screen.
-    var positioned by remember(roomId) { mutableStateOf(!live) }
+    // A room opens at the newest message. The only exception in the whole
+    // screen is a notification tap, which asked for the oldest unread.
+    var positioned by remember(roomId) { mutableStateOf(false) }
     var searchPages by remember(roomId) { mutableStateOf(0) }
-    var prevSize by remember(roomId) { mutableStateOf(0) }
-    var prevLastKey by remember(roomId) { mutableStateOf<Any?>(null) }
 
     // Landing at the newest message is not one scroll: pictures measure
     // after they decode and grow the content under the viewport, which
     // would leave the view stranded above the end. So the bottom is a
     // state to hold — until the reader scrolls away themselves.
-    var stickToBottom by remember(roomId) { mutableStateOf(!live) }
+    var stickToBottom by remember(roomId) { mutableStateOf(!state.jumpToUnread) }
 
     // A notification jump holds onto the first unread it landed on: the
     // timeline's read marker can open stale (cached account data) and
@@ -694,97 +694,64 @@ internal fun Timeline(
         }
     }
 
+    // ...and a scroll that comes to rest on the newest message is the
+    // reader choosing the bottom again. Without this the flag above is a
+    // one-way latch: scroll up once and the room is never "at the bottom"
+    // again, so leaving it remembers a position it should have forgotten.
+    LaunchedEffect(roomId) {
+        androidx.compose.runtime.snapshotFlow {
+            listState.isScrollInProgress to listState.canScrollForward
+        }.collect { (scrolling, canScrollDown) ->
+            if (positioned && !scrolling && !canScrollDown) {
+                stickToBottom = true
+            }
+        }
+    }
+
     LaunchedEffect(items) {
         if (items.isEmpty()) return@LaunchedEffect
-        val before = prevSize
-        prevSize = items.size
-        val lastKeyBefore = prevLastKey
-        prevLastKey = timelineKey(items.last())
 
-        if (!positioned) {
-            // More pages may hold the target; the timeline start, or
+        // The one and only case that does not open at the newest message.
+        if (!positioned && live && state.jumpToUnread) {
+            // More pages may hold the marker; the timeline start, or
             // enough fruitless pages, means it is not coming.
             val exhausted = items.firstOrNull() is FfiTimelineItem.TimelineStart ||
                 searchPages >= 4
-            val saved = state.savedScroll[roomId]
+            val marker = items.indexOfFirst { it is FfiTimelineItem.ReadMarker }
             when {
-                state.jumpToUnread -> {
-                    val marker =
-                        items.indexOfFirst { it is FfiTimelineItem.ReadMarker }
-                    when {
-                        marker >= 0 -> {
-                            // Anchor on the first unread event, not the
-                            // virtual marker: marking read removes the
-                            // marker item, and a vanished anchor lets
-                            // concurrent pagination drag the viewport
-                            // off. The negative offset keeps the divider
-                            // peeking in above it.
-                            val firstUnread = (marker + 1 until items.size)
-                                .firstOrNull { items[it] is FfiTimelineItem.Event }
-                                ?: marker
-                            listState.scrollToItem(firstUnread, -130)
-                            jumpAnchor = (items.getOrNull(firstUnread)
-                                as? FfiTimelineItem.Event)?.eventId
-                            positioned = true
-                            stickToBottom = false
-                            state.completeUnreadJump()
-                        }
-                        exhausted -> {
-                            listState.scrollToItem(items.size - 1)
-                            positioned = true
-                            stickToBottom = true
-                            state.completeUnreadJump()
-                        }
-                        else -> {
-                            searchPages += 1
-                            state.paginateOlder()
-                            // Nothing arriving means the page is not
-                            // coming; land at the bottom instead of
-                            // hanging unplaced.
-                            kotlinx.coroutines.delay(5_000)
-                            listState.scrollToItem(currentItems.size - 1)
-                            positioned = true
-                            stickToBottom = true
-                            state.completeUnreadJump()
-                        }
-                    }
+                marker >= 0 -> {
+                    // Anchor on the first unread event, not the virtual
+                    // marker: marking read removes the marker item, and a
+                    // vanished anchor lets concurrent pagination drag the
+                    // viewport off. The negative offset keeps the divider
+                    // peeking in above it.
+                    val firstUnread = (marker + 1 until items.size)
+                        .firstOrNull { items[it] is FfiTimelineItem.Event }
+                        ?: marker
+                    listState.scrollToItem(firstUnread, -130)
+                    jumpAnchor = (items.getOrNull(firstUnread)
+                        as? FfiTimelineItem.Event)?.eventId
+                    positioned = true
+                    state.completeUnreadJump()
                 }
-                saved != null -> {
-                    val (anchor, offset) = saved
-                    val target = items.indexOfFirst {
-                        (it as? FfiTimelineItem.Event)?.eventId == anchor
-                    }
-                    when {
-                        target >= 0 -> {
-                            listState.scrollToItem(target, offset)
-                            positioned = true
-                            stickToBottom = false
-                        }
-                        exhausted -> {
-                            listState.scrollToItem(items.size - 1)
-                            positioned = true
-                            stickToBottom = true
-                        }
-                        else -> {
-                            searchPages += 1
-                            state.paginateOlder()
-                            kotlinx.coroutines.delay(5_000)
-                            listState.scrollToItem(currentItems.size - 1)
-                            positioned = true
-                            stickToBottom = true
-                        }
-                    }
-                }
-                else -> {
-                    listState.scrollToItem(items.size - 1)
+                exhausted -> {
+                    // The marker never turned up. Fall through to the
+                    // bottom, which is where everything else lands.
                     positioned = true
                     stickToBottom = true
+                    state.completeUnreadJump()
+                }
+                else -> {
+                    searchPages += 1
+                    state.paginateOlder()
                 }
             }
-        } else if (!live) {
-            // Threads and pinned views just follow the end.
-            listState.scrollToItem(items.size - 1)
-        } else if (jumpAnchor != null && !userScrolled) {
+            return@LaunchedEffect
+        }
+
+        positioned = true
+
+        if (jumpAnchor != null && !userScrolled) {
             // The read marker settled somewhere else: follow it there.
             val marker = items.indexOfFirst { it is FfiTimelineItem.ReadMarker }
             if (marker >= 0) {
@@ -797,9 +764,6 @@ internal fun Timeline(
                     jumpAnchor = id
                 }
             }
-        } else if (items.size > before && lastKeyBefore != null && stickToBottom) {
-            // New messages while pinned: stay with them.
-            listState.scrollToItem(items.size - 1)
         }
     }
 
@@ -830,32 +794,6 @@ internal fun Timeline(
                 }
         }
 
-        // Leaving the room remembers where it was left — nothing to
-        // remember when it was left at the bottom.
-        androidx.compose.runtime.DisposableEffect(roomId) {
-            onDispose {
-                val visible = listState.layoutInfo.visibleItemsInfo
-                val snapshot = currentItems
-                // Pinned to the bottom is exactly "nothing to remember".
-                val anchor = if (stickToBottom) {
-                    null
-                } else {
-                    // Media items measure asynchronously, so a pixel
-                    // offset overshoots on reopen — anchoring the first
-                    // visible event at the viewport top is stable.
-                    visible.firstNotNullOfOrNull { info ->
-                        (snapshot.getOrNull(info.index) as? FfiTimelineItem.Event)
-                            ?.eventId
-                            ?.let { it to 0 }
-                    }
-                }
-                if (anchor != null) {
-                    state.savedScroll[roomId] = anchor
-                } else {
-                    state.savedScroll.remove(roomId)
-                }
-            }
-        }
     }
 
     // The keyboard resizing the viewport must not hide the newest
@@ -1182,6 +1120,27 @@ internal fun MessageBubble(
 
             (event.kind as? FfiEventKind.Location)?.let { location ->
                 val context = androidx.compose.ui.platform.LocalContext.current
+                // The place itself, the way the GTK location viewer shows
+                // it. Tapping either the map or the row below opens it in
+                // whatever maps application is installed.
+                LocationMap(
+                    location.geoUri,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable {
+                            try {
+                                context.startActivity(
+                                    android.content.Intent(
+                                        android.content.Intent.ACTION_VIEW,
+                                        android.net.Uri.parse(location.geoUri),
+                                    )
+                                )
+                            } catch (_: Exception) {
+                                // No maps app; the row below still shows.
+                            }
+                        },
+                )
+                Spacer(Modifier.size(4.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier

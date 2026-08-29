@@ -192,9 +192,15 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    androidx.compose.foundation.layout.Box(
+                    androidx.compose.foundation.layout.Column(
                         Modifier.systemBarsPadding()
                     ) {
+                        // A call put aside keeps a bar across the top of
+                        // every page, so it can always be got back to and
+                        // always be ended.
+                        if (state.call != null && state.callMinimized) {
+                            io.github.steeb_k.commune.ui.OngoingCallBar(state)
+                        }
                         CommuneApp(state)
                     }
                 }
@@ -209,8 +215,10 @@ private fun CommuneApp(state: CommuneState) {
         Phase.Loading -> LoadingScreen()
         Phase.Login -> LoginFlow(state)
         Phase.Session -> {
-            // A call outranks every page: it is the thing happening.
-            if (state.call != null) {
+            // A call outranks every page: it is the thing happening —
+            // until it is put aside on purpose, and then a bar across the
+            // top of whatever page follows is the way back to it.
+            if (state.call != null && !state.callMinimized) {
                 io.github.steeb_k.commune.ui.CallScreen(state)
                 return
             }

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Videocam
@@ -68,8 +69,20 @@ fun CallScreen(state: CommuneState) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
+        // Stepping out of the call to read the room behind it. The call
+        // carries on; the bar at the top of every page brings it back.
+        Row(modifier = Modifier.fillMaxWidth()) {
+            IconButton(onClick = { state.minimizeCall() }) {
+                Icon(
+                    Icons.Filled.KeyboardArrowDown,
+                    contentDescription = "Leave the call on screen",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+
         Column(
-            modifier = Modifier.padding(top = 64.dp),
+            modifier = Modifier.padding(top = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (!showingVideo) {

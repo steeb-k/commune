@@ -19,9 +19,16 @@
         android:label="Commune"
         android:theme="@style/Theme.Commune.Starting"
         android:usesCleartextTraffic="true">
+        <!-- The activity builds its CommuneState in onCreate, so letting
+             Android recreate it on a rotation throws the whole session away
+             and rebuilds it empty. During a call that dropped the caller
+             back into the chat while the call itself carried on inside the
+             service, with nothing left to reach it by. Compose handles
+             these configuration changes itself. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|keyboard|navigation|uiMode|density|fontScale|locale|layoutDirection"
             android:launchMode="singleTask"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
