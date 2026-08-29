@@ -88,6 +88,10 @@ class Notifier(private val context: Context) {
             .setContentIntent(openApp)
             .setAutoCancel(true)
             .setNumber(count.toInt())
+            // Message content stays off the lock screen when the user
+            // hides sensitive notifications; the OS shows this instead.
+            .setVisibility(Notification.VISIBILITY_PRIVATE)
+            .setPublicVersion(redactedNotification(context, CHANNEL_ID))
             .build()
     }
 
@@ -95,3 +99,11 @@ class Notifier(private val context: Context) {
         private const val CHANNEL_ID = "messages"
     }
 }
+
+/// The lock-screen stand-in: app name and "New message", nothing else.
+internal fun redactedNotification(context: Context, channelId: String): Notification =
+    Notification.Builder(context, channelId)
+        .setSmallIcon(R.drawable.ic_notify_symbolic)
+        .setContentTitle("Commune")
+        .setContentText("New message")
+        .build()
