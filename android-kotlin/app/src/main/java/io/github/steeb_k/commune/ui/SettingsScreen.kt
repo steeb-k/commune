@@ -189,8 +189,67 @@ fun SettingsScreen(state: CommuneState) {
             }) { Text("Verify") }
         }
 
+        FullScreenCallRow()
+
         SettingsGroup("Account")
         LogoutRow(state)
+    }
+}
+
+/// Ringing on a locked screen needs a permission the system does not hand
+/// out on its own.
+///
+/// From Android 14 an application only gets `USE_FULL_SCREEN_INTENT`
+/// granted at install if the system already believes it is a calling or
+/// alarm application. Declaring the permission is not enough: without the
+/// grant the incoming call is refused the screen and becomes one more line
+/// in the shade, which is no use to a phone lying face down on a table.
+/// Nothing can grant it from here, so this row says so and opens the page
+/// that can. It stays out of the way once there is nothing to ask for.
+///
+/// (Android's own affair — the GTK application has no counterpart.)
+@Composable
+private fun FullScreenCallRow() {
+    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        return
+    }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val manager = context.getSystemService(android.app.NotificationManager::class.java)
+    // Re-read whenever this screen comes back, so granting it makes the
+    // row disappear.
+    var permitted by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf(manager.canUseFullScreenIntent())
+    }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        permitted = manager.canUseFullScreenIntent()
+    }
+    if (permitted) return
+
+    SettingsGroup("Calls")
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Full-Screen Call Alerts", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                "Android is not letting calls take over a locked screen. " +
+                    "Without this a call arrives as a quiet notification.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(onClick = {
+            context.startActivity(
+                android.content.Intent(
+                    android.provider.Settings
+                        .ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                    android.net.Uri.parse("package:" + context.packageName),
+                )
+            )
+        }) { Text("Allow") }
     }
 }
 
