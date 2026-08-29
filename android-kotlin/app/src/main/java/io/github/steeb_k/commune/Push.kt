@@ -112,6 +112,17 @@ private fun postFromPayload(context: Context, payload: String) {
         return
     }
 
+    // A call is not a message. The push for an m.call.invite used to post
+    // a plain message notification here, seconds before the sync carried
+    // the invite itself to the call handler and the phone actually rang:
+    // two notifications for one call, the wrong one first. Ringing belongs
+    // to the handler, which is the only thing holding the offer needed to
+    // answer; this keeps out of its way.
+    val eventType = notification?.optString("type").orEmpty()
+    if (eventType.startsWith("m.call")) {
+        return
+    }
+
     val sender = notification?.optString("sender_display_name")
         ?.takeIf { it.isNotBlank() }
         ?: notification?.optString("sender")?.takeIf { it.isNotBlank() }
