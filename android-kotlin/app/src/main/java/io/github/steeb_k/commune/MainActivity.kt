@@ -89,6 +89,15 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         intent.getStringExtra("room_id")?.let { state.openRoomById(it) }
         handleRedirect(intent)
+        handleCallAction(intent)
+    }
+
+    /// The answer and decline buttons on an incoming-call notification.
+    private fun handleCallAction(intent: android.content.Intent?) {
+        when (intent?.action) {
+            IncomingCallNotification.ACTION_ANSWER -> state.answerCall()
+            IncomingCallNotification.ACTION_DECLINE -> state.declineCall()
+        }
     }
 
     /// A browser login coming back on the app's custom scheme.
@@ -158,6 +167,7 @@ class MainActivity : ComponentActivity() {
         }
         intent?.getStringExtra("room_id")?.let { state.openRoomById(it) }
         handleRedirect(intent)
+        handleCallAction(intent)
 
         setContent {
             CommuneTheme {
@@ -182,6 +192,11 @@ private fun CommuneApp(state: CommuneState) {
         Phase.Loading -> LoadingScreen()
         Phase.Login -> LoginFlow(state)
         Phase.Session -> {
+            // A call outranks every page: it is the thing happening.
+            if (state.call != null) {
+                io.github.steeb_k.commune.ui.CallScreen(state)
+                return
+            }
             VerificationDialog(state)
             val room = state.openRoom
             val viewerPath = state.viewerImagePath

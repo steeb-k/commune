@@ -33,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
@@ -599,6 +600,17 @@ private fun RoomHeader(state: CommuneState, room: FfiRoom, onBack: () -> Unit) {
             modifier = Modifier.weight(1f),
             maxLines = 1,
         )
+        // A direct chat is the one place a 1:1 call has a person to
+        // reach; a group call is the GTK app's business too, later.
+        if (room.isDirect) {
+            IconButton(onClick = { state.placeCallInRoom(room) }) {
+                Icon(
+                    androidx.compose.material.icons.Icons.Filled.Call,
+                    contentDescription = "Call",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         IconButton(onClick = { state.openRoomSearch() }) {
             Icon(
                 androidx.compose.ui.res.painterResource(

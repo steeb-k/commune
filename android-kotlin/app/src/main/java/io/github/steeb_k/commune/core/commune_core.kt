@@ -620,6 +620,18 @@ internal open class UniffiForeignFutureResultVoid(
 internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
     fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultVoid.UniffiByValue,)
 }
+internal interface UniffiCallbackInterfaceCallListenerMethod0 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`roomId`: RustBuffer.ByValue,`caller`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
+internal interface UniffiCallbackInterfaceCallListenerMethod1 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
+internal interface UniffiCallbackInterfaceCallListenerMethod2 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`candidates`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
+internal interface UniffiCallbackInterfaceCallListenerMethod3 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
 internal interface UniffiCallbackInterfaceMemberListListenerMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`members`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
@@ -643,6 +655,34 @@ internal interface UniffiCallbackInterfaceVerificationListenerMethod2 : com.sun.
 }
 internal interface UniffiCallbackInterfaceVerificationListenerMethod3 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`flowId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
+@Structure.FieldOrder("uniffiFree", "uniffiClone", "onIncoming", "onAnswer", "onCandidates", "onEnded")
+internal open class UniffiVTableCallbackInterfaceCallListener(
+    @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+    @JvmField internal var `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+    @JvmField internal var `onIncoming`: UniffiCallbackInterfaceCallListenerMethod0? = null,
+    @JvmField internal var `onAnswer`: UniffiCallbackInterfaceCallListenerMethod1? = null,
+    @JvmField internal var `onCandidates`: UniffiCallbackInterfaceCallListenerMethod2? = null,
+    @JvmField internal var `onEnded`: UniffiCallbackInterfaceCallListenerMethod3? = null,
+) : Structure() {
+    class UniffiByValue(
+        `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+        `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+        `onIncoming`: UniffiCallbackInterfaceCallListenerMethod0? = null,
+        `onAnswer`: UniffiCallbackInterfaceCallListenerMethod1? = null,
+        `onCandidates`: UniffiCallbackInterfaceCallListenerMethod2? = null,
+        `onEnded`: UniffiCallbackInterfaceCallListenerMethod3? = null,
+    ): UniffiVTableCallbackInterfaceCallListener(`uniffiFree`,`uniffiClone`,`onIncoming`,`onAnswer`,`onCandidates`,`onEnded`,), Structure.ByValue
+
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceCallListener) {
+        `uniffiFree` = other.`uniffiFree`
+        `uniffiClone` = other.`uniffiClone`
+        `onIncoming` = other.`onIncoming`
+        `onAnswer` = other.`onAnswer`
+        `onCandidates` = other.`onCandidates`
+        `onEnded` = other.`onEnded`
+    }
+
 }
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "onUpdate")
 internal open class UniffiVTableCallbackInterfaceMemberListListener(
@@ -777,6 +817,14 @@ external fun uniffi_commune_core_checksum_func_decode_blurhash(
 ): Short
 external fun uniffi_commune_core_checksum_func_init_core(
 ): Short
+external fun uniffi_commune_core_checksum_method_calllistener_on_incoming(
+): Short
+external fun uniffi_commune_core_checksum_method_calllistener_on_answer(
+): Short
+external fun uniffi_commune_core_checksum_method_calllistener_on_candidates(
+): Short
+external fun uniffi_commune_core_checksum_method_calllistener_on_ended(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_accept_verification(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_account_profile(
@@ -784,6 +832,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_account_profile(
 external fun uniffi_commune_core_checksum_method_coreapp_add_notification_keyword(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_add_pack_image(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_answer_call(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_ban_user(
 ): Short
@@ -845,6 +895,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_get_timeline_media(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_hangup_call(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_has_ready_session(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_has_sessions(
@@ -877,6 +929,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_oauth_login_url(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_paginate_backwards(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_place_call(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_recover(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_recovery_state(
@@ -884,6 +938,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_recovery_state(
 external fun uniffi_commune_core_checksum_method_coreapp_redact_event(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_register_user(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_reject_call(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_remove_notification_keyword(
 ): Short
@@ -941,6 +997,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_security_state(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_send_attachment(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_call_candidates(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_send_gif(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_send_location(
@@ -968,6 +1026,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_sessions(
 external fun uniffi_commune_core_checksum_method_coreapp_set_account_avatar(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_set_active_session(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_call_listener(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_set_display_name(
 ): Short
@@ -1023,6 +1083,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_sticker_packs(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_toggle_reaction(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_turn_servers(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_unignore_user(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_upgrade_room(
@@ -1061,6 +1123,7 @@ internal object UniffiLib {
 
     init {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "commune_core"))
+        uniffiCallbackInterfaceCallListener.register(this)
         uniffiCallbackInterfaceMemberListListener.register(this)
         uniffiCallbackInterfaceRoomListListener.register(this)
         uniffiCallbackInterfaceTimelineListener.register(this)
@@ -1068,7 +1131,21 @@ internal object UniffiLib {
         uniffiCallbackInterfaceVerificationListener.register(this)
         
     }
-    external fun uniffi_commune_core_fn_clone_coreapp(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    external fun uniffi_commune_core_fn_clone_calllistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_commune_core_fn_free_calllistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_init_callback_vtable_calllistener(`vtable`: UniffiVTableCallbackInterfaceCallListener,
+): Unit
+external fun uniffi_commune_core_fn_method_calllistener_on_incoming(`ptr`: Long,`callId`: RustBuffer.ByValue,`roomId`: RustBuffer.ByValue,`caller`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_calllistener_on_answer(`ptr`: Long,`callId`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_calllistener_on_candidates(`ptr`: Long,`callId`: RustBuffer.ByValue,`candidates`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_calllistener_on_ended(`ptr`: Long,`callId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_clone_coreapp(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_commune_core_fn_free_coreapp(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1081,6 +1158,8 @@ external fun uniffi_commune_core_fn_method_coreapp_account_profile(`ptr`: Long,
 external fun uniffi_commune_core_fn_method_coreapp_add_notification_keyword(`ptr`: Long,`keyword`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_add_pack_image(`ptr`: Long,`stateKey`: RustBuffer.ByValue,`shortcode`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_answer_call(`ptr`: Long,`callId`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_ban_user(`ptr`: Long,`roomId`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,
 ): Long
@@ -1142,6 +1221,8 @@ external fun uniffi_commune_core_fn_method_coreapp_get_room_avatar(`ptr`: Long,`
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_timeline_media(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_hangup_call(`ptr`: Long,`callId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_has_ready_session(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_commune_core_fn_method_coreapp_has_sessions(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1174,6 +1255,8 @@ external fun uniffi_commune_core_fn_method_coreapp_oauth_login_url(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_paginate_backwards(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_place_call(`ptr`: Long,`roomId`: RustBuffer.ByValue,`invitee`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_recover(`ptr`: Long,`recoveryKey`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_recovery_state(`ptr`: Long,
@@ -1181,6 +1264,8 @@ external fun uniffi_commune_core_fn_method_coreapp_recovery_state(`ptr`: Long,
 external fun uniffi_commune_core_fn_method_coreapp_redact_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_register_user(`ptr`: Long,`username`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_reject_call(`ptr`: Long,`callId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_remove_notification_keyword(`ptr`: Long,`keyword`: RustBuffer.ByValue,
 ): Long
@@ -1238,6 +1323,8 @@ external fun uniffi_commune_core_fn_method_coreapp_security_state(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_send_call_candidates(`ptr`: Long,`callId`: RustBuffer.ByValue,`candidates`: RustBuffer.ByValue,`endOfCandidates`: Byte,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_gif(`ptr`: Long,`roomId`: RustBuffer.ByValue,`gif`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_location(`ptr`: Long,`roomId`: RustBuffer.ByValue,`geoUri`: RustBuffer.ByValue,
@@ -1265,6 +1352,8 @@ external fun uniffi_commune_core_fn_method_coreapp_sessions(`ptr`: Long,uniffi_o
 external fun uniffi_commune_core_fn_method_coreapp_set_account_avatar(`ptr`: Long,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_active_session(`ptr`: Long,`sessionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_coreapp_set_call_listener(`ptr`: Long,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_display_name(`ptr`: Long,`name`: RustBuffer.ByValue,
 ): Long
@@ -1319,6 +1408,8 @@ external fun uniffi_commune_core_fn_method_coreapp_sso_login_url(`ptr`: Long,
 external fun uniffi_commune_core_fn_method_coreapp_sticker_packs(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_toggle_reaction(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_turn_servers(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_unignore_user(`ptr`: Long,`userId`: RustBuffer.ByValue,
 ): Long
@@ -1504,6 +1595,18 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_func_init_core() != 39848.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_calllistener_on_incoming() != 8405.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_calllistener_on_answer() != 23161.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_calllistener_on_candidates() != 45595.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_calllistener_on_ended() != 10687.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_accept_verification() != 31555.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1514,6 +1617,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_add_pack_image() != 49379.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_answer_call() != 10293.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_ban_user() != 41618.toShort()) {
@@ -1606,6 +1712,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_timeline_media() != 55281.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_hangup_call() != 10141.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_has_ready_session() != 41393.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1654,6 +1763,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_paginate_backwards() != 11648.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_place_call() != 24301.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_recover() != 8793.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1664,6 +1776,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_register_user() != 30294.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_reject_call() != 54839.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_remove_notification_keyword() != 45534.toShort()) {
@@ -1750,6 +1865,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_attachment() != 7086.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_call_candidates() != 25137.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_gif() != 37883.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1790,6 +1908,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_active_session() != 39854.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_call_listener() != 45442.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_display_name() != 56959.toShort()) {
@@ -1871,6 +1992,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_toggle_reaction() != 55807.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_turn_servers() != 37844.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_unignore_user() != 53552.toShort()) {
@@ -2399,6 +2523,430 @@ public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
 
 
 /**
+ * What the embedder is told about calls. The core speaks `m.call.*`;
+ * the media itself is the embedder's business.
+ */
+public interface CallListener {
+    
+    /**
+     * Somebody is calling, with the description they offered.
+     */
+    fun `onIncoming`(`callId`: kotlin.String, `roomId`: kotlin.String, `caller`: kotlin.String, `sdp`: kotlin.String)
+    
+    /**
+     * A call we placed was answered, with the description to apply.
+     */
+    fun `onAnswer`(`callId`: kotlin.String, `sdp`: kotlin.String)
+    
+    /**
+     * The other end gathered candidates.
+     */
+    fun `onCandidates`(`callId`: kotlin.String, `candidates`: List<FfiIceCandidate>)
+    
+    /**
+     * The call is over.
+     */
+    fun `onEnded`(`callId`: kotlin.String, `reason`: FfiCallEnd)
+    
+    companion object
+}
+
+/**
+ * What the embedder is told about calls. The core speaks `m.call.*`;
+ * the media itself is the embedder's business.
+ */
+open class CallListenerImpl: Disposable, AutoCloseable, CallListener
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = null
+    }
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable?
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_commune_core_fn_free_calllistener(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_commune_core_fn_clone_calllistener(handle, status)
+        }
+    }
+
+    
+    /**
+     * Somebody is calling, with the description they offered.
+     */override fun `onIncoming`(`callId`: kotlin.String, `roomId`: kotlin.String, `caller`: kotlin.String, `sdp`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_calllistener_on_incoming(
+        it,
+        FfiConverterString.lower(`callId`),FfiConverterString.lower(`roomId`),FfiConverterString.lower(`caller`),FfiConverterString.lower(`sdp`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * A call we placed was answered, with the description to apply.
+     */override fun `onAnswer`(`callId`: kotlin.String, `sdp`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_calllistener_on_answer(
+        it,
+        FfiConverterString.lower(`callId`),FfiConverterString.lower(`sdp`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * The other end gathered candidates.
+     */override fun `onCandidates`(`callId`: kotlin.String, `candidates`: List<FfiIceCandidate>)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_calllistener_on_candidates(
+        it,
+        FfiConverterString.lower(`callId`),FfiConverterSequenceTypeFfiIceCandidate.lower(`candidates`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * The call is over.
+     */override fun `onEnded`(`callId`: kotlin.String, `reason`: FfiCallEnd)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_calllistener_on_ended(
+        it,
+        FfiConverterString.lower(`callId`),FfiConverterTypeFfiCallEnd.lower(`reason`),_status)
+}
+    }
+    
+    
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+
+// Put the implementation in an object so we don't pollute the top-level namespace
+internal object uniffiCallbackInterfaceCallListener {
+    internal object `onIncoming`: UniffiCallbackInterfaceCallListenerMethod0 {
+        override fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`roomId`: RustBuffer.ByValue,`caller`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeCallListener.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onIncoming`(
+                    FfiConverterString.lift(`callId`),
+                    FfiConverterString.lift(`roomId`),
+                    FfiConverterString.lift(`caller`),
+                    FfiConverterString.lift(`sdp`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+    internal object `onAnswer`: UniffiCallbackInterfaceCallListenerMethod1 {
+        override fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeCallListener.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onAnswer`(
+                    FfiConverterString.lift(`callId`),
+                    FfiConverterString.lift(`sdp`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+    internal object `onCandidates`: UniffiCallbackInterfaceCallListenerMethod2 {
+        override fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`candidates`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeCallListener.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onCandidates`(
+                    FfiConverterString.lift(`callId`),
+                    FfiConverterSequenceTypeFfiIceCandidate.lift(`candidates`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+    internal object `onEnded`: UniffiCallbackInterfaceCallListenerMethod3 {
+        override fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeCallListener.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onEnded`(
+                    FfiConverterString.lift(`callId`),
+                    FfiConverterTypeFfiCallEnd.lift(`reason`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
+        override fun callback(handle: Long) {
+            FfiConverterTypeCallListener.handleMap.remove(handle)
+        }
+    }
+
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypeCallListener.handleMap.clone(handle)
+        }
+    }
+
+    internal var vtable = UniffiVTableCallbackInterfaceCallListener.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `onIncoming`,
+        `onAnswer`,
+        `onCandidates`,
+        `onEnded`,
+    )
+
+    // Registers the foreign callback with the Rust side.
+    // This method is generated for each callback interface.
+    internal fun register(lib: UniffiLib) {
+        lib.uniffi_commune_core_fn_init_callback_vtable_calllistener(vtable)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeCallListener: FfiConverter<CallListener, Long> {
+    internal val handleMap = UniffiHandleMap<CallListener>()
+
+    override fun lower(value: CallListener): Long {
+        if (value is CallListenerImpl) {
+             // Rust-implemented object.  Clone the handle and return it
+            return value.uniffiCloneHandle()
+         } else {
+            // Kotlin object, generate a new vtable handle and return that.
+            return handleMap.insert(value)
+         }
+    }
+
+    override fun lift(value: Long): CallListener {
+        if ((value and 1.toLong()) == 0.toLong()) {
+            // Rust-generated handle, construct a new class that uses the handle to implement the
+            // interface
+            return CallListenerImpl(UniffiWithHandle, value)
+        } else {
+            // Kotlin-generated handle, get the object from the handle map
+            return handleMap.remove(value)
+        }
+    }
+
+    override fun read(buf: ByteBuffer): CallListener {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: CallListener) = 8UL
+
+    override fun write(value: CallListener, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+/**
  * The core, as one object the foreign side holds.
  */
 public interface CoreAppInterface {
@@ -2428,6 +2976,11 @@ public interface CoreAppInterface {
      * then write it into the pack's state event.
      */
     suspend fun `addPackImage`(`stateKey`: kotlin.String, `shortcode`: kotlin.String, `body`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String)
+    
+    /**
+     * Answer a call with the embedder's answer description.
+     */
+    suspend fun `answerCall`(`callId`: kotlin.String, `sdp`: kotlin.String)
     
     /**
      * Ban the given user from the given room.
@@ -2618,6 +3171,11 @@ public interface CoreAppInterface {
     suspend fun `getTimelineMedia`(`roomId`: kotlin.String, `uniqueId`: kotlin.String): kotlin.String?
     
     /**
+     * Hang up a call that was placed or answered.
+     */
+    suspend fun `hangupCall`(`callId`: kotlin.String)
+    
+    /**
      * Whether a session is logged in and running.
      *
      * Restoration is asynchronous: after [`Self::restore_sessions()`] this
@@ -2712,6 +3270,12 @@ public interface CoreAppInterface {
     suspend fun `paginateBackwards`(`roomId`: kotlin.String)
     
     /**
+     * Place a call: send `m.call.invite` with the offer the embedder's
+     * WebRTC produced, and return the call ID everything else uses.
+     */
+    suspend fun `placeCall`(`roomId`: kotlin.String, `invitee`: kotlin.String, `sdp`: kotlin.String): kotlin.String
+    
+    /**
      * Recover the account's secrets with the given recovery key.
      */
     suspend fun `recover`(`recoveryKey`: kotlin.String)
@@ -2732,6 +3296,11 @@ public interface CoreAppInterface {
      * the account is accepting them). Anything more wants a browser.
      */
     suspend fun `registerUser`(`username`: kotlin.String, `password`: kotlin.String)
+    
+    /**
+     * Decline an incoming call.
+     */
+    suspend fun `rejectCall`(`callId`: kotlin.String)
     
     /**
      * Remove a keyword from the notification triggers, returning the
@@ -2911,6 +3480,13 @@ public interface CoreAppInterface {
     suspend fun `sendAttachment`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String)
     
     /**
+     * Send gathered ICE candidates. Both `sdp_mid` and the media-line
+     * index ride along: the specification asks for one, and clients in
+     * the wild want the other.
+     */
+    suspend fun `sendCallCandidates`(`callId`: kotlin.String, `candidates`: List<FfiIceCandidate>, `endOfCandidates`: kotlin.Boolean)
+    
+    /**
      * Download the given GIF and send it to the given room, then report the
      * share to the GIF service.
      */
@@ -2987,6 +3563,15 @@ public interface CoreAppInterface {
      * a login.
      */
     fun `setActiveSession`(`sessionId`: kotlin.String)
+    
+    /**
+     * Follow 1:1 calls with the given listener: the core speaks
+     * `m.call.*` and hands the embedder the session descriptions and
+     * candidates that WebRTC needs, as the parity plan's split says.
+     *
+     * Replaces any previous listener; registering starts watching.
+     */
+    fun `setCallListener`(`listener`: CallListener)
     
     /**
      * Change the account's display name.
@@ -3165,6 +3750,12 @@ public interface CoreAppInterface {
      * Toggle the given reaction on the given event in the given room.
      */
     suspend fun `toggleReaction`(`roomId`: kotlin.String, `eventId`: kotlin.String, `key`: kotlin.String)
+    
+    /**
+     * The ICE servers the homeserver hands out, with the credentials
+     * that go with them and how long they last.
+     */
+    suspend fun `turnServers`(): FfiTurnServers
     
     /**
      * Stop ignoring the given user.
@@ -3378,6 +3969,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_add_pack_image(
                 uniffiHandle,
                 FfiConverterString.lower(`stateKey`),FfiConverterString.lower(`shortcode`),FfiConverterString.lower(`body`),FfiConverterString.lower(`filePath`),FfiConverterString.lower(`mimeType`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Answer a call with the embedder's answer description.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `answerCall`(`callId`: kotlin.String, `sdp`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_answer_call(
+                uniffiHandle,
+                FfiConverterString.lower(`callId`),FfiConverterString.lower(`sdp`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -4128,6 +4744,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Hang up a call that was placed or answered.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `hangupCall`(`callId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_hangup_call(
+                uniffiHandle,
+                FfiConverterString.lower(`callId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Whether a session is logged in and running.
      *
      * Restoration is asynchronous: after [`Self::restore_sessions()`] this
@@ -4512,6 +5153,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Place a call: send `m.call.invite` with the offer the embedder's
+     * WebRTC produced, and return the call ID everything else uses.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `placeCall`(`roomId`: kotlin.String, `invitee`: kotlin.String, `sdp`: kotlin.String) : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_place_call(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`invitee`),FfiConverterString.lower(`sdp`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Recover the account's secrets with the given recovery key.
      */
     @Throws(CoreException::class)
@@ -4597,6 +5263,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_register_user(
                 uniffiHandle,
                 FfiConverterString.lower(`username`),FfiConverterString.lower(`password`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Decline an incoming call.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `rejectCall`(`callId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_reject_call(
+                uniffiHandle,
+                FfiConverterString.lower(`callId`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -5319,6 +6010,33 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Send gathered ICE candidates. Both `sdp_mid` and the media-line
+     * index ride along: the specification asks for one, and clients in
+     * the wild want the other.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `sendCallCandidates`(`callId`: kotlin.String, `candidates`: List<FfiIceCandidate>, `endOfCandidates`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_send_call_candidates(
+                uniffiHandle,
+                FfiConverterString.lower(`callId`),FfiConverterSequenceTypeFfiIceCandidate.lower(`candidates`),FfiConverterBoolean.lower(`endOfCandidates`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Download the given GIF and send it to the given room, then report the
      * share to the GIF service.
      */
@@ -5614,6 +6332,25 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     UniffiLib.uniffi_commune_core_fn_method_coreapp_set_active_session(
         it,
         FfiConverterString.lower(`sessionId`),_status)
+}
+    }
+    
+    
+
+    
+    /**
+     * Follow 1:1 calls with the given listener: the core speaks
+     * `m.call.*` and hands the embedder the session descriptions and
+     * candidates that WebRTC needs, as the parity plan's split says.
+     *
+     * Replaces any previous listener; registering starts watching.
+     */override fun `setCallListener`(`listener`: CallListener)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_set_call_listener(
+        it,
+        FfiConverterTypeCallListener.lower(`listener`),_status)
 }
     }
     
@@ -6230,6 +6967,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         
         // Error FFI converter
         CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The ICE servers the homeserver hands out, with the credentials
+     * that go with them and how long they last.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `turnServers`() : FfiTurnServers {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_turn_servers(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiTurnServers.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
     )
     }
 
@@ -8512,6 +9273,61 @@ public object FfiConverterTypeFfiHistoryVisibilityInfo: FfiConverterRustBuffer<F
 
 
 /**
+ * One ICE candidate, in both spellings the wild asks for.
+ */
+data class FfiIceCandidate (
+    /**
+     * The candidate line.
+     */
+    var `candidate`: kotlin.String
+    , 
+    /**
+     * The media stream it belongs to.
+     */
+    var `sdpMid`: kotlin.String?
+    , 
+    /**
+     * The index of the media line it belongs to.
+     */
+    var `sdpMLineIndex`: kotlin.UInt
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiIceCandidate: FfiConverterRustBuffer<FfiIceCandidate> {
+    override fun read(buf: ByteBuffer): FfiIceCandidate {
+        return FfiIceCandidate(
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiIceCandidate) = (
+            FfiConverterString.allocationSize(value.`candidate`) +
+            FfiConverterOptionalString.allocationSize(value.`sdpMid`) +
+            FfiConverterUInt.allocationSize(value.`sdpMLineIndex`)
+    )
+
+    override fun write(value: FfiIceCandidate, buf: ByteBuffer) {
+            FfiConverterString.write(value.`candidate`, buf)
+            FfiConverterOptionalString.write(value.`sdpMid`, buf)
+            FfiConverterUInt.write(value.`sdpMLineIndex`, buf)
+    }
+}
+
+
+
+/**
  * The reply context of an event: what it replies to.
  */
 data class FfiInReplyTo (
@@ -10137,6 +10953,69 @@ public object FfiConverterTypeFfiStickerPack: FfiConverterRustBuffer<FfiStickerP
 
 
 /**
+ * The ICE servers a homeserver hands out.
+ */
+data class FfiTurnServers (
+    /**
+     * The server URIs, `stun:` and `turn:` as the server gave them.
+     */
+    var `uris`: List<kotlin.String>
+    , 
+    /**
+     * The username for the TURN servers.
+     */
+    var `username`: kotlin.String
+    , 
+    /**
+     * The password for the TURN servers.
+     */
+    var `password`: kotlin.String
+    , 
+    /**
+     * How long the credentials last.
+     */
+    var `ttlSeconds`: kotlin.ULong
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiTurnServers: FfiConverterRustBuffer<FfiTurnServers> {
+    override fun read(buf: ByteBuffer): FfiTurnServers {
+        return FfiTurnServers(
+            FfiConverterSequenceString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiTurnServers) = (
+            FfiConverterSequenceString.allocationSize(value.`uris`) +
+            FfiConverterString.allocationSize(value.`username`) +
+            FfiConverterString.allocationSize(value.`password`) +
+            FfiConverterULong.allocationSize(value.`ttlSeconds`)
+    )
+
+    override fun write(value: FfiTurnServers, buf: ByteBuffer) {
+            FfiConverterSequenceString.write(value.`uris`, buf)
+            FfiConverterString.write(value.`username`, buf)
+            FfiConverterString.write(value.`password`, buf)
+            FfiConverterULong.write(value.`ttlSeconds`, buf)
+    }
+}
+
+
+
+/**
  * The room versions an upgrade could go to.
  */
 data class FfiUpgradeInfo (
@@ -10520,6 +11399,53 @@ public object FfiConverterTypeFfiAddressAction : FfiConverterRustBuffer<FfiAddre
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Why a call ended, as far as the other end said.
+ */
+
+enum class FfiCallEnd {
+    
+    /**
+     * Somebody hung up.
+     */
+    HUNG_UP,
+    /**
+     * The other party declined.
+     */
+    DECLINED,
+    /**
+     * Another of our own sessions took it.
+     */
+    ANSWERED_ELSEWHERE;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiCallEnd: FfiConverterRustBuffer<FfiCallEnd> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiCallEnd.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiCallEnd) = 4UL
+
+    override fun write(value: FfiCallEnd, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 
@@ -12526,6 +13452,34 @@ public object FfiConverterSequenceTypeFfiHistoryEvent: FfiConverterRustBuffer<Li
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiHistoryEvent.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiIceCandidate: FfiConverterRustBuffer<List<FfiIceCandidate>> {
+    override fun read(buf: ByteBuffer): List<FfiIceCandidate> {
+        val len = buf.getInt()
+        return List<FfiIceCandidate>(len) {
+            FfiConverterTypeFfiIceCandidate.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiIceCandidate>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiIceCandidate.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiIceCandidate>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiIceCandidate.write(it, buf)
         }
     }
 }

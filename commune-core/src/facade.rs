@@ -729,6 +729,8 @@ pub struct CoreApp {
     /// The client a login flow built at discovery, kept for the flow's
     /// next step (SSO, OAuth, registration, password reset).
     pending_login: Mutex<Option<matrix_sdk::Client>>,
+    /// The calls in flight and the listener following them.
+    calls: Arc<CallFlows>,
 }
 
 #[uniffi::export]
@@ -747,6 +749,7 @@ impl CoreApp {
             verification: Arc::new(VerificationFlows::default()),
             member_list_listener_handle: Mutex::new(None),
             pending_login: Mutex::new(None),
+            calls: Arc::new(CallFlows::default()),
         })
     }
 
@@ -1133,6 +1136,442 @@ impl CoreApp {
                             format!("Could not reset the password: {send_error}")
                         },
                     })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Follow 1:1 calls with the given listener: the core speaks
+    /// `m.call.*` and hands the embedder the session descriptions and
+    /// candidates that WebRTC needs, as the parity plan's split says.
+    ///
+    /// Replaces any previous listener; registering starts watching.
+    pub fn set_call_listener(&self, listener: Arc<dyn CallListener>) {
+        let flows = self.calls.clone();
+        *flows.listener.lock().expect("mutex is not poisoned") = Some(listener);
+
+        let list = self.session_list.clone();
+        RUNTIME.spawn(async move {
+            use ruma::events::call::{
+                answer::OriginalSyncCallAnswerEvent, candidates::OriginalSyncCallCandidatesEvent,
+                hangup::OriginalSyncCallHangupEvent, invite::OriginalSyncCallInviteEvent,
+                reject::OriginalSyncCallRejectEvent,
+                select_answer::OriginalSyncCallSelectAnswerEvent,
+            };
+
+            let session = wait_for_ready_session(&list).await;
+            let client = session.client();
+            let own_user_id = client.user_id().expect("logged in").to_owned();
+
+            // Whatever was listening before goes first: the same
+            // handler added twice reports every call twice, and the
+            // duplicate invite looks like a second, competing call.
+            if let Some(previous) = flows.handlers.lock().expect("mutex is not poisoned").take() {
+                previous.remove();
+            }
+            let mut handles = Vec::new();
+            tracing::info!("Call handlers installed for {own_user_id}");
+
+            let invite_flows = flows.clone();
+            let invite_own = own_user_id.clone();
+            handles.push(client.add_event_handler(
+                move |event: OriginalSyncCallInviteEvent, room: matrix_sdk::Room| {
+                    let flows = invite_flows.clone();
+                    let own_user_id = invite_own.clone();
+                    async move {
+                        // Our own invite echoing back is not a call to
+                        // answer, and an invite addressed to somebody
+                        // else is silence, per the specification.
+                        if event.sender == own_user_id {
+                            return;
+                        }
+                        if event
+                            .content
+                            .invitee
+                            .as_ref()
+                            .is_some_and(|invitee| *invitee != own_user_id)
+                        {
+                            return;
+                        }
+                        let call_id = event.content.call_id.to_string();
+                        tracing::info!("Incoming call {call_id} from {}", event.sender);
+                        flows.insert(
+                            call_id.clone(),
+                            CallFlow {
+                                room_id: room.room_id().to_string(),
+                                party_id: opaque_party_id(),
+                                remote_party_id: event
+                                    .content
+                                    .party_id
+                                    .as_ref()
+                                    .map(ToString::to_string),
+                                remote_user_id: event.sender.to_string(),
+                                outgoing: false,
+                            },
+                        );
+                        flows.emit(|listener| {
+                            listener.on_incoming(
+                                call_id.clone(),
+                                room.room_id().to_string(),
+                                event.sender.to_string(),
+                                event.content.offer.sdp.clone(),
+                            );
+                        });
+                    }
+                },
+            ));
+
+            let answer_flows = flows.clone();
+            let answer_own = own_user_id.clone();
+            handles.push(
+                client.add_event_handler(move |event: OriginalSyncCallAnswerEvent| {
+                    let flows = answer_flows.clone();
+                    let own_user_id = answer_own.clone();
+                    async move {
+                        if event.sender == own_user_id {
+                            // Another of our own devices took it.
+                            let call_id = event.content.call_id.to_string();
+                            if flows.has(&call_id) {
+                                flows.remove(&call_id);
+                                flows.emit(|listener| {
+                                    listener
+                                        .on_ended(call_id.clone(), FfiCallEnd::AnsweredElsewhere);
+                                });
+                            }
+                            return;
+                        }
+                        let call_id = event.content.call_id.to_string();
+                        if !flows.has(&call_id) {
+                            return;
+                        }
+                        flows.set_remote_party(
+                            &call_id,
+                            event.content.party_id.as_ref().map(ToString::to_string),
+                        );
+                        flows.emit(|listener| {
+                            listener.on_answer(call_id.clone(), event.content.answer.sdp.clone());
+                        });
+                    }
+                }),
+            );
+
+            let candidate_flows = flows.clone();
+            let candidate_own = own_user_id.clone();
+            handles.push(client.add_event_handler(
+                move |event: OriginalSyncCallCandidatesEvent| {
+                    let flows = candidate_flows.clone();
+                    let own_user_id = candidate_own.clone();
+                    async move {
+                        if event.sender == own_user_id {
+                            return;
+                        }
+                        let call_id = event.content.call_id.to_string();
+                        if !flows.has(&call_id) {
+                            return;
+                        }
+                        let candidates: Vec<FfiIceCandidate> = event
+                            .content
+                            .candidates
+                            .iter()
+                            // The empty candidate means "that is all of
+                            // them"; WebRTC has nothing to do with it.
+                            .filter(|candidate| !candidate.candidate.is_empty())
+                            .map(|candidate| FfiIceCandidate {
+                                candidate: candidate.candidate.clone(),
+                                sdp_mid: candidate.sdp_mid.clone(),
+                                sdp_m_line_index: candidate
+                                    .sdp_m_line_index
+                                    .map_or(0, |index| u64::from(index) as u32),
+                            })
+                            .collect();
+                        if candidates.is_empty() {
+                            return;
+                        }
+                        flows.emit(|listener| {
+                            listener.on_candidates(call_id.clone(), candidates.clone());
+                        });
+                    }
+                },
+            ));
+
+            let hangup_flows = flows.clone();
+            handles.push(
+                client.add_event_handler(move |event: OriginalSyncCallHangupEvent| {
+                    let flows = hangup_flows.clone();
+                    async move {
+                        let call_id = event.content.call_id.to_string();
+                        if !flows.has(&call_id) {
+                            return;
+                        }
+                        flows.remove(&call_id);
+                        flows.emit(|listener| {
+                            listener.on_ended(call_id.clone(), FfiCallEnd::HungUp);
+                        });
+                    }
+                }),
+            );
+
+            let reject_flows = flows.clone();
+            let reject_own = own_user_id.clone();
+            handles.push(
+                client.add_event_handler(move |event: OriginalSyncCallRejectEvent| {
+                    let flows = reject_flows.clone();
+                    let own_user_id = reject_own.clone();
+                    async move {
+                        let call_id = event.content.call_id.to_string();
+                        if !flows.has(&call_id) {
+                            return;
+                        }
+                        flows.remove(&call_id);
+                        let end = if event.sender == own_user_id {
+                            FfiCallEnd::AnsweredElsewhere
+                        } else {
+                            FfiCallEnd::Declined
+                        };
+                        flows.emit(|listener| {
+                            listener.on_ended(call_id.clone(), end);
+                        });
+                    }
+                }),
+            );
+
+            let select_flows = flows.clone();
+            handles.push(client.add_event_handler(
+                move |event: OriginalSyncCallSelectAnswerEvent| {
+                    let flows = select_flows.clone();
+                    async move {
+                        let call_id = event.content.call_id.to_string();
+                        let Some(party_id) = flows.party_id(&call_id) else {
+                            return;
+                        };
+                        // Somebody else's answer was chosen: this end is out.
+                        if event.content.selected_party_id.as_str() != party_id {
+                            flows.remove(&call_id);
+                            flows.emit(|listener| {
+                                listener.on_ended(call_id.clone(), FfiCallEnd::AnsweredElsewhere);
+                            });
+                        }
+                    }
+                },
+            ));
+
+            *flows.handlers.lock().expect("mutex is not poisoned") =
+                Some(InstalledHandlers { client, handles });
+        });
+    }
+
+    /// Place a call: send `m.call.invite` with the offer the embedder's
+    /// WebRTC produced, and return the call ID everything else uses.
+    pub async fn place_call(
+        &self,
+        room_id: String,
+        invitee: String,
+        sdp: String,
+    ) -> Result<String, CoreError> {
+        use ruma::{
+            UInt,
+            events::{
+                AnyMessageLikeEventContent,
+                call::{SessionDescription, invite::CallInviteEventContent},
+            },
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+        let flows = self.calls.clone();
+
+        RUNTIME
+            .spawn(async move {
+                let parsed_room_id =
+                    ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                        msg: "Invalid room ID".to_owned(),
+                    })?;
+                let room =
+                    session
+                        .room_list()
+                        .get(&parsed_room_id)
+                        .ok_or_else(|| CoreError::Failed {
+                            msg: "Unknown room".to_owned(),
+                        })?;
+
+                let call_id = opaque_party_id();
+                let party_id = opaque_party_id();
+                let mut content = CallInviteEventContent::version_1(
+                    ruma::OwnedVoipId::from(call_id.clone()),
+                    ruma::OwnedVoipId::from(party_id.clone()),
+                    UInt::try_from(CALL_INVITE_LIFETIME_MS).unwrap_or(UInt::MAX),
+                    SessionDescription::new("offer".to_owned(), sdp),
+                );
+                // A call placed to one person says so; without it,
+                // anybody in the room could answer.
+                content.invitee = ruma::UserId::parse(&invitee).ok();
+
+                flows.insert(
+                    call_id.clone(),
+                    CallFlow {
+                        room_id: room_id.clone(),
+                        party_id,
+                        remote_party_id: None,
+                        remote_user_id: invitee,
+                        outgoing: true,
+                    },
+                );
+
+                send_call_event(&room, AnyMessageLikeEventContent::CallInvite(content)).await?;
+                Ok(call_id)
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Answer a call with the embedder's answer description.
+    pub async fn answer_call(&self, call_id: String, sdp: String) -> Result<(), CoreError> {
+        use ruma::events::{
+            AnyMessageLikeEventContent,
+            call::{SessionDescription, answer::CallAnswerEventContent},
+        };
+
+        let (room, party_id) = self.call_room(&call_id)?;
+
+        RUNTIME
+            .spawn(async move {
+                let content = CallAnswerEventContent::version_1(
+                    SessionDescription::new("answer".to_owned(), sdp),
+                    ruma::OwnedVoipId::from(call_id),
+                    ruma::OwnedVoipId::from(party_id),
+                );
+                send_call_event(&room, AnyMessageLikeEventContent::CallAnswer(content)).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Send gathered ICE candidates. Both `sdp_mid` and the media-line
+    /// index ride along: the specification asks for one, and clients in
+    /// the wild want the other.
+    pub async fn send_call_candidates(
+        &self,
+        call_id: String,
+        candidates: Vec<FfiIceCandidate>,
+        end_of_candidates: bool,
+    ) -> Result<(), CoreError> {
+        use ruma::{
+            UInt,
+            events::{
+                AnyMessageLikeEventContent,
+                call::candidates::{CallCandidatesEventContent, Candidate},
+            },
+        };
+
+        let (room, party_id) = self.call_room(&call_id)?;
+
+        RUNTIME
+            .spawn(async move {
+                let mut list: Vec<Candidate> = candidates
+                    .into_iter()
+                    .map(|candidate| {
+                        let mut queued = Candidate::new(candidate.candidate);
+                        queued.sdp_mid = candidate.sdp_mid;
+                        queued.sdp_m_line_index = Some(UInt::from(candidate.sdp_m_line_index));
+                        queued
+                    })
+                    .collect();
+                if end_of_candidates {
+                    // An empty candidate is how the specification spells
+                    // "that is all of them".
+                    let mut end = Candidate::new(String::new());
+                    end.sdp_m_line_index = Some(UInt::from(0u32));
+                    list.push(end);
+                }
+                if list.is_empty() {
+                    return Ok(());
+                }
+
+                let content = CallCandidatesEventContent::version_1(
+                    ruma::OwnedVoipId::from(call_id),
+                    ruma::OwnedVoipId::from(party_id),
+                    list,
+                );
+                send_call_event(&room, AnyMessageLikeEventContent::CallCandidates(content)).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Hang up a call that was placed or answered.
+    pub async fn hangup_call(&self, call_id: String) -> Result<(), CoreError> {
+        use ruma::events::{
+            AnyMessageLikeEventContent,
+            call::hangup::{CallHangupEventContent, Reason},
+        };
+
+        let (room, party_id) = self.call_room(&call_id)?;
+        let flows = self.calls.clone();
+
+        RUNTIME
+            .spawn(async move {
+                let content = CallHangupEventContent::version_1(
+                    ruma::OwnedVoipId::from(call_id.clone()),
+                    ruma::OwnedVoipId::from(party_id),
+                    Reason::UserHangup,
+                );
+                flows.remove(&call_id);
+                send_call_event(&room, AnyMessageLikeEventContent::CallHangup(content)).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Decline an incoming call.
+    pub async fn reject_call(&self, call_id: String) -> Result<(), CoreError> {
+        use ruma::events::{AnyMessageLikeEventContent, call::reject::CallRejectEventContent};
+
+        let (room, party_id) = self.call_room(&call_id)?;
+        let flows = self.calls.clone();
+
+        RUNTIME
+            .spawn(async move {
+                let content = CallRejectEventContent::version_1(
+                    ruma::OwnedVoipId::from(call_id.clone()),
+                    ruma::OwnedVoipId::from(party_id),
+                );
+                flows.remove(&call_id);
+                send_call_event(&room, AnyMessageLikeEventContent::CallReject(content)).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The ICE servers the homeserver hands out, with the credentials
+    /// that go with them and how long they last.
+    pub async fn turn_servers(&self) -> FfiTurnServers {
+        use ruma::api::client::voip::get_turn_server_info;
+
+        let Some(session) = self.first_ready_session() else {
+            return FfiTurnServers::default();
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let Ok(response) = session
+                    .client()
+                    .send(get_turn_server_info::v3::Request::new())
+                    .await
+                else {
+                    // No TURN is not no call: a local network often
+                    // carries one on host candidates alone.
+                    return FfiTurnServers::default();
+                };
+
+                FfiTurnServers {
+                    uris: response.uris,
+                    username: response.username,
+                    password: response.password,
+                    ttl_seconds: response.ttl.as_secs(),
+                }
             })
             .await
             .expect("task was not aborted")
@@ -2008,11 +2447,18 @@ impl CoreApp {
 
         *flows.listener.lock().expect("mutex is not poisoned") = Some(listener);
 
-        if flows
-            .handlers_installed
-            .swap(true, std::sync::atomic::Ordering::SeqCst)
-        {
-            return;
+        // As with calls: handlers belong to one client, and an account
+        // switch hands us a different one. Installing once per ready
+        // session and no more is what the bound id records.
+        let active_id = self
+            .first_ready_session()
+            .map(|session| session.session_id().to_owned());
+        if active_id.is_some() {
+            let mut bound = flows.bound_session.lock().expect("mutex is not poisoned");
+            if *bound == active_id {
+                return;
+            }
+            bound.clone_from(&active_id);
         }
 
         let list = self.session_list.clone();
@@ -6805,6 +7251,28 @@ impl Drop for CoreApp {
 /// Wait until the session list has a ready session, and return it.
 /// The verification flows in progress and their listener.
 impl CoreApp {
+    /// The room a call lives in, with this end's party ID.
+    fn call_room(&self, call_id: &str) -> Result<(crate::session::Room, String), CoreError> {
+        let flow = self.calls.get(call_id).ok_or_else(|| CoreError::Failed {
+            msg: "Unknown call".to_owned(),
+        })?;
+        let session = self
+            .first_ready_session()
+            .ok_or_else(|| CoreError::Failed {
+                msg: "No session".to_owned(),
+            })?;
+        let room_id = ruma::RoomId::parse(&flow.0).map_err(|_| CoreError::Failed {
+            msg: "Invalid room ID".to_owned(),
+        })?;
+        let room = session
+            .room_list()
+            .get(&room_id)
+            .ok_or_else(|| CoreError::Failed {
+                msg: "Unknown room".to_owned(),
+            })?;
+        Ok((room, flow.1))
+    }
+
     /// The login client the discovery step built, for the flow's next
     /// step.
     fn pending_login_client(&self) -> Result<matrix_sdk::Client, CoreError> {
@@ -6818,11 +7286,188 @@ impl CoreApp {
     }
 }
 
+/// How long an invite rings for, as the application sets it.
+const CALL_INVITE_LIFETIME_MS: u64 = 90_000;
+
+/// A random opaque identifier, for call and party IDs — the eight
+/// characters the application's `opaque_id(8)` produces.
+fn opaque_party_id() -> String {
+    use rand::{
+        distr::{Alphanumeric, SampleString},
+        rng,
+    };
+
+    Alphanumeric.sample_string(&mut rng(), 8)
+}
+
+/// Send a call event straight to the homeserver rather than through the
+/// send queue: a queued invite arrives after the person stopped waiting,
+/// and a queued hangup leaves the other end in a call that is over.
+async fn send_call_event(
+    room: &crate::session::Room,
+    content: ruma::events::AnyMessageLikeEventContent,
+) -> Result<(), CoreError> {
+    room.matrix_room()
+        .send(content)
+        .await
+        .map(|_| ())
+        .map_err(|send_error| CoreError::Failed {
+            msg: format!("Could not send the call event: {send_error}"),
+        })
+}
+
+/// One call in flight.
+struct CallFlow {
+    room_id: String,
+    party_id: String,
+    remote_party_id: Option<String>,
+    remote_user_id: String,
+    outgoing: bool,
+}
+
+/// The calls in flight and the listener following them.
+#[derive(Default)]
+struct CallFlows {
+    listener: Mutex<Option<Arc<dyn CallListener>>>,
+    calls: Mutex<std::collections::HashMap<String, CallFlow>>,
+    /// The client the handlers sit on, and the handles that take them
+    /// off again — an event handler left on a stale client hears
+    /// nothing, and one added twice hears everything twice.
+    handlers: Mutex<Option<InstalledHandlers>>,
+}
+
+/// The event handlers of one listener, on the client they were added to.
+struct InstalledHandlers {
+    client: matrix_sdk::Client,
+    handles: Vec<matrix_sdk::event_handler::EventHandlerHandle>,
+}
+
+impl InstalledHandlers {
+    /// Take these handlers off their client.
+    fn remove(self) {
+        for handle in self.handles {
+            self.client.remove_event_handler(handle);
+        }
+    }
+}
+
+impl CallFlows {
+    fn has(&self, call_id: &str) -> bool {
+        self.calls
+            .lock()
+            .expect("mutex is not poisoned")
+            .contains_key(call_id)
+    }
+
+    fn insert(&self, call_id: String, flow: CallFlow) {
+        self.calls
+            .lock()
+            .expect("mutex is not poisoned")
+            .insert(call_id, flow);
+    }
+
+    fn remove(&self, call_id: &str) {
+        self.calls
+            .lock()
+            .expect("mutex is not poisoned")
+            .remove(call_id);
+    }
+
+    /// The room and party ID of a call, if it is still in flight.
+    fn get(&self, call_id: &str) -> Option<(String, String)> {
+        self.calls
+            .lock()
+            .expect("mutex is not poisoned")
+            .get(call_id)
+            .map(|flow| (flow.room_id.clone(), flow.party_id.clone()))
+    }
+
+    fn party_id(&self, call_id: &str) -> Option<String> {
+        self.calls
+            .lock()
+            .expect("mutex is not poisoned")
+            .get(call_id)
+            .map(|flow| flow.party_id.clone())
+    }
+
+    fn set_remote_party(&self, call_id: &str, remote_party_id: Option<String>) {
+        if let Some(flow) = self
+            .calls
+            .lock()
+            .expect("mutex is not poisoned")
+            .get_mut(call_id)
+        {
+            flow.remote_party_id = remote_party_id;
+        }
+    }
+
+    fn emit(&self, f: impl FnOnce(&Arc<dyn CallListener>)) {
+        if let Some(listener) = self
+            .listener
+            .lock()
+            .expect("mutex is not poisoned")
+            .as_ref()
+        {
+            f(listener);
+        }
+    }
+}
+
+/// One ICE candidate, in both spellings the wild asks for.
+#[derive(uniffi::Record, Clone)]
+pub struct FfiIceCandidate {
+    /// The candidate line.
+    pub candidate: String,
+    /// The media stream it belongs to.
+    pub sdp_mid: Option<String>,
+    /// The index of the media line it belongs to.
+    pub sdp_m_line_index: u32,
+}
+
+/// Why a call ended, as far as the other end said.
+#[derive(uniffi::Enum, Clone, Copy)]
+pub enum FfiCallEnd {
+    /// Somebody hung up.
+    HungUp,
+    /// The other party declined.
+    Declined,
+    /// Another of our own sessions took it.
+    AnsweredElsewhere,
+}
+
+/// The ICE servers a homeserver hands out.
+#[derive(uniffi::Record, Default)]
+pub struct FfiTurnServers {
+    /// The server URIs, `stun:` and `turn:` as the server gave them.
+    pub uris: Vec<String>,
+    /// The username for the TURN servers.
+    pub username: String,
+    /// The password for the TURN servers.
+    pub password: String,
+    /// How long the credentials last.
+    pub ttl_seconds: u64,
+}
+
+/// What the embedder is told about calls. The core speaks `m.call.*`;
+/// the media itself is the embedder's business.
+#[uniffi::export(with_foreign)]
+pub trait CallListener: Send + Sync {
+    /// Somebody is calling, with the description they offered.
+    fn on_incoming(&self, call_id: String, room_id: String, caller: String, sdp: String);
+    /// A call we placed was answered, with the description to apply.
+    fn on_answer(&self, call_id: String, sdp: String);
+    /// The other end gathered candidates.
+    fn on_candidates(&self, call_id: String, candidates: Vec<FfiIceCandidate>);
+    /// The call is over.
+    fn on_ended(&self, call_id: String, reason: FfiCallEnd);
+}
+
 #[derive(Default)]
 struct VerificationFlows {
     listener: Mutex<Option<Arc<dyn VerificationListener>>>,
     flows: Mutex<std::collections::HashMap<String, VerificationFlow>>,
-    handlers_installed: std::sync::atomic::AtomicBool,
+    /// The session whose client carries the handlers, if any.
+    bound_session: Mutex<Option<String>>,
 }
 
 enum VerificationFlow {
