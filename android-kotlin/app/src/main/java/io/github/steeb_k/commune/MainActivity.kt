@@ -175,7 +175,10 @@ private fun CommuneApp(state: CommuneState) {
             VerificationDialog(state)
             val room = state.openRoom
             val viewerPath = state.viewerImagePath
-            if (viewerPath != null) {
+            if (state.addingAccount) {
+                BackHandler { state.cancelAddAccount() }
+                LoginFlow(state)
+            } else if (viewerPath != null) {
                 BackHandler { state.closeViewer() }
                 MediaViewerScreen(
                     viewerPath,

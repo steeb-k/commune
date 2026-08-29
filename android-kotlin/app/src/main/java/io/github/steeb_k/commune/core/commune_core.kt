@@ -947,7 +947,11 @@ external fun uniffi_commune_core_checksum_method_coreapp_session_settings(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_session_user_id(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_sessions(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_set_account_avatar(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_active_session(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_set_display_name(
 ): Short
@@ -1222,8 +1226,12 @@ external fun uniffi_commune_core_fn_method_coreapp_session_settings(`ptr`: Long,
 ): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_method_coreapp_session_user_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_method_coreapp_sessions(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_method_coreapp_set_account_avatar(`ptr`: Long,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_set_active_session(`ptr`: Long,`sessionId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_display_name(`ptr`: Long,`name`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_member_list_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1715,7 +1723,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_session_user_id() != 13656.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_sessions() != 4645.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_account_avatar() != 55349.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_active_session() != 39854.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_display_name() != 56959.toShort()) {
@@ -2844,9 +2858,21 @@ public interface CoreAppInterface {
     fun `sessionUserId`(): kotlin.String?
     
     /**
+     * Every session on this device, ready or not, in the stored order.
+     */
+    fun `sessions`(): List<FfiSessionInfo>
+    
+    /**
      * Upload the file at the given path as the account's avatar.
      */
     suspend fun `setAccountAvatar`(`filePath`: kotlin.String, `mimeType`: kotlin.String)
+    
+    /**
+     * Make the given session the one everything resolves to. The
+     * embedder re-arms its listeners after this, the way it does after
+     * a login.
+     */
+    fun `setActiveSession`(`sessionId`: kotlin.String)
     
     /**
      * Change the account's display name.
@@ -5211,6 +5237,22 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Every session on this device, ready or not, in the stored order.
+     */override fun `sessions`(): List<FfiSessionInfo> {
+            return FfiConverterSequenceTypeFfiSessionInfo.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_sessions(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
      * Upload the file at the given path as the account's avatar.
      */
     @Throws(CoreException::class)
@@ -5233,6 +5275,23 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         CoreException.ErrorHandler,
     )
     }
+
+    
+    /**
+     * Make the given session the one everything resolves to. The
+     * embedder re-arms its listeners after this, the way it does after
+     * a login.
+     */override fun `setActiveSession`(`sessionId`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_set_active_session(
+        it,
+        FfiConverterString.lower(`sessionId`),_status)
+}
+    }
+    
+    
 
     
     /**
@@ -9274,6 +9333,77 @@ public object FfiConverterTypeFfiServerAcl: FfiConverterRustBuffer<FfiServerAcl>
 
 
 /**
+ * One session on this device.
+ */
+data class FfiSessionInfo (
+    /**
+     * The local identifier of the session.
+     */
+    var `sessionId`: kotlin.String
+    , 
+    /**
+     * The user the session belongs to (empty until it is ready).
+     */
+    var `userId`: kotlin.String
+    , 
+    /**
+     * The homeserver the session lives on (empty until it is ready).
+     */
+    var `homeserver`: kotlin.String
+    , 
+    /**
+     * Whether the session is restored and running.
+     */
+    var `ready`: kotlin.Boolean
+    , 
+    /**
+     * Whether this is the session everything resolves to right now.
+     */
+    var `active`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiSessionInfo: FfiConverterRustBuffer<FfiSessionInfo> {
+    override fun read(buf: ByteBuffer): FfiSessionInfo {
+        return FfiSessionInfo(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiSessionInfo) = (
+            FfiConverterString.allocationSize(value.`sessionId`) +
+            FfiConverterString.allocationSize(value.`userId`) +
+            FfiConverterString.allocationSize(value.`homeserver`) +
+            FfiConverterBoolean.allocationSize(value.`ready`) +
+            FfiConverterBoolean.allocationSize(value.`active`)
+    )
+
+    override fun write(value: FfiSessionInfo, buf: ByteBuffer) {
+            FfiConverterString.write(value.`sessionId`, buf)
+            FfiConverterString.write(value.`userId`, buf)
+            FfiConverterString.write(value.`homeserver`, buf)
+            FfiConverterBoolean.write(value.`ready`, buf)
+            FfiConverterBoolean.write(value.`active`, buf)
+    }
+}
+
+
+
+/**
  * The toggleable per-session settings, as the settings screen needs
  * them.
  */
@@ -12030,6 +12160,34 @@ public object FfiConverterSequenceTypeFfiSearchResult: FfiConverterRustBuffer<Li
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiSearchResult.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiSessionInfo: FfiConverterRustBuffer<List<FfiSessionInfo>> {
+    override fun read(buf: ByteBuffer): List<FfiSessionInfo> {
+        val len = buf.getInt()
+        return List<FfiSessionInfo>(len) {
+            FfiConverterTypeFfiSessionInfo.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiSessionInfo>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiSessionInfo.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiSessionInfo>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiSessionInfo.write(it, buf)
         }
     }
 }

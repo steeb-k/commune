@@ -800,14 +800,16 @@ impl CoreApp {
         })?;
 
         let list = self.session_list.clone();
-        RUNTIME
+        let session = RUNTIME
             .spawn(async move {
                 list.login_with_password(homeserver, username, password)
                     .await
             })
             .await
-            .expect("task was not aborted")?;
+            .expect("task was not aborted")
+            .map_err(|login_error| CoreError::Failed { msg: login_error })?;
 
+        self.set_active_session(session.session_id().to_owned());
         Ok(())
     }
 
@@ -905,11 +907,12 @@ impl CoreApp {
                     })?;
                 list.adopt_logged_in_client(client)
                     .await
-                    .map(|_| ())
+                    .map(|session| session.session_id().to_owned())
                     .map_err(|adopt_error| CoreError::Failed { msg: adopt_error })
             })
             .await
             .expect("task was not aborted")
+            .map(|session_id| self.set_active_session(session_id))
     }
 
     /// The OAuth 2.0 authorization URL to open in the browser, with the
@@ -954,11 +957,12 @@ impl CoreApp {
                     })?;
                 list.adopt_logged_in_client(client)
                     .await
-                    .map(|_| ())
+                    .map(|session| session.session_id().to_owned())
                     .map_err(|adopt_error| CoreError::Failed { msg: adopt_error })
             })
             .await
             .expect("task was not aborted")
+            .map(|session_id| self.set_active_session(session_id))
     }
 
     /// Create an account on the discovered homeserver, walking the
@@ -991,7 +995,7 @@ impl CoreApp {
                             return list
                                 .adopt_logged_in_client(client)
                                 .await
-                                .map(|_| ())
+                                .map(|session| session.session_id().to_owned())
                                 .map_err(|adopt_error| CoreError::Failed { msg: adopt_error });
                         }
                         Err(register_error) => {
@@ -1040,6 +1044,7 @@ impl CoreApp {
             })
             .await
             .expect("task was not aborted")
+            .map(|session_id| self.set_active_session(session_id))
     }
 
     /// Ask the homeserver to email a password-reset link.
@@ -2916,7 +2921,45 @@ impl CoreApp {
             .expect("task was not aborted")?;
 
         self.session_list.remove(&session_id);
+        // Whoever is next resolves as active from here.
+        self.session_list.set_active(None);
         Ok(())
+    }
+
+    /// Every session on this device, ready or not, in the stored order.
+    pub fn sessions(&self) -> Vec<FfiSessionInfo> {
+        let active = self
+            .first_ready_session()
+            .map(|s| s.session_id().to_owned());
+        self.session_list
+            .subscribe_entries()
+            .0
+            .iter()
+            .map(|entry| {
+                let ready = entry.session().is_some();
+                let (user_id, homeserver) = match entry.session() {
+                    Some(session) => (
+                        session.user_id().to_string(),
+                        session.info().homeserver.to_string(),
+                    ),
+                    None => (String::new(), String::new()),
+                };
+                FfiSessionInfo {
+                    session_id: entry.session_id().to_owned(),
+                    user_id,
+                    homeserver,
+                    ready,
+                    active: active.as_deref() == Some(entry.session_id()),
+                }
+            })
+            .collect()
+    }
+
+    /// Make the given session the one everything resolves to. The
+    /// embedder re-arms its listeners after this, the way it does after
+    /// a login.
+    pub fn set_active_session(&self, session_id: String) {
+        self.session_list.set_active(Some(session_id));
     }
 
     /// The account's current profile.
@@ -5862,6 +5905,21 @@ fn oauth_client_registration_data() -> matrix_sdk::authentication::oauth::Client
         .into()
 }
 
+/// One session on this device.
+#[derive(uniffi::Record)]
+pub struct FfiSessionInfo {
+    /// The local identifier of the session.
+    pub session_id: String,
+    /// The user the session belongs to (empty until it is ready).
+    pub user_id: String,
+    /// The homeserver the session lives on (empty until it is ready).
+    pub homeserver: String,
+    /// Whether the session is restored and running.
+    pub ready: bool,
+    /// Whether this is the session everything resolves to right now.
+    pub active: bool,
+}
+
 /// What a homeserver offers for logging in.
 #[derive(uniffi::Record)]
 pub struct FfiLoginMethods {
@@ -6106,13 +6164,10 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
-    /// The first session that is ready, if any.
+    /// The active session — or, when none was chosen or the chosen one
+    /// is gone, the first session that is ready.
     fn first_ready_session(&self) -> Option<Session> {
-        self.session_list
-            .subscribe_entries()
-            .0
-            .iter()
-            .find_map(|entry| entry.session().cloned())
+        self.session_list.active_session()
     }
 }
 
@@ -6350,21 +6405,16 @@ impl VerificationFlows {
 }
 
 async fn wait_for_ready_session(list: &SessionList) -> Session {
-    let (entries, mut stream) = list.subscribe_entries();
+    let (_, mut stream) = list.subscribe_entries();
 
-    if let Some(session) = entries.iter().find_map(|entry| entry.session().cloned()) {
+    if let Some(session) = list.active_session() {
         return session;
     }
 
     loop {
         let _ = stream.next().await;
 
-        if let Some(session) = list
-            .subscribe_entries()
-            .0
-            .iter()
-            .find_map(|entry| entry.session().cloned())
-        {
+        if let Some(session) = list.active_session() {
             return session;
         }
     }
