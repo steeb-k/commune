@@ -630,6 +630,9 @@ internal interface UniffiCallbackInterfaceCallListenerMethod2 : com.sun.jna.Call
     fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`candidates`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
 internal interface UniffiCallbackInterfaceCallListenerMethod3 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,`sessionType`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
+internal interface UniffiCallbackInterfaceCallListenerMethod4 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
 internal interface UniffiCallbackInterfaceMemberListListenerMethod0 : com.sun.jna.Callback {
@@ -656,14 +659,15 @@ internal interface UniffiCallbackInterfaceVerificationListenerMethod2 : com.sun.
 internal interface UniffiCallbackInterfaceVerificationListenerMethod3 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`flowId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
-@Structure.FieldOrder("uniffiFree", "uniffiClone", "onIncoming", "onAnswer", "onCandidates", "onEnded")
+@Structure.FieldOrder("uniffiFree", "uniffiClone", "onIncoming", "onAnswer", "onCandidates", "onNegotiate", "onEnded")
 internal open class UniffiVTableCallbackInterfaceCallListener(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
     @JvmField internal var `uniffiClone`: UniffiCallbackInterfaceClone? = null,
     @JvmField internal var `onIncoming`: UniffiCallbackInterfaceCallListenerMethod0? = null,
     @JvmField internal var `onAnswer`: UniffiCallbackInterfaceCallListenerMethod1? = null,
     @JvmField internal var `onCandidates`: UniffiCallbackInterfaceCallListenerMethod2? = null,
-    @JvmField internal var `onEnded`: UniffiCallbackInterfaceCallListenerMethod3? = null,
+    @JvmField internal var `onNegotiate`: UniffiCallbackInterfaceCallListenerMethod3? = null,
+    @JvmField internal var `onEnded`: UniffiCallbackInterfaceCallListenerMethod4? = null,
 ) : Structure() {
     class UniffiByValue(
         `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -671,8 +675,9 @@ internal open class UniffiVTableCallbackInterfaceCallListener(
         `onIncoming`: UniffiCallbackInterfaceCallListenerMethod0? = null,
         `onAnswer`: UniffiCallbackInterfaceCallListenerMethod1? = null,
         `onCandidates`: UniffiCallbackInterfaceCallListenerMethod2? = null,
-        `onEnded`: UniffiCallbackInterfaceCallListenerMethod3? = null,
-    ): UniffiVTableCallbackInterfaceCallListener(`uniffiFree`,`uniffiClone`,`onIncoming`,`onAnswer`,`onCandidates`,`onEnded`,), Structure.ByValue
+        `onNegotiate`: UniffiCallbackInterfaceCallListenerMethod3? = null,
+        `onEnded`: UniffiCallbackInterfaceCallListenerMethod4? = null,
+    ): UniffiVTableCallbackInterfaceCallListener(`uniffiFree`,`uniffiClone`,`onIncoming`,`onAnswer`,`onCandidates`,`onNegotiate`,`onEnded`,), Structure.ByValue
 
    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceCallListener) {
         `uniffiFree` = other.`uniffiFree`
@@ -680,6 +685,7 @@ internal open class UniffiVTableCallbackInterfaceCallListener(
         `onIncoming` = other.`onIncoming`
         `onAnswer` = other.`onAnswer`
         `onCandidates` = other.`onCandidates`
+        `onNegotiate` = other.`onNegotiate`
         `onEnded` = other.`onEnded`
     }
 
@@ -822,6 +828,8 @@ external fun uniffi_commune_core_checksum_method_calllistener_on_incoming(
 external fun uniffi_commune_core_checksum_method_calllistener_on_answer(
 ): Short
 external fun uniffi_commune_core_checksum_method_calllistener_on_candidates(
+): Short
+external fun uniffi_commune_core_checksum_method_calllistener_on_negotiate(
 ): Short
 external fun uniffi_commune_core_checksum_method_calllistener_on_ended(
 ): Short
@@ -999,6 +1007,10 @@ external fun uniffi_commune_core_checksum_method_coreapp_send_attachment(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_send_call_candidates(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_call_negotiate(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_send_call_stream_metadata(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_send_gif(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_send_location(
@@ -1142,6 +1154,8 @@ external fun uniffi_commune_core_fn_method_calllistener_on_incoming(`ptr`: Long,
 external fun uniffi_commune_core_fn_method_calllistener_on_answer(`ptr`: Long,`callId`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_calllistener_on_candidates(`ptr`: Long,`callId`: RustBuffer.ByValue,`candidates`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_method_calllistener_on_negotiate(`ptr`: Long,`callId`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,`sessionType`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_calllistener_on_ended(`ptr`: Long,`callId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1324,6 +1338,10 @@ external fun uniffi_commune_core_fn_method_coreapp_security_state(`ptr`: Long,
 external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_call_candidates(`ptr`: Long,`callId`: RustBuffer.ByValue,`candidates`: RustBuffer.ByValue,`endOfCandidates`: Byte,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_send_call_negotiate(`ptr`: Long,`callId`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,`sessionType`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_send_call_stream_metadata(`ptr`: Long,`callId`: RustBuffer.ByValue,`streamId`: RustBuffer.ByValue,`audioMuted`: Byte,`videoMuted`: Byte,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_gif(`ptr`: Long,`roomId`: RustBuffer.ByValue,`gif`: RustBuffer.ByValue,
 ): Long
@@ -1604,7 +1622,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_calllistener_on_candidates() != 45595.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_commune_core_checksum_method_calllistener_on_ended() != 10687.toShort()) {
+    if (lib.uniffi_commune_core_checksum_method_calllistener_on_negotiate() != 52729.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_calllistener_on_ended() != 31197.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_accept_verification() != 31555.toShort()) {
@@ -1866,6 +1887,12 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_call_candidates() != 25137.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_call_negotiate() != 21796.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_call_stream_metadata() != 47360.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_gif() != 37883.toShort()) {
@@ -2544,6 +2571,12 @@ public interface CallListener {
     fun `onCandidates`(`callId`: kotlin.String, `candidates`: List<FfiIceCandidate>)
     
     /**
+     * The other end wants to renegotiate: apply the description, and
+     * when it is an offer answer it with `send_call_negotiate`.
+     */
+    fun `onNegotiate`(`callId`: kotlin.String, `sdp`: kotlin.String, `sessionType`: kotlin.String)
+    
+    /**
      * The call is over.
      */
     fun `onEnded`(`callId`: kotlin.String, `reason`: FfiCallEnd)
@@ -2698,6 +2731,22 @@ open class CallListenerImpl: Disposable, AutoCloseable, CallListener
 
     
     /**
+     * The other end wants to renegotiate: apply the description, and
+     * when it is an offer answer it with `send_call_negotiate`.
+     */override fun `onNegotiate`(`callId`: kotlin.String, `sdp`: kotlin.String, `sessionType`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_calllistener_on_negotiate(
+        it,
+        FfiConverterString.lower(`callId`),FfiConverterString.lower(`sdp`),FfiConverterString.lower(`sessionType`),_status)
+}
+    }
+    
+    
+
+    
+    /**
      * The call is over.
      */override fun `onEnded`(`callId`: kotlin.String, `reason`: FfiCallEnd)
         = 
@@ -2770,7 +2819,21 @@ internal object uniffiCallbackInterfaceCallListener {
             uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
         }
     }
-    internal object `onEnded`: UniffiCallbackInterfaceCallListenerMethod3 {
+    internal object `onNegotiate`: UniffiCallbackInterfaceCallListenerMethod3 {
+        override fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,`sessionType`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeCallListener.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`onNegotiate`(
+                    FfiConverterString.lift(`callId`),
+                    FfiConverterString.lift(`sdp`),
+                    FfiConverterString.lift(`sessionType`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+    internal object `onEnded`: UniffiCallbackInterfaceCallListenerMethod4 {
         override fun callback(`uniffiHandle`: Long,`callId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
             val uniffiObj = FfiConverterTypeCallListener.handleMap.get(uniffiHandle)
             val makeCall = { ->
@@ -2802,6 +2865,7 @@ internal object uniffiCallbackInterfaceCallListener {
         `onIncoming`,
         `onAnswer`,
         `onCandidates`,
+        `onNegotiate`,
         `onEnded`,
     )
 
@@ -3485,6 +3549,18 @@ public interface CoreAppInterface {
      * the wild want the other.
      */
     suspend fun `sendCallCandidates`(`callId`: kotlin.String, `candidates`: List<FfiIceCandidate>, `endOfCandidates`: kotlin.Boolean)
+    
+    /**
+     * Offer or accept a new session description mid-call — what the
+     * application sends when the camera comes on partway through.
+     */
+    suspend fun `sendCallNegotiate`(`callId`: kotlin.String, `sdp`: kotlin.String, `sessionType`: kotlin.String)
+    
+    /**
+     * Tell the other end what this end has muted, as the application's
+     * `send_stream_metadata` does.
+     */
+    suspend fun `sendCallStreamMetadata`(`callId`: kotlin.String, `streamId`: kotlin.String, `audioMuted`: kotlin.Boolean, `videoMuted`: kotlin.Boolean)
     
     /**
      * Download the given GIF and send it to the given room, then report the
@@ -6022,6 +6098,58 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_send_call_candidates(
                 uniffiHandle,
                 FfiConverterString.lower(`callId`),FfiConverterSequenceTypeFfiIceCandidate.lower(`candidates`),FfiConverterBoolean.lower(`endOfCandidates`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Offer or accept a new session description mid-call — what the
+     * application sends when the camera comes on partway through.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `sendCallNegotiate`(`callId`: kotlin.String, `sdp`: kotlin.String, `sessionType`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_send_call_negotiate(
+                uniffiHandle,
+                FfiConverterString.lower(`callId`),FfiConverterString.lower(`sdp`),FfiConverterString.lower(`sessionType`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Tell the other end what this end has muted, as the application's
+     * `send_stream_metadata` does.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `sendCallStreamMetadata`(`callId`: kotlin.String, `streamId`: kotlin.String, `audioMuted`: kotlin.Boolean, `videoMuted`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_send_call_stream_metadata(
+                uniffiHandle,
+                FfiConverterString.lower(`callId`),FfiConverterString.lower(`streamId`),FfiConverterBoolean.lower(`audioMuted`),FfiConverterBoolean.lower(`videoMuted`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -11454,6 +11582,57 @@ public object FfiConverterTypeFfiCallEnd: FfiConverterRustBuffer<FfiCallEnd> {
 
 
 /**
+ * What became of a call, as far as the room can tell.
+ */
+
+enum class FfiCallOutcome {
+    
+    /**
+     * An invite was seen and nothing has happened to it yet.
+     */
+    RINGING,
+    /**
+     * Somebody answered it.
+     */
+    ANSWERED,
+    /**
+     * Somebody said no to it.
+     */
+    DECLINED,
+    /**
+     * It stopped ringing without being answered.
+     */
+    MISSED;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiCallOutcome: FfiConverterRustBuffer<FfiCallOutcome> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiCallOutcome.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiCallOutcome) = 4UL
+
+    override fun write(value: FfiCallOutcome, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
  * Whether the account has a crypto identity, and whether this session
  * can verify against another of its own.
  */
@@ -11515,6 +11694,25 @@ sealed class FfiEventKind {
      */
     object Text : FfiEventKind()
     
+    
+    /**
+     * A call, as the timeline remembers it afterwards.
+     */
+    data class Call(
+        /**
+         * Whether the call carried video.
+         */
+        val `hasVideo`: kotlin.Boolean, 
+        /**
+         * What became of it, when this session saw the answer.
+         */
+        val `outcome`: io.github.steeb_k.commune.core.FfiCallOutcome?) : FfiEventKind()
+        
+    {
+        
+
+        companion object
+    }
     
     /**
      * A media message; the body is the caption or filename.
@@ -11636,26 +11834,30 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
     override fun read(buf: ByteBuffer): FfiEventKind {
         return when(buf.getInt()) {
             1 -> FfiEventKind.Text
-            2 -> FfiEventKind.Media(
+            2 -> FfiEventKind.Call(
+                FfiConverterBoolean.read(buf),
+                FfiConverterOptionalTypeFfiCallOutcome.read(buf),
+                )
+            3 -> FfiEventKind.Media(
                 FfiConverterTypeFfiMediaKind.read(buf),
                 FfiConverterOptionalString.read(buf),
                 )
-            3 -> FfiEventKind.Location(
+            4 -> FfiEventKind.Location(
                 FfiConverterString.read(buf),
                 )
-            4 -> FfiEventKind.UnableToDecrypt
-            5 -> FfiEventKind.Redacted
-            6 -> FfiEventKind.Membership(
+            5 -> FfiEventKind.UnableToDecrypt
+            6 -> FfiEventKind.Redacted
+            7 -> FfiEventKind.Membership(
                 FfiConverterString.read(buf),
                 FfiConverterTypeFfiMembershipChange.read(buf),
                 )
-            7 -> FfiEventKind.ProfileChange(
+            8 -> FfiEventKind.ProfileChange(
                 FfiConverterString.read(buf),
                 )
-            8 -> FfiEventKind.OtherState(
+            9 -> FfiEventKind.OtherState(
                 FfiConverterTypeFfiStateChange.read(buf),
                 )
-            9 -> FfiEventKind.Unsupported
+            10 -> FfiEventKind.Unsupported
             else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
     }
@@ -11665,6 +11867,14 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
             // Add the size for the Int that specifies the variant plus the size needed for all fields
             (
                 4UL
+            )
+        }
+        is FfiEventKind.Call -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterBoolean.allocationSize(value.`hasVideo`)
+                + FfiConverterOptionalTypeFfiCallOutcome.allocationSize(value.`outcome`)
             )
         }
         is FfiEventKind.Media -> {
@@ -11730,43 +11940,49 @@ public object FfiConverterTypeFfiEventKind : FfiConverterRustBuffer<FfiEventKind
                 buf.putInt(1)
                 Unit
             }
-            is FfiEventKind.Media -> {
+            is FfiEventKind.Call -> {
                 buf.putInt(2)
+                FfiConverterBoolean.write(value.`hasVideo`, buf)
+                FfiConverterOptionalTypeFfiCallOutcome.write(value.`outcome`, buf)
+                Unit
+            }
+            is FfiEventKind.Media -> {
+                buf.putInt(3)
                 FfiConverterTypeFfiMediaKind.write(value.`kind`, buf)
                 FfiConverterOptionalString.write(value.`blurhash`, buf)
                 Unit
             }
             is FfiEventKind.Location -> {
-                buf.putInt(3)
+                buf.putInt(4)
                 FfiConverterString.write(value.`geoUri`, buf)
                 Unit
             }
             is FfiEventKind.UnableToDecrypt -> {
-                buf.putInt(4)
-                Unit
-            }
-            is FfiEventKind.Redacted -> {
                 buf.putInt(5)
                 Unit
             }
-            is FfiEventKind.Membership -> {
+            is FfiEventKind.Redacted -> {
                 buf.putInt(6)
+                Unit
+            }
+            is FfiEventKind.Membership -> {
+                buf.putInt(7)
                 FfiConverterString.write(value.`user`, buf)
                 FfiConverterTypeFfiMembershipChange.write(value.`change`, buf)
                 Unit
             }
             is FfiEventKind.ProfileChange -> {
-                buf.putInt(7)
+                buf.putInt(8)
                 FfiConverterString.write(value.`user`, buf)
                 Unit
             }
             is FfiEventKind.OtherState -> {
-                buf.putInt(8)
+                buf.putInt(9)
                 FfiConverterTypeFfiStateChange.write(value.`change`, buf)
                 Unit
             }
             is FfiEventKind.Unsupported -> {
-                buf.putInt(9)
+                buf.putInt(10)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
@@ -13308,6 +13524,38 @@ public object FfiConverterOptionalTypeFfiSessionSettings: FfiConverterRustBuffer
         } else {
             buf.put(1)
             FfiConverterTypeFfiSessionSettings.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiCallOutcome: FfiConverterRustBuffer<FfiCallOutcome?> {
+    override fun read(buf: ByteBuffer): FfiCallOutcome? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiCallOutcome.read(buf)
+    }
+
+    override fun allocationSize(value: FfiCallOutcome?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiCallOutcome.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiCallOutcome?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiCallOutcome.write(value, buf)
         }
     }
 }
