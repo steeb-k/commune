@@ -147,8 +147,10 @@ class CommuneState(context: Context) {
                 if (ownUserId == null) ownUserId = app.sessionUserId()
                 if (settings == null) settings = app.sessionSettings()
                 // The first delivery proves the session is ready; the
-                // profile fetch at startup can have been too early.
+                // profile fetch and the encryption check at startup can
+                // both have been too early.
                 if (profileName == null) loadProfile()
+                if (securityState == null) checkSessionSetup()
                 notifier.enabled = settings?.notificationsEnabled != false
                 notifier.update(rooms)
             }
@@ -202,6 +204,80 @@ class CommuneState(context: Context) {
         }
     }
 
+    // The post-login setup: where this session stands on encryption,
+    // and the screen that offers the way out when it is not settled.
+    var securityState by mutableStateOf<io.github.steeb_k.commune.core.FfiSecurityState?>(null)
+        private set
+    var setupNeeded by mutableStateOf(false)
+        private set
+    var setupBusy by mutableStateOf(false)
+        private set
+    var setupError by mutableStateOf<String?>(null)
+        private set
+    private var setupDismissed = false
+
+    /// Read the encryption state and decide whether to ask, mirroring
+    /// the application's session_setup_view: verified plus recovery
+    /// enabled needs nothing, and an unknown state waits rather than
+    /// nagging.
+    fun checkSessionSetup() {
+        thread {
+            runBlocking {
+                val security = try {
+                    app.securityState()
+                } catch (_: Exception) {
+                    null
+                }
+                main.post {
+                    securityState = security
+                    val verified = security?.verification ==
+                        io.github.steeb_k.commune.core.FfiVerificationState.VERIFIED
+                    val recovered = security?.recovery ==
+                        io.github.steeb_k.commune.core.FfiRecoveryState.ENABLED
+                    val unknown = security == null ||
+                        security.verification ==
+                        io.github.steeb_k.commune.core.FfiVerificationState.UNKNOWN
+                    setupNeeded = !(verified && recovered) && !unknown && !setupDismissed
+                }
+            }
+        }
+    }
+
+    fun skipSessionSetup() {
+        setupDismissed = true
+        setupNeeded = false
+        setupError = null
+    }
+
+    fun bootstrapCrossSigning(password: String) {
+        setupBusy = true
+        setupError = null
+        thread {
+            runBlocking {
+                val error = try {
+                    app.bootstrapCrossSigning(password)
+                    null
+                } catch (failure: Exception) {
+                    coreMessage(failure, "Could not set up encryption")
+                }
+                main.post {
+                    setupBusy = false
+                    setupError = error
+                    if (error == null) checkSessionSetup()
+                }
+            }
+        }
+    }
+
+    /// The setup screen's recovery-key entry: the same recover() the
+    /// settings page uses, with the setup check afterwards.
+    fun submitRecoveryKey(key: String) {
+        recover(key)
+        for (delay in listOf(3000L, 6000L)) {
+            main.postDelayed({ checkSessionSetup() }, delay)
+        }
+    }
+
     /// The tail of every successful login, whatever authenticated it.
     private fun finishLogin() {
         loginBusy = false
@@ -219,6 +295,8 @@ class CommuneState(context: Context) {
         watchVerifications()
         loadProfile()
         refreshAccounts()
+        setupDismissed = false
+        checkSessionSetup()
     }
 
     // The account switcher: every session on the device, the active one
@@ -269,6 +347,10 @@ class CommuneState(context: Context) {
         watchVerifications()
         loadProfile()
         refreshAccounts()
+        setupDismissed = false
+        securityState = null
+        setupNeeded = false
+        checkSessionSetup()
     }
 
     fun startAddAccount() {
@@ -2276,6 +2358,14 @@ class CommuneState(context: Context) {
     /// Open the room with the given ID as soon as the list carries it —
     /// how a notification tap lands in its room.
     fun openRoomById(roomId: String) {
+        // A notification tap outranks whatever page happens to be open:
+        // the routing chain is first-match, so those have to close.
+        closeSettings()
+        closeImagePacks()
+        closeIgnoredUsers()
+        closeDevices()
+        closeExplore()
+        closeAccountSwitcher()
         // A notification names unread messages: land on the oldest one.
         openRoomWhenListed(roomId, toUnread = true)
     }
@@ -2612,6 +2702,227 @@ class CommuneState(context: Context) {
 
     /// Fetch the media behind the given timeline item, then open it as
     /// video or audio playback.
+    // The account's own image packs, and their editing.
+    var imagePacksOpen by mutableStateOf(false)
+        private set
+    var ownedPacks by mutableStateOf<List<io.github.steeb_k.commune.core.FfiOwnedPack>>(
+        emptyList()
+    )
+        private set
+    var packsError by mutableStateOf<String?>(null)
+        private set
+
+    /// Set by the activity: opens the image picker for a pack image.
+    var pickImagePackFile: (() -> Unit)? = null
+
+    /// The picked file waiting for the shortcode that names it.
+    var pendingPackImage by mutableStateOf<PendingPackImage?>(null)
+        private set
+
+    data class PendingPackImage(
+        val stateKey: String,
+        val path: String,
+        val mime: String,
+        val name: String,
+    )
+
+    private var packTarget: String? = null
+
+    fun openImagePacks() {
+        imagePacksOpen = true
+        loadOwnedPacks()
+    }
+
+    fun closeImagePacks() {
+        imagePacksOpen = false
+        packsError = null
+    }
+
+    fun loadOwnedPacks() {
+        thread {
+            runBlocking {
+                val packs = try {
+                    app.myImagePacks()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                main.post { ownedPacks = packs }
+            }
+        }
+    }
+
+    /// Reload after an edit: the state event we just sent reaches the
+    /// local store through sync, a moment after the send returns.
+    private fun reloadPacksSoon() {
+        loadOwnedPacks()
+        for (delay in listOf(1500L, 4000L)) {
+            main.postDelayed({ if (imagePacksOpen) loadOwnedPacks() }, delay)
+        }
+    }
+
+    fun createImagePack(name: String) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.createImagePack(name)
+                    null
+                } catch (failure: Exception) {
+                    coreMessage(failure, "Could not create the pack")
+                }
+                main.post {
+                    packsError = error
+                    reloadPacksSoon()
+                }
+            }
+        }
+    }
+
+    fun renameImagePack(stateKey: String, name: String) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.renameImagePack(stateKey, name)
+                    null
+                } catch (failure: Exception) {
+                    coreMessage(failure, "Could not rename the pack")
+                }
+                main.post {
+                    packsError = error
+                    reloadPacksSoon()
+                }
+            }
+        }
+    }
+
+    fun deleteImagePack(stateKey: String) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.deleteImagePack(stateKey)
+                    null
+                } catch (failure: Exception) {
+                    coreMessage(failure, "Could not delete the pack")
+                }
+                main.post {
+                    packsError = error
+                    reloadPacksSoon()
+                }
+            }
+        }
+    }
+
+    fun removePackImage(stateKey: String, shortcode: String) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.removePackImage(stateKey, shortcode)
+                    null
+                } catch (failure: Exception) {
+                    coreMessage(failure, "Could not remove the image")
+                }
+                main.post {
+                    packsError = error
+                    reloadPacksSoon()
+                }
+            }
+        }
+    }
+
+    /// Pick a picture for the given pack; the shortcode is asked for
+    /// once the file is in hand.
+    fun pickPackImage(stateKey: String) {
+        packTarget = stateKey
+        pickImagePackFile?.invoke()
+    }
+
+    fun packImagePicked(uri: android.net.Uri) {
+        val stateKey = packTarget ?: return
+        val resolver = appContext.contentResolver
+        val mime = resolver.getType(uri) ?: "image/png"
+        thread {
+            try {
+                var name = "image"
+                resolver.query(uri, null, null, null, null)?.use { cursor ->
+                    val index =
+                        cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (index >= 0 && cursor.moveToFirst()) {
+                        name = cursor.getString(index) ?: name
+                    }
+                }
+                val dir = java.io.File(appContext.cacheDir, "outgoing")
+                dir.mkdirs()
+                val file = java.io.File(dir, "pack-image")
+                resolver.openInputStream(uri)?.use { input ->
+                    file.outputStream().use { output -> input.copyTo(output) }
+                } ?: return@thread
+                main.post {
+                    pendingPackImage = PendingPackImage(
+                        stateKey = stateKey,
+                        path = file.absolutePath,
+                        mime = mime,
+                        name = name.substringBeforeLast('.'),
+                    )
+                }
+            } catch (e: Exception) {
+                toast(coreMessage(e, "Could not read the file"))
+            }
+        }
+    }
+
+    fun confirmPackImage(shortcode: String) {
+        val pending = pendingPackImage ?: return
+        pendingPackImage = null
+        thread {
+            runBlocking {
+                val error = try {
+                    app.addPackImage(
+                        pending.stateKey,
+                        shortcode,
+                        pending.name,
+                        pending.path,
+                        pending.mime,
+                    )
+                    null
+                } catch (failure: Exception) {
+                    coreMessage(failure, "Could not add the image")
+                }
+                main.post {
+                    packsError = error
+                    reloadPacksSoon()
+                    // The composer's completion should see it too.
+                    loadComposerEmoticons()
+                }
+            }
+        }
+    }
+
+    fun cancelPackImage() {
+        pendingPackImage = null
+    }
+
+    /// A pack image's local file, fetched by its mxc URI.
+    suspend fun fetchMxcPath(mxcUri: String): String? = try {
+        app.getMxcMedia(mxcUri)
+    } catch (_: Exception) {
+        null
+    }
+
+    /// Fetch one timeline media file and hand back its local path —
+    /// what the in-bubble audio player plays from.
+    fun fetchMediaPath(uniqueId: String, onReady: (String?) -> Unit) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val path = try {
+                    app.getTimelineMedia(room.roomId, uniqueId)
+                } catch (_: Exception) {
+                    null
+                }
+                main.post { onReady(path) }
+            }
+        }
+    }
+
     fun openMediaPlayer(uniqueId: String) {
         val room = openRoom ?: return
         thread {

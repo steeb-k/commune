@@ -2603,6 +2603,122 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// Where this session stands on encryption: whether the account has
+    /// a crypto identity and other verified sessions, whether this
+    /// session is verified, and whether recovery is set up. The
+    /// application's `session/security.rs` computes the same three.
+    pub async fn security_state(&self) -> FfiSecurityState {
+        use matrix_sdk::encryption::{VerificationState, recovery::RecoveryState};
+
+        let Some(session) = self.first_ready_session() else {
+            return FfiSecurityState {
+                identity: FfiCryptoIdentityState::Unknown,
+                verification: FfiVerificationState::Unknown,
+                recovery: FfiRecoveryState::Unknown,
+            };
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let encryption = client.encryption();
+                // The states are only meaningful once the encryption
+                // tasks have run, as the setup view waits for.
+                encryption.wait_for_e2ee_initialization_tasks().await;
+
+                let own_user_id = client.user_id().expect("logged in").to_owned();
+                let has_identity = matches!(
+                    encryption.get_user_identity(&own_user_id).await,
+                    Ok(Some(_))
+                );
+
+                let identity = if has_identity {
+                    let own_device_id = session.info().device_id.clone();
+                    // Another session that the account's own identity
+                    // has signed is one this session can verify against.
+                    let has_other_sessions = match encryption.get_user_devices(&own_user_id).await {
+                        Ok(devices) => devices.devices().any(|device| {
+                            device.device_id() != own_device_id && device.is_cross_signed_by_owner()
+                        }),
+                        // Not knowing must not hide the reset path.
+                        Err(_) => true,
+                    };
+                    if has_other_sessions {
+                        FfiCryptoIdentityState::OtherSessions
+                    } else {
+                        FfiCryptoIdentityState::LastManStanding
+                    }
+                } else {
+                    FfiCryptoIdentityState::Missing
+                };
+
+                let verification = match encryption.verification_state().get() {
+                    VerificationState::Verified => FfiVerificationState::Verified,
+                    VerificationState::Unverified => FfiVerificationState::Unverified,
+                    VerificationState::Unknown => FfiVerificationState::Unknown,
+                };
+
+                let recovery = match encryption.recovery().state() {
+                    RecoveryState::Enabled => FfiRecoveryState::Enabled,
+                    RecoveryState::Disabled => FfiRecoveryState::Disabled,
+                    RecoveryState::Incomplete => FfiRecoveryState::Incomplete,
+                    RecoveryState::Unknown => FfiRecoveryState::Unknown,
+                };
+
+                FfiSecurityState {
+                    identity,
+                    verification,
+                    recovery,
+                }
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Create the account's crypto identity — cross-signing — for an
+    /// account that has none, answering the password stage the
+    /// homeserver asks for.
+    pub async fn bootstrap_cross_signing(&self, password: String) -> Result<(), CoreError> {
+        use ruma::api::client::uiaa::{AuthData, MatrixUserIdentifier, Password};
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let encryption = client.encryption();
+                let user_id = client.user_id().expect("logged in").to_owned();
+
+                let Err(bootstrap_error) = encryption.bootstrap_cross_signing(None).await else {
+                    return Ok(());
+                };
+                // The homeserver wants the account's password before it
+                // will hold new signing keys.
+                let Some(info) = bootstrap_error.as_uiaa_response() else {
+                    return Err(CoreError::Failed {
+                        msg: format!("Could not set up encryption: {bootstrap_error}"),
+                    });
+                };
+                let auth = AuthData::Password(ruma::assign!(
+                    Password::new(MatrixUserIdentifier::new(user_id.to_string()).into(), password),
+                    { session: info.session.clone() }
+                ));
+
+                encryption
+                    .bootstrap_cross_signing(Some(auth))
+                    .await
+                    .map_err(|bootstrap_error| CoreError::Failed {
+                        msg: format!("Could not set up encryption: {bootstrap_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Recover the account's secrets with the given recovery key.
     pub async fn recover(&self, recovery_key: String) -> Result<(), CoreError> {
         let Some(session) = self.first_ready_session() else {
@@ -4709,6 +4825,313 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// The image packs this account owns — the ones in Commune's own
+    /// packs room, which are the ones it may edit.
+    pub async fn my_image_packs(&self) -> Vec<FfiOwnedPack> {
+        let Some(session) = self.first_ready_session() else {
+            return Vec::new();
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let Some(room) = stored_packs_room(&client).await else {
+                    return Vec::new();
+                };
+                let Ok(events) = room.get_state_events("m.room.image_pack".into()).await else {
+                    return Vec::new();
+                };
+
+                let mut packs = Vec::new();
+                for event in events {
+                    let matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState::Sync(raw) =
+                        event
+                    else {
+                        continue;
+                    };
+                    let Ok(value) = raw.deserialize_as::<serde_json::Value>() else {
+                        continue;
+                    };
+                    let state_key = value
+                        .get("state_key")
+                        .and_then(|key| key.as_str())
+                        .unwrap_or_default()
+                        .to_owned();
+                    let content = value.get("content").unwrap_or(&value);
+                    let name = content
+                        .pointer("/pack/display_name")
+                        .and_then(|name| name.as_str())
+                        .unwrap_or(&state_key)
+                        .to_owned();
+                    let images = content
+                        .get("images")
+                        .and_then(|images| images.as_object())
+                        .map(|images| {
+                            images
+                                .iter()
+                                .filter_map(|(shortcode, image)| {
+                                    Some(FfiSticker {
+                                        shortcode: shortcode.clone(),
+                                        body: image
+                                            .get("body")
+                                            .and_then(|body| body.as_str())
+                                            .unwrap_or(shortcode)
+                                            .to_owned(),
+                                        url: image.get("url")?.as_str()?.to_owned(),
+                                        width: None,
+                                        height: None,
+                                        mime_type: None,
+                                        info_json: image.get("info").map(ToString::to_string),
+                                    })
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_default();
+
+                    // A deleted pack is one with no images AND no
+                    // name left; a pack that was just created has no
+                    // images yet and must stay visible to receive one.
+                    let images: Vec<FfiSticker> = images;
+                    let named = content
+                        .pointer("/pack/display_name")
+                        .and_then(|name| name.as_str())
+                        .is_some();
+                    if images.is_empty() && !named {
+                        continue;
+                    }
+                    packs.push(FfiOwnedPack {
+                        state_key,
+                        name,
+                        images,
+                    });
+                }
+                packs
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Create an image pack, making Commune's packs room first when
+    /// there is none — as the application's `packs_room` does, down to
+    /// the room's name, topic, privacy and low-priority tag.
+    pub async fn create_image_pack(&self, name: String) -> Result<String, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let room = ensure_packs_room(&client).await?;
+
+                // The application numbers its packs from two.
+                let taken: std::collections::HashSet<String> = room
+                    .get_state_events("m.room.image_pack".into())
+                    .await
+                    .map(|events| {
+                        events
+                            .iter()
+                            .filter_map(|event| {
+                                let matrix_sdk::deserialized_responses::
+                                    RawAnySyncOrStrippedState::Sync(raw) = event
+                                else {
+                                    return None;
+                                };
+                                raw.deserialize_as::<serde_json::Value>()
+                                    .ok()?
+                                    .get("state_key")?
+                                    .as_str()
+                                    .map(ToOwned::to_owned)
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                let state_key = (2..=taken.len() + 2)
+                    .map(|index| format!("pack-{index}"))
+                    .find(|key| !taken.contains(key))
+                    .expect("an unused state key is found");
+
+                let content = serde_json::json!({
+                    "images": {},
+                    "pack": { "display_name": name },
+                });
+                send_pack_content(&room, &state_key, content).await?;
+                Ok(state_key)
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Add an image to one of this account's packs: upload the file,
+    /// then write it into the pack's state event.
+    pub async fn add_pack_image(
+        &self,
+        state_key: String,
+        shortcode: String,
+        body: String,
+        file_path: String,
+        mime_type: String,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let room = ensure_packs_room(&client).await?;
+
+                let mime = mime_type
+                    .parse::<mime::Mime>()
+                    .unwrap_or(mime::APPLICATION_OCTET_STREAM);
+                let data = std::fs::read(&file_path).map_err(|read_error| CoreError::Failed {
+                    msg: format!("Could not read the file: {read_error}"),
+                })?;
+                let size = u64::try_from(data.len()).ok();
+                check_upload_size(&client, size).await?;
+
+                let response =
+                    client
+                        .media()
+                        .upload(&mime, data, None)
+                        .await
+                        .map_err(|upload_error| CoreError::Failed {
+                            msg: format!("Could not upload the image: {upload_error}"),
+                        })?;
+
+                let mut content = read_pack_content(&room, &state_key).await;
+                let images = content
+                    .get_mut("images")
+                    .and_then(serde_json::Value::as_object_mut)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "The pack has no images".to_owned(),
+                    })?;
+                images.insert(
+                    shortcode,
+                    serde_json::json!({
+                        "url": response.content_uri.to_string(),
+                        "body": body,
+                        "info": { "mimetype": mime.to_string(), "size": size },
+                    }),
+                );
+
+                send_pack_content(&room, &state_key, content).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Remove one image from a pack.
+    pub async fn remove_pack_image(
+        &self,
+        state_key: String,
+        shortcode: String,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let room = ensure_packs_room(&client).await?;
+
+                let mut content = read_pack_content(&room, &state_key).await;
+                if let Some(images) = content
+                    .get_mut("images")
+                    .and_then(serde_json::Value::as_object_mut)
+                {
+                    images.remove(&shortcode);
+                }
+                send_pack_content(&room, &state_key, content).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Rename a pack.
+    pub async fn rename_image_pack(
+        &self,
+        state_key: String,
+        name: String,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let room = ensure_packs_room(&client).await?;
+
+                let mut content = read_pack_content(&room, &state_key).await;
+                content["pack"]["display_name"] = serde_json::Value::String(name);
+                send_pack_content(&room, &state_key, content).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Delete a pack. A state event cannot be removed, so a deleted
+    /// pack is one with no images — what a redacted pack looks like
+    /// too — and it stops being enabled everywhere.
+    pub async fn delete_image_pack(&self, state_key: String) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let client = session.client();
+                let room = ensure_packs_room(&client).await?;
+                let room_id = room.room_id().to_owned();
+
+                let content = serde_json::json!({ "images": {}, "pack": {} });
+                send_pack_content(&room, &state_key, content).await?;
+                // Failing to clean the enabled list does not fail the
+                // deletion: the pack is gone either way.
+                let _ = set_pack_enabled_inner(&client, &room_id, &state_key, false).await;
+                Ok(())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Enable or disable a room's pack everywhere, through the stable
+    /// `m.image_pack.rooms` account data.
+    pub async fn set_pack_enabled(
+        &self,
+        room_id: String,
+        state_key: String,
+        enabled: bool,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                set_pack_enabled_inner(&session.client(), &room_id, &state_key, enabled).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Send a sticker from a pack.
     pub async fn send_sticker(
         &self,
@@ -5350,6 +5773,18 @@ pub struct FfiMention {
     pub display_name: String,
 }
 
+/// One of this account's own image packs, with the state key that
+/// identifies it for editing.
+#[derive(uniffi::Record)]
+pub struct FfiOwnedPack {
+    /// The state key the pack lives at in the packs room.
+    pub state_key: String,
+    /// The pack's display name.
+    pub name: String,
+    /// The images in the pack.
+    pub images: Vec<FfiSticker>,
+}
+
 /// A sticker pack from the account's image packs.
 #[derive(uniffi::Record)]
 pub struct FfiStickerPack {
@@ -5905,6 +6340,42 @@ fn oauth_client_registration_data() -> matrix_sdk::authentication::oauth::Client
         .into()
 }
 
+/// Whether the account has a crypto identity, and whether this session
+/// can verify against another of its own.
+#[derive(uniffi::Enum, Clone, Copy, PartialEq, Eq)]
+pub enum FfiCryptoIdentityState {
+    /// Not known yet.
+    Unknown,
+    /// Cross-signing was never set up for this account.
+    Missing,
+    /// There are no other verified sessions to verify against.
+    LastManStanding,
+    /// There are other verified sessions.
+    OtherSessions,
+}
+
+/// Whether this session itself is verified.
+#[derive(uniffi::Enum, Clone, Copy, PartialEq, Eq)]
+pub enum FfiVerificationState {
+    /// Not known yet.
+    Unknown,
+    /// This session is verified.
+    Verified,
+    /// This session is not verified.
+    Unverified,
+}
+
+/// Where a session stands on encryption, as the setup view reads it.
+#[derive(uniffi::Record)]
+pub struct FfiSecurityState {
+    /// The account's crypto identity.
+    pub identity: FfiCryptoIdentityState,
+    /// Whether this session is verified.
+    pub verification: FfiVerificationState,
+    /// Whether account recovery is set up.
+    pub recovery: FfiRecoveryState,
+}
+
 /// One session on this device.
 #[derive(uniffi::Record)]
 pub struct FfiSessionInfo {
@@ -5942,6 +6413,158 @@ pub struct FfiResetHandle {
     pub sid: String,
     /// The client secret that pairs with it.
     pub client_secret: String,
+}
+
+/// Commune's packs room, if the account data points at one it joined.
+async fn stored_packs_room(client: &matrix_sdk::Client) -> Option<matrix_sdk::Room> {
+    let value = read_account_data(client, "io.github.steeb_k.Commune.image_packs_room").await?;
+    let room_id = value
+        .pointer("/content/room_id")
+        .or_else(|| value.get("room_id"))
+        .and_then(|id| id.as_str())?;
+    let room_id = ruma::RoomId::parse(room_id).ok()?;
+    client.get_room(&room_id)
+}
+
+/// Commune's packs room, created when there is none — the
+/// application's `packs_room`, name, topic, privacy and tag included.
+async fn ensure_packs_room(client: &matrix_sdk::Client) -> Result<matrix_sdk::Room, CoreError> {
+    use ruma::{
+        api::client::room::{Visibility, create_room},
+        events::tag::{TagInfo, TagName},
+    };
+
+    if let Some(room) = stored_packs_room(client).await {
+        return Ok(room);
+    }
+
+    let mut request = create_room::v3::Request::new();
+    request.name = Some("Sticker Packs".to_owned());
+    request.topic = Some(
+        "The sticker and emoticon packs that you created. Invite someone here to share them."
+            .to_owned(),
+    );
+    request.preset = Some(create_room::v3::RoomPreset::PrivateChat);
+    request.visibility = Visibility::Private;
+    let room = client
+        .create_room(request)
+        .await
+        .map_err(|create_error| CoreError::Failed {
+            msg: format!("Could not create the packs room: {create_error}"),
+        })?;
+
+    // The room is a container, not a conversation.
+    let _ = room.set_tag(TagName::LowPriority, TagInfo::new()).await;
+
+    let content = serde_json::json!({ "room_id": room.room_id().to_string() });
+    let _ = client
+        .account()
+        .set_account_data_raw(
+            "io.github.steeb_k.Commune.image_packs_room".into(),
+            ruma::serde::Raw::new(&content)
+                .expect("packs room pointer serializes")
+                .cast_unchecked(),
+        )
+        .await;
+
+    Ok(room)
+}
+
+/// The pack at the given state key, as editable JSON.
+async fn read_pack_content(room: &matrix_sdk::Room, state_key: &str) -> serde_json::Value {
+    let stored = room
+        .get_state_event("m.room.image_pack".into(), state_key)
+        .await
+        .ok()
+        .flatten()
+        .and_then(|raw| match raw {
+            matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState::Sync(raw) => {
+                raw.deserialize_as::<serde_json::Value>().ok()
+            }
+            matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState::Stripped(_) => None,
+        })
+        .and_then(|value| value.get("content").cloned());
+
+    let mut content = stored.unwrap_or_else(|| serde_json::json!({}));
+    if !content
+        .get("images")
+        .is_some_and(serde_json::Value::is_object)
+    {
+        content["images"] = serde_json::json!({});
+    }
+    if !content
+        .get("pack")
+        .is_some_and(serde_json::Value::is_object)
+    {
+        content["pack"] = serde_json::json!({});
+    }
+    content
+}
+
+/// Write a pack back under the stable event name, as the application
+/// writes it.
+async fn send_pack_content(
+    room: &matrix_sdk::Room,
+    state_key: &str,
+    content: serde_json::Value,
+) -> Result<(), CoreError> {
+    let raw: ruma::serde::Raw<ruma::events::AnyStateEventContent> = ruma::serde::Raw::new(&content)
+        .expect("pack content serializes")
+        .cast_unchecked();
+
+    room.send_state_event_raw("m.room.image_pack", state_key, raw)
+        .await
+        .map(|_| ())
+        .map_err(|send_error| CoreError::Failed {
+            msg: format!("Could not save the pack: {send_error}"),
+        })
+}
+
+/// Add or remove one (room, state key) pair from the globally enabled
+/// packs, keeping the stable account-data name on write.
+async fn set_pack_enabled_inner(
+    client: &matrix_sdk::Client,
+    room_id: &ruma::RoomId,
+    state_key: &str,
+    enabled: bool,
+) -> Result<(), CoreError> {
+    let mut rooms = read_account_data(client, "m.image_pack.rooms")
+        .await
+        .and_then(|value| {
+            value
+                .pointer("/content/rooms")
+                .or_else(|| value.get("rooms"))
+                .cloned()
+        })
+        .and_then(|rooms| rooms.as_object().cloned())
+        .unwrap_or_default();
+
+    let entry = rooms
+        .entry(room_id.to_string())
+        .or_insert_with(|| serde_json::json!({}));
+    if let Some(keys) = entry.as_object_mut() {
+        if enabled {
+            keys.insert(state_key.to_owned(), serde_json::json!({}));
+        } else {
+            keys.remove(state_key);
+        }
+    }
+    rooms.retain(|_, keys| keys.as_object().is_some_and(|keys| !keys.is_empty()));
+
+    let content = serde_json::json!({ "rooms": rooms });
+    client
+        .account()
+        .set_account_data_raw(
+            "m.image_pack.rooms".into(),
+            ruma::serde::Raw::new(&content)
+                .expect("enabled packs serialize")
+                .cast_unchecked(),
+        )
+        .await
+        .map(|_| ())
+        .map_err(|set_error| CoreError::Failed {
+            msg: format!("Could not change the enabled packs: {set_error}"),
+        })
 }
 
 /// Read one global account-data event as plain JSON, `None` when it is

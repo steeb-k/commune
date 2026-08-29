@@ -348,7 +348,7 @@ private fun ResetPasswordPage(state: CommuneState, onDone: () -> Unit) {
 /// One centered, clamped login column — the Adw.Clamp of every GTK login
 /// page.
 @Composable
-private fun LoginColumn(content: @Composable () -> Unit) {
+internal fun LoginColumn(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()

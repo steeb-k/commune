@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.foundation.Image
@@ -651,6 +653,12 @@ internal fun Timeline(
     var prevSize by remember(roomId) { mutableStateOf(0) }
     var prevLastKey by remember(roomId) { mutableStateOf<Any?>(null) }
 
+    // Landing at the newest message is not one scroll: pictures measure
+    // after they decode and grow the content under the viewport, which
+    // would leave the view stranded above the end. So the bottom is a
+    // state to hold — until the reader scrolls away themselves.
+    var stickToBottom by remember(roomId) { mutableStateOf(!live) }
+
     // A notification jump holds onto the first unread it landed on: the
     // timeline's read marker can open stale (cached account data) and
     // relocate moments later, and the view follows it — until the user
@@ -661,6 +669,7 @@ internal fun Timeline(
         listState.interactionSource.interactions.collect {
             if (it is androidx.compose.foundation.interaction.DragInteraction.Start) {
                 userScrolled = true
+                stickToBottom = false
             }
         }
     }
@@ -697,11 +706,13 @@ internal fun Timeline(
                             jumpAnchor = (items.getOrNull(firstUnread)
                                 as? FfiTimelineItem.Event)?.eventId
                             positioned = true
+                            stickToBottom = false
                             state.completeUnreadJump()
                         }
                         exhausted -> {
                             listState.scrollToItem(items.size - 1)
                             positioned = true
+                            stickToBottom = true
                             state.completeUnreadJump()
                         }
                         else -> {
@@ -713,6 +724,7 @@ internal fun Timeline(
                             kotlinx.coroutines.delay(5_000)
                             listState.scrollToItem(currentItems.size - 1)
                             positioned = true
+                            stickToBottom = true
                             state.completeUnreadJump()
                         }
                     }
@@ -726,10 +738,12 @@ internal fun Timeline(
                         target >= 0 -> {
                             listState.scrollToItem(target, offset)
                             positioned = true
+                            stickToBottom = false
                         }
                         exhausted -> {
                             listState.scrollToItem(items.size - 1)
                             positioned = true
+                            stickToBottom = true
                         }
                         else -> {
                             searchPages += 1
@@ -737,12 +751,14 @@ internal fun Timeline(
                             kotlinx.coroutines.delay(5_000)
                             listState.scrollToItem(currentItems.size - 1)
                             positioned = true
+                            stickToBottom = true
                         }
                     }
                 }
                 else -> {
                     listState.scrollToItem(items.size - 1)
                     positioned = true
+                    stickToBottom = true
                 }
             }
         } else if (!live) {
@@ -761,10 +777,22 @@ internal fun Timeline(
                     jumpAnchor = id
                 }
             }
-        } else if (items.size > before && lastKeyBefore != null) {
-            val wasAtBottom =
-                listState.layoutInfo.visibleItemsInfo.any { it.key == lastKeyBefore }
-            if (wasAtBottom) listState.scrollToItem(items.size - 1)
+        } else if (items.size > before && lastKeyBefore != null && stickToBottom) {
+            // New messages while pinned: stay with them.
+            listState.scrollToItem(items.size - 1)
+        }
+    }
+
+    // Hold the bottom against everything that grows the content after
+    // the fact — a picture that just decoded, a page that just landed.
+    LaunchedEffect(roomId) {
+        androidx.compose.runtime.snapshotFlow {
+            stickToBottom to listState.canScrollForward
+        }.collect { (sticking, canScrollDown) ->
+            if (sticking && canScrollDown) {
+                val last = currentItems.size - 1
+                if (last >= 0) listState.scrollToItem(last)
+            }
         }
     }
 
@@ -788,8 +816,8 @@ internal fun Timeline(
             onDispose {
                 val visible = listState.layoutInfo.visibleItemsInfo
                 val snapshot = currentItems
-                val atBottom = visible.any { it.index >= snapshot.size - 1 }
-                val anchor = if (atBottom) {
+                // Pinned to the bottom is exactly "nothing to remember".
+                val anchor = if (stickToBottom) {
                     null
                 } else {
                     // Media items measure asynchronously, so a pixel
@@ -1039,7 +1067,13 @@ internal fun MessageBubble(
             }
 
             val mediaKind = (event.kind as? FfiEventKind.Media)?.kind
-            if (mediaKind == FfiMediaKind.VIDEO || mediaKind == FfiMediaKind.AUDIO) {
+            // A voice message or audio file plays where it sits; video
+            // still takes the whole screen, which is where video wants
+            // to be.
+            if (mediaKind == FfiMediaKind.AUDIO) {
+                AudioBubblePlayer(state, event.uniqueId)
+            }
+            if (mediaKind == FfiMediaKind.VIDEO) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -1057,10 +1091,7 @@ internal fun MessageBubble(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(Modifier.size(8.dp))
-                    Text(
-                        if (mediaKind == FfiMediaKind.VIDEO) "Play video" else "Play audio",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                    Text("Play video", style = MaterialTheme.typography.bodyMedium)
                 }
             }
             if (mediaKind == FfiMediaKind.IMAGE) {
@@ -1351,6 +1382,107 @@ internal fun StateLine(state: CommuneState, event: FfiTimelineItem.Event) {
                     Text("Cancel")
                 }
             },
+        )
+    }
+}
+
+/// An audio message played inside its bubble: play/pause and a
+/// progress line, no jump to a full screen for a few seconds of sound.
+@Composable
+private fun AudioBubblePlayer(state: CommuneState, uniqueId: String) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var path by remember(uniqueId) { mutableStateOf<String?>(null) }
+    var player by remember(uniqueId) {
+        mutableStateOf<androidx.media3.exoplayer.ExoPlayer?>(null)
+    }
+    var playing by remember(uniqueId) { mutableStateOf(false) }
+    var position by remember(uniqueId) { mutableStateOf(0f) }
+    var loading by remember(uniqueId) { mutableStateOf(false) }
+
+    // The player is this bubble's; it goes when the bubble does.
+    androidx.compose.runtime.DisposableEffect(uniqueId) {
+        onDispose {
+            player?.release()
+            player = null
+        }
+    }
+
+    // While it plays, follow the position for the progress line.
+    LaunchedEffect(playing) {
+        while (playing) {
+            player?.let { current ->
+                val duration = current.duration
+                position = if (duration > 0) {
+                    (current.currentPosition.toFloat() / duration).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+                if (!current.isPlaying && current.playbackState ==
+                    androidx.media3.common.Player.STATE_ENDED
+                ) {
+                    playing = false
+                    position = 0f
+                    current.seekTo(0)
+                }
+            }
+            kotlinx.coroutines.delay(200)
+        }
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .padding(bottom = 4.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+    ) {
+        IconButton(
+            onClick = {
+                val existing = player
+                if (existing != null) {
+                    if (existing.isPlaying) {
+                        existing.pause()
+                        playing = false
+                    } else {
+                        existing.play()
+                        playing = true
+                    }
+                    return@IconButton
+                }
+                // First press fetches the file, then starts it.
+                loading = true
+                state.fetchMediaPath(uniqueId) { fetched ->
+                    loading = false
+                    path = fetched
+                    if (fetched == null) return@fetchMediaPath
+                    val created = androidx.media3.exoplayer.ExoPlayer.Builder(context).build()
+                    created.setMediaItem(
+                        androidx.media3.common.MediaItem.fromUri(
+                            android.net.Uri.fromFile(java.io.File(fetched))
+                        )
+                    )
+                    created.prepare()
+                    created.play()
+                    player = created
+                    playing = true
+                }
+            },
+            enabled = !loading,
+        ) {
+            Icon(
+                if (playing) {
+                    androidx.compose.material.icons.Icons.Filled.Pause
+                } else {
+                    androidx.compose.material.icons.Icons.Filled.PlayArrow
+                },
+                contentDescription = if (playing) "Pause" else "Play",
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+        androidx.compose.material3.LinearProgressIndicator(
+            progress = { position },
+            modifier = Modifier.width(140.dp),
         )
     }
 }

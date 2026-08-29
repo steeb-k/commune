@@ -148,6 +148,24 @@ fun SettingsScreen(state: CommuneState) {
             TextButton(onClick = { state.openDevices() }) { Text("Open") }
         }
 
+        SettingsGroup("Stickers")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Image Packs", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Your own sticker and emoticon packs",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = { state.openImagePacks() }) { Text("Open") }
+        }
+
         SettingsGroup("Encryption")
         KeyBackupRows(state)
         RecoveryRow(state)
