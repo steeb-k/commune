@@ -159,6 +159,7 @@ private fun SidebarHeader(
                         .size(32.dp)
                         .clip(androidx.compose.foundation.shape.CircleShape),
                     targetSizePx = 96,
+                    fill = true,
                 )
             } else {
                 InitialsAvatar(identifier = userId, name = localpart, size = 32.dp)

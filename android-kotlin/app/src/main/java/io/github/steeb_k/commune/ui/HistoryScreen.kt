@@ -349,6 +349,7 @@ private fun MediaCell(
                 contentDescription = event.body,
                 modifier = Modifier.fillMaxSize(),
                 targetSizePx = 360,
+                fill = true,
             )
         }
         if (isSelected) {

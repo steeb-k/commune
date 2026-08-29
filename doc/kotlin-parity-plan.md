@@ -191,3 +191,16 @@ then settings depth, then the composer/timeline, then the structural
 ones (login, multi-account) once the facade has stopped moving, calls
 as the closing project. Ship a release APK to the device at every
 stable point rather than only at the end.
+
+## Post-plan items (user-flagged 28 Aug, before calls get built)
+
+* **Verification onboarding** — a fresh login lands unverified with no
+  path to fix it: neither prompted nor discoverable, which strands E2EE
+  history ("a very weak login process that can leave users unable to
+  read their own chats" — the user's phone session hit exactly this).
+  Follow the GTK app's post-login process (`session_verification_view`
+  and the greeter's flow) and mirror it: after login, walk the user
+  through verify-with-another-device / recovery key, and keep the
+  entry point findable afterwards.
+* **QR scanning must stay portrait** — the zxing scan activity forces
+  landscape today; lock it to the app's orientation instead.

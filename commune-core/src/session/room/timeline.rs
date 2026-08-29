@@ -449,8 +449,8 @@ impl Timeline {
 
     /// Send the file at the given path as an attachment to the room.
     ///
-    /// The upload-size preflight and thumbnails arrive with the composer
-    /// chunk; until then the server stays the judge of size.
+    /// The upload-size preflight lives in the facade, ahead of this;
+    /// thumbnails arrive with the composer chunk.
     pub async fn send_attachment(
         &self,
         path: std::path::PathBuf,
