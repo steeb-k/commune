@@ -56,6 +56,11 @@ class MainActivity : ComponentActivity() {
             uri?.let { state.setAvatarFromUri(it) }
         }
 
+    private val packImagePicker =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let { state.packImagePicked(it) }
+        }
+
     private val roomAvatarPicker =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let { state.setRoomAvatarFromUri(it) }
@@ -110,6 +115,7 @@ class MainActivity : ComponentActivity() {
         state.pickAttachment = { attachmentPicker.launch("*/*") }
         state.pickAvatar = { avatarPicker.launch("image/*") }
         state.pickRoomAvatar = { roomAvatarPicker.launch("image/*") }
+        state.pickImagePackFile = { packImagePicker.launch("image/*") }
         state.pickKeyFile = { keyFilePicker.launch("*/*") }
         state.ensureMicPermission = { onResult ->
             if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
@@ -137,6 +143,10 @@ class MainActivity : ComponentActivity() {
                     .setDesiredBarcodeFormats(com.journeyapps.barcodescanner.ScanOptions.QR_CODE)
                     .setPrompt("Scan the QR code shown on your other session")
                     .setBeepEnabled(false)
+                    // The library's own capture activity is declared
+                    // sensorLandscape; ours follows the app, portrait.
+                    .setCaptureActivity(PortraitCaptureActivity::class.java)
+                    .setOrientationLocked(false)
             )
         }
 
@@ -175,9 +185,16 @@ private fun CommuneApp(state: CommuneState) {
             VerificationDialog(state)
             val room = state.openRoom
             val viewerPath = state.viewerImagePath
+            // A key produced from the setup screen takes over the
+            // screen; one produced from settings shows in settings.
+            val recoveryKey = state.recoveryKey?.takeIf { state.setupNeeded }
             if (state.addingAccount) {
                 BackHandler { state.cancelAddAccount() }
                 LoginFlow(state)
+            } else if (recoveryKey != null) {
+                io.github.steeb_k.commune.ui.RecoveryKeyScreen(state, recoveryKey)
+            } else if (state.setupNeeded) {
+                io.github.steeb_k.commune.ui.SessionSetupScreen(state)
             } else if (viewerPath != null) {
                 BackHandler { state.closeViewer() }
                 MediaViewerScreen(
@@ -193,6 +210,9 @@ private fun CommuneApp(state: CommuneState) {
             } else if (state.devicesOpen) {
                 BackHandler { state.closeDevices() }
                 DevicesScreen(state)
+            } else if (state.imagePacksOpen) {
+                BackHandler { state.closeImagePacks() }
+                io.github.steeb_k.commune.ui.ImagePacksScreen(state)
             } else if (state.ignoredUsersOpen) {
                 BackHandler { state.closeIgnoredUsers() }
                 io.github.steeb_k.commune.ui.IgnoredUsersScreen(state)

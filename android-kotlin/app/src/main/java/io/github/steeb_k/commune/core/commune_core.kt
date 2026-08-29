@@ -783,7 +783,11 @@ external fun uniffi_commune_core_checksum_method_coreapp_account_profile(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_add_notification_keyword(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_add_pack_image(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_ban_user(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_bootstrap_cross_signing(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_cancel_verification(
 ): Short
@@ -799,7 +803,11 @@ external fun uniffi_commune_core_checksum_method_coreapp_confirm_verification(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_create_direct_chat(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_create_image_pack(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_create_room(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_delete_image_pack(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_discard_local_echo(
 ): Short
@@ -861,6 +869,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_logout(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_mark_room_read(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_my_image_packs(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_notification_keywords(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_oauth_login_url(
@@ -877,11 +887,15 @@ external fun uniffi_commune_core_checksum_method_coreapp_register_user(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_remove_notification_keyword(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_remove_pack_image(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_remove_push_gateway(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_remove_room_avatar(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_rename_device(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_rename_image_pack(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_report_event(
 ): Short
@@ -923,6 +937,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_search_gifs(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_search_room(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_security_state(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_send_attachment(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_send_gif(
@@ -960,6 +976,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_set_member_list_listene
 external fun uniffi_commune_core_checksum_method_coreapp_set_member_power_level(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_set_notifications_enabled(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_pack_enabled(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_set_pinned_listener(
 ): Short
@@ -1062,7 +1080,11 @@ external fun uniffi_commune_core_fn_method_coreapp_account_profile(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_add_notification_keyword(`ptr`: Long,`keyword`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_add_pack_image(`ptr`: Long,`stateKey`: RustBuffer.ByValue,`shortcode`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_ban_user(`ptr`: Long,`roomId`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_bootstrap_cross_signing(`ptr`: Long,`password`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_cancel_verification(`ptr`: Long,`flowId`: RustBuffer.ByValue,
 ): Long
@@ -1078,7 +1100,11 @@ external fun uniffi_commune_core_fn_method_coreapp_confirm_verification(`ptr`: L
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_create_direct_chat(`ptr`: Long,`userId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_create_image_pack(`ptr`: Long,`name`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_create_room(`ptr`: Long,`name`: RustBuffer.ByValue,`topic`: RustBuffer.ByValue,`public`: Byte,`encrypted`: Byte,`alias`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_delete_image_pack(`ptr`: Long,`stateKey`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_discard_local_echo(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,
 ): Long
@@ -1140,6 +1166,8 @@ external fun uniffi_commune_core_fn_method_coreapp_logout(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_mark_room_read(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_my_image_packs(`ptr`: Long,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_notification_keywords(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_oauth_login_url(`ptr`: Long,
@@ -1156,11 +1184,15 @@ external fun uniffi_commune_core_fn_method_coreapp_register_user(`ptr`: Long,`us
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_remove_notification_keyword(`ptr`: Long,`keyword`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_remove_pack_image(`ptr`: Long,`stateKey`: RustBuffer.ByValue,`shortcode`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_remove_push_gateway(`ptr`: Long,`pushkey`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_remove_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_rename_device(`ptr`: Long,`deviceId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_rename_image_pack(`ptr`: Long,`stateKey`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_report_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,
 ): Long
@@ -1202,6 +1234,8 @@ external fun uniffi_commune_core_fn_method_coreapp_search_gifs(`ptr`: Long,`quer
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_search_room(`ptr`: Long,`roomId`: RustBuffer.ByValue,`searchTerm`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_security_state(`ptr`: Long,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_gif(`ptr`: Long,`roomId`: RustBuffer.ByValue,`gif`: RustBuffer.ByValue,
@@ -1240,6 +1274,8 @@ external fun uniffi_commune_core_fn_method_coreapp_set_member_power_level(`ptr`:
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_notifications_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_method_coreapp_set_pack_enabled(`ptr`: Long,`roomId`: RustBuffer.ByValue,`stateKey`: RustBuffer.ByValue,`enabled`: Byte,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_pinned_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_public_read_receipts_enabled(`ptr`: Long,`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
@@ -1477,7 +1513,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_add_notification_keyword() != 44092.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_add_pack_image() != 49379.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_ban_user() != 41618.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_bootstrap_cross_signing() != 29917.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_cancel_verification() != 42296.toShort()) {
@@ -1501,7 +1543,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_create_direct_chat() != 36767.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_create_image_pack() != 60546.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_create_room() != 41384.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_delete_image_pack() != 28159.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_discard_local_echo() != 49737.toShort()) {
@@ -1594,6 +1642,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_mark_room_read() != 44162.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_my_image_packs() != 1762.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_notification_keywords() != 22967.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1618,6 +1669,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_remove_notification_keyword() != 45534.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_remove_pack_image() != 31845.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_remove_push_gateway() != 35864.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1625,6 +1679,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_rename_device() != 388.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_rename_image_pack() != 15773.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_report_event() != 3178.toShort()) {
@@ -1687,6 +1744,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_search_room() != 20054.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_security_state() != 41217.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_attachment() != 7086.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1742,6 +1802,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_notifications_enabled() != 49241.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_pack_enabled() != 59407.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_pinned_listener() != 13189.toShort()) {
@@ -2361,9 +2424,22 @@ public interface CoreAppInterface {
     suspend fun `addNotificationKeyword`(`keyword`: kotlin.String): List<kotlin.String>
     
     /**
+     * Add an image to one of this account's packs: upload the file,
+     * then write it into the pack's state event.
+     */
+    suspend fun `addPackImage`(`stateKey`: kotlin.String, `shortcode`: kotlin.String, `body`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String)
+    
+    /**
      * Ban the given user from the given room.
      */
     suspend fun `banUser`(`roomId`: kotlin.String, `userId`: kotlin.String, `reason`: kotlin.String?)
+    
+    /**
+     * Create the account's crypto identity — cross-signing — for an
+     * account that has none, answering the password stage the
+     * homeserver asks for.
+     */
+    suspend fun `bootstrapCrossSigning`(`password`: kotlin.String)
     
     /**
      * Cancel the verification — the emojis did not match, or the user
@@ -2405,12 +2481,26 @@ public interface CoreAppInterface {
     suspend fun `createDirectChat`(`userId`: kotlin.String): kotlin.String
     
     /**
+     * Create an image pack, making Commune's packs room first when
+     * there is none — as the application's `packs_room` does, down to
+     * the room's name, topic, privacy and low-priority tag.
+     */
+    suspend fun `createImagePack`(`name`: kotlin.String): kotlin.String
+    
+    /**
      * Create a room, as the application's create dialog does: private
      * rooms can be encrypted from birth, public rooms get an alias.
      *
      * Returns the new room's ID.
      */
     suspend fun `createRoom`(`name`: kotlin.String, `topic`: kotlin.String?, `public`: kotlin.Boolean, `encrypted`: kotlin.Boolean, `alias`: kotlin.String?): kotlin.String
+    
+    /**
+     * Delete a pack. A state event cannot be removed, so a deleted
+     * pack is one with no images — what a redacted pack looks like
+     * too — and it stops being enabled everywhere.
+     */
+    suspend fun `deleteImagePack`(`stateKey`: kotlin.String)
     
     /**
      * Discard a message that never sent: redact its local echo, as the
@@ -2599,6 +2689,12 @@ public interface CoreAppInterface {
     suspend fun `markRoomRead`(`roomId`: kotlin.String)
     
     /**
+     * The image packs this account owns — the ones in Commune's own
+     * packs room, which are the ones it may edit.
+     */
+    suspend fun `myImagePacks`(): List<FfiOwnedPack>
+    
+    /**
      * The keywords that trigger notifications, from the account's
      * enabled keyword push rules.
      */
@@ -2644,6 +2740,11 @@ public interface CoreAppInterface {
     suspend fun `removeNotificationKeyword`(`keyword`: kotlin.String): List<kotlin.String>
     
     /**
+     * Remove one image from a pack.
+     */
+    suspend fun `removePackImage`(`stateKey`: kotlin.String, `shortcode`: kotlin.String)
+    
+    /**
      * Remove the pusher with the given pushkey, so the homeserver stops
      * pushing to it.
      */
@@ -2658,6 +2759,11 @@ public interface CoreAppInterface {
      * Rename one of the account's sessions.
      */
     suspend fun `renameDevice`(`deviceId`: kotlin.String, `name`: kotlin.String)
+    
+    /**
+     * Rename a pack.
+     */
+    suspend fun `renameImagePack`(`stateKey`: kotlin.String, `name`: kotlin.String)
     
     /**
      * Report the given event to the homeserver administrator, as the
@@ -2792,6 +2898,14 @@ public interface CoreAppInterface {
     suspend fun `searchRoom`(`roomId`: kotlin.String, `searchTerm`: kotlin.String): List<FfiSearchResult>
     
     /**
+     * Where this session stands on encryption: whether the account has
+     * a crypto identity and other verified sessions, whether this
+     * session is verified, and whether recovery is set up. The
+     * application's `session/security.rs` computes the same three.
+     */
+    suspend fun `securityState`(): FfiSecurityState
+    
+    /**
      * Send the file at the given path as an attachment to the given room.
      */
     suspend fun `sendAttachment`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String)
@@ -2897,6 +3011,12 @@ public interface CoreAppInterface {
      * Set whether notifications are enabled for this session.
      */
     fun `setNotificationsEnabled`(`enabled`: kotlin.Boolean)
+    
+    /**
+     * Enable or disable a room's pack everywhere, through the stable
+     * `m.image_pack.rooms` account data.
+     */
+    suspend fun `setPackEnabled`(`roomId`: kotlin.String, `stateKey`: kotlin.String, `enabled`: kotlin.Boolean)
     
     /**
      * Give the room's pinned events to the given listener, now and on
@@ -3247,6 +3367,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Add an image to one of this account's packs: upload the file,
+     * then write it into the pack's state event.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `addPackImage`(`stateKey`: kotlin.String, `shortcode`: kotlin.String, `body`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_add_pack_image(
+                uniffiHandle,
+                FfiConverterString.lower(`stateKey`),FfiConverterString.lower(`shortcode`),FfiConverterString.lower(`body`),FfiConverterString.lower(`filePath`),FfiConverterString.lower(`mimeType`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Ban the given user from the given room.
      */
     @Throws(CoreException::class)
@@ -3257,6 +3403,33 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_ban_user(
                 uniffiHandle,
                 FfiConverterString.lower(`roomId`),FfiConverterString.lower(`userId`),FfiConverterOptionalString.lower(`reason`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Create the account's crypto identity — cross-signing — for an
+     * account that has none, answering the password stage the
+     * homeserver asks for.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `bootstrapCrossSigning`(`password`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_bootstrap_cross_signing(
+                uniffiHandle,
+                FfiConverterString.lower(`password`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -3418,6 +3591,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Create an image pack, making Commune's packs room first when
+     * there is none — as the application's `packs_room` does, down to
+     * the room's name, topic, privacy and low-priority tag.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `createImagePack`(`name`: kotlin.String) : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_create_image_pack(
+                uniffiHandle,
+                FfiConverterString.lower(`name`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Create a room, as the application's create dialog does: private
      * rooms can be encrypted from birth, public rooms get an alias.
      *
@@ -3438,6 +3637,33 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Delete a pack. A state event cannot be removed, so a deleted
+     * pack is one with no images — what a redacted pack looks like
+     * too — and it stops being enabled everywhere.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `deleteImagePack`(`stateKey`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_delete_image_pack(
+                uniffiHandle,
+                FfiConverterString.lower(`stateKey`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -4189,6 +4415,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * The image packs this account owns — the ones in Commune's own
+     * packs room, which are the ones it may edit.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `myImagePacks`() : List<FfiOwnedPack> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_my_image_packs(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeFfiOwnedPack.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
      * The keywords that trigger notifications, from the account's
      * enabled keyword push rules.
      */
@@ -4387,6 +4637,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Remove one image from a pack.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `removePackImage`(`stateKey`: kotlin.String, `shortcode`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_remove_pack_image(
+                uniffiHandle,
+                FfiConverterString.lower(`stateKey`),FfiConverterString.lower(`shortcode`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Remove the pusher with the given pushkey, so the homeserver stops
      * pushing to it.
      */
@@ -4448,6 +4723,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_rename_device(
                 uniffiHandle,
                 FfiConverterString.lower(`deviceId`),FfiConverterString.lower(`name`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Rename a pack.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `renameImagePack`(`stateKey`: kotlin.String, `name`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_rename_image_pack(
+                uniffiHandle,
+                FfiConverterString.lower(`stateKey`),FfiConverterString.lower(`name`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -4968,6 +5268,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Where this session stands on encryption: whether the account has
+     * a crypto identity and other verified sessions, whether this
+     * session is verified, and whether recovery is set up. The
+     * application's `session/security.rs` computes the same three.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `securityState`() : FfiSecurityState {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_security_state(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiSecurityState.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
      * Send the file at the given path as an attachment to the given room.
      */
     @Throws(CoreException::class)
@@ -5376,6 +5702,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     }
     
     
+
+    
+    /**
+     * Enable or disable a room's pack everywhere, through the stable
+     * `m.image_pack.rooms` account data.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setPackEnabled`(`roomId`: kotlin.String, `stateKey`: kotlin.String, `enabled`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_pack_enabled(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`stateKey`),FfiConverterBoolean.lower(`enabled`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
     
     /**
@@ -8493,6 +8845,62 @@ public object FfiConverterTypeFfiMention: FfiConverterRustBuffer<FfiMention> {
 
 
 /**
+ * One of this account's own image packs, with the state key that
+ * identifies it for editing.
+ */
+data class FfiOwnedPack (
+    /**
+     * The state key the pack lives at in the packs room.
+     */
+    var `stateKey`: kotlin.String
+    , 
+    /**
+     * The pack's display name.
+     */
+    var `name`: kotlin.String
+    , 
+    /**
+     * The images in the pack.
+     */
+    var `images`: List<FfiSticker>
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiOwnedPack: FfiConverterRustBuffer<FfiOwnedPack> {
+    override fun read(buf: ByteBuffer): FfiOwnedPack {
+        return FfiOwnedPack(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterSequenceTypeFfiSticker.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiOwnedPack) = (
+            FfiConverterString.allocationSize(value.`stateKey`) +
+            FfiConverterString.allocationSize(value.`name`) +
+            FfiConverterSequenceTypeFfiSticker.allocationSize(value.`images`)
+    )
+
+    override fun write(value: FfiOwnedPack, buf: ByteBuffer) {
+            FfiConverterString.write(value.`stateKey`, buf)
+            FfiConverterString.write(value.`name`, buf)
+            FfiConverterSequenceTypeFfiSticker.write(value.`images`, buf)
+    }
+}
+
+
+
+/**
  * A room's permission thresholds, flattened the way the application's
  * permissions page lays them out.
  */
@@ -9264,6 +9672,61 @@ public object FfiConverterTypeFfiSearchResult: FfiConverterRustBuffer<FfiSearchR
             FfiConverterString.write(value.`sender`, buf)
             FfiConverterString.write(value.`body`, buf)
             FfiConverterULong.write(value.`timestamp`, buf)
+    }
+}
+
+
+
+/**
+ * Where a session stands on encryption, as the setup view reads it.
+ */
+data class FfiSecurityState (
+    /**
+     * The account's crypto identity.
+     */
+    var `identity`: FfiCryptoIdentityState
+    , 
+    /**
+     * Whether this session is verified.
+     */
+    var `verification`: FfiVerificationState
+    , 
+    /**
+     * Whether account recovery is set up.
+     */
+    var `recovery`: FfiRecoveryState
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiSecurityState: FfiConverterRustBuffer<FfiSecurityState> {
+    override fun read(buf: ByteBuffer): FfiSecurityState {
+        return FfiSecurityState(
+            FfiConverterTypeFfiCryptoIdentityState.read(buf),
+            FfiConverterTypeFfiVerificationState.read(buf),
+            FfiConverterTypeFfiRecoveryState.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiSecurityState) = (
+            FfiConverterTypeFfiCryptoIdentityState.allocationSize(value.`identity`) +
+            FfiConverterTypeFfiVerificationState.allocationSize(value.`verification`) +
+            FfiConverterTypeFfiRecoveryState.allocationSize(value.`recovery`)
+    )
+
+    override fun write(value: FfiSecurityState, buf: ByteBuffer) {
+            FfiConverterTypeFfiCryptoIdentityState.write(value.`identity`, buf)
+            FfiConverterTypeFfiVerificationState.write(value.`verification`, buf)
+            FfiConverterTypeFfiRecoveryState.write(value.`recovery`, buf)
     }
 }
 
@@ -10057,6 +10520,58 @@ public object FfiConverterTypeFfiAddressAction : FfiConverterRustBuffer<FfiAddre
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Whether the account has a crypto identity, and whether this session
+ * can verify against another of its own.
+ */
+
+enum class FfiCryptoIdentityState {
+    
+    /**
+     * Not known yet.
+     */
+    UNKNOWN,
+    /**
+     * Cross-signing was never set up for this account.
+     */
+    MISSING,
+    /**
+     * There are no other verified sessions to verify against.
+     */
+    LAST_MAN_STANDING,
+    /**
+     * There are other verified sessions.
+     */
+    OTHER_SESSIONS;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiCryptoIdentityState: FfiConverterRustBuffer<FfiCryptoIdentityState> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiCryptoIdentityState.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiCryptoIdentityState) = 4UL
+
+    override fun write(value: FfiCryptoIdentityState, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 
@@ -11602,6 +12117,53 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
 
 
 
+/**
+ * Whether this session itself is verified.
+ */
+
+enum class FfiVerificationState {
+    
+    /**
+     * Not known yet.
+     */
+    UNKNOWN,
+    /**
+     * This session is verified.
+     */
+    VERIFIED,
+    /**
+     * This session is not verified.
+     */
+    UNVERIFIED;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiVerificationState: FfiConverterRustBuffer<FfiVerificationState> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiVerificationState.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiVerificationState) = 4UL
+
+    override fun write(value: FfiVerificationState, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 
 /**
  * @suppress
@@ -12020,6 +12582,34 @@ public object FfiConverterSequenceTypeFfiMention: FfiConverterRustBuffer<List<Ff
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiMention.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiOwnedPack: FfiConverterRustBuffer<List<FfiOwnedPack>> {
+    override fun read(buf: ByteBuffer): List<FfiOwnedPack> {
+        val len = buf.getInt()
+        return List<FfiOwnedPack>(len) {
+            FfiConverterTypeFfiOwnedPack.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiOwnedPack>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiOwnedPack.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiOwnedPack>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiOwnedPack.write(it, buf)
         }
     }
 }
