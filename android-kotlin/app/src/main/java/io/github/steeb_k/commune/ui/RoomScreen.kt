@@ -7,6 +7,8 @@ package io.github.steeb_k.commune.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -84,7 +86,11 @@ private val DATE = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
 @Composable
 fun RoomScreen(state: CommuneState, room: FfiRoom) {
     Column(modifier = Modifier.fillMaxSize().imePadding()) {
-        RoomHeader(state, room, onBack = { state.closeRoom() })
+        if (state.selectMode) {
+            SelectionBar(state)
+        } else {
+            RoomHeader(state, room, onBack = { state.closeRoom() })
+        }
         if (state.timelineLoading && state.timeline.isEmpty()) {
             LoadingFace(modifier = Modifier.weight(1f))
         } else {
@@ -118,6 +124,7 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
     }
 
     EventActionSheet(state)
+    EventSourceDialog(state)
     if (state.gifPickerOpen) {
         GifPickerSheet(state)
     }
@@ -236,14 +243,176 @@ internal fun EventActionSheet(state: CommuneState) {
             clipboard.setText(AnnotatedString(event.body))
             state.dismissActionSheet()
         }
-        if (event.isOwn) {
+        if (event.kind is FfiEventKind.Media) {
+            SheetAction("Save to Downloads") {
+                state.saveEventMedia(event)
+                state.dismissActionSheet()
+            }
+        }
+        var forwardOpen by remember { mutableStateOf(false) }
+        var reportOpen by remember { mutableStateOf(false) }
+        if (event.eventId != null) {
+            SheetAction("Forward…") { forwardOpen = true }
+            SheetAction("Copy Message Link") {
+                event.eventId?.let { state.copyEventLink(it) }
+                state.dismissActionSheet()
+            }
+            SheetAction("Select") {
+                state.startSelection(event.uniqueId)
+                state.dismissActionSheet()
+            }
+            SheetAction("Properties") {
+                event.eventId?.let { state.openEventSource(it) }
+                state.dismissActionSheet()
+            }
+            SheetAction("Report…") { reportOpen = true }
+        } else {
+            // A message that never left this device can be thrown away.
+            SheetAction("Discard", destructive = true) {
+                state.discardEcho(event.uniqueId)
+                state.dismissActionSheet()
+            }
+        }
+        if (event.isOwn && event.eventId != null) {
             SheetAction("Remove", destructive = true) {
                 event.eventId?.let { state.redact(it) }
                 state.dismissActionSheet()
             }
         }
         Spacer(Modifier.height(24.dp))
+
+        if (forwardOpen) {
+            RoomPickerDialog(
+                state,
+                title = "Forward To",
+                onPick = { roomId ->
+                    event.eventId?.let { state.forwardEvent(it, roomId) }
+                    forwardOpen = false
+                    state.dismissActionSheet()
+                },
+                onDismiss = { forwardOpen = false },
+            )
+        }
+        if (reportOpen) {
+            ReportDialog(
+                onReport = { reason ->
+                    event.eventId?.let { eventId ->
+                        state.reportEvent(eventId, reason) { failure ->
+                            if (failure != null) {
+                                // The toast path already spoke.
+                            }
+                        }
+                    }
+                    reportOpen = false
+                    state.dismissActionSheet()
+                },
+                onDismiss = { reportOpen = false },
+            )
+        }
     }
+}
+
+/// Pick one joined room — the forward target.
+@Composable
+internal fun RoomPickerDialog(
+    state: CommuneState,
+    title: String,
+    onPick: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            androidx.compose.foundation.lazy.LazyColumn {
+                val rooms = state.rooms.filter {
+                    it.category == io.github.steeb_k.commune.core.FfiRoomCategory.NORMAL ||
+                        it.category ==
+                        io.github.steeb_k.commune.core.FfiRoomCategory.FAVORITE ||
+                        it.category ==
+                        io.github.steeb_k.commune.core.FfiRoomCategory.LOW_PRIORITY
+                }
+                items(rooms.size) { index ->
+                    val room = rooms[index]
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onPick(room.roomId) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RoomAvatar(state, room, size = 32.dp)
+                        Spacer(Modifier.size(12.dp))
+                        Text(roomName(room), style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+/// Ask for an optional reason and report.
+@Composable
+private fun ReportDialog(onReport: (String) -> Unit, onDismiss: () -> Unit) {
+    var reason by remember { mutableStateOf("") }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Report Event?") },
+        text = {
+            Column {
+                Text(
+                    "Reporting sends this event's ID to your homeserver's " +
+                        "administrator. They cannot see the content of an " +
+                        "encrypted or removed event.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { reason = it },
+                    label = { Text("Reason (optional)") },
+                )
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = { onReport(reason) }) {
+                Text("Report", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+/// The raw JSON of an event — the properties dialog's source view.
+@Composable
+private fun EventSourceDialog(state: CommuneState) {
+    val source = state.eventSource ?: return
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { state.closeEventSource() },
+        title = { Text("Event Source") },
+        text = {
+            Text(
+                source,
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                modifier = Modifier
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                    .horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+            )
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = { state.closeEventSource() }) {
+                Text("Close")
+            }
+        },
+    )
 }
 
 @Composable
@@ -282,6 +451,52 @@ private fun TypingLine(userIds: List<String>) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp),
     )
+}
+
+/// The bar over the timeline while messages are selected: the count and
+/// what can be done with them all at once.
+@Composable
+private fun SelectionBar(state: CommuneState) {
+    var forwardOpen by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = { state.clearSelection() }) {
+            Icon(Icons.Filled.Close, contentDescription = "Leave selection")
+        }
+        Text(
+            "${state.selectedIds.size} selected",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.weight(1f),
+        )
+        androidx.compose.material3.TextButton(onClick = { state.copySelectedText() }) {
+            Text("Copy")
+        }
+        androidx.compose.material3.TextButton(onClick = { forwardOpen = true }) {
+            Text("Forward")
+        }
+        if (state.selectedEvents().all { it.isOwn }) {
+            androidx.compose.material3.TextButton(onClick = { state.removeSelected() }) {
+                Text("Remove", color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+
+    if (forwardOpen) {
+        RoomPickerDialog(
+            state,
+            title = "Forward To",
+            onPick = { roomId ->
+                state.forwardSelected(roomId)
+                forwardOpen = false
+            },
+            onDismiss = { forwardOpen = false },
+        )
+    }
 }
 
 /// Back at the start, the room name centered — the GTK room header without
@@ -554,7 +769,7 @@ internal fun Timeline(
                             onOpenThread = onOpenThread,
                         )
                     } else {
-                        StateLine(item)
+                        StateLine(state, item)
                     }
                 }
                 is FfiTimelineItem.DateDivider ->
@@ -664,9 +879,17 @@ internal fun MessageBubble(
     val muted = event.kind !is FfiEventKind.Text && event.kind !is FfiEventKind.Media &&
         event.kind !is FfiEventKind.Location
 
+    val selected = state.selectMode && event.uniqueId in state.selectedIds
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(
+                if (selected) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                } else {
+                    androidx.compose.ui.graphics.Color.Transparent
+                }
+            )
             .padding(horizontal = 12.dp, vertical = 2.dp),
         horizontalArrangement = if (own) Arrangement.End else Arrangement.Start,
     ) {
@@ -676,8 +899,16 @@ internal fun MessageBubble(
                 .clip(RoundedCornerShape(12.dp))
                 .background(bubbleColor)
                 .combinedClickable(
-                    onClick = {},
-                    onLongClick = { state.showActionSheet(event) },
+                    onClick = {
+                        if (state.selectMode) state.toggleSelected(event.uniqueId)
+                    },
+                    onLongClick = {
+                        if (state.selectMode) {
+                            state.toggleSelected(event.uniqueId)
+                        } else {
+                            state.showActionSheet(event)
+                        }
+                    },
                 )
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalAlignment = if (own) Alignment.End else Alignment.Start,
@@ -948,16 +1179,51 @@ private fun ReactionChips(state: CommuneState, event: FfiTimelineItem.Event) {
 /// A state event, as a dim centered line — the sentence itself arrives with
 /// the state-event humanization chunk.
 @Composable
-internal fun StateLine(event: FfiTimelineItem.Event) {
+internal fun StateLine(state: CommuneState, event: FfiTimelineItem.Event) {
+    // A pending invite can be taken back from its own line.
+    val invitedUser = (event.kind as? FfiEventKind.Membership)
+        ?.takeIf { it.change == FfiMembershipChange.INVITED }
+        ?.user
+    var revokeOpen by remember { mutableStateOf(false) }
+
     Text(
         stateSentence(event),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier
             .fillMaxWidth()
+            .let { modifier ->
+                if (invitedUser != null) {
+                    modifier.combinedClickable(
+                        onClick = {},
+                        onLongClick = { revokeOpen = true },
+                    )
+                } else {
+                    modifier
+                }
+            }
             .padding(horizontal = 16.dp, vertical = 4.dp),
         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
     )
+
+    if (revokeOpen && invitedUser != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { revokeOpen = false },
+            title = { Text("Revoke Invite?") },
+            text = { Text("Take back the invitation of $invitedUser?") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    state.kickUser(invitedUser) { }
+                    revokeOpen = false
+                }) { Text("Revoke", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { revokeOpen = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
 }
 
 /// The unread boundary: the date divider's shape in the accent color.
