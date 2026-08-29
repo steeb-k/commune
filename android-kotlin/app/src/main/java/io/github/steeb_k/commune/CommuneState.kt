@@ -162,7 +162,14 @@ class CommuneState(context: Context) {
         Native.seed(context.applicationContext)
         initCore(
             FfiCoreConfig(
-                appId = "io.github.steeb_k.commune.skeleton",
+                // The id this build actually has: the debug one carries a
+                // .skeleton suffix and the release one does not. Hardcoding
+                // the debug value meant every release build registered its
+                // pusher under an application id no release build uses —
+                // set_push_gateway retires that old registration.
+                appId = context.packageName,
+                // Only the Linux secret backend reads this; on Android it
+                // is inert.
                 profile = "skeleton",
                 dataDir = context.noBackupFilesDir.resolve("commune").absolutePath,
                 cacheDir = context.cacheDir.resolve("commune").absolutePath,

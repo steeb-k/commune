@@ -6168,6 +6168,25 @@ impl CoreApp {
 
         RUNTIME
             .spawn(async move {
+                // The application id was once hardcoded to the debug
+                // build's, so a device that registered before this fix has
+                // a pusher under that id aimed at the very endpoint about
+                // to be registered again. Two pushers, one endpoint, every
+                // notification twice — so the old one goes first. A device
+                // that never registered under it deletes nothing, which the
+                // homeserver does not mind.
+                const LEGACY_APP_ID: &str = "io.github.steeb_k.commune.skeleton";
+                if config::app_id() != LEGACY_APP_ID {
+                    let legacy = PusherIds::new(pushkey.clone(), LEGACY_APP_ID.to_owned());
+                    if let Err(legacy_error) = session
+                        .client()
+                        .send(set_pusher::v3::Request::delete(legacy))
+                        .await
+                    {
+                        tracing::debug!("No legacy pusher to remove: {legacy_error}");
+                    }
+                }
+
                 let pusher: Pusher = PusherInit {
                     ids: PusherIds::new(pushkey, config::app_id().to_owned()),
                     kind: PusherKind::Http(HttpPusherData::new(gateway_url)),
