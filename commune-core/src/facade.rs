@@ -593,6 +593,13 @@ pub enum FfiSendState {
 pub enum FfiEventKind {
     /// A text-like message (`m.text`, `m.notice`, `m.emote`).
     Text,
+    /// A call, as the timeline remembers it afterwards.
+    Call {
+        /// Whether the call carried video.
+        has_video: bool,
+        /// What became of it, when this session saw the answer.
+        outcome: Option<FfiCallOutcome>,
+    },
     /// A media message; the body is the caption or filename.
     Media {
         /// Whether the media is an image the timeline can show inline
@@ -1195,6 +1202,7 @@ impl CoreApp {
                         }
                         let call_id = event.content.call_id.to_string();
                         tracing::info!("Incoming call {call_id} from {}", event.sender);
+                        flows.note_outcome(&call_id, FfiCallOutcome::Ringing);
                         flows.insert(
                             call_id.clone(),
                             CallFlow {
@@ -1231,6 +1239,7 @@ impl CoreApp {
                         if event.sender == own_user_id {
                             // Another of our own devices took it.
                             let call_id = event.content.call_id.to_string();
+                            flows.note_outcome(&call_id, FfiCallOutcome::Answered);
                             if flows.has(&call_id) {
                                 flows.remove(&call_id);
                                 flows.emit(|listener| {
@@ -1244,6 +1253,7 @@ impl CoreApp {
                         if !flows.has(&call_id) {
                             return;
                         }
+                        flows.note_outcome(&call_id, FfiCallOutcome::Answered);
                         flows.set_remote_party(
                             &call_id,
                             event.content.party_id.as_ref().map(ToString::to_string),
@@ -1299,7 +1309,22 @@ impl CoreApp {
                 client.add_event_handler(move |event: OriginalSyncCallHangupEvent| {
                     let flows = hangup_flows.clone();
                     async move {
+                        use ruma::events::call::hangup::Reason;
+
                         let call_id = event.content.call_id.to_string();
+                        // A hangup only ever ends a call; whether
+                        // anybody answered first is what the merge
+                        // keeps. The busy signal is the one reason that
+                        // says something on its own — a refusal spelled
+                        // as a hangup.
+                        flows.note_outcome(
+                            &call_id,
+                            if event.content.reason == Reason::UserBusy {
+                                FfiCallOutcome::Declined
+                            } else {
+                                FfiCallOutcome::Missed
+                            },
+                        );
                         if !flows.has(&call_id) {
                             return;
                         }
@@ -1319,6 +1344,7 @@ impl CoreApp {
                     let own_user_id = reject_own.clone();
                     async move {
                         let call_id = event.content.call_id.to_string();
+                        flows.note_outcome(&call_id, FfiCallOutcome::Declined);
                         if !flows.has(&call_id) {
                             return;
                         }
@@ -1335,12 +1361,42 @@ impl CoreApp {
                 }),
             );
 
+            // A renegotiation: the other end changed what it sends —
+            // a camera coming on partway through a voice call — and the
+            // embedder answers with a fresh description.
+            let negotiate_flows = flows.clone();
+            let negotiate_own = own_user_id.clone();
+            handles.push(client.add_event_handler(
+                move |event: ruma::events::call::negotiate::OriginalSyncCallNegotiateEvent| {
+                    let flows = negotiate_flows.clone();
+                    let own_user_id = negotiate_own.clone();
+                    async move {
+                        if event.sender == own_user_id {
+                            return;
+                        }
+                        let call_id = event.content.call_id.to_string();
+                        if !flows.has(&call_id) {
+                            return;
+                        }
+                        let description = event.content.description;
+                        flows.emit(|listener| {
+                            listener.on_negotiate(
+                                call_id.clone(),
+                                description.sdp.clone(),
+                                description.session_type.to_string(),
+                            );
+                        });
+                    }
+                },
+            ));
+
             let select_flows = flows.clone();
             handles.push(client.add_event_handler(
                 move |event: OriginalSyncCallSelectAnswerEvent| {
                     let flows = select_flows.clone();
                     async move {
                         let call_id = event.content.call_id.to_string();
+                        flows.note_outcome(&call_id, FfiCallOutcome::Answered);
                         let Some(party_id) = flows.party_id(&call_id) else {
                             return;
                         };
@@ -1408,6 +1464,13 @@ impl CoreApp {
                 // A call placed to one person says so; without it,
                 // anybody in the room could answer.
                 content.invitee = ruma::UserId::parse(&invitee).ok();
+                if let Some(stream_id) = first_stream_id(&content.offer.sdp) {
+                    use ruma::events::call::{StreamMetadata, StreamPurpose};
+
+                    let mut metadata = StreamMetadata::new(StreamPurpose::UserMedia);
+                    metadata.video_muted = !sdp_has_video(&content.offer.sdp);
+                    content.sdp_stream_metadata = [(stream_id, metadata)].into_iter().collect();
+                }
 
                 flows.insert(
                     call_id.clone(),
@@ -1438,11 +1501,18 @@ impl CoreApp {
 
         RUNTIME
             .spawn(async move {
-                let content = CallAnswerEventContent::version_1(
+                let mut content = CallAnswerEventContent::version_1(
                     SessionDescription::new("answer".to_owned(), sdp),
                     ruma::OwnedVoipId::from(call_id),
                     ruma::OwnedVoipId::from(party_id),
                 );
+                if let Some(stream_id) = first_stream_id(&content.answer.sdp) {
+                    use ruma::events::call::{StreamMetadata, StreamPurpose};
+
+                    let mut metadata = StreamMetadata::new(StreamPurpose::UserMedia);
+                    metadata.video_muted = !sdp_has_video(&content.answer.sdp);
+                    content.sdp_stream_metadata = [(stream_id, metadata)].into_iter().collect();
+                }
                 send_call_event(&room, AnyMessageLikeEventContent::CallAnswer(content)).await
             })
             .await
@@ -1496,6 +1566,79 @@ impl CoreApp {
                     list,
                 );
                 send_call_event(&room, AnyMessageLikeEventContent::CallCandidates(content)).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Offer or accept a new session description mid-call — what the
+    /// application sends when the camera comes on partway through.
+    pub async fn send_call_negotiate(
+        &self,
+        call_id: String,
+        sdp: String,
+        session_type: String,
+    ) -> Result<(), CoreError> {
+        use ruma::{
+            UInt,
+            events::{
+                AnyMessageLikeEventContent,
+                call::{SessionDescription, negotiate::CallNegotiateEventContent},
+            },
+        };
+
+        let (room, party_id) = self.call_room(&call_id)?;
+
+        RUNTIME
+            .spawn(async move {
+                let content = CallNegotiateEventContent::version_1(
+                    ruma::OwnedVoipId::from(call_id),
+                    ruma::OwnedVoipId::from(party_id),
+                    UInt::try_from(CALL_NEGOTIATE_LIFETIME_MS).unwrap_or(UInt::MAX),
+                    SessionDescription::new(session_type, sdp),
+                );
+                send_call_event(&room, AnyMessageLikeEventContent::CallNegotiate(content)).await
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Tell the other end what this end has muted, as the application's
+    /// `send_stream_metadata` does.
+    pub async fn send_call_stream_metadata(
+        &self,
+        call_id: String,
+        stream_id: String,
+        audio_muted: bool,
+        video_muted: bool,
+    ) -> Result<(), CoreError> {
+        use ruma::events::{
+            AnyMessageLikeEventContent,
+            call::{
+                StreamMetadata, StreamPurpose,
+                sdp_stream_metadata_changed::CallSdpStreamMetadataChangedEventContent,
+            },
+        };
+
+        let (room, party_id) = self.call_room(&call_id)?;
+
+        RUNTIME
+            .spawn(async move {
+                let mut metadata = StreamMetadata::new(StreamPurpose::UserMedia);
+                metadata.audio_muted = audio_muted;
+                metadata.video_muted = video_muted;
+
+                let content = CallSdpStreamMetadataChangedEventContent::new(
+                    ruma::OwnedVoipId::from(call_id),
+                    ruma::OwnedVoipId::from(party_id),
+                    ruma::VoipVersionId::V1,
+                    [(stream_id, metadata)].into_iter().collect(),
+                );
+                send_call_event(
+                    &room,
+                    AnyMessageLikeEventContent::CallSdpStreamMetadataChanged(content),
+                )
+                .await
             })
             .await
             .expect("task was not aborted")
@@ -1619,6 +1762,8 @@ impl CoreApp {
     ///
     /// Replaces any previous pinned listener.
     pub fn set_pinned_listener(&self, room_id: String, listener: Arc<dyn TimelineListener>) {
+        // What became of each call, for the rows they leave behind.
+        let calls = self.calls.clone();
         let session = self.first_ready_session();
 
         let handle = RUNTIME
@@ -1636,10 +1781,11 @@ impl CoreApp {
                     return;
                 };
                 let own_user_id = session.user_id().clone();
+                let outcomes = calls.outcome_snapshot();
                 listener.on_update(
                     items
                         .iter()
-                        .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                        .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
                         .collect(),
                 );
 
@@ -1648,10 +1794,11 @@ impl CoreApp {
                     for diff in diffs {
                         diff.apply(&mut items);
                     }
+                    let outcomes = calls.outcome_snapshot();
                     listener.on_update(
                         items
                             .iter()
-                            .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                            .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
                             .collect(),
                     );
                 }
@@ -1759,6 +1906,8 @@ impl CoreApp {
     /// Replaces any previous timeline listener; v1 watches one room at a
     /// time, which is what one screen shows.
     pub fn set_timeline_listener(&self, room_id: String, listener: Arc<dyn TimelineListener>) {
+        // What became of each call, for the rows they leave behind.
+        let calls = self.calls.clone();
         let session = self.first_ready_session();
 
         let handle = RUNTIME
@@ -1777,10 +1926,11 @@ impl CoreApp {
                 };
                 let own_user_id = session.user_id().clone();
 
+                let outcomes = calls.outcome_snapshot();
                 listener.on_update(
                     items
                         .iter()
-                        .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                        .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
                         .collect(),
                 );
 
@@ -1789,10 +1939,11 @@ impl CoreApp {
                     for diff in diffs {
                         diff.apply(&mut items);
                     }
+                    let outcomes = calls.outcome_snapshot();
                     listener.on_update(
                         items
                             .iter()
-                            .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                            .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
                             .collect(),
                     );
                 }
@@ -2015,6 +2166,8 @@ impl CoreApp {
         root_event_id: String,
         listener: Arc<dyn TimelineListener>,
     ) {
+        // What became of each call, for the rows they leave behind.
+        let calls = self.calls.clone();
         let session = self.first_ready_session();
 
         let handle = RUNTIME
@@ -2036,10 +2189,11 @@ impl CoreApp {
                 };
 
                 let own_user_id = session.user_id().clone();
+                let outcomes = calls.outcome_snapshot();
                 listener.on_update(
                     items
                         .iter()
-                        .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                        .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
                         .collect(),
                 );
 
@@ -2048,10 +2202,11 @@ impl CoreApp {
                     for diff in diffs {
                         diff.apply(&mut items);
                     }
+                    let outcomes = calls.outcome_snapshot();
                     listener.on_update(
                         items
                             .iter()
-                            .map(|item| ffi_timeline_item(item, Some(&own_user_id)))
+                            .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
                             .collect(),
                     );
                 }
@@ -7289,6 +7444,9 @@ impl CoreApp {
 /// How long an invite rings for, as the application sets it.
 const CALL_INVITE_LIFETIME_MS: u64 = 90_000;
 
+/// How long a renegotiation offer stands, as the application sets it.
+const CALL_NEGOTIATE_LIFETIME_MS: u64 = 30_000;
+
 /// A random opaque identifier, for call and party IDs — the eight
 /// characters the application's `opaque_id(8)` produces.
 fn opaque_party_id() -> String {
@@ -7325,11 +7483,51 @@ struct CallFlow {
     outgoing: bool,
 }
 
+/// How many calls the timeline remembers the outcome of.
+const MAX_REMEMBERED_OUTCOMES: usize = 100;
+
+/// What one call outcome becomes when another is learned — the
+/// application's `merge_outcome`, whose ordering is the whole logic.
+fn merge_outcome(previous: Option<FfiCallOutcome>, next: FfiCallOutcome) -> FfiCallOutcome {
+    match (previous, next) {
+        // A call that was answered and then hung up ended; it was not
+        // missed. Every call ends with a hangup, so without this every
+        // call in the timeline would say nobody answered.
+        (Some(FfiCallOutcome::Answered), FfiCallOutcome::Missed) => FfiCallOutcome::Answered,
+        // The invite arrives once, and its echo says nothing new.
+        (Some(previous), FfiCallOutcome::Ringing) => previous,
+        (_, next) => next,
+    }
+}
+
+/// Whether an offer describes a video call: a media section for video
+/// in the SDP, which is the only place the answer lives.
+fn sdp_has_video(sdp: &str) -> bool {
+    sdp.contains("\r\nm=video ") || sdp.contains("\nm=video ") || sdp.starts_with("m=video ")
+}
+
+/// The first stream the SDP names, for the metadata that says what is
+/// muted. A stream the far end was not told about is one the
+/// specification asks it to ignore.
+fn first_stream_id(sdp: &str) -> Option<String> {
+    sdp.lines()
+        .filter_map(|line| line.trim().strip_prefix("a=msid:"))
+        .filter_map(|value| value.split_whitespace().next())
+        .map(ToOwned::to_owned)
+        .next()
+}
+
 /// The calls in flight and the listener following them.
 #[derive(Default)]
 struct CallFlows {
     listener: Mutex<Option<Arc<dyn CallListener>>>,
     calls: Mutex<std::collections::HashMap<String, CallFlow>>,
+    /// What became of the calls this session saw, for the rows the
+    /// timeline draws afterwards — every call the room saw, not only
+    /// the ones this client was in.
+    outcomes: Mutex<std::collections::HashMap<String, FfiCallOutcome>>,
+    /// The order they were learned in, so the oldest are forgotten.
+    outcome_order: Mutex<std::collections::VecDeque<String>>,
     /// The client the handlers sit on, and the handles that take them
     /// off again — an event handler left on a stale client hears
     /// nothing, and one added twice hears everything twice.
@@ -7401,6 +7599,33 @@ impl CallFlows {
         }
     }
 
+    /// Note what has happened to a call, for the row the timeline
+    /// draws — including a call answered on another device.
+    fn note_outcome(&self, call_id: &str, outcome: FfiCallOutcome) {
+        let mut outcomes = self.outcomes.lock().expect("mutex is not poisoned");
+        let previous = outcomes.get(call_id).copied();
+        let merged = merge_outcome(previous, outcome);
+
+        if previous == Some(merged) {
+            return;
+        }
+        if previous.is_none() {
+            let mut order = self.outcome_order.lock().expect("mutex is not poisoned");
+            order.push_back(call_id.to_owned());
+            while order.len() > MAX_REMEMBERED_OUTCOMES {
+                if let Some(forgotten) = order.pop_front() {
+                    outcomes.remove(&forgotten);
+                }
+            }
+        }
+        outcomes.insert(call_id.to_owned(), merged);
+    }
+
+    /// A copy of the outcomes, for building timeline items.
+    fn outcome_snapshot(&self) -> std::collections::HashMap<String, FfiCallOutcome> {
+        self.outcomes.lock().expect("mutex is not poisoned").clone()
+    }
+
     fn emit(&self, f: impl FnOnce(&Arc<dyn CallListener>)) {
         if let Some(listener) = self
             .listener
@@ -7411,6 +7636,19 @@ impl CallFlows {
             f(listener);
         }
     }
+}
+
+/// What became of a call, as far as the room can tell.
+#[derive(uniffi::Enum, Clone, Copy, PartialEq, Eq)]
+pub enum FfiCallOutcome {
+    /// An invite was seen and nothing has happened to it yet.
+    Ringing,
+    /// Somebody answered it.
+    Answered,
+    /// Somebody said no to it.
+    Declined,
+    /// It stopped ringing without being answered.
+    Missed,
 }
 
 /// One ICE candidate, in both spellings the wild asks for.
@@ -7458,6 +7696,9 @@ pub trait CallListener: Send + Sync {
     fn on_answer(&self, call_id: String, sdp: String);
     /// The other end gathered candidates.
     fn on_candidates(&self, call_id: String, candidates: Vec<FfiIceCandidate>);
+    /// The other end wants to renegotiate: apply the description, and
+    /// when it is an offer answer it with `send_call_negotiate`.
+    fn on_negotiate(&self, call_id: String, sdp: String, session_type: String);
     /// The call is over.
     fn on_ended(&self, call_id: String, reason: FfiCallEnd);
 }
@@ -7934,6 +8175,7 @@ fn ffi_message_kind(message: &matrix_sdk_ui::timeline::Message) -> (FfiEventKind
 fn ffi_timeline_item(
     item: &matrix_sdk_ui::timeline::TimelineItem,
     own_user_id: Option<&ruma::UserId>,
+    outcomes: &std::collections::HashMap<String, FfiCallOutcome>,
 ) -> FfiTimelineItem {
     use matrix_sdk_ui::timeline::{
         MsgLikeKind, TimelineDetails, TimelineItemContent, TimelineItemKind, VirtualTimelineItem,
@@ -7978,6 +8220,31 @@ fn ffi_timeline_item(
                     },
                     String::new(),
                 ),
+                // The invite is the event that says a call happened;
+                // the rest of the module is signalling and would be a
+                // dozen rows for one call. What became of it is what
+                // this session watched happen.
+                TimelineItemContent::CallInvite => {
+                    let raw = event
+                        .original_json()
+                        .and_then(|raw| raw.deserialize_as::<serde_json::Value>().ok());
+                    let content = raw.as_ref().and_then(|value| value.get("content"));
+                    let call_id = content
+                        .and_then(|content| content.get("call_id"))
+                        .and_then(|id| id.as_str());
+                    let sdp = content
+                        .and_then(|content| content.pointer("/offer/sdp"))
+                        .and_then(|sdp| sdp.as_str())
+                        .unwrap_or_default();
+
+                    (
+                        FfiEventKind::Call {
+                            has_video: sdp_has_video(sdp),
+                            outcome: call_id.and_then(|id| outcomes.get(id).copied()),
+                        },
+                        String::new(),
+                    )
+                }
                 TimelineItemContent::OtherState(state) => (
                     FfiEventKind::OtherState {
                         change: ffi_state_change(state.content()),

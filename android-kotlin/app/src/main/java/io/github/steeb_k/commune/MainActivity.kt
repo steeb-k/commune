@@ -68,6 +68,13 @@ class MainActivity : ComponentActivity() {
 
     private var micResult: ((Boolean) -> Unit)? = null
     private var locationResult: ((Boolean) -> Unit)? = null
+    private var cameraResult: ((Boolean) -> Unit)? = null
+
+    private val cameraPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            cameraResult?.invoke(granted)
+            cameraResult = null
+        }
 
     private val locationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -144,6 +151,16 @@ class MainActivity : ComponentActivity() {
             } else {
                 locationResult = onResult
                 locationPermission.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            }
+        }
+        state.ensureCameraPermission = { onResult ->
+            if (checkSelfPermission(android.Manifest.permission.CAMERA) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                onResult(true)
+            } else {
+                cameraResult = onResult
+                cameraPermission.launch(android.Manifest.permission.CAMERA)
             }
         }
         state.scanQrCode = {

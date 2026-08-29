@@ -34,6 +34,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
@@ -610,6 +611,13 @@ private fun RoomHeader(state: CommuneState, room: FfiRoom, onBack: () -> Unit) {
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            IconButton(onClick = { state.placeCallInRoom(room, video = true) }) {
+                Icon(
+                    androidx.compose.material.icons.Icons.Filled.Videocam,
+                    contentDescription = "Video call",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         IconButton(onClick = { state.openRoomSearch() }) {
             Icon(
@@ -905,6 +913,7 @@ internal fun Timeline(
 }
 
 internal fun FfiEventKind.isMessageLike(): Boolean = when (this) {
+    is FfiEventKind.Call,
     is FfiEventKind.Text,
     is FfiEventKind.Media,
     is FfiEventKind.Location,
@@ -985,6 +994,12 @@ internal fun MessageBubble(
         MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
     } else {
         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+    }
+
+    val callKind = event.kind as? FfiEventKind.Call
+    if (callKind != null) {
+        CallRow(event, callKind, own)
+        return
     }
 
     val body = when (event.kind) {
@@ -1495,6 +1510,58 @@ private fun AudioBubblePlayer(state: CommuneState, uniqueId: String) {
         androidx.compose.material3.LinearProgressIndicator(
             progress = { position },
             modifier = Modifier.width(140.dp),
+        )
+    }
+}
+
+/// A call that happened here, and what became of it — the wording of
+/// the application's call_row.
+@Composable
+private fun CallRow(
+    event: FfiTimelineItem.Event,
+    kind: FfiEventKind.Call,
+    own: Boolean,
+) {
+    val name = event.senderDisplayName ?: localpart(event.sender)
+    val text = when (kind.outcome) {
+        io.github.steeb_k.commune.core.FfiCallOutcome.ANSWERED -> "Call ended."
+        io.github.steeb_k.commune.core.FfiCallOutcome.DECLINED -> "Call declined."
+        io.github.steeb_k.commune.core.FfiCallOutcome.MISSED,
+        io.github.steeb_k.commune.core.FfiCallOutcome.RINGING ->
+            if (own) "No answer." else "Missed call from $name."
+        // A call from before this session was running: nothing here
+        // knows how it ended, and inventing an answer is worse than
+        // saying only what the invite says.
+        null -> when {
+            own && kind.hasVideo -> "Outgoing video call."
+            own -> "Outgoing call."
+            kind.hasVideo -> "Incoming video call from $name."
+            else -> "Incoming call from $name."
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            if (kind.hasVideo) {
+                androidx.compose.material.icons.Icons.Filled.Videocam
+            } else {
+                androidx.compose.material.icons.Icons.Filled.Call
+            },
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

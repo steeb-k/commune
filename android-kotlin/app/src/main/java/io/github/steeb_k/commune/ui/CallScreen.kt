@@ -12,12 +12,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallEnd
+import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,10 +47,23 @@ fun CallScreen(state: CommuneState) {
 
     val name = call.peer.removePrefix("@").substringBefore(':')
 
+    val showingVideo = call.remoteVideo || call.cameraOn
+
+    androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+        if (showingVideo) {
+            VideoSurfaces(state, call)
+        }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
+            .then(
+                if (showingVideo) {
+                    Modifier
+                } else {
+                    Modifier.background(MaterialTheme.colorScheme.surface)
+                }
+            )
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
@@ -55,7 +72,9 @@ fun CallScreen(state: CommuneState) {
             modifier = Modifier.padding(top = 64.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            InitialsAvatar(identifier = call.peer, name = name, size = 112.dp)
+            if (!showingVideo) {
+                InitialsAvatar(identifier = call.peer, name = name, size = 112.dp)
+            }
             Spacer(Modifier.height(24.dp))
             Text(
                 name,
@@ -88,6 +107,26 @@ fun CallScreen(state: CommuneState) {
                         contentDescription = if (call.muted) "Unmute" else "Mute",
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
+                }
+                IconButton(onClick = { state.toggleCamera() }) {
+                    Icon(
+                        if (call.cameraOn) Icons.Filled.Videocam else Icons.Filled.VideocamOff,
+                        contentDescription = if (call.cameraOn) {
+                            "Turn the camera off"
+                        } else {
+                            "Turn the camera on"
+                        },
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                if (call.cameraOn) {
+                    IconButton(onClick = { state.switchCamera() }) {
+                        Icon(
+                            Icons.Filled.Cameraswitch,
+                            contentDescription = "Switch camera",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                 }
                 IconButton(onClick = {
                     speaker = !speaker
@@ -139,6 +178,41 @@ fun CallScreen(state: CommuneState) {
                 )
             }
         }
+    }
+    }
+}
+
+/// The two pictures a video call has: the far end behind everything,
+/// this end in the corner.
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.VideoSurfaces(
+    state: CommuneState,
+    call: CommuneState.ActiveCall,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    if (call.remoteVideo) {
+        androidx.compose.ui.viewinterop.AndroidView(
+            factory = {
+                org.webrtc.SurfaceViewRenderer(context).apply {
+                    state.initRemoteRenderer(this)
+                }
+            },
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+    if (call.cameraOn) {
+        androidx.compose.ui.viewinterop.AndroidView(
+            factory = {
+                org.webrtc.SurfaceViewRenderer(context).apply {
+                    state.initLocalRenderer(this)
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+                .size(width = 120.dp, height = 160.dp),
+        )
     }
 }
 

@@ -2922,6 +2922,10 @@ class CommuneState(context: Context) {
         val outgoing: Boolean,
         val state: CallPhase,
         val muted: Boolean = false,
+        /// Whether this end is sending pictures.
+        val cameraOn: Boolean = false,
+        /// Whether the other end is.
+        val remoteVideo: Boolean = false,
     )
 
     enum class CallPhase { Ringing, Dialing, Connecting, Connected, Ended }
@@ -2994,6 +2998,22 @@ class CommuneState(context: Context) {
                 main.post {
                     if (call?.callId != callId) return@post
                     engine?.addRemoteCandidates(candidates)
+                }
+            }
+
+            override fun onNegotiate(callId: String, sdp: String, sessionType: String) {
+                main.post {
+                    if (call?.callId != callId) return@post
+                    engine?.acceptRenegotiation(sdp, sessionType) { answer ->
+                        thread {
+                            runBlocking {
+                                try {
+                                    app.sendCallNegotiate(callId, answer, "answer")
+                                } catch (_: Exception) {
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -3084,6 +3104,7 @@ class CommuneState(context: Context) {
                     },
                     onConnected = {
                         main.post {
+                            engine?.armRenegotiation()
                             if (call?.state != CallPhase.Ended) {
                                 call = call?.copy(state = CallPhase.Connected)
                             }
@@ -3094,6 +3115,12 @@ class CommuneState(context: Context) {
                             toast("The call could not connect")
                             hangUp()
                         }
+                    },
+                    onRemoteVideo = {
+                        main.post { call = call?.copy(remoteVideo = true) }
+                    },
+                    onNeedsRenegotiation = {
+                        main.post { renegotiate() }
                     },
                 )
                 engine = built
@@ -3119,7 +3146,7 @@ class CommuneState(context: Context) {
     }
 
     /// Call the other member of a direct chat.
-    fun placeCallInRoom(room: FfiRoom) {
+    fun placeCallInRoom(room: FfiRoom, video: Boolean = false) {
         thread {
             val members = try {
                 runBlocking { app.roomMembers(room.roomId) }
@@ -3131,14 +3158,14 @@ class CommuneState(context: Context) {
                 if (peer == null) {
                     toast("Nobody to call in this room")
                 } else {
-                    placeCall(room.roomId, peer)
+                    placeCall(room.roomId, peer, video)
                 }
             }
         }
     }
 
     /// Place a call to the person in the open direct chat.
-    fun placeCall(roomId: String, peer: String) {
+    fun placeCall(roomId: String, peer: String, video: Boolean = false) {
         if (call != null) return
         withMicrophone {
             call = ActiveCall(
@@ -3150,6 +3177,10 @@ class CommuneState(context: Context) {
             )
             audioForCall(true)
             buildEngine { engine ->
+                // A video call offers pictures from the start.
+                if (video && engine.setCameraEnabled(true)) {
+                    call = call?.copy(cameraOn = true)
+                }
                 engine.createOffer(
                     onSdp = { sdp ->
                         thread {
@@ -3253,11 +3284,102 @@ class CommuneState(context: Context) {
         tearDownCall()
     }
 
+    /// This end changed what it sends: offer the other end a new
+    /// description, as the application does when a camera comes on.
+    private fun renegotiate() {
+        val current = call ?: return
+        val engine = engine ?: return
+        if (current.callId.isEmpty()) return
+        engine.createRenegotiationOffer { sdp ->
+            thread {
+                runBlocking {
+                    try {
+                        app.sendCallNegotiate(current.callId, sdp, "offer")
+                    } catch (_: Exception) {
+                        // The call carries on with what it had.
+                    }
+                }
+            }
+        }
+    }
+
+    /// Turn this end's camera on or off. Adding the track is what makes
+    /// WebRTC ask for the renegotiation that tells the other end.
+    fun toggleCamera() {
+        val current = call ?: return
+        val engine = engine ?: return
+        withCamera {
+            val wanted = !current.cameraOn
+            if (!engine.setCameraEnabled(wanted)) {
+                toast("No camera to use")
+                return@withCamera
+            }
+            call = current.copy(cameraOn = wanted)
+            sendStreamMetadata()
+        }
+    }
+
+    fun switchCamera() {
+        engine?.switchCamera()
+    }
+
+    /// Tell the other end what is muted here.
+    private fun sendStreamMetadata() {
+        val current = call ?: return
+        val engine = engine ?: return
+        if (current.callId.isEmpty()) return
+        thread {
+            runBlocking {
+                try {
+                    app.sendCallStreamMetadata(
+                        current.callId,
+                        engine.localStreamId,
+                        current.muted,
+                        !current.cameraOn,
+                    )
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
+    /// Wire a renderer to the far end's pictures.
+    fun initRemoteRenderer(renderer: org.webrtc.SurfaceViewRenderer) {
+        val engine = engine ?: return
+        renderer.init(engine.eglContext, null)
+        renderer.setEnableHardwareScaler(true)
+        engine.attachRemoteVideo(renderer)
+    }
+
+    /// Wire a renderer to this end's own picture.
+    fun initLocalRenderer(renderer: org.webrtc.SurfaceViewRenderer) {
+        val engine = engine ?: return
+        renderer.init(engine.eglContext, null)
+        renderer.setEnableHardwareScaler(true)
+        renderer.setZOrderMediaOverlay(true)
+        engine.attachLocalVideo(renderer)
+    }
+
+    /// Set by the activity: asks for the camera before showing a face.
+    var ensureCameraPermission: (((Boolean) -> Unit) -> Unit)? = null
+
+    private fun withCamera(onGranted: () -> Unit) {
+        val ensure = ensureCameraPermission
+        if (ensure == null) {
+            onGranted()
+            return
+        }
+        ensure { granted ->
+            if (granted) onGranted() else toast("A video call needs the camera")
+        }
+    }
+
     fun toggleMute() {
         val current = call ?: return
         val muted = !current.muted
         engine?.setMicrophoneEnabled(!muted)
         call = current.copy(muted = muted)
+        sendStreamMetadata()
     }
 
     fun setSpeakerphone(on: Boolean) {

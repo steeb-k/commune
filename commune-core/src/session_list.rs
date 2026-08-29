@@ -161,8 +161,6 @@ impl SessionList {
             .is_empty()
     }
 
-    /// The session with the given ID, if any.
-    #[must_use]
     /// Make the given session the one everything resolves to.
     pub fn set_active(&self, session_id: Option<String>) {
         *self
@@ -196,6 +194,8 @@ impl SessionList {
         entries.iter().find_map(|entry| entry.session().cloned())
     }
 
+    /// The session with the given ID, if any.
+    #[must_use]
     pub fn get(&self, session_id: &str) -> Option<SessionEntry> {
         self.inner
             .entries
