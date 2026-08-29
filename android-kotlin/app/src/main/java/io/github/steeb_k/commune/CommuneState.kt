@@ -178,6 +178,7 @@ class CommuneState(context: Context) {
                     phase = if (app.hasSessions()) Phase.Session else Phase.Login
                     if (phase == Phase.Session) {
                         watchVerifications()
+                        watchCalls()
                         loadProfile()
                     }
                 }
@@ -293,6 +294,7 @@ class CommuneState(context: Context) {
         // The old listener task died with the old session.
         app.setRoomListListener(roomListListener)
         watchVerifications()
+        watchCalls()
         loadProfile()
         refreshAccounts()
         setupDismissed = false
@@ -345,6 +347,7 @@ class CommuneState(context: Context) {
         savedScroll.clear()
         app.setRoomListListener(roomListListener)
         watchVerifications()
+        watchCalls()
         loadProfile()
         refreshAccounts()
         setupDismissed = false
@@ -2905,6 +2908,384 @@ class CommuneState(context: Context) {
         app.getMxcMedia(mxcUri)
     } catch (_: Exception) {
         null
+    }
+
+    // Calls. The core carries the m.call.* events; CallEngine carries
+    // the sound. This holds the one call a phone can be in at a time.
+    var call by mutableStateOf<ActiveCall?>(null)
+        private set
+
+    data class ActiveCall(
+        val callId: String,
+        val roomId: String,
+        val peer: String,
+        val outgoing: Boolean,
+        val state: CallPhase,
+        val muted: Boolean = false,
+    )
+
+    enum class CallPhase { Ringing, Dialing, Connecting, Connected, Ended }
+
+    private var engine: CallEngine? = null
+
+    /// Set by the activity: asks for the microphone before a call.
+    /// (Shared with voice messages.)
+    private fun withMicrophone(onGranted: () -> Unit) {
+        val ensure = ensureMicPermission
+        if (ensure == null) {
+            onGranted()
+            return
+        }
+        ensure { granted ->
+            if (granted) {
+                onGranted()
+            } else {
+                toast("A call needs the microphone")
+            }
+        }
+    }
+
+    /// Follow calls: an invite arriving is a phone ringing.
+    fun watchCalls() {
+        app.setCallListener(object : io.github.steeb_k.commune.core.CallListener {
+            override fun onIncoming(
+                callId: String,
+                roomId: String,
+                caller: String,
+                sdp: String,
+            ) {
+                main.post {
+                    // The same invite arriving twice is one call, not
+                    // two; only a genuinely different call is declined.
+                    if (call?.callId == callId) return@post
+                    // One call at a time: a second invite is declined
+                    // rather than silently dropped.
+                    if (call != null) {
+                        thread { runBlocking { try { app.rejectCall(callId) } catch (_: Exception) {} } }
+                        return@post
+                    }
+                    pendingOffer = sdp
+                    call = ActiveCall(
+                        callId = callId,
+                        roomId = roomId,
+                        peer = caller,
+                        outgoing = false,
+                        state = CallPhase.Ringing,
+                    )
+                    Ringtone.start(appContext)
+                    // The app may not be on screen; Android's own
+                    // incoming-call treatment reaches the person there.
+                    IncomingCallNotification.show(appContext, caller)
+                }
+            }
+
+            override fun onAnswer(callId: String, sdp: String) {
+                main.post {
+                    if (call?.callId != callId) return@post
+                    call = call?.copy(state = CallPhase.Connecting)
+                    engine?.acceptAnswer(sdp)
+                }
+            }
+
+            override fun onCandidates(
+                callId: String,
+                candidates: List<io.github.steeb_k.commune.core.FfiIceCandidate>,
+            ) {
+                main.post {
+                    if (call?.callId != callId) return@post
+                    engine?.addRemoteCandidates(candidates)
+                }
+            }
+
+            override fun onEnded(
+                callId: String,
+                reason: io.github.steeb_k.commune.core.FfiCallEnd,
+            ) {
+                main.post {
+                    if (call?.callId != callId) return@post
+                    val message = when (reason) {
+                        io.github.steeb_k.commune.core.FfiCallEnd.DECLINED -> "Call declined"
+                        io.github.steeb_k.commune.core.FfiCallEnd.ANSWERED_ELSEWHERE ->
+                            "Answered on another session"
+                        else -> null
+                    }
+                    message?.let { toast(it) }
+                    tearDownCall()
+                }
+            }
+        })
+    }
+
+    /// The offer an incoming call arrived with, until it is answered.
+    private var pendingOffer: String? = null
+
+    /// The candidates gathered before the call had an ID to send under.
+    private val gatheredCandidates =
+        mutableListOf<io.github.steeb_k.commune.core.FfiIceCandidate>()
+
+    /// Gathering that finished before the call had an ID.
+    private var pendingGatheringDone = false
+
+    /// Send what was gathered while the call had no ID yet.
+    private fun flushGatheredCandidates(callId: String) {
+        if (gatheredCandidates.isNotEmpty()) {
+            sendCandidates(callId, gatheredCandidates.toList(), false)
+            gatheredCandidates.clear()
+        }
+        if (pendingGatheringDone) {
+            pendingGatheringDone = false
+            sendCandidates(callId, emptyList(), true)
+        }
+    }
+
+    private fun buildEngine(onReady: (CallEngine) -> Unit) {
+        thread {
+            val servers = try {
+                runBlocking { app.turnServers() }
+            } catch (_: Exception) {
+                null
+            }
+            val iceServers = buildList {
+                servers?.uris?.forEach { uri ->
+                    add(
+                        org.webrtc.PeerConnection.IceServer.builder(uri)
+                            .setUsername(servers.username)
+                            .setPassword(servers.password)
+                            .createIceServer()
+                    )
+                }
+            }
+            main.post {
+                val built = CallEngine(
+                    context = appContext,
+                    iceServers = iceServers,
+                    onCandidate = { candidate ->
+                        main.post {
+                            // An outgoing call has no ID until the
+                            // invite comes back; candidates gathered
+                            // before then wait for it.
+                            val callId = call?.callId
+                            if (callId.isNullOrEmpty()) {
+                                gatheredCandidates.add(candidate)
+                            } else {
+                                sendCandidates(callId, listOf(candidate), false)
+                            }
+                        }
+                    },
+                    onGatheringDone = {
+                        main.post {
+                            val callId = call?.callId
+                            if (callId.isNullOrEmpty()) {
+                                pendingGatheringDone = true
+                            } else {
+                                sendCandidates(callId, emptyList(), true)
+                            }
+                        }
+                    },
+                    onConnected = {
+                        main.post {
+                            if (call?.state != CallPhase.Ended) {
+                                call = call?.copy(state = CallPhase.Connected)
+                            }
+                        }
+                    },
+                    onFailed = {
+                        main.post {
+                            toast("The call could not connect")
+                            hangUp()
+                        }
+                    },
+                )
+                engine = built
+                onReady(built)
+            }
+        }
+    }
+
+    private fun sendCandidates(
+        callId: String,
+        candidates: List<io.github.steeb_k.commune.core.FfiIceCandidate>,
+        end: Boolean,
+    ) {
+        thread {
+            runBlocking {
+                try {
+                    app.sendCallCandidates(callId, candidates, end)
+                } catch (_: Exception) {
+                    // A candidate that cannot be sent is one path fewer.
+                }
+            }
+        }
+    }
+
+    /// Call the other member of a direct chat.
+    fun placeCallInRoom(room: FfiRoom) {
+        thread {
+            val members = try {
+                runBlocking { app.roomMembers(room.roomId) }
+            } catch (_: Exception) {
+                emptyList()
+            }
+            val peer = members.map { it.userId }.firstOrNull { it != ownUserId }
+            main.post {
+                if (peer == null) {
+                    toast("Nobody to call in this room")
+                } else {
+                    placeCall(room.roomId, peer)
+                }
+            }
+        }
+    }
+
+    /// Place a call to the person in the open direct chat.
+    fun placeCall(roomId: String, peer: String) {
+        if (call != null) return
+        withMicrophone {
+            call = ActiveCall(
+                callId = "",
+                roomId = roomId,
+                peer = peer,
+                outgoing = true,
+                state = CallPhase.Dialing,
+            )
+            audioForCall(true)
+            buildEngine { engine ->
+                engine.createOffer(
+                    onSdp = { sdp ->
+                        thread {
+                            runBlocking {
+                                try {
+                                    val callId = app.placeCall(roomId, peer, sdp)
+                                    main.post {
+                                        call = call?.copy(callId = callId)
+                                        CallService.start(appContext, peer)
+                                        // Anything gathered before the
+                                        // invite had an ID goes now.
+                                        flushGatheredCandidates(callId)
+                                    }
+                                } catch (failure: Exception) {
+                                    main.post {
+                                        toast(coreMessage(failure, "Could not place the call"))
+                                        tearDownCall()
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    onError = { error ->
+                        main.post {
+                            toast(error)
+                            tearDownCall()
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    /// Answer the call that is ringing.
+    fun answerCall() {
+        val current = call ?: return
+        val offer = pendingOffer ?: return
+        Ringtone.stop()
+        IncomingCallNotification.dismiss(appContext)
+        withMicrophone {
+            call = current.copy(state = CallPhase.Connecting)
+            audioForCall(true)
+            buildEngine { engine ->
+                engine.acceptOffer(
+                    sdp = offer,
+                    onSdp = { sdp ->
+                        thread {
+                            runBlocking {
+                                try {
+                                    app.answerCall(current.callId, sdp)
+                                    main.post {
+                                        CallService.start(appContext, current.peer)
+                                        flushGatheredCandidates(current.callId)
+                                    }
+                                } catch (failure: Exception) {
+                                    main.post {
+                                        toast(coreMessage(failure, "Could not answer"))
+                                        tearDownCall()
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    onError = { error ->
+                        main.post {
+                            toast(error)
+                            tearDownCall()
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    /// Decline a ringing call.
+    fun declineCall() {
+        val current = call ?: return
+        Ringtone.stop()
+        thread {
+            runBlocking {
+                try {
+                    app.rejectCall(current.callId)
+                } catch (_: Exception) {
+                }
+            }
+        }
+        tearDownCall()
+    }
+
+    /// Hang up a call in progress.
+    fun hangUp() {
+        val current = call ?: return
+        thread {
+            runBlocking {
+                try {
+                    if (current.callId.isNotEmpty()) app.hangupCall(current.callId)
+                } catch (_: Exception) {
+                }
+            }
+        }
+        tearDownCall()
+    }
+
+    fun toggleMute() {
+        val current = call ?: return
+        val muted = !current.muted
+        engine?.setMicrophoneEnabled(!muted)
+        call = current.copy(muted = muted)
+    }
+
+    fun setSpeakerphone(on: Boolean) {
+        val manager = appContext.getSystemService(android.media.AudioManager::class.java)
+        manager.isSpeakerphoneOn = on
+    }
+
+    /// Put the audio stack in and out of call mode.
+    private fun audioForCall(active: Boolean) {
+        val manager = appContext.getSystemService(android.media.AudioManager::class.java)
+        manager.mode = if (active) {
+            android.media.AudioManager.MODE_IN_COMMUNICATION
+        } else {
+            android.media.AudioManager.MODE_NORMAL
+        }
+    }
+
+    private fun tearDownCall() {
+        Ringtone.stop()
+        IncomingCallNotification.dismiss(appContext)
+        engine?.release()
+        engine = null
+        pendingOffer = null
+        gatheredCandidates.clear()
+        pendingGatheringDone = false
+        call = null
+        audioForCall(false)
+        CallService.stop(appContext)
     }
 
     /// Fetch one timeline media file and hand back its local path —

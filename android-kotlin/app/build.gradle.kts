@@ -63,6 +63,9 @@ dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     // UnifiedPush: ntfy-style instant notifications, stable connector.
     implementation("org.unifiedpush.android:connector:3.3.5")
+    // WebRTC for 1:1 calls: the maintained build of Google's library,
+    // on stable release numbers (see [[stable-dependencies-only]]).
+    implementation("io.github.webrtc-sdk:android:125.6422.07")
     implementation("androidx.media3:media3-exoplayer:1.6.1")
     implementation("androidx.media3:media3-ui:1.6.1")
 
