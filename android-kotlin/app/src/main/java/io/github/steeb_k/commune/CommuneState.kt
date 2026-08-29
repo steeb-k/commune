@@ -238,7 +238,41 @@ class CommuneState(context: Context) {
     var composerMembers by mutableStateOf<List<FfiMember>>(emptyList())
         private set
 
-    fun openRoom(room: FfiRoom) {
+    /// Where each room's timeline was left, when it was left away from the
+    /// bottom: room id → (anchor event id, pixel offset). A room left at
+    /// the bottom has no entry and opens at the newest message.
+    val savedScroll = mutableMapOf<String, Pair<String, Int>>()
+
+    /// Set while a notification tap wants the room opened at the oldest
+    /// unread message; cleared once the timeline has made the jump.
+    var jumpToUnread by mutableStateOf(false)
+        private set
+
+    /// Set for the whole of a notification-opened visit: marking read
+    /// would remove the read-marker line (and the timeline anchor with
+    /// it) while the user is still reading up. The room is marked read
+    /// when it is left instead.
+    private var suppressMarkRead = false
+
+    /// The unread jump landed (or gave up).
+    fun completeUnreadJump() {
+        jumpToUnread = false
+    }
+
+    private var paginatingOlder = false
+
+    /// Pull one more page of history into the open room's timeline.
+    fun paginateOlder() {
+        val room = openRoom ?: return
+        if (paginatingOlder) return
+        paginatingOlder = true
+        thread {
+            runBlocking { app.paginateBackwards(room.roomId) }
+            paginatingOlder = false
+        }
+    }
+
+    fun openRoom(room: FfiRoom, toUnread: Boolean = false) {
         if (room.category == FfiRoomCategory.SPACE) {
             openSpace(room)
             return
@@ -247,6 +281,8 @@ class CommuneState(context: Context) {
         // which outranks the room in the routing chain.
         closeSpace()
         openRoom = room
+        jumpToUnread = toUnread
+        suppressMarkRead = toUnread
         roomNotifMode = FfiRoomNotificationMode.DEFAULT
         loadRoomNotificationMode()
         timeline = emptyList()
@@ -270,9 +306,12 @@ class CommuneState(context: Context) {
                         if (openRoom?.roomId == room.roomId) {
                             timeline = items
                             timelineLoading = false
-                            // The room is on screen at its newest message:
-                            // reading it is what looking at it means.
-                            markRead(room.roomId)
+                            // The room is on screen: reading it is what
+                            // looking at it means — except during a
+                            // notification-opened visit, which keeps
+                            // the read marker where it was until the
+                            // room is left.
+                            if (!suppressMarkRead) markRead(room.roomId)
                         }
                     }
                 }
@@ -291,12 +330,18 @@ class CommuneState(context: Context) {
         )
 
         // Pull a first page of history in behind the cached events.
-        thread { runBlocking { app.paginateBackwards(room.roomId) } }
+        paginateOlder()
     }
 
     fun closeRoom() {
-        openRoom?.let { app.sendTyping(it.roomId, false) }
+        openRoom?.let { room ->
+            app.sendTyping(room.roomId, false)
+            // A notification-opened visit marks read on the way out.
+            if (suppressMarkRead) markRead(room.roomId)
+        }
+        suppressMarkRead = false
         openRoom = null
+        jumpToUnread = false
         notifier.visibleRoomId = null
         timeline = emptyList()
         typingUsers = emptyList()
@@ -1426,14 +1471,16 @@ class CommuneState(context: Context) {
     /// Open the room with the given ID as soon as the list carries it —
     /// how a notification tap lands in its room.
     fun openRoomById(roomId: String) {
-        openRoomWhenListed(roomId)
+        // A notification names unread messages: land on the oldest one.
+        openRoomWhenListed(roomId, toUnread = true)
     }
 
-    private fun openRoomWhenListed(roomId: String, attempt: Int = 0) {
+    private fun openRoomWhenListed(roomId: String, attempt: Int = 0, toUnread: Boolean = false) {
         val room = rooms.find { it.roomId == roomId }
         when {
-            room != null -> openRoom(room)
-            attempt < 20 -> main.postDelayed({ openRoomWhenListed(roomId, attempt + 1) }, 500)
+            room != null -> openRoom(room, toUnread)
+            attempt < 20 ->
+                main.postDelayed({ openRoomWhenListed(roomId, attempt + 1, toUnread) }, 500)
         }
     }
 
