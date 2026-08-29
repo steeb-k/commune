@@ -805,6 +805,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_edit_message(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_emoticon_packs(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_enable_recovery(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_event_permalink(
@@ -908,6 +910,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_send_attachment(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_gif(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_send_location(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_send_message(
     ): Short
@@ -1058,6 +1062,8 @@ external fun uniffi_commune_core_fn_method_coreapp_discard_local_echo(`ptr`: Lon
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_edit_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`newBody`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_emoticon_packs(`ptr`: Long,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_enable_recovery(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_event_permalink(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
@@ -1162,7 +1168,9 @@ external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_gif(`ptr`: Long,`roomId`: RustBuffer.ByValue,`gif`: RustBuffer.ByValue,
 ): Long
-external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`mentions`: RustBuffer.ByValue,
+external fun uniffi_commune_core_fn_method_coreapp_send_location(`ptr`: Long,`roomId`: RustBuffer.ByValue,`geoUri`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_send_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`mentions`: RustBuffer.ByValue,`emoticons`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_reply(`ptr`: Long,`roomId`: RustBuffer.ByValue,`inReplyTo`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,
 ): Long
@@ -1458,6 +1466,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_edit_message() != 19406.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_emoticon_packs() != 4258.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_enable_recovery() != 5558.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1614,7 +1625,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_gif() != 37883.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 25531.toShort()) {
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_location() != 45334.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_message() != 7714.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_reply() != 33697.toShort()) {
@@ -2333,6 +2347,12 @@ public interface CoreAppInterface {
     suspend fun `editMessage`(`roomId`: kotlin.String, `eventId`: kotlin.String, `newBody`: kotlin.String)
     
     /**
+     * The emoticon images of the same packs, for the composer's
+     * `:shortcode:` completion.
+     */
+    suspend fun `emoticonPacks`(): List<FfiStickerPack>
+    
+    /**
      * Set up recovery, returning the recovery key to write down.
      */
     suspend fun `enableRecovery`(): kotlin.String
@@ -2657,10 +2677,16 @@ public interface CoreAppInterface {
     suspend fun `sendGif`(`roomId`: kotlin.String, `gif`: FfiGif)
     
     /**
+     * Send the user's location to the room, as the application's
+     * message toolbar does.
+     */
+    suspend fun `sendLocation`(`roomId`: kotlin.String, `geoUri`: kotlin.String)
+    
+    /**
      * Send a message to the given room — Markdown, as the composer
      * writes it — mentioning the given users.
      */
-    suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String, `mentions`: List<FfiMention>)
+    suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String, `mentions`: List<FfiMention>, `emoticons`: List<FfiSticker>)
     
     /**
      * Send a plain-text reply to the given event in the given room.
@@ -3321,6 +3347,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         
         // Error FFI converter
         CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The emoticon images of the same packs, for the composer's
+     * `:shortcode:` completion.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `emoticonPacks`() : List<FfiStickerPack> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_emoticon_packs(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeFfiStickerPack.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
     )
     }
 
@@ -4620,17 +4670,43 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Send the user's location to the room, as the application's
+     * message toolbar does.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `sendLocation`(`roomId`: kotlin.String, `geoUri`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_send_location(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`geoUri`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Send a message to the given room — Markdown, as the composer
      * writes it — mentioning the given users.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String, `mentions`: List<FfiMention>) {
+    override suspend fun `sendMessage`(`roomId`: kotlin.String, `body`: kotlin.String, `mentions`: List<FfiMention>, `emoticons`: List<FfiSticker>) {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_commune_core_fn_method_coreapp_send_message(
                 uniffiHandle,
-                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`body`),FfiConverterSequenceTypeFfiMention.lower(`mentions`),
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`body`),FfiConverterSequenceTypeFfiMention.lower(`mentions`),FfiConverterSequenceTypeFfiSticker.lower(`emoticons`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -8877,6 +8953,11 @@ public object FfiConverterTypeFfiSpaceChild: FfiConverterRustBuffer<FfiSpaceChil
  */
 data class FfiSticker (
     /**
+     * The shortcode that identifies the image in its pack.
+     */
+    var `shortcode`: kotlin.String
+    , 
+    /**
      * The description, sent as the event body.
      */
     var `body`: kotlin.String
@@ -8924,6 +9005,7 @@ public object FfiConverterTypeFfiSticker: FfiConverterRustBuffer<FfiSticker> {
         return FfiSticker(
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalUInt.read(buf),
             FfiConverterOptionalString.read(buf),
@@ -8932,6 +9014,7 @@ public object FfiConverterTypeFfiSticker: FfiConverterRustBuffer<FfiSticker> {
     }
 
     override fun allocationSize(value: FfiSticker) = (
+            FfiConverterString.allocationSize(value.`shortcode`) +
             FfiConverterString.allocationSize(value.`body`) +
             FfiConverterString.allocationSize(value.`url`) +
             FfiConverterOptionalUInt.allocationSize(value.`width`) +
@@ -8941,6 +9024,7 @@ public object FfiConverterTypeFfiSticker: FfiConverterRustBuffer<FfiSticker> {
     )
 
     override fun write(value: FfiSticker, buf: ByteBuffer) {
+            FfiConverterString.write(value.`shortcode`, buf)
             FfiConverterString.write(value.`body`, buf)
             FfiConverterString.write(value.`url`, buf)
             FfiConverterOptionalUInt.write(value.`width`, buf)

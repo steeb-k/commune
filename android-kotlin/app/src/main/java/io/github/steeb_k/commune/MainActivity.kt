@@ -62,6 +62,13 @@ class MainActivity : ComponentActivity() {
         }
 
     private var micResult: ((Boolean) -> Unit)? = null
+    private var locationResult: ((Boolean) -> Unit)? = null
+
+    private val locationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            locationResult?.invoke(granted)
+            locationResult = null
+        }
     private val micPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             micResult?.invoke(granted)
@@ -103,6 +110,16 @@ class MainActivity : ComponentActivity() {
             } else {
                 micResult = onResult
                 micPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+            }
+        }
+        state.ensureLocationPermission = { onResult ->
+            if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                onResult(true)
+            } else {
+                locationResult = onResult
+                locationPermission.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
             }
         }
         state.scanQrCode = {

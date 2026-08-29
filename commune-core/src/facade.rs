@@ -1341,7 +1341,7 @@ impl CoreApp {
                     })?;
 
                 room.thread_timeline(thread_root)
-                    .send_text(body, None, Vec::new(), false)
+                    .send_text(body, None, Vec::new(), false, Vec::new())
                     .await
                     .map_err(|()| CoreError::Failed {
                         msg: "Could not send the message".to_owned(),
@@ -1409,6 +1409,7 @@ impl CoreApp {
         room_id: String,
         body: String,
         mentions: Vec<FfiMention>,
+        emoticons: Vec<FfiSticker>,
     ) -> Result<(), CoreError> {
         let Some(session) = self.first_ready_session() else {
             return Err(CoreError::Failed {
@@ -1456,8 +1457,13 @@ impl CoreApp {
                     Some(plain)
                 };
 
+                let emoticons = emoticons
+                    .into_iter()
+                    .map(|emoticon| (emoticon.shortcode, emoticon.url, emoticon.body))
+                    .collect();
+
                 room.live_timeline()
-                    .send_text(markdown, plain, user_ids, room_mention)
+                    .send_text(markdown, plain, user_ids, room_mention, emoticons)
                     .await
                     .map_err(|()| CoreError::Failed {
                         msg: "Could not send the message".to_owned(),
@@ -4169,59 +4175,51 @@ impl CoreApp {
         };
 
         RUNTIME
+            .spawn(collect_image_packs(session, "sticker"))
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The emoticon images of the same packs, for the composer's
+    /// `:shortcode:` completion.
+    pub async fn emoticon_packs(&self) -> Vec<FfiStickerPack> {
+        let Some(session) = self.first_ready_session() else {
+            return Vec::new();
+        };
+
+        RUNTIME
+            .spawn(collect_image_packs(session, "emoticon"))
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Send the user's location to the room, as the application's
+    /// message toolbar does.
+    pub async fn send_location(&self, room_id: String, geo_uri: String) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
             .spawn(async move {
-                let client = session.client();
-                let mut packs = Vec::new();
-                let mut seen: std::collections::HashSet<(String, String)> =
-                    std::collections::HashSet::new();
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
 
-                // Commune's own packs room.
-                if let Some(value) =
-                    read_account_data(&client, "io.github.steeb_k.Commune.image_packs_room").await
-                    && let Some(room_id) = value
-                        .pointer("/content/room_id")
-                        .or_else(|| value.get("room_id"))
-                        .and_then(|id| id.as_str())
-                    && let Ok(room_id) = ruma::RoomId::parse(room_id)
-                    && let Some(room) = client.get_room(&room_id)
-                    && let Ok(events) = room.get_state_events("m.room.image_pack".into()).await
-                {
-                    for event in events {
-                        let matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState::Sync(
-                            raw,
-                        ) = event
-                        else {
-                            continue;
-                        };
-                        let Ok(value) = raw.deserialize_as::<serde_json::Value>() else {
-                            continue;
-                        };
-                        let state_key = value
-                            .get("state_key")
-                            .and_then(|key| key.as_str())
-                            .unwrap_or_default()
-                            .to_owned();
-                        if let Some(pack) =
-                            parse_sticker_pack(value.get("content").unwrap_or(&value), &state_key)
-                        {
-                            seen.insert((room_id.to_string(), state_key));
-                            packs.push(pack);
-                        }
-                    }
-                }
-
-                // Room packs enabled globally, stable name first.
-                collect_enabled_packs(&client, &mut seen, &mut packs).await;
-
-                // Personal packs other clients keep in account data.
-                if let Some(value) = read_account_data(&client, "im.ponies.user_emotes").await
-                    && let Some(pack) =
-                        parse_sticker_pack(value.get("content").unwrap_or(&value), "My Stickers")
-                {
-                    packs.push(pack);
-                }
-
-                packs
+                room.live_timeline()
+                    .send_location(geo_uri)
+                    .await
+                    .map_err(|()| CoreError::Failed {
+                        msg: "Could not send the location".to_owned(),
+                    })
             })
             .await
             .expect("task was not aborted")
@@ -4880,6 +4878,8 @@ pub struct FfiStickerPack {
 /// One sticker of a pack.
 #[derive(uniffi::Record, Clone)]
 pub struct FfiSticker {
+    /// The shortcode that identifies the image in its pack.
+    pub shortcode: String,
     /// The description, sent as the event body.
     pub body: String,
     /// The `mxc:` URI of the image.
@@ -4895,6 +4895,61 @@ pub struct FfiSticker {
     pub info_json: Option<String>,
 }
 
+/// Walk the account's image packs — Commune's own packs room, the
+/// room packs enabled globally, and personal `im.ponies` packs — and
+/// keep the images whose usage allows the given one.
+async fn collect_image_packs(session: Session, usage: &'static str) -> Vec<FfiStickerPack> {
+    let client = session.client();
+    let mut packs = Vec::new();
+    let mut seen: std::collections::HashSet<(String, String)> = std::collections::HashSet::new();
+
+    // Commune's own packs room.
+    if let Some(value) =
+        read_account_data(&client, "io.github.steeb_k.Commune.image_packs_room").await
+        && let Some(room_id) = value
+            .pointer("/content/room_id")
+            .or_else(|| value.get("room_id"))
+            .and_then(|id| id.as_str())
+        && let Ok(room_id) = ruma::RoomId::parse(room_id)
+        && let Some(room) = client.get_room(&room_id)
+        && let Ok(events) = room.get_state_events("m.room.image_pack".into()).await
+    {
+        for event in events {
+            let matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState::Sync(raw) = event
+            else {
+                continue;
+            };
+            let Ok(value) = raw.deserialize_as::<serde_json::Value>() else {
+                continue;
+            };
+            let state_key = value
+                .get("state_key")
+                .and_then(|key| key.as_str())
+                .unwrap_or_default()
+                .to_owned();
+            if let Some(pack) =
+                parse_sticker_pack(value.get("content").unwrap_or(&value), &state_key, usage)
+            {
+                seen.insert((room_id.to_string(), state_key));
+                packs.push(pack);
+            }
+        }
+    }
+
+    // Room packs enabled globally, stable name first.
+    collect_enabled_packs(&client, &mut seen, &mut packs, usage).await;
+
+    // Personal packs other clients keep in account data.
+    if let Some(value) = read_account_data(&client, "im.ponies.user_emotes").await
+        && let Some(pack) =
+            parse_sticker_pack(value.get("content").unwrap_or(&value), "My Stickers", usage)
+    {
+        packs.push(pack);
+    }
+
+    packs
+}
+
 /// Collect the room packs the account enabled globally — the stable
 /// `m.image_pack.rooms` account data, the unstable `im.ponies` names as
 /// fallback — into `packs`, skipping the (room, key) pairs already seen.
@@ -4902,6 +4957,7 @@ async fn collect_enabled_packs(
     client: &matrix_sdk::Client,
     seen: &mut std::collections::HashSet<(String, String)>,
     packs: &mut Vec<FfiStickerPack>,
+    usage: &str,
 ) {
     let mut enabled = serde_json::Map::new();
     for event_type in ["m.image_pack.rooms", "im.ponies.emote_rooms"] {
@@ -4939,7 +4995,7 @@ async fn collect_enabled_packs(
                 )) = room.get_state_event((*event_type).into(), state_key).await
                     && let Ok(value) = raw.deserialize_as::<serde_json::Value>()
                     && let Some(pack) =
-                        parse_sticker_pack(value.get("content").unwrap_or(&value), state_key)
+                        parse_sticker_pack(value.get("content").unwrap_or(&value), state_key, usage)
                 {
                     seen.insert((room_id.to_string(), state_key.clone()));
                     packs.push(pack);
@@ -5353,8 +5409,13 @@ async fn read_account_data(
 }
 
 /// Read one MSC2545 image pack out of its JSON, keeping the images whose
-/// usage allows stickers (an absent or empty usage allows everything).
-fn parse_sticker_pack(value: &serde_json::Value, fallback_name: &str) -> Option<FfiStickerPack> {
+/// usage allows the given one (an absent or empty usage allows
+/// everything).
+fn parse_sticker_pack(
+    value: &serde_json::Value,
+    fallback_name: &str,
+    usage: &str,
+) -> Option<FfiStickerPack> {
     let images = value.get("images")?.as_object()?;
     let name = value
         .pointer("/pack/display_name")
@@ -5366,14 +5427,15 @@ fn parse_sticker_pack(value: &serde_json::Value, fallback_name: &str) -> Option<
         .iter()
         .filter_map(|(shortcode, image)| {
             let url = image.get("url")?.as_str()?.to_owned();
-            if let Some(usage) = image.get("usage").and_then(|usage| usage.as_array())
-                && !usage.is_empty()
-                && !usage.iter().any(|entry| entry.as_str() == Some("sticker"))
+            if let Some(allowed) = image.get("usage").and_then(|allowed| allowed.as_array())
+                && !allowed.is_empty()
+                && !allowed.iter().any(|entry| entry.as_str() == Some(usage))
             {
                 return None;
             }
 
             Some(FfiSticker {
+                shortcode: shortcode.clone(),
                 body: image
                     .get("body")
                     .and_then(|body| body.as_str())

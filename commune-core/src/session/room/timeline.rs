@@ -308,6 +308,7 @@ impl Timeline {
         plain_body: Option<String>,
         mentions: Vec<ruma::OwnedUserId>,
         room_mention: bool,
+        emoticons: Vec<(String, String, String)>,
     ) -> Result<(), ()> {
         let Some(matrix_timeline) = self.matrix_timeline().await else {
             return Err(());
@@ -322,6 +323,28 @@ impl Timeline {
             {
                 text.body = plain;
             }
+            // A completed emoticon stays `:shortcode:` in the plain body
+            // and becomes the application's exact image tag in the HTML.
+            if !emoticons.is_empty()
+                && let MessageType::Text(text) = &mut content.msgtype
+            {
+                use ruma::events::room::message::FormattedBody;
+
+                let mut html = text.formatted.as_ref().map_or_else(
+                    || escape_html(&text.body),
+                    |formatted| formatted.body.clone(),
+                );
+                for (shortcode, url, alt) in &emoticons {
+                    let tag = format!(
+                        r#"<img data-mx-emoticon src="{}" alt="{}" title="{}" height="32">"#,
+                        escape_html(url),
+                        escape_html(alt),
+                        escape_html(shortcode),
+                    );
+                    html = html.replace(&format!(":{shortcode}:"), &tag);
+                }
+                text.formatted = Some(FormattedBody::html(html));
+            }
             if !mentions.is_empty() || room_mention {
                 let mut all = ruma::events::Mentions::with_user_ids(mentions);
                 all.room = room_mention;
@@ -334,6 +357,42 @@ impl Timeline {
             Ok(_) => Ok(()),
             Err(send_error) => {
                 error!("Could not send message: {send_error}");
+                Err(())
+            }
+        }
+    }
+
+    /// Send the user's location to the room: the application's exact
+    /// `m.location` content, a geo URI with a spoken body naming it and
+    /// the timestamp, plus the always-present mentions.
+    pub async fn send_location(&self, geo_uri: String) -> Result<(), ()> {
+        use ruma::events::room::message::LocationMessageEventContent;
+
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return Err(());
+        };
+
+        let handle = spawn_tokio!(async move {
+            // The application stamps local time; UTC keeps the core off
+            // the platform's timezone database.
+            let timestamp = time::OffsetDateTime::now_utc()
+                .format(&time::format_description::well_known::Iso8601::DEFAULT)
+                .unwrap_or_default();
+            let body = format!("User Location {geo_uri} at {timestamp}");
+            let content = RoomMessageEventContent::new(MessageType::Location(
+                LocationMessageEventContent::new(body, geo_uri),
+            ))
+            // To avoid triggering legacy pushrules, we must always
+            // include the mentions, even if they are empty.
+            .add_mentions(ruma::events::Mentions::default());
+
+            matrix_timeline.send(content.into()).await
+        });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(_) => Ok(()),
+            Err(send_error) => {
+                error!("Could not send location: {send_error}");
                 Err(())
             }
         }
@@ -733,4 +792,12 @@ pub enum ReceiptPosition {
     End,
     /// We are at the event with the given ID.
     Event(ruma::OwnedEventId),
+}
+
+/// Escape a string for HTML attribute and text positions.
+fn escape_html(raw: &str) -> String {
+    raw.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
 }

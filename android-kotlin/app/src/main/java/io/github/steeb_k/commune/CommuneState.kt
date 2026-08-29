@@ -331,6 +331,7 @@ class CommuneState(context: Context) {
 
         // Pull a first page of history in behind the cached events.
         paginateOlder()
+        loadComposerEmoticons()
     }
 
     fun closeRoom() {
@@ -2154,11 +2155,17 @@ class CommuneState(context: Context) {
                     file.outputStream().use { output -> input.copyTo(output) }
                 } ?: return@thread
 
-                runBlocking { app.sendAttachment(room.roomId, file.absolutePath, mime) }
+                // Show the preview first; sending is its confirm.
+                main.post {
+                    pendingAttachment = PendingAttachment(
+                        path = file.absolutePath,
+                        name = name,
+                        mime = mime,
+                        size = file.length(),
+                    )
+                }
             } catch (e: Exception) {
-                // Queue failures show in the timeline; the preflight's
-                // refusal happens before any of that and needs a voice.
-                toast(coreMessage(e, "Could not send the file"))
+                toast(coreMessage(e, "Could not read the file"))
             }
         }
     }
@@ -2438,16 +2445,140 @@ class CommuneState(context: Context) {
         val mentions = composerMembers
             .filter { body.contains("@" + it.displayName) }
             .map { io.github.steeb_k.commune.core.FfiMention(it.userId, it.displayName) }
+        // A completed emoticon reads `:shortcode:` in the draft; the core
+        // turns each one into the application's image tag.
+        val emoticons = composerEmoticons
+            .filter { body.contains(":" + it.shortcode + ":") }
         setTyping(false)
         thread {
             runBlocking {
                 try {
-                    app.sendMessage(room.roomId, body, mentions)
+                    app.sendMessage(room.roomId, body, mentions, emoticons)
                 } catch (_: Exception) {
                     // The send queue retries; a failed-send surface comes
                     // with its own chunk.
                 }
             }
         }
+    }
+
+    /// The emoticons of the account's packs, for the composer's
+    /// `:shortcode:` completion; loaded when a room opens.
+    var composerEmoticons by mutableStateOf<List<FfiSticker>>(emptyList())
+        private set
+
+    fun loadComposerEmoticons() {
+        thread {
+            runBlocking {
+                val emoticons = try {
+                    app.emoticonPacks().flatMap { it.stickers }
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                main.post { composerEmoticons = emoticons }
+            }
+        }
+    }
+
+    /// The pending attachment preview: picked, not yet sent.
+    var pendingAttachment by mutableStateOf<PendingAttachment?>(null)
+        private set
+
+    data class PendingAttachment(
+        val path: String,
+        val name: String,
+        val mime: String,
+        val size: Long,
+    )
+
+    fun confirmPendingAttachment() {
+        val pending = pendingAttachment ?: return
+        val room = openRoom ?: return
+        pendingAttachment = null
+        thread {
+            try {
+                runBlocking { app.sendAttachment(room.roomId, pending.path, pending.mime) }
+            } catch (e: Exception) {
+                toast(coreMessage(e, "Could not send the file"))
+            }
+        }
+    }
+
+    fun cancelPendingAttachment() {
+        pendingAttachment = null
+    }
+
+    /// Set by the activity: asks for the location permission.
+    var ensureLocationPermission: (((Boolean) -> Unit) -> Unit)? = null
+
+    /// The location preview dialog's state: null closed, blank loading,
+    /// a geo URI once a fix arrives.
+    var pendingLocation by mutableStateOf<String?>(null)
+        private set
+
+    fun shareLocation() {
+        val ensure = ensureLocationPermission ?: return
+        ensure { granted ->
+            if (!granted) {
+                toast("Location permission was not given")
+                return@ensure
+            }
+            pendingLocation = ""
+            val manager = appContext
+                .getSystemService(android.location.LocationManager::class.java)
+            val provider = when {
+                manager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ->
+                    android.location.LocationManager.GPS_PROVIDER
+                manager.isProviderEnabled(
+                    android.location.LocationManager.NETWORK_PROVIDER
+                ) -> android.location.LocationManager.NETWORK_PROVIDER
+                else -> {
+                    pendingLocation = null
+                    toast("Location is unavailable")
+                    return@ensure
+                }
+            }
+            try {
+                manager.getCurrentLocation(
+                    provider,
+                    null,
+                    appContext.mainExecutor,
+                ) { location ->
+                    if (pendingLocation == null) return@getCurrentLocation
+                    if (location == null) {
+                        pendingLocation = null
+                        toast("Could not find your location")
+                    } else {
+                        // The geo URI the application sends: coordinates,
+                        // with the accuracy when it is known.
+                        val uri = "geo:${location.latitude},${location.longitude}" +
+                            if (location.hasAccuracy()) ";u=${location.accuracy}" else ""
+                        pendingLocation = uri
+                    }
+                }
+            } catch (_: SecurityException) {
+                pendingLocation = null
+                toast("Location permission was not given")
+            }
+        }
+    }
+
+    fun confirmPendingLocation() {
+        val geoUri = pendingLocation?.takeIf { it.isNotBlank() } ?: return
+        val room = openRoom ?: return
+        pendingLocation = null
+        thread {
+            runBlocking {
+                try {
+                    app.sendLocation(room.roomId, geoUri)
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not send the location"))
+                }
+            }
+        }
+    }
+
+    fun cancelPendingLocation() {
+        pendingLocation = null
     }
 }
