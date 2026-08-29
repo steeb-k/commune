@@ -3,6 +3,8 @@
 package io.github.steeb_k.commune.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,10 +16,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Tag
+import androidx.compose.material.icons.filled.Upgrade
+import androidx.compose.material.icons.filled.Visibility
 import io.github.steeb_k.commune.core.FfiHistoryKind
 import io.github.steeb_k.commune.core.FfiRoomNotificationMode
 import androidx.compose.material3.Icon
@@ -42,7 +50,11 @@ import io.github.steeb_k.commune.core.FfiRoom
 fun RoomDetailsScreen(state: CommuneState, room: FfiRoom) {
     var editOpen by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -123,6 +135,80 @@ fun RoomDetailsScreen(state: CommuneState, room: FfiRoom) {
             value = "",
             onClick = { state.openHistory(FfiHistoryKind.AUDIO) },
         )
+
+        Text(
+            "Room Settings",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        var avatarOpen by remember { mutableStateOf(false) }
+        DetailsRow(
+            icon = { Icon(Icons.Filled.Image, contentDescription = null) },
+            title = "Avatar",
+            value = "",
+            onClick = { avatarOpen = true },
+        )
+        if (avatarOpen) {
+            RoomAvatarDialog(state, onDismiss = { avatarOpen = false })
+        }
+        var joinRuleOpen by remember { mutableStateOf(false) }
+        DetailsRow(
+            icon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+            title = "Who Can Join",
+            value = "",
+            onClick = {
+                state.loadJoinRule()
+                joinRuleOpen = true
+            },
+        )
+        if (joinRuleOpen) {
+            JoinRuleDialog(state, onDismiss = { joinRuleOpen = false })
+        }
+        var historyVisibilityOpen by remember { mutableStateOf(false) }
+        DetailsRow(
+            icon = { Icon(Icons.Filled.Visibility, contentDescription = null) },
+            title = "History Visibility",
+            value = "",
+            onClick = {
+                state.loadHistoryVisibility()
+                historyVisibilityOpen = true
+            },
+        )
+        if (historyVisibilityOpen) {
+            HistoryVisibilityDialog(state, onDismiss = { historyVisibilityOpen = false })
+        }
+        DetailsRow(
+            icon = { Icon(Icons.Filled.Tag, contentDescription = null) },
+            title = "Addresses",
+            value = "",
+            onClick = { state.openAddresses() },
+        )
+        DetailsRow(
+            icon = { Icon(Icons.Filled.Block, contentDescription = null) },
+            title = "Server ACL",
+            value = "",
+            onClick = { state.openServerAcl() },
+        )
+        DetailsRow(
+            icon = { Icon(Icons.Filled.Shield, contentDescription = null) },
+            title = "Permissions",
+            value = "",
+            onClick = { state.openPermissions() },
+        )
+        var upgradeOpen by remember { mutableStateOf(false) }
+        DetailsRow(
+            icon = { Icon(Icons.Filled.Upgrade, contentDescription = null) },
+            title = "Upgrade Room",
+            value = "",
+            onClick = {
+                state.loadUpgradeInfo()
+                upgradeOpen = true
+            },
+        )
+        if (upgradeOpen) {
+            UpgradeRoomDialog(state, onDismiss = { upgradeOpen = false })
+        }
     }
 }
 

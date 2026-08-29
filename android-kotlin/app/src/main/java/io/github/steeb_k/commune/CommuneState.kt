@@ -350,6 +350,12 @@ class CommuneState(context: Context) {
         closePinned()
         closeRoomSearch()
         closeHistory()
+        closeAddresses()
+        closeServerAcl()
+        closePermissions()
+        joinRuleInfo = null
+        historyVisibilityInfo = null
+        upgradeInfo = null
         roomDetailsOpen = false
     }
 
@@ -857,6 +863,299 @@ class CommuneState(context: Context) {
                 } ?: return@thread
                 runBlocking { app.setAccountAvatar(file.absolutePath, mime) }
             } catch (_: Exception) {
+            }
+        }
+    }
+
+    /// Set by the activity: opens the image picker for a new room avatar.
+    var pickRoomAvatar: (() -> Unit)? = null
+
+    fun setRoomAvatarFromUri(uri: android.net.Uri) {
+        val room = openRoom ?: return
+        val resolver = appContext.contentResolver
+        val mime = resolver.getType(uri) ?: "image/jpeg"
+        thread {
+            try {
+                val dir = java.io.File(appContext.cacheDir, "outgoing")
+                dir.mkdirs()
+                val file = java.io.File(dir, "room-avatar")
+                resolver.openInputStream(uri)?.use { input ->
+                    file.outputStream().use { output -> input.copyTo(output) }
+                } ?: return@thread
+                // The event's info carries the picture's dimensions.
+                val bounds = android.graphics.BitmapFactory.Options()
+                    .apply { inJustDecodeBounds = true }
+                android.graphics.BitmapFactory.decodeFile(file.absolutePath, bounds)
+                runBlocking {
+                    app.setRoomAvatar(
+                        room.roomId,
+                        file.absolutePath,
+                        mime,
+                        bounds.outWidth.takeIf { it > 0 }?.toUInt(),
+                        bounds.outHeight.takeIf { it > 0 }?.toUInt(),
+                    )
+                }
+            } catch (e: Exception) {
+                toast(coreMessage(e, "Could not change the avatar"))
+            }
+        }
+    }
+
+    fun removeRoomAvatar() {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                try {
+                    app.removeRoomAvatar(room.roomId)
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not remove the avatar"))
+                }
+            }
+        }
+    }
+
+    // The room-settings subpages and dialogs under room details.
+    var joinRuleInfo by mutableStateOf<io.github.steeb_k.commune.core.FfiJoinRuleInfo?>(null)
+        private set
+
+    fun loadJoinRule() {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val info = try {
+                    app.roomJoinRule(room.roomId)
+                } catch (_: Exception) {
+                    null
+                }
+                main.post { joinRuleInfo = info }
+            }
+        }
+    }
+
+    fun setJoinRule(
+        value: io.github.steeb_k.commune.core.FfiJoinRuleValue,
+        allowSpaceId: String?,
+        onDone: (String?) -> Unit,
+    ) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val error = try {
+                    app.setRoomJoinRule(room.roomId, value, allowSpaceId)
+                    null
+                } catch (e: Exception) {
+                    coreMessage(e, "Could not change who can join")
+                }
+                main.post {
+                    onDone(error)
+                    if (error == null) loadJoinRule()
+                }
+            }
+        }
+    }
+
+    var historyVisibilityInfo by mutableStateOf<
+        io.github.steeb_k.commune.core.FfiHistoryVisibilityInfo?,
+    >(null)
+        private set
+
+    fun loadHistoryVisibility() {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val info = try {
+                    app.roomHistoryVisibility(room.roomId)
+                } catch (_: Exception) {
+                    null
+                }
+                main.post { historyVisibilityInfo = info }
+            }
+        }
+    }
+
+    fun setHistoryVisibility(
+        value: io.github.steeb_k.commune.core.FfiHistoryVisibility,
+        onDone: (String?) -> Unit,
+    ) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val error = try {
+                    app.setRoomHistoryVisibility(room.roomId, value)
+                    null
+                } catch (e: Exception) {
+                    coreMessage(e, "Could not change the history visibility")
+                }
+                main.post {
+                    onDone(error)
+                    if (error == null) loadHistoryVisibility()
+                }
+            }
+        }
+    }
+
+    var addressesOpen by mutableStateOf(false)
+        private set
+    var addresses by mutableStateOf<io.github.steeb_k.commune.core.FfiRoomAddresses?>(null)
+        private set
+
+    fun openAddresses() {
+        addressesOpen = true
+        refreshAddresses()
+    }
+
+    fun closeAddresses() {
+        addressesOpen = false
+        addresses = null
+    }
+
+    fun refreshAddresses() {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val current = try {
+                    app.roomAddresses(room.roomId)
+                } catch (_: Exception) {
+                    null
+                }
+                main.post { if (addressesOpen) addresses = current }
+            }
+        }
+    }
+
+    fun addressAction(action: io.github.steeb_k.commune.core.FfiAddressAction) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                try {
+                    app.setRoomAddress(room.roomId, action)
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not change the addresses"))
+                }
+                main.post { refreshAddresses() }
+            }
+        }
+    }
+
+    var serverAclOpen by mutableStateOf(false)
+        private set
+    var serverAcl by mutableStateOf<io.github.steeb_k.commune.core.FfiServerAcl?>(null)
+        private set
+
+    fun openServerAcl() {
+        serverAclOpen = true
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val current = try {
+                    app.roomServerAcl(room.roomId)
+                } catch (_: Exception) {
+                    null
+                }
+                main.post { if (serverAclOpen) serverAcl = current }
+            }
+        }
+    }
+
+    fun closeServerAcl() {
+        serverAclOpen = false
+        serverAcl = null
+    }
+
+    fun saveServerAcl(
+        allow: List<String>,
+        deny: List<String>,
+        allowIpLiterals: Boolean,
+        onDone: (String?) -> Unit,
+    ) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val error = try {
+                    app.setRoomServerAcl(room.roomId, allow, deny, allowIpLiterals)
+                    null
+                } catch (e: Exception) {
+                    coreMessage(e, "Could not change the server ACL")
+                }
+                main.post { onDone(error) }
+            }
+        }
+    }
+
+    var permissionsOpen by mutableStateOf(false)
+        private set
+    var permissionsMatrix by mutableStateOf<
+        io.github.steeb_k.commune.core.FfiPowerLevelsMatrix?,
+    >(null)
+        private set
+
+    fun openPermissions() {
+        permissionsOpen = true
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val current = try {
+                    app.roomPermissionsMatrix(room.roomId)
+                } catch (_: Exception) {
+                    null
+                }
+                main.post { if (permissionsOpen) permissionsMatrix = current }
+            }
+        }
+    }
+
+    fun closePermissions() {
+        permissionsOpen = false
+        permissionsMatrix = null
+    }
+
+    fun savePermissions(
+        matrix: io.github.steeb_k.commune.core.FfiPowerLevelsMatrix,
+        onDone: (String?) -> Unit,
+    ) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val error = try {
+                    app.setRoomPermissionsMatrix(room.roomId, matrix)
+                    null
+                } catch (e: Exception) {
+                    coreMessage(e, "Could not save the permissions")
+                }
+                main.post { onDone(error) }
+            }
+        }
+    }
+
+    var upgradeInfo by mutableStateOf<io.github.steeb_k.commune.core.FfiUpgradeInfo?>(null)
+        private set
+
+    fun loadUpgradeInfo() {
+        val room = openRoom ?: return
+        upgradeInfo = null
+        thread {
+            runBlocking {
+                val info = try {
+                    app.roomUpgradeInfo(room.roomId)
+                } catch (_: Exception) {
+                    null
+                }
+                main.post { upgradeInfo = info }
+            }
+        }
+    }
+
+    fun upgradeRoom(version: String, onDone: (String?) -> Unit) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val error = try {
+                    app.upgradeRoom(room.roomId, version)
+                    null
+                } catch (e: Exception) {
+                    coreMessage(e, "Could not upgrade the room")
+                }
+                main.post { onDone(error) }
             }
         }
     }
