@@ -1248,24 +1248,24 @@ impl CoreApp {
                     let flows = answer_flows.clone();
                     let own_user_id = answer_own.clone();
                     async move {
-                        if event.sender == own_user_id {
-                            // Another of our own devices took it.
-                            let call_id = event.content.call_id.to_string();
-                            flows.note_outcome(&call_id, FfiCallOutcome::Answered);
-                            if flows.has(&call_id) {
-                                flows.remove(&call_id);
-                                flows.emit(|listener| {
-                                    listener
-                                        .on_ended(call_id.clone(), FfiCallEnd::AnsweredElsewhere);
-                                });
-                            }
-                            return;
-                        }
                         let call_id = event.content.call_id.to_string();
+                        flows.note_outcome(&call_id, FfiCallOutcome::Answered);
                         if !flows.has(&call_id) {
                             return;
                         }
-                        flows.note_outcome(&call_id, FfiCallOutcome::Answered);
+                        // An answer means something only to the end that
+                        // placed the call: GTK's `handle_answer` returns
+                        // unless the call is outgoing and the answer came
+                        // from the remote party. Our own answer to an
+                        // incoming call echoes back through sync, and
+                        // reading that echo as somebody else picking up
+                        // ended every call this device ever answered.
+                        // Whether another of our own devices got there
+                        // first is what `m.call.select_answer` says, and
+                        // that is the handler that says it.
+                        if !flows.is_outgoing(&call_id) || event.sender == own_user_id {
+                            return;
+                        }
 
                         let their_party =
                             event.content.party_id.as_ref().map(ToString::to_string);
