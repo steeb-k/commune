@@ -210,6 +210,19 @@ class MainActivity : ComponentActivity() {
         handleCallAction(intent)
 
         setContent {
+            // Showing over the keyguard is a privilege for one situation:
+            // a call ringing right now, which has to be answerable without
+            // unlocking first. It used to be declared in the manifest, so
+            // it applied to every launch — lock the phone with the app in
+            // front and the power button handed the whole app back,
+            // unlocked, to anybody holding it. Granted while ringing and
+            // taken away again the moment that stops.
+            val ringing = state.call?.state == CommuneState.CallPhase.Ringing
+            androidx.compose.runtime.LaunchedEffect(ringing) {
+                setShowWhenLocked(ringing)
+                setTurnScreenOn(ringing)
+            }
+
             CommuneTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),

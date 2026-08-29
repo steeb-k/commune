@@ -2920,8 +2920,16 @@ class CommuneState(context: Context) {
 
     // Calls. The core carries the m.call.* events; CallEngine carries
     // the sound. This holds the one call a phone can be in at a time.
-    var call by mutableStateOf<ActiveCall?>(null)
-        private set
+    private val callState = mutableStateOf<ActiveCall?>(null)
+
+    var call: ActiveCall?
+        get() = callState.value
+        private set(value) {
+            callState.value = value
+            // A call announces itself; the room it is in must not also
+            // announce the same event as unread messages.
+            notifier.callRoomId = value?.roomId
+        }
 
     /// Whether the call has been pushed aside to read the room behind it.
     /// The call carries on; only its screen steps out of the way, and the

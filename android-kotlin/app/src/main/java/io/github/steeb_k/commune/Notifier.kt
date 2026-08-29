@@ -25,6 +25,12 @@ class Notifier(private val context: Context) {
     var enabled: Boolean = true
     var visibleRoomId: String? = null
 
+    /// The room a call is happening in, which announces itself: an
+    /// m.call.invite notifies by push rule like any other event, so a
+    /// ringing phone was also posting "1 new message" for the same call.
+    /// The call handler owns that announcement; this stays quiet.
+    var callRoomId: String? = null
+
     /// The active account, keying the bookkeeping: what was announced
     /// for one account must not silence another's.
     var accountKey: String = ""
@@ -48,7 +54,8 @@ class Notifier(private val context: Context) {
             val count = room.notificationCount.toLong()
             val known = posted.getLong(postedKey(room.roomId), 0L)
             when {
-                count == 0L || room.roomId == visibleRoomId || !enabled -> {
+                count == 0L || room.roomId == visibleRoomId ||
+                    room.roomId == callRoomId || !enabled -> {
                     if (known != 0L) {
                         posted.edit().remove(postedKey(room.roomId)).apply()
                         manager.cancel(room.roomId.hashCode())
