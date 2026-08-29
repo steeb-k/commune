@@ -50,6 +50,35 @@ fun CallScreen(state: CommuneState) {
 
     val showingVideo = call.remoteVideo || call.cameraOn
 
+    // Over a picture the controls and labels need their own contrast; a
+    // voice call keeps the theme's.
+    val controlScrim = if (showingVideo) {
+        Color.Black.copy(alpha = 0.55f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+    val controlTint = if (showingVideo) Color.White else MaterialTheme.colorScheme.onSurface
+    val activeTint = if (showingVideo) {
+        Color(0xFF7FD1FF)
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    val labelColor = if (showingVideo) Color.White else MaterialTheme.colorScheme.onSurface
+    val subLabelColor = if (showingVideo) {
+        Color.White.copy(alpha = 0.85f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    // A face on screen is a screen that must not go dark. Held only while
+    // there are pictures: a voice call wants the display to fall asleep
+    // against an ear, not stay lit under it.
+    val view = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.DisposableEffect(showingVideo) {
+        view.keepScreenOn = showingVideo
+        onDispose { view.keepScreenOn = false }
+    }
+
     androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
         if (showingVideo) {
             VideoSurfaces(state, call)
@@ -76,7 +105,7 @@ fun CallScreen(state: CommuneState) {
                 Icon(
                     Icons.Filled.KeyboardArrowDown,
                     contentDescription = "Leave the call on screen",
-                    tint = MaterialTheme.colorScheme.onSurface,
+                    tint = labelColor,
                 )
             }
         }
@@ -93,6 +122,7 @@ fun CallScreen(state: CommuneState) {
                 name,
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
+                color = labelColor,
             )
             Spacer(Modifier.height(8.dp))
             Text(
@@ -104,91 +134,98 @@ fun CallScreen(state: CommuneState) {
                     CommuneState.CallPhase.Ended -> "Call ended"
                 },
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = subLabelColor,
             )
         }
 
-        // The controls that belong to a call in progress.
-        if (call.state != CommuneState.CallPhase.Ringing) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = { state.toggleMute() }) {
-                    Icon(
-                        if (call.muted) Icons.Filled.MicOff else Icons.Filled.Mic,
-                        contentDescription = if (call.muted) "Unmute" else "Mute",
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-                IconButton(onClick = { state.toggleCamera() }) {
-                    Icon(
-                        if (call.cameraOn) Icons.Filled.Videocam else Icons.Filled.VideocamOff,
-                        contentDescription = if (call.cameraOn) {
-                            "Turn the camera off"
-                        } else {
-                            "Turn the camera on"
-                        },
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-                if (call.cameraOn) {
-                    IconButton(onClick = { state.switchCamera() }) {
+        // Everything done during a call, gathered at the bottom where a
+        // thumb reaches rather than adrift in the middle of the picture,
+        // and carried on a scrim: over a brightly lit video the theme's
+        // own on-surface colour is very nearly invisible.
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(bottom = 32.dp),
+        ) {
+            if (call.state != CommuneState.CallPhase.Ringing) {
+                Row(
+                    modifier = Modifier
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(36.dp))
+                        .background(controlScrim)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = { state.toggleMute() }) {
                         Icon(
-                            Icons.Filled.Cameraswitch,
-                            contentDescription = "Switch camera",
-                            tint = MaterialTheme.colorScheme.onSurface,
+                            if (call.muted) Icons.Filled.MicOff else Icons.Filled.Mic,
+                            contentDescription = if (call.muted) "Unmute" else "Mute",
+                            tint = controlTint,
+                        )
+                    }
+                    IconButton(onClick = { state.toggleCamera() }) {
+                        Icon(
+                            if (call.cameraOn) Icons.Filled.Videocam else Icons.Filled.VideocamOff,
+                            contentDescription = if (call.cameraOn) {
+                                "Turn the camera off"
+                            } else {
+                                "Turn the camera on"
+                            },
+                            tint = controlTint,
+                        )
+                    }
+                    if (call.cameraOn) {
+                        IconButton(onClick = { state.switchCamera() }) {
+                            Icon(
+                                Icons.Filled.Cameraswitch,
+                                contentDescription = "Switch camera",
+                                tint = controlTint,
+                            )
+                        }
+                    }
+                    IconButton(onClick = {
+                        speaker = !speaker
+                        state.setSpeakerphone(speaker)
+                    }) {
+                        Icon(
+                            Icons.Filled.VolumeUp,
+                            contentDescription = "Speakerphone",
+                            tint = if (speaker) activeTint else controlTint,
                         )
                     }
                 }
-                IconButton(onClick = {
-                    speaker = !speaker
-                    state.setSpeakerphone(speaker)
-                }) {
-                    Icon(
-                        Icons.Filled.VolumeUp,
-                        contentDescription = "Speakerphone",
-                        tint = if (speaker) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
+                Spacer(Modifier.height(20.dp))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = if (call.state == CommuneState.CallPhase.Ringing) {
+                    Arrangement.SpaceEvenly
+                } else {
+                    Arrangement.Center
+                },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (call.state == CommuneState.CallPhase.Ringing) {
+                    CallButton(
+                        icon = Icons.Filled.CallEnd,
+                        description = "Decline",
+                        color = MaterialTheme.colorScheme.error,
+                        onClick = { state.declineCall() },
+                    )
+                    CallButton(
+                        icon = Icons.Filled.Call,
+                        description = "Answer",
+                        color = Color(0xFF2E7D32),
+                        onClick = { state.answerCall() },
+                    )
+                } else {
+                    CallButton(
+                        icon = Icons.Filled.CallEnd,
+                        description = "Hang up",
+                        color = MaterialTheme.colorScheme.error,
+                        onClick = { state.hangUp() },
                     )
                 }
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 48.dp),
-            horizontalArrangement = if (call.state == CommuneState.CallPhase.Ringing) {
-                Arrangement.SpaceEvenly
-            } else {
-                Arrangement.Center
-            },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (call.state == CommuneState.CallPhase.Ringing) {
-                CallButton(
-                    icon = Icons.Filled.CallEnd,
-                    description = "Decline",
-                    color = MaterialTheme.colorScheme.error,
-                    onClick = { state.declineCall() },
-                )
-                CallButton(
-                    icon = Icons.Filled.Call,
-                    description = "Answer",
-                    color = Color(0xFF2E7D32),
-                    onClick = { state.answerCall() },
-                )
-            } else {
-                CallButton(
-                    icon = Icons.Filled.CallEnd,
-                    description = "Hang up",
-                    color = MaterialTheme.colorScheme.error,
-                    onClick = { state.hangUp() },
-                )
             }
         }
     }
