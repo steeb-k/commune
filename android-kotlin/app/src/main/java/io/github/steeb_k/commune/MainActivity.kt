@@ -56,6 +56,11 @@ class MainActivity : ComponentActivity() {
             uri?.let { state.setAvatarFromUri(it) }
         }
 
+    private val roomAvatarPicker =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let { state.setRoomAvatarFromUri(it) }
+        }
+
     private var micResult: ((Boolean) -> Unit)? = null
     private val micPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -88,6 +93,7 @@ class MainActivity : ComponentActivity() {
         state = CommuneState(this)
         state.pickAttachment = { attachmentPicker.launch("*/*") }
         state.pickAvatar = { avatarPicker.launch("image/*") }
+        state.pickRoomAvatar = { roomAvatarPicker.launch("image/*") }
         state.pickKeyFile = { keyFilePicker.launch("*/*") }
         state.ensureMicPermission = { onResult ->
             if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
@@ -174,6 +180,15 @@ private fun CommuneApp(state: CommuneState) {
             } else if (state.historyKind != null) {
                 BackHandler { state.closeHistory() }
                 HistoryScreen(state, state.historyKind!!)
+            } else if (state.addressesOpen) {
+                BackHandler { state.closeAddresses() }
+                io.github.steeb_k.commune.ui.AddressesScreen(state)
+            } else if (state.serverAclOpen) {
+                BackHandler { state.closeServerAcl() }
+                io.github.steeb_k.commune.ui.ServerAclScreen(state)
+            } else if (state.permissionsOpen) {
+                BackHandler { state.closePermissions() }
+                io.github.steeb_k.commune.ui.PermissionsScreen(state)
             } else if (state.roomDetailsOpen) {
                 BackHandler { state.closeRoomDetails() }
                 RoomDetailsScreen(state, room)

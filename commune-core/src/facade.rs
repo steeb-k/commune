@@ -3027,6 +3027,982 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// Change the room's avatar: upload the file, then point
+    /// `m.room.avatar` at it, as the application's edit-details page
+    /// does. Width and height come from the embedder, which decoded the
+    /// picture to show it.
+    pub async fn set_room_avatar(
+        &self,
+        room_id: String,
+        file_path: String,
+        mime_type: String,
+        width: Option<u32>,
+        height: Option<u32>,
+    ) -> Result<(), CoreError> {
+        use ruma::events::room::avatar::ImageInfo as AvatarImageInfo;
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let mime = mime_type
+                    .parse::<mime::Mime>()
+                    .unwrap_or(mime::APPLICATION_OCTET_STREAM);
+
+                let data = std::fs::read(&file_path).map_err(|read_error| CoreError::Failed {
+                    msg: format!("Could not read the file: {read_error}"),
+                })?;
+                let size = u64::try_from(data.len()).ok();
+                check_upload_size(&session.client(), size).await?;
+
+                let response = session
+                    .client()
+                    .media()
+                    .upload(&mime, data, None)
+                    .await
+                    .map_err(|upload_error| CoreError::Failed {
+                        msg: format!("Could not upload the avatar: {upload_error}"),
+                    })?;
+
+                let mut info = AvatarImageInfo::new();
+                info.width = width.map(Into::into);
+                info.height = height.map(Into::into);
+                info.size = size.and_then(|s| u32::try_from(s).ok()).map(Into::into);
+                info.mimetype = Some(mime.to_string());
+
+                room.matrix_room()
+                    .set_avatar_url(&response.content_uri, Some(info))
+                    .await
+                    .map(|_| ())
+                    .map_err(|set_error| CoreError::Failed {
+                        msg: format!("Could not change the avatar: {set_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Remove the room's avatar.
+    pub async fn remove_room_avatar(&self, room_id: String) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                room.matrix_room()
+                    .remove_avatar()
+                    .await
+                    .map(|_| ())
+                    .map_err(|remove_error| CoreError::Failed {
+                        msg: format!("Could not remove the avatar: {remove_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The room's join rule, with what this room's version supports and
+    /// whether we may change it.
+    pub async fn room_join_rule(&self, room_id: String) -> Result<FfiJoinRuleInfo, CoreError> {
+        use ruma::events::room::join_rules::{JoinRule, RoomJoinRulesEventContent};
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let matrix_room = room.matrix_room().clone();
+
+                let rule = read_state_content::<RoomJoinRulesEventContent>(&matrix_room)
+                    .await
+                    .map(|content| content.join_rule)
+                    .unwrap_or(JoinRule::Invite);
+
+                let (value, allow) = match &rule {
+                    JoinRule::Public => (FfiJoinRuleValue::Public, Vec::new()),
+                    JoinRule::Invite => (FfiJoinRuleValue::Invite, Vec::new()),
+                    JoinRule::Knock => (FfiJoinRuleValue::Knock, Vec::new()),
+                    JoinRule::Restricted(restricted) => {
+                        (FfiJoinRuleValue::Restricted, allow_room_ids(restricted))
+                    }
+                    JoinRule::KnockRestricted(restricted) => (
+                        FfiJoinRuleValue::KnockRestricted,
+                        allow_room_ids(restricted),
+                    ),
+                    _ => (FfiJoinRuleValue::Unsupported, Vec::new()),
+                };
+
+                let authorization = matrix_room
+                    .clone_info()
+                    .room_version_rules_or_default()
+                    .authorization;
+
+                Ok(FfiJoinRuleInfo {
+                    value,
+                    allow_room_ids: allow,
+                    supports_knock: authorization.knocking,
+                    supports_restricted: authorization.restricted_join_rule,
+                    supports_knock_restricted: authorization.knock_restricted_join_rule,
+                    can_change: can_send_state(
+                        &matrix_room,
+                        ruma::events::StateEventType::RoomJoinRules,
+                    )
+                    .await,
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Change the room's join rule, computed as the application does: a
+    /// restricted rule takes the given space, or keeps the saved allow
+    /// list when none is given — never an empty one.
+    pub async fn set_room_join_rule(
+        &self,
+        room_id: String,
+        value: FfiJoinRuleValue,
+        allow_space_id: Option<String>,
+    ) -> Result<(), CoreError> {
+        use ruma::events::room::join_rules::{
+            AllowRule, JoinRule, Restricted, RoomJoinRulesEventContent,
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let matrix_room = room.matrix_room().clone();
+
+                let restricted = || async {
+                    if let Some(space_id) = &allow_space_id {
+                        let space_id =
+                            ruma::RoomId::parse(space_id).map_err(|_| CoreError::Failed {
+                                msg: "Invalid space ID".to_owned(),
+                            })?;
+                        return Ok::<_, CoreError>(Restricted::new(vec![
+                            AllowRule::room_membership(space_id),
+                        ]));
+                    }
+                    // Carry the saved list over verbatim, so changing
+                    // whether people may knock never changes who may join.
+                    let current = read_state_content::<RoomJoinRulesEventContent>(&matrix_room)
+                        .await
+                        .map(|content| content.join_rule);
+                    match current {
+                        Some(
+                            JoinRule::Restricted(restricted)
+                            | JoinRule::KnockRestricted(restricted),
+                        ) => Ok(restricted),
+                        _ => Err(CoreError::Failed {
+                            msg: "A membership rule needs a space".to_owned(),
+                        }),
+                    }
+                };
+
+                let rule = match value {
+                    FfiJoinRuleValue::Public => JoinRule::Public,
+                    FfiJoinRuleValue::Invite => JoinRule::Invite,
+                    FfiJoinRuleValue::Knock => JoinRule::Knock,
+                    FfiJoinRuleValue::Restricted => JoinRule::Restricted(restricted().await?),
+                    FfiJoinRuleValue::KnockRestricted => {
+                        JoinRule::KnockRestricted(restricted().await?)
+                    }
+                    FfiJoinRuleValue::Unsupported => {
+                        return Err(CoreError::Failed {
+                            msg: "Cannot set an unsupported rule".to_owned(),
+                        });
+                    }
+                };
+
+                matrix_room
+                    .send_state_event(RoomJoinRulesEventContent::new(rule))
+                    .await
+                    .map(|_| ())
+                    .map_err(|send_error| CoreError::Failed {
+                        msg: format!("Could not change who can join: {send_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The room's history visibility, and whether we may change it.
+    pub async fn room_history_visibility(
+        &self,
+        room_id: String,
+    ) -> Result<FfiHistoryVisibilityInfo, CoreError> {
+        use ruma::events::room::history_visibility::{
+            HistoryVisibility, RoomHistoryVisibilityEventContent,
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let matrix_room = room.matrix_room().clone();
+
+                let visibility =
+                    read_state_content::<RoomHistoryVisibilityEventContent>(&matrix_room)
+                        .await
+                        .map(|content| content.history_visibility)
+                        .unwrap_or(HistoryVisibility::Shared);
+
+                let value = match visibility {
+                    HistoryVisibility::WorldReadable => FfiHistoryVisibility::WorldReadable,
+                    HistoryVisibility::Shared => FfiHistoryVisibility::Shared,
+                    HistoryVisibility::Invited => FfiHistoryVisibility::Invited,
+                    _ => FfiHistoryVisibility::Joined,
+                };
+
+                Ok(FfiHistoryVisibilityInfo {
+                    value,
+                    can_change: can_send_state(
+                        &matrix_room,
+                        ruma::events::StateEventType::RoomHistoryVisibility,
+                    )
+                    .await,
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Change the room's history visibility.
+    pub async fn set_room_history_visibility(
+        &self,
+        room_id: String,
+        value: FfiHistoryVisibility,
+    ) -> Result<(), CoreError> {
+        use ruma::events::room::history_visibility::{
+            HistoryVisibility, RoomHistoryVisibilityEventContent,
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                let visibility = match value {
+                    FfiHistoryVisibility::WorldReadable => HistoryVisibility::WorldReadable,
+                    FfiHistoryVisibility::Shared => HistoryVisibility::Shared,
+                    FfiHistoryVisibility::Invited => HistoryVisibility::Invited,
+                    FfiHistoryVisibility::Joined => HistoryVisibility::Joined,
+                };
+
+                room.matrix_room()
+                    .send_state_event(RoomHistoryVisibilityEventContent::new(visibility))
+                    .await
+                    .map(|_| ())
+                    .map_err(|send_error| CoreError::Failed {
+                        msg: format!("Could not change the history visibility: {send_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The room's addresses: canonical and alternative public aliases,
+    /// the aliases registered on this homeserver, and whether the room
+    /// is published in the server's directory.
+    pub async fn room_addresses(&self, room_id: String) -> Result<FfiRoomAddresses, CoreError> {
+        use ruma::{
+            api::client::{
+                directory::get_room_visibility,
+                room::{Visibility, aliases},
+            },
+            events::room::canonical_alias::RoomCanonicalAliasEventContent,
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let matrix_room = room.matrix_room().clone();
+                let client = session.client();
+
+                let content = read_state_content::<RoomCanonicalAliasEventContent>(&matrix_room)
+                    .await
+                    .unwrap_or_default();
+
+                let local = client
+                    .send(aliases::v3::Request::new(room_id.clone()))
+                    .await
+                    .map(|response| {
+                        response
+                            .aliases
+                            .into_iter()
+                            .map(|alias| alias.to_string())
+                            .collect()
+                    })
+                    .unwrap_or_default();
+
+                let published = client
+                    .send(get_room_visibility::v3::Request::new(room_id.clone()))
+                    .await
+                    .map(|response| response.visibility == Visibility::Public)
+                    .unwrap_or(false);
+
+                Ok(FfiRoomAddresses {
+                    canonical: content.alias.map(|alias| alias.to_string()),
+                    alt: content
+                        .alt_aliases
+                        .iter()
+                        .map(|alias| alias.to_string())
+                        .collect(),
+                    local,
+                    published,
+                    can_change: can_send_state(
+                        &matrix_room,
+                        ruma::events::StateEventType::RoomCanonicalAlias,
+                    )
+                    .await,
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Change one aspect of the room's addresses. The canonical-alias
+    /// event is read, mutated exactly as the application's aliases model
+    /// does, and sent back whole; registering and unregistering local
+    /// aliases go through the directory endpoints; publishing flips the
+    /// room's directory visibility.
+    pub async fn set_room_address(
+        &self,
+        room_id: String,
+        action: FfiAddressAction,
+    ) -> Result<(), CoreError> {
+        use ruma::{
+            api::client::{
+                alias::{create_alias, delete_alias},
+                directory::set_room_visibility,
+                room::Visibility,
+            },
+            events::room::canonical_alias::RoomCanonicalAliasEventContent,
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let matrix_room = room.matrix_room().clone();
+                let client = session.client();
+
+                let parse_alias = |alias: &str| {
+                    ruma::RoomAliasId::parse(alias).map_err(|_| CoreError::Failed {
+                        msg: "Invalid address".to_owned(),
+                    })
+                };
+
+                match action {
+                    FfiAddressAction::Publish { published } => {
+                        let visibility = if published {
+                            Visibility::Public
+                        } else {
+                            Visibility::Private
+                        };
+                        client
+                            .send(set_room_visibility::v3::Request::new(
+                                room_id.clone(),
+                                visibility,
+                            ))
+                            .await
+                            .map(|_| ())
+                            .map_err(|send_error| CoreError::Failed {
+                                msg: format!("Could not change the visibility: {send_error}"),
+                            })
+                    }
+                    FfiAddressAction::RegisterLocal { alias } => {
+                        let alias = parse_alias(&alias)?;
+                        client
+                            .send(create_alias::v3::Request::new(alias, room_id.clone()))
+                            .await
+                            .map(|_| ())
+                            .map_err(|send_error| CoreError::Failed {
+                                msg: format!("Could not register the address: {send_error}"),
+                            })
+                    }
+                    FfiAddressAction::UnregisterLocal { alias } => {
+                        let alias = parse_alias(&alias)?;
+                        client
+                            .send(delete_alias::v3::Request::new(alias))
+                            .await
+                            .map(|_| ())
+                            .map_err(|send_error| CoreError::Failed {
+                                msg: format!("Could not unregister the address: {send_error}"),
+                            })
+                    }
+                    FfiAddressAction::SetCanonical { alias } => {
+                        let alias = parse_alias(&alias)?;
+                        let mut content =
+                            read_state_content::<RoomCanonicalAliasEventContent>(&matrix_room)
+                                .await
+                                .unwrap_or_default();
+                        if content.alias.as_ref() == Some(&alias) {
+                            return Ok(());
+                        }
+                        if let Some(pos) = content.alt_aliases.iter().position(|a| *a == alias) {
+                            content.alt_aliases.remove(pos);
+                        }
+                        if let Some(old) = content.alias.replace(alias)
+                            && !content.alt_aliases.contains(&old)
+                        {
+                            content.alt_aliases.push(old);
+                        }
+                        send_canonical(&matrix_room, content).await
+                    }
+                    FfiAddressAction::RemoveCanonical { alias } => {
+                        let alias = parse_alias(&alias)?;
+                        let mut content =
+                            read_state_content::<RoomCanonicalAliasEventContent>(&matrix_room)
+                                .await
+                                .unwrap_or_default();
+                        if content.alias.take().is_none_or(|a| a != alias) {
+                            return Ok(());
+                        }
+                        send_canonical(&matrix_room, content).await
+                    }
+                    FfiAddressAction::AddAlt { alias } => {
+                        let alias = parse_alias(&alias)?;
+                        // The alias must exist and point at this room.
+                        let resolved =
+                            client
+                                .resolve_room_alias(&alias)
+                                .await
+                                .map_err(|resolve_error| CoreError::Failed {
+                                    msg: format!("This address is not registered: {resolve_error}"),
+                                })?;
+                        if resolved.room_id != room_id {
+                            return Err(CoreError::Failed {
+                                msg: "This address points to another room".to_owned(),
+                            });
+                        }
+                        let mut content =
+                            read_state_content::<RoomCanonicalAliasEventContent>(&matrix_room)
+                                .await
+                                .unwrap_or_default();
+                        if content.alias.as_ref() == Some(&alias)
+                            || content.alt_aliases.contains(&alias)
+                        {
+                            return Ok(());
+                        }
+                        content.alt_aliases.push(alias);
+                        send_canonical(&matrix_room, content).await
+                    }
+                    FfiAddressAction::RemoveAlt { alias } => {
+                        let alias = parse_alias(&alias)?;
+                        let mut content =
+                            read_state_content::<RoomCanonicalAliasEventContent>(&matrix_room)
+                                .await
+                                .unwrap_or_default();
+                        let Some(pos) = content.alt_aliases.iter().position(|a| *a == alias) else {
+                            return Ok(());
+                        };
+                        content.alt_aliases.remove(pos);
+                        send_canonical(&matrix_room, content).await
+                    }
+                }
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The room's server ACL. An absent event reads as the open default:
+    /// every server allowed, IP literals too.
+    pub async fn room_server_acl(&self, room_id: String) -> Result<FfiServerAcl, CoreError> {
+        use ruma::events::room::server_acl::RoomServerAclEventContent;
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let matrix_room = room.matrix_room().clone();
+
+                let content = read_state_content::<RoomServerAclEventContent>(&matrix_room)
+                    .await
+                    .unwrap_or_else(|| {
+                        RoomServerAclEventContent::new(true, vec!["*".to_owned()], Vec::new())
+                    });
+
+                Ok(FfiServerAcl {
+                    allow: content.allow,
+                    deny: content.deny,
+                    allow_ip_literals: content.allow_ip_literals,
+                    can_change: can_send_state(
+                        &matrix_room,
+                        ruma::events::StateEventType::RoomServerAcl,
+                    )
+                    .await,
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Replace the room's server ACL.
+    pub async fn set_room_server_acl(
+        &self,
+        room_id: String,
+        allow: Vec<String>,
+        deny: Vec<String>,
+        allow_ip_literals: bool,
+    ) -> Result<(), CoreError> {
+        use ruma::events::room::server_acl::RoomServerAclEventContent;
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                room.matrix_room()
+                    .send_state_event(RoomServerAclEventContent::new(
+                        allow_ip_literals,
+                        allow,
+                        deny,
+                    ))
+                    .await
+                    .map(|_| ())
+                    .map_err(|send_error| CoreError::Failed {
+                        msg: format!("Could not change the server ACL: {send_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The room's permission thresholds — the application's permissions
+    /// page, flattened: role defaults, action levels, and the per-event
+    /// overrides it exposes.
+    pub async fn room_permissions_matrix(
+        &self,
+        room_id: String,
+    ) -> Result<FfiPowerLevelsMatrix, CoreError> {
+        use ruma::events::TimelineEventType;
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let matrix_room = room.matrix_room().clone();
+
+                let power_levels =
+                    matrix_room
+                        .power_levels()
+                        .await
+                        .map_err(|levels_error| CoreError::Failed {
+                            msg: format!("Could not read the permissions: {levels_error}"),
+                        })?;
+
+                let events_default: i64 = power_levels.events_default.into();
+                let state_default: i64 = power_levels.state_default.into();
+                let event_level = |event_type: TimelineEventType, default: i64| -> i64 {
+                    power_levels
+                        .events
+                        .get(&event_type)
+                        .map_or(default, |level| (*level).into())
+                };
+
+                Ok(FfiPowerLevelsMatrix {
+                    users_default: power_levels.users_default.into(),
+                    events_default,
+                    state_default,
+                    invite: power_levels.invite.into(),
+                    kick: power_levels.kick.into(),
+                    ban: power_levels.ban.into(),
+                    redact_others: power_levels.redact.into(),
+                    redact_own: event_level(TimelineEventType::RoomRedaction, events_default),
+                    notify_room: power_levels.notifications.room.into(),
+                    name: event_level(TimelineEventType::RoomName, state_default),
+                    topic: event_level(TimelineEventType::RoomTopic, state_default),
+                    avatar: event_level(TimelineEventType::RoomAvatar, state_default),
+                    aliases: event_level(TimelineEventType::RoomCanonicalAlias, state_default),
+                    history_visibility: event_level(
+                        TimelineEventType::RoomHistoryVisibility,
+                        state_default,
+                    ),
+                    encryption: event_level(TimelineEventType::RoomEncryption, state_default),
+                    power_levels: event_level(TimelineEventType::RoomPowerLevels, state_default),
+                    server_acl: event_level(TimelineEventType::RoomServerAcl, state_default),
+                    upgrade: event_level(TimelineEventType::RoomTombstone, state_default),
+                    can_change: can_send_state(
+                        &matrix_room,
+                        ruma::events::StateEventType::RoomPowerLevels,
+                    )
+                    .await,
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Replace the room's permission thresholds, collected exactly as
+    /// the application's permissions page collects them: overrides that
+    /// match their default are elided, redacting one's own messages can
+    /// never need more power than redacting others', and the per-user
+    /// levels are carried over untouched.
+    pub async fn set_room_permissions_matrix(
+        &self,
+        room_id: String,
+        matrix: FfiPowerLevelsMatrix,
+    ) -> Result<(), CoreError> {
+        use ruma::{
+            Int,
+            events::{TimelineEventType, room::power_levels::RoomPowerLevelsEventContent},
+        };
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let matrix_room = room.matrix_room().clone();
+
+                let mut power_levels =
+                    matrix_room
+                        .power_levels()
+                        .await
+                        .map_err(|levels_error| CoreError::Failed {
+                            msg: format!("Could not read the permissions: {levels_error}"),
+                        })?;
+
+                let int = Int::new_saturating;
+                power_levels.users_default = int(matrix.users_default);
+                power_levels.events_default = int(matrix.events_default);
+                power_levels.state_default = int(matrix.state_default);
+                power_levels.invite = int(matrix.invite);
+                power_levels.kick = int(matrix.kick);
+                power_levels.ban = int(matrix.ban);
+                power_levels.redact = int(matrix.redact_others);
+                power_levels.notifications.room = int(matrix.notify_room);
+
+                let mut set_event = |event_type: TimelineEventType, value: i64, default: i64| {
+                    if value == default {
+                        power_levels.events.remove(&event_type);
+                    } else {
+                        power_levels.events.insert(event_type, int(value));
+                    }
+                };
+
+                // Redacting our own events is sending a redaction event.
+                let redact_own = matrix.redact_own.min(matrix.redact_others);
+                set_event(
+                    TimelineEventType::RoomRedaction,
+                    redact_own,
+                    matrix.events_default,
+                );
+                set_event(
+                    TimelineEventType::RoomName,
+                    matrix.name,
+                    matrix.state_default,
+                );
+                set_event(
+                    TimelineEventType::RoomTopic,
+                    matrix.topic,
+                    matrix.state_default,
+                );
+                set_event(
+                    TimelineEventType::RoomAvatar,
+                    matrix.avatar,
+                    matrix.state_default,
+                );
+                set_event(
+                    TimelineEventType::RoomCanonicalAlias,
+                    matrix.aliases,
+                    matrix.state_default,
+                );
+                set_event(
+                    TimelineEventType::RoomHistoryVisibility,
+                    matrix.history_visibility,
+                    matrix.state_default,
+                );
+                set_event(
+                    TimelineEventType::RoomEncryption,
+                    matrix.encryption,
+                    matrix.state_default,
+                );
+                set_event(
+                    TimelineEventType::RoomPowerLevels,
+                    matrix.power_levels,
+                    matrix.state_default,
+                );
+                set_event(
+                    TimelineEventType::RoomServerAcl,
+                    matrix.server_acl,
+                    matrix.state_default,
+                );
+                set_event(
+                    TimelineEventType::RoomTombstone,
+                    matrix.upgrade,
+                    matrix.state_default,
+                );
+
+                let content =
+                    RoomPowerLevelsEventContent::try_from(power_levels).map_err(|error| {
+                        CoreError::Failed {
+                            msg: format!("Could not build the permissions: {error}"),
+                        }
+                    })?;
+
+                matrix_room
+                    .send_state_event(content)
+                    .await
+                    .map(|_| ())
+                    .map_err(|send_error| CoreError::Failed {
+                        msg: format!("Could not save the permissions: {send_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The room versions an upgrade could go to, per the application's
+    /// rules: stable versions at or above both the current and the
+    /// server's default, the current and default versions listed as
+    /// unstable when they are, sorted, with the suggested pick marked.
+    pub async fn room_upgrade_info(&self, room_id: String) -> Result<FfiUpgradeInfo, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let matrix_room = room.matrix_room().clone();
+
+                let room_info = matrix_room.clone_info();
+                let current_version = room_info
+                    .create()
+                    .map(|create| create.room_version.clone())
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "The room has no create event".to_owned(),
+                    })?;
+
+                let capability = session
+                    .client()
+                    .homeserver_capabilities()
+                    .room_versions()
+                    .await
+                    .map_err(|capability_error| CoreError::Failed {
+                        msg: format!("Could not ask the server: {capability_error}"),
+                    })?;
+
+                let can_upgrade = !matrix_room.is_direct().await.unwrap_or(false)
+                    && matrix_room.successor_room().is_none()
+                    && can_send_state(&matrix_room, ruma::events::StateEventType::RoomTombstone)
+                        .await;
+
+                Ok(build_upgrade_info(
+                    &current_version,
+                    &capability,
+                    can_upgrade,
+                ))
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Upgrade the room to the given version.
+    pub async fn upgrade_room(
+        &self,
+        room_id: String,
+        new_version: String,
+    ) -> Result<(), CoreError> {
+        use ruma::api::client::room::upgrade_room;
+
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let new_version =
+                    ruma::RoomVersionId::try_from(new_version.as_str()).map_err(|_| {
+                        CoreError::Failed {
+                            msg: "Invalid room version".to_owned(),
+                        }
+                    })?;
+
+                session
+                    .client()
+                    .send(upgrade_room::v3::Request::new(room_id, new_version))
+                    .await
+                    .map(|_| ())
+                    .map_err(|upgrade_error| CoreError::Failed {
+                        msg: format!("Could not upgrade the room: {upgrade_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Kick the given user from the given room.
     pub async fn kick_user(
         &self,
@@ -3753,6 +4729,352 @@ fn format_size(bytes: u64) -> String {
     } else {
         format!("{value:.1} {}", UNITS[unit])
     }
+}
+
+/// Read one of the room's state events (empty state key) as its typed
+/// content, `None` when it is absent or unreadable.
+async fn read_state_content<C>(matrix_room: &matrix_sdk::Room) -> Option<C>
+where
+    C: ruma::events::StaticEventContent + serde::de::DeserializeOwned,
+{
+    use matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState;
+
+    let raw = matrix_room
+        .get_state_event(C::TYPE.into(), "")
+        .await
+        .ok()
+        .flatten()?;
+    let RawAnySyncOrStrippedState::Sync(raw) = raw else {
+        return None;
+    };
+    let value = raw.deserialize_as::<serde_json::Value>().ok()?;
+    serde_json::from_value(value.get("content")?.clone()).ok()
+}
+
+/// Whether our own user may send the given state event in the room.
+async fn can_send_state(
+    matrix_room: &matrix_sdk::Room,
+    event_type: ruma::events::StateEventType,
+) -> bool {
+    let own_user_id = matrix_room.own_user_id().to_owned();
+    match matrix_room.power_levels().await {
+        Ok(power_levels) => power_levels.user_can_send_state(&own_user_id, event_type),
+        Err(_) => false,
+    }
+}
+
+/// The room IDs a restricted join rule allows the members of.
+fn allow_room_ids(restricted: &ruma::events::room::join_rules::Restricted) -> Vec<String> {
+    restricted
+        .allow
+        .iter()
+        .filter_map(|rule| match rule {
+            ruma::events::room::join_rules::AllowRule::RoomMembership(membership) => {
+                Some(membership.room_id.to_string())
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// Send the mutated canonical-alias content back whole.
+async fn send_canonical(
+    matrix_room: &matrix_sdk::Room,
+    content: ruma::events::room::canonical_alias::RoomCanonicalAliasEventContent,
+) -> Result<(), CoreError> {
+    matrix_room
+        .send_state_event(content)
+        .await
+        .map(|_| ())
+        .map_err(|send_error| CoreError::Failed {
+            msg: format!("Could not update the addresses: {send_error}"),
+        })
+}
+
+/// Build the upgrade choices from the current version and the server's
+/// capabilities, per the application's upgrade dialog: stable versions
+/// at or above both the current and the default version, the current
+/// and default listed as unstable when they are, sorted, the suggested
+/// pick marked.
+fn build_upgrade_info(
+    current: &ruma::RoomVersionId,
+    capability: &ruma::api::client::discovery::get_capabilities::v3::RoomVersionsCapability,
+    can_upgrade: bool,
+) -> FfiUpgradeInfo {
+    use std::cmp::Ordering;
+
+    use ruma::api::client::discovery::get_capabilities::v3::RoomVersionStability;
+
+    let is_stable = |version: &ruma::RoomVersionId| {
+        capability
+            .available
+            .get(version)
+            .is_some_and(|stability| *stability == RoomVersionStability::Stable)
+    };
+    let maximum_stable = capability
+        .available
+        .iter()
+        .filter(|(_, stability)| **stability == RoomVersionStability::Stable)
+        .map(|(version, _)| version)
+        .max_by(|a, b| cmp_room_versions(a, b));
+
+    let current_is_stable = is_stable(current);
+    let default_is_stable = is_stable(&capability.default);
+    // The minimum stable version is the highest stable version between
+    // the current version and the default version.
+    let minimum_stable = match (current_is_stable, default_is_stable) {
+        (true, false) => Some(current),
+        (false, true) => Some(&capability.default),
+        (true, true) => Some(match cmp_room_versions(current, &capability.default) {
+            Ordering::Less => &capability.default,
+            _ => current,
+        }),
+        (false, false) => None,
+    };
+    let selected_version = minimum_stable.unwrap_or(&capability.default).clone();
+
+    let mut stable: Vec<ruma::RoomVersionId> = if let Some(minimum) = minimum_stable {
+        capability
+            .available
+            .iter()
+            .filter(|(version, stability)| {
+                **stability == RoomVersionStability::Stable
+                    && (cmp_room_versions(version, minimum) != Ordering::Less
+                        || maximum_stable.is_some_and(|maximum| maximum == *version))
+            })
+            .map(|(version, _)| version.clone())
+            .collect()
+    } else {
+        maximum_stable.into_iter().cloned().collect()
+    };
+
+    let mut unstable = Vec::new();
+    if !current_is_stable {
+        unstable.push(current.clone());
+    }
+    if *current != capability.default && !default_is_stable {
+        unstable.push(capability.default.clone());
+    }
+
+    stable.sort_unstable_by(|a, b| cmp_room_versions(a, b));
+    unstable.sort_unstable_by(|a, b| cmp_room_versions(a, b));
+
+    let selected = stable
+        .iter()
+        .position(|version| *version == selected_version)
+        .or_else(|| {
+            unstable
+                .iter()
+                .position(|version| *version == selected_version)
+                .map(|pos| stable.len() + pos)
+        })
+        .unwrap_or(0);
+
+    FfiUpgradeInfo {
+        current_version: current.to_string(),
+        stable: stable.iter().map(ToString::to_string).collect(),
+        unstable: unstable.iter().map(ToString::to_string).collect(),
+        selected_index: u32::try_from(selected).unwrap_or(0),
+        can_upgrade,
+    }
+}
+
+/// Order room versions: whole-number versions numerically, before the
+/// rest lexicographically — the application's digit-sequence-aware
+/// comparison, simplified without changing the order of the versions
+/// that exist.
+fn cmp_room_versions(lhs: &ruma::RoomVersionId, rhs: &ruma::RoomVersionId) -> std::cmp::Ordering {
+    match (lhs.as_str().parse::<u64>(), rhs.as_str().parse::<u64>()) {
+        (Ok(lhs_number), Ok(rhs_number)) => lhs_number.cmp(&rhs_number),
+        (Ok(_), Err(_)) => std::cmp::Ordering::Less,
+        (Err(_), Ok(_)) => std::cmp::Ordering::Greater,
+        (Err(_), Err(_)) => lhs.as_str().cmp(rhs.as_str()),
+    }
+}
+
+/// The join rule of a room, as the choice the details page offers.
+#[derive(uniffi::Enum, Clone, Copy, PartialEq, Eq)]
+pub enum FfiJoinRuleValue {
+    /// Anyone can join.
+    Public,
+    /// Only invited users can join.
+    Invite,
+    /// Users can knock to request an invite.
+    Knock,
+    /// Members of an allowed room can join.
+    Restricted,
+    /// Members of an allowed room can join, others can knock.
+    KnockRestricted,
+    /// A rule this page cannot edit.
+    Unsupported,
+}
+
+/// A room's join rule with what the room's version supports.
+#[derive(uniffi::Record)]
+pub struct FfiJoinRuleInfo {
+    /// The current rule.
+    pub value: FfiJoinRuleValue,
+    /// The rooms whose members a restricted rule allows.
+    pub allow_room_ids: Vec<String>,
+    /// Whether the room's version supports knocking.
+    pub supports_knock: bool,
+    /// Whether the room's version supports the restricted rule.
+    pub supports_restricted: bool,
+    /// Whether the room's version supports knock-restricted.
+    pub supports_knock_restricted: bool,
+    /// Whether we may change the rule.
+    pub can_change: bool,
+}
+
+/// Who can read a room's history.
+#[derive(uniffi::Enum, Clone, Copy, PartialEq, Eq)]
+pub enum FfiHistoryVisibility {
+    /// Anyone, member or not.
+    WorldReadable,
+    /// Members, for everything sent since they could have known of the
+    /// room.
+    Shared,
+    /// Members, since their invitation.
+    Invited,
+    /// Members, since they joined.
+    Joined,
+}
+
+/// A room's history visibility, and whether we may change it.
+#[derive(uniffi::Record)]
+pub struct FfiHistoryVisibilityInfo {
+    /// The current visibility.
+    pub value: FfiHistoryVisibility,
+    /// Whether we may change it.
+    pub can_change: bool,
+}
+
+/// A room's addresses, as the details page shows them.
+#[derive(uniffi::Record)]
+pub struct FfiRoomAddresses {
+    /// The canonical (main public) address.
+    pub canonical: Option<String>,
+    /// The other public addresses.
+    pub alt: Vec<String>,
+    /// The addresses registered on this homeserver.
+    pub local: Vec<String>,
+    /// Whether the room is published in the server's directory.
+    pub published: bool,
+    /// Whether we may change the public addresses.
+    pub can_change: bool,
+}
+
+/// One edit to a room's addresses.
+#[derive(uniffi::Enum)]
+pub enum FfiAddressAction {
+    /// Publish the room in (or withdraw it from) the directory.
+    Publish {
+        /// Whether the room should be listed.
+        published: bool,
+    },
+    /// Register an address on this homeserver.
+    RegisterLocal {
+        /// The address.
+        alias: String,
+    },
+    /// Unregister an address from this homeserver.
+    UnregisterLocal {
+        /// The address.
+        alias: String,
+    },
+    /// Make an address the canonical one.
+    SetCanonical {
+        /// The address.
+        alias: String,
+    },
+    /// Remove the canonical address.
+    RemoveCanonical {
+        /// The address.
+        alias: String,
+    },
+    /// Add a public alternative address.
+    AddAlt {
+        /// The address.
+        alias: String,
+    },
+    /// Remove a public alternative address.
+    RemoveAlt {
+        /// The address.
+        alias: String,
+    },
+}
+
+/// A room's server ACL.
+#[derive(uniffi::Record)]
+pub struct FfiServerAcl {
+    /// The allowed server patterns.
+    pub allow: Vec<String>,
+    /// The denied server patterns.
+    pub deny: Vec<String>,
+    /// Whether servers named by IP literals are allowed.
+    pub allow_ip_literals: bool,
+    /// Whether we may change the ACL.
+    pub can_change: bool,
+}
+
+/// A room's permission thresholds, flattened the way the application's
+/// permissions page lays them out.
+#[derive(uniffi::Record, Clone)]
+pub struct FfiPowerLevelsMatrix {
+    /// The default level of a member.
+    pub users_default: i64,
+    /// The level needed to send messages.
+    pub events_default: i64,
+    /// The default level needed to change state.
+    pub state_default: i64,
+    /// The level needed to invite.
+    pub invite: i64,
+    /// The level needed to kick.
+    pub kick: i64,
+    /// The level needed to ban.
+    pub ban: i64,
+    /// The level needed to remove others' messages.
+    pub redact_others: i64,
+    /// The level needed to remove one's own messages.
+    pub redact_own: i64,
+    /// The level needed to notify the whole room.
+    pub notify_room: i64,
+    /// The level needed to change the room name.
+    pub name: i64,
+    /// The level needed to change the topic.
+    pub topic: i64,
+    /// The level needed to change the avatar.
+    pub avatar: i64,
+    /// The level needed to change the addresses.
+    pub aliases: i64,
+    /// The level needed to change the history visibility.
+    pub history_visibility: i64,
+    /// The level needed to enable encryption.
+    pub encryption: i64,
+    /// The level needed to change these permissions.
+    pub power_levels: i64,
+    /// The level needed to change the server ACL.
+    pub server_acl: i64,
+    /// The level needed to upgrade the room.
+    pub upgrade: i64,
+    /// Whether we may change any of this.
+    pub can_change: bool,
+}
+
+/// The room versions an upgrade could go to.
+#[derive(uniffi::Record)]
+pub struct FfiUpgradeInfo {
+    /// The room's current version.
+    pub current_version: String,
+    /// The stable versions on offer, sorted.
+    pub stable: Vec<String>,
+    /// The unstable versions on offer, sorted.
+    pub unstable: Vec<String>,
+    /// The index of the suggested pick, stable and unstable
+    /// concatenated.
+    pub selected_index: u32,
+    /// Whether we may upgrade this room at all.
+    pub can_upgrade: bool,
 }
 
 /// Read one global account-data event as plain JSON, `None` when it is

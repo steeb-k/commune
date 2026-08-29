@@ -859,6 +859,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_remove_push_gateway(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_remove_room_avatar(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_rename_device(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_request_verification(
@@ -867,11 +869,23 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_retry_sends(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_room_addresses(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_room_history_visibility(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_room_join_rule(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_room_media_history(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_room_members(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_room_notification_mode(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_room_permissions_matrix(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_room_server_acl(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_room_upgrade_info(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_rooms(
     ): Short
@@ -919,11 +933,23 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_push_gateway(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_room_address(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_room_avatar(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_room_details(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_room_history_visibility(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_room_join_rule(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_room_list_listener(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_room_notification_mode(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_room_permissions_matrix(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_set_room_server_acl(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_set_thread_listener(
     ): Short
@@ -944,6 +970,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_toggle_reaction(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_unignore_user(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_upgrade_room(
     ): Short
     external fun uniffi_commune_core_checksum_method_memberlistlistener_on_update(
     ): Short
@@ -1074,6 +1102,8 @@ external fun uniffi_commune_core_fn_method_coreapp_remove_notification_keyword(`
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_remove_push_gateway(`ptr`: Long,`pushkey`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_remove_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_rename_device(`ptr`: Long,`deviceId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_request_verification(`ptr`: Long,
@@ -1082,11 +1112,23 @@ external fun uniffi_commune_core_fn_method_coreapp_restore_sessions(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_retry_sends(`ptr`: Long,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_room_addresses(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_room_history_visibility(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_room_join_rule(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_room_media_history(`ptr`: Long,`roomId`: RustBuffer.ByValue,`from`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_room_members(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_room_notification_mode(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_room_permissions_matrix(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_room_server_acl(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_room_upgrade_info(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1134,11 +1176,23 @@ external fun uniffi_commune_core_fn_method_coreapp_set_public_read_receipts_enab
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_push_gateway(`ptr`: Long,`gatewayUrl`: RustBuffer.ByValue,`pushkey`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_set_room_address(`ptr`: Long,`roomId`: RustBuffer.ByValue,`action`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_set_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,`width`: RustBuffer.ByValue,`height`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_room_details(`ptr`: Long,`roomId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,`topic`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_set_room_history_visibility(`ptr`: Long,`roomId`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_set_room_join_rule(`ptr`: Long,`roomId`: RustBuffer.ByValue,`value`: RustBuffer.ByValue,`allowSpaceId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_room_list_listener(`ptr`: Long,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_room_notification_mode(`ptr`: Long,`roomId`: RustBuffer.ByValue,`mode`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_set_room_permissions_matrix(`ptr`: Long,`roomId`: RustBuffer.ByValue,`matrix`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_set_room_server_acl(`ptr`: Long,`roomId`: RustBuffer.ByValue,`allow`: RustBuffer.ByValue,`deny`: RustBuffer.ByValue,`allowIpLiterals`: Byte,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_thread_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`rootEventId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1159,6 +1213,8 @@ external fun uniffi_commune_core_fn_method_coreapp_sticker_packs(`ptr`: Long,
 external fun uniffi_commune_core_fn_method_coreapp_toggle_reaction(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_unignore_user(`ptr`: Long,`userId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_upgrade_room(`ptr`: Long,`roomId`: RustBuffer.ByValue,`newVersion`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_clone_memberlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
@@ -1463,6 +1519,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_remove_push_gateway() != 35864.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_remove_room_avatar() != 56962.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_rename_device() != 388.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1475,6 +1534,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_retry_sends() != 53459.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_room_addresses() != 46850.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_room_history_visibility() != 24069.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_room_join_rule() != 63340.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_room_media_history() != 24819.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1482,6 +1550,15 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_room_notification_mode() != 9543.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_room_permissions_matrix() != 30655.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_room_server_acl() != 39459.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_room_upgrade_info() != 17578.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_rooms() != 14668.toShort()) {
@@ -1553,13 +1630,31 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_push_gateway() != 7158.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_address() != 48307.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_avatar() != 51401.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_details() != 28546.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_history_visibility() != 3908.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_join_rule() != 62917.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_list_listener() != 44096.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_notification_mode() != 23352.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_permissions_matrix() != 50092.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_server_acl() != 40907.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_thread_listener() != 15320.toShort()) {
@@ -1590,6 +1685,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_unignore_user() != 53552.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_upgrade_room() != 16224.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_memberlistlistener_on_update() != 20923.toShort()) {
@@ -2359,6 +2457,11 @@ public interface CoreAppInterface {
     suspend fun `removePushGateway`(`pushkey`: kotlin.String)
     
     /**
+     * Remove the room's avatar.
+     */
+    suspend fun `removeRoomAvatar`(`roomId`: kotlin.String)
+    
+    /**
      * Rename one of the account's sessions.
      */
     suspend fun `renameDevice`(`deviceId`: kotlin.String, `name`: kotlin.String)
@@ -2385,6 +2488,24 @@ public interface CoreAppInterface {
     suspend fun `retrySends`()
     
     /**
+     * The room's addresses: canonical and alternative public aliases,
+     * the aliases registered on this homeserver, and whether the room
+     * is published in the server's directory.
+     */
+    suspend fun `roomAddresses`(`roomId`: kotlin.String): FfiRoomAddresses
+    
+    /**
+     * The room's history visibility, and whether we may change it.
+     */
+    suspend fun `roomHistoryVisibility`(`roomId`: kotlin.String): FfiHistoryVisibilityInfo
+    
+    /**
+     * The room's join rule, with what this room's version supports and
+     * whether we may change it.
+     */
+    suspend fun `roomJoinRule`(`roomId`: kotlin.String): FfiJoinRuleInfo
+    
+    /**
      * One page of the room's media history, walking backward from
      * `from`, or from the end of the room when it is `None`.
      *
@@ -2405,6 +2526,27 @@ public interface CoreAppInterface {
      * How the given room notifies, as far as the user has said.
      */
     suspend fun `roomNotificationMode`(`roomId`: kotlin.String): FfiRoomNotificationMode
+    
+    /**
+     * The room's permission thresholds — the application's permissions
+     * page, flattened: role defaults, action levels, and the per-event
+     * overrides it exposes.
+     */
+    suspend fun `roomPermissionsMatrix`(`roomId`: kotlin.String): FfiPowerLevelsMatrix
+    
+    /**
+     * The room's server ACL. An absent event reads as the open default:
+     * every server allowed, IP literals too.
+     */
+    suspend fun `roomServerAcl`(`roomId`: kotlin.String): FfiServerAcl
+    
+    /**
+     * The room versions an upgrade could go to, per the application's
+     * rules: stable versions at or above both the current and the
+     * server's default, the current and default versions listed as
+     * unstable when they are, sorted, with the suggested pick marked.
+     */
+    suspend fun `roomUpgradeInfo`(`roomId`: kotlin.String): FfiUpgradeInfo
     
     /**
      * The rooms of the first ready session, as of now.
@@ -2544,9 +2686,38 @@ public interface CoreAppInterface {
     suspend fun `setPushGateway`(`gatewayUrl`: kotlin.String, `pushkey`: kotlin.String)
     
     /**
+     * Change one aspect of the room's addresses. The canonical-alias
+     * event is read, mutated exactly as the application's aliases model
+     * does, and sent back whole; registering and unregistering local
+     * aliases go through the directory endpoints; publishing flips the
+     * room's directory visibility.
+     */
+    suspend fun `setRoomAddress`(`roomId`: kotlin.String, `action`: FfiAddressAction)
+    
+    /**
+     * Change the room's avatar: upload the file, then point
+     * `m.room.avatar` at it, as the application's edit-details page
+     * does. Width and height come from the embedder, which decoded the
+     * picture to show it.
+     */
+    suspend fun `setRoomAvatar`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String, `width`: kotlin.UInt?, `height`: kotlin.UInt?)
+    
+    /**
      * Set the given room's name and topic.
      */
     suspend fun `setRoomDetails`(`roomId`: kotlin.String, `name`: kotlin.String, `topic`: kotlin.String)
+    
+    /**
+     * Change the room's history visibility.
+     */
+    suspend fun `setRoomHistoryVisibility`(`roomId`: kotlin.String, `value`: FfiHistoryVisibility)
+    
+    /**
+     * Change the room's join rule, computed as the application does: a
+     * restricted rule takes the given space, or keeps the saved allow
+     * list when none is given — never an empty one.
+     */
+    suspend fun `setRoomJoinRule`(`roomId`: kotlin.String, `value`: FfiJoinRuleValue, `allowSpaceId`: kotlin.String?)
     
     /**
      * Give the room list of the first ready session to the given listener,
@@ -2560,6 +2731,20 @@ public interface CoreAppInterface {
      * Set how the given room notifies, or hand it back to the defaults.
      */
     suspend fun `setRoomNotificationMode`(`roomId`: kotlin.String, `mode`: FfiRoomNotificationMode)
+    
+    /**
+     * Replace the room's permission thresholds, collected exactly as
+     * the application's permissions page collects them: overrides that
+     * match their default are elided, redacting one's own messages can
+     * never need more power than redacting others', and the per-user
+     * levels are carried over untouched.
+     */
+    suspend fun `setRoomPermissionsMatrix`(`roomId`: kotlin.String, `matrix`: FfiPowerLevelsMatrix)
+    
+    /**
+     * Replace the room's server ACL.
+     */
+    suspend fun `setRoomServerAcl`(`roomId`: kotlin.String, `allow`: List<kotlin.String>, `deny`: List<kotlin.String>, `allowIpLiterals`: kotlin.Boolean)
     
     /**
      * Give the thread rooted at the given event to the given listener,
@@ -2625,6 +2810,11 @@ public interface CoreAppInterface {
      * Stop ignoring the given user.
      */
     suspend fun `unignoreUser`(`userId`: kotlin.String)
+    
+    /**
+     * Upgrade the room to the given version.
+     */
+    suspend fun `upgradeRoom`(`roomId`: kotlin.String, `newVersion`: kotlin.String)
     
     companion object
 }
@@ -3722,6 +3912,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Remove the room's avatar.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `removeRoomAvatar`(`roomId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_remove_room_avatar(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Rename one of the account's sessions.
      */
     @Throws(CoreException::class)
@@ -3825,6 +4040,81 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * The room's addresses: canonical and alternative public aliases,
+     * the aliases registered on this homeserver, and whether the room
+     * is published in the server's directory.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `roomAddresses`(`roomId`: kotlin.String) : FfiRoomAddresses {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_room_addresses(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiRoomAddresses.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The room's history visibility, and whether we may change it.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `roomHistoryVisibility`(`roomId`: kotlin.String) : FfiHistoryVisibilityInfo {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_room_history_visibility(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiHistoryVisibilityInfo.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The room's join rule, with what this room's version supports and
+     * whether we may change it.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `roomJoinRule`(`roomId`: kotlin.String) : FfiJoinRuleInfo {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_room_join_rule(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiJoinRuleInfo.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * One page of the room's media history, walking backward from
      * `from`, or from the end of the room when it is `None`.
      *
@@ -3897,6 +4187,84 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { FfiConverterTypeFfiRoomNotificationMode.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The room's permission thresholds — the application's permissions
+     * page, flattened: role defaults, action levels, and the per-event
+     * overrides it exposes.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `roomPermissionsMatrix`(`roomId`: kotlin.String) : FfiPowerLevelsMatrix {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_room_permissions_matrix(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiPowerLevelsMatrix.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The room's server ACL. An absent event reads as the open default:
+     * every server allowed, IP literals too.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `roomServerAcl`(`roomId`: kotlin.String) : FfiServerAcl {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_room_server_acl(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiServerAcl.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The room versions an upgrade could go to, per the application's
+     * rules: stable versions at or above both the current and the
+     * server's default, the current and default versions listed as
+     * unstable when they are, sorted, with the suggested pick marked.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `roomUpgradeInfo`(`roomId`: kotlin.String) : FfiUpgradeInfo {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_room_upgrade_info(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiUpgradeInfo.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
     )
     }
 
@@ -4411,6 +4779,63 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Change one aspect of the room's addresses. The canonical-alias
+     * event is read, mutated exactly as the application's aliases model
+     * does, and sent back whole; registering and unregistering local
+     * aliases go through the directory endpoints; publishing flips the
+     * room's directory visibility.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setRoomAddress`(`roomId`: kotlin.String, `action`: FfiAddressAction) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_room_address(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterTypeFfiAddressAction.lower(`action`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Change the room's avatar: upload the file, then point
+     * `m.room.avatar` at it, as the application's edit-details page
+     * does. Width and height come from the embedder, which decoded the
+     * picture to show it.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setRoomAvatar`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String, `width`: kotlin.UInt?, `height`: kotlin.UInt?) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_room_avatar(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`filePath`),FfiConverterString.lower(`mimeType`),FfiConverterOptionalUInt.lower(`width`),FfiConverterOptionalUInt.lower(`height`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Set the given room's name and topic.
      */
     @Throws(CoreException::class)
@@ -4421,6 +4846,58 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_set_room_details(
                 uniffiHandle,
                 FfiConverterString.lower(`roomId`),FfiConverterString.lower(`name`),FfiConverterString.lower(`topic`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Change the room's history visibility.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setRoomHistoryVisibility`(`roomId`: kotlin.String, `value`: FfiHistoryVisibility) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_room_history_visibility(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterTypeFfiHistoryVisibility.lower(`value`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Change the room's join rule, computed as the application does: a
+     * restricted rule takes the given space, or keeps the saved allow
+     * list when none is given — never an empty one.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setRoomJoinRule`(`roomId`: kotlin.String, `value`: FfiJoinRuleValue, `allowSpaceId`: kotlin.String?) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_room_join_rule(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterTypeFfiJoinRuleValue.lower(`value`),FfiConverterOptionalString.lower(`allowSpaceId`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -4464,6 +4941,60 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_set_room_notification_mode(
                 uniffiHandle,
                 FfiConverterString.lower(`roomId`),FfiConverterTypeFfiRoomNotificationMode.lower(`mode`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Replace the room's permission thresholds, collected exactly as
+     * the application's permissions page collects them: overrides that
+     * match their default are elided, redacting one's own messages can
+     * never need more power than redacting others', and the per-user
+     * levels are carried over untouched.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setRoomPermissionsMatrix`(`roomId`: kotlin.String, `matrix`: FfiPowerLevelsMatrix) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_room_permissions_matrix(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterTypeFfiPowerLevelsMatrix.lower(`matrix`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Replace the room's server ACL.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setRoomServerAcl`(`roomId`: kotlin.String, `allow`: List<kotlin.String>, `deny`: List<kotlin.String>, `allowIpLiterals`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_room_server_acl(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterSequenceString.lower(`allow`),FfiConverterSequenceString.lower(`deny`),FfiConverterBoolean.lower(`allowIpLiterals`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -4676,6 +5207,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_unignore_user(
                 uniffiHandle,
                 FfiConverterString.lower(`userId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Upgrade the room to the given version.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `upgradeRoom`(`roomId`: kotlin.String, `newVersion`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_upgrade_room(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`newVersion`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -6871,6 +7427,53 @@ public object FfiConverterTypeFfiHistoryPage: FfiConverterRustBuffer<FfiHistoryP
 
 
 /**
+ * A room's history visibility, and whether we may change it.
+ */
+data class FfiHistoryVisibilityInfo (
+    /**
+     * The current visibility.
+     */
+    var `value`: FfiHistoryVisibility
+    , 
+    /**
+     * Whether we may change it.
+     */
+    var `canChange`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiHistoryVisibilityInfo: FfiConverterRustBuffer<FfiHistoryVisibilityInfo> {
+    override fun read(buf: ByteBuffer): FfiHistoryVisibilityInfo {
+        return FfiHistoryVisibilityInfo(
+            FfiConverterTypeFfiHistoryVisibility.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiHistoryVisibilityInfo) = (
+            FfiConverterTypeFfiHistoryVisibility.allocationSize(value.`value`) +
+            FfiConverterBoolean.allocationSize(value.`canChange`)
+    )
+
+    override fun write(value: FfiHistoryVisibilityInfo, buf: ByteBuffer) {
+            FfiConverterTypeFfiHistoryVisibility.write(value.`value`, buf)
+            FfiConverterBoolean.write(value.`canChange`, buf)
+    }
+}
+
+
+
+/**
  * The reply context of an event: what it replies to.
  */
 data class FfiInReplyTo (
@@ -6920,6 +7523,85 @@ public object FfiConverterTypeFfiInReplyTo: FfiConverterRustBuffer<FfiInReplyTo>
             FfiConverterString.write(value.`eventId`, buf)
             FfiConverterOptionalString.write(value.`sender`, buf)
             FfiConverterOptionalString.write(value.`body`, buf)
+    }
+}
+
+
+
+/**
+ * A room's join rule with what the room's version supports.
+ */
+data class FfiJoinRuleInfo (
+    /**
+     * The current rule.
+     */
+    var `value`: FfiJoinRuleValue
+    , 
+    /**
+     * The rooms whose members a restricted rule allows.
+     */
+    var `allowRoomIds`: List<kotlin.String>
+    , 
+    /**
+     * Whether the room's version supports knocking.
+     */
+    var `supportsKnock`: kotlin.Boolean
+    , 
+    /**
+     * Whether the room's version supports the restricted rule.
+     */
+    var `supportsRestricted`: kotlin.Boolean
+    , 
+    /**
+     * Whether the room's version supports knock-restricted.
+     */
+    var `supportsKnockRestricted`: kotlin.Boolean
+    , 
+    /**
+     * Whether we may change the rule.
+     */
+    var `canChange`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiJoinRuleInfo: FfiConverterRustBuffer<FfiJoinRuleInfo> {
+    override fun read(buf: ByteBuffer): FfiJoinRuleInfo {
+        return FfiJoinRuleInfo(
+            FfiConverterTypeFfiJoinRuleValue.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiJoinRuleInfo) = (
+            FfiConverterTypeFfiJoinRuleValue.allocationSize(value.`value`) +
+            FfiConverterSequenceString.allocationSize(value.`allowRoomIds`) +
+            FfiConverterBoolean.allocationSize(value.`supportsKnock`) +
+            FfiConverterBoolean.allocationSize(value.`supportsRestricted`) +
+            FfiConverterBoolean.allocationSize(value.`supportsKnockRestricted`) +
+            FfiConverterBoolean.allocationSize(value.`canChange`)
+    )
+
+    override fun write(value: FfiJoinRuleInfo, buf: ByteBuffer) {
+            FfiConverterTypeFfiJoinRuleValue.write(value.`value`, buf)
+            FfiConverterSequenceString.write(value.`allowRoomIds`, buf)
+            FfiConverterBoolean.write(value.`supportsKnock`, buf)
+            FfiConverterBoolean.write(value.`supportsRestricted`, buf)
+            FfiConverterBoolean.write(value.`supportsKnockRestricted`, buf)
+            FfiConverterBoolean.write(value.`canChange`, buf)
     }
 }
 
@@ -7055,6 +7737,190 @@ public object FfiConverterTypeFfiMention: FfiConverterRustBuffer<FfiMention> {
     override fun write(value: FfiMention, buf: ByteBuffer) {
             FfiConverterString.write(value.`userId`, buf)
             FfiConverterString.write(value.`displayName`, buf)
+    }
+}
+
+
+
+/**
+ * A room's permission thresholds, flattened the way the application's
+ * permissions page lays them out.
+ */
+data class FfiPowerLevelsMatrix (
+    /**
+     * The default level of a member.
+     */
+    var `usersDefault`: kotlin.Long
+    , 
+    /**
+     * The level needed to send messages.
+     */
+    var `eventsDefault`: kotlin.Long
+    , 
+    /**
+     * The default level needed to change state.
+     */
+    var `stateDefault`: kotlin.Long
+    , 
+    /**
+     * The level needed to invite.
+     */
+    var `invite`: kotlin.Long
+    , 
+    /**
+     * The level needed to kick.
+     */
+    var `kick`: kotlin.Long
+    , 
+    /**
+     * The level needed to ban.
+     */
+    var `ban`: kotlin.Long
+    , 
+    /**
+     * The level needed to remove others' messages.
+     */
+    var `redactOthers`: kotlin.Long
+    , 
+    /**
+     * The level needed to remove one's own messages.
+     */
+    var `redactOwn`: kotlin.Long
+    , 
+    /**
+     * The level needed to notify the whole room.
+     */
+    var `notifyRoom`: kotlin.Long
+    , 
+    /**
+     * The level needed to change the room name.
+     */
+    var `name`: kotlin.Long
+    , 
+    /**
+     * The level needed to change the topic.
+     */
+    var `topic`: kotlin.Long
+    , 
+    /**
+     * The level needed to change the avatar.
+     */
+    var `avatar`: kotlin.Long
+    , 
+    /**
+     * The level needed to change the addresses.
+     */
+    var `aliases`: kotlin.Long
+    , 
+    /**
+     * The level needed to change the history visibility.
+     */
+    var `historyVisibility`: kotlin.Long
+    , 
+    /**
+     * The level needed to enable encryption.
+     */
+    var `encryption`: kotlin.Long
+    , 
+    /**
+     * The level needed to change these permissions.
+     */
+    var `powerLevels`: kotlin.Long
+    , 
+    /**
+     * The level needed to change the server ACL.
+     */
+    var `serverAcl`: kotlin.Long
+    , 
+    /**
+     * The level needed to upgrade the room.
+     */
+    var `upgrade`: kotlin.Long
+    , 
+    /**
+     * Whether we may change any of this.
+     */
+    var `canChange`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiPowerLevelsMatrix: FfiConverterRustBuffer<FfiPowerLevelsMatrix> {
+    override fun read(buf: ByteBuffer): FfiPowerLevelsMatrix {
+        return FfiPowerLevelsMatrix(
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiPowerLevelsMatrix) = (
+            FfiConverterLong.allocationSize(value.`usersDefault`) +
+            FfiConverterLong.allocationSize(value.`eventsDefault`) +
+            FfiConverterLong.allocationSize(value.`stateDefault`) +
+            FfiConverterLong.allocationSize(value.`invite`) +
+            FfiConverterLong.allocationSize(value.`kick`) +
+            FfiConverterLong.allocationSize(value.`ban`) +
+            FfiConverterLong.allocationSize(value.`redactOthers`) +
+            FfiConverterLong.allocationSize(value.`redactOwn`) +
+            FfiConverterLong.allocationSize(value.`notifyRoom`) +
+            FfiConverterLong.allocationSize(value.`name`) +
+            FfiConverterLong.allocationSize(value.`topic`) +
+            FfiConverterLong.allocationSize(value.`avatar`) +
+            FfiConverterLong.allocationSize(value.`aliases`) +
+            FfiConverterLong.allocationSize(value.`historyVisibility`) +
+            FfiConverterLong.allocationSize(value.`encryption`) +
+            FfiConverterLong.allocationSize(value.`powerLevels`) +
+            FfiConverterLong.allocationSize(value.`serverAcl`) +
+            FfiConverterLong.allocationSize(value.`upgrade`) +
+            FfiConverterBoolean.allocationSize(value.`canChange`)
+    )
+
+    override fun write(value: FfiPowerLevelsMatrix, buf: ByteBuffer) {
+            FfiConverterLong.write(value.`usersDefault`, buf)
+            FfiConverterLong.write(value.`eventsDefault`, buf)
+            FfiConverterLong.write(value.`stateDefault`, buf)
+            FfiConverterLong.write(value.`invite`, buf)
+            FfiConverterLong.write(value.`kick`, buf)
+            FfiConverterLong.write(value.`ban`, buf)
+            FfiConverterLong.write(value.`redactOthers`, buf)
+            FfiConverterLong.write(value.`redactOwn`, buf)
+            FfiConverterLong.write(value.`notifyRoom`, buf)
+            FfiConverterLong.write(value.`name`, buf)
+            FfiConverterLong.write(value.`topic`, buf)
+            FfiConverterLong.write(value.`avatar`, buf)
+            FfiConverterLong.write(value.`aliases`, buf)
+            FfiConverterLong.write(value.`historyVisibility`, buf)
+            FfiConverterLong.write(value.`encryption`, buf)
+            FfiConverterLong.write(value.`powerLevels`, buf)
+            FfiConverterLong.write(value.`serverAcl`, buf)
+            FfiConverterLong.write(value.`upgrade`, buf)
+            FfiConverterBoolean.write(value.`canChange`, buf)
     }
 }
 
@@ -7425,6 +8291,77 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
 
 
 /**
+ * A room's addresses, as the details page shows them.
+ */
+data class FfiRoomAddresses (
+    /**
+     * The canonical (main public) address.
+     */
+    var `canonical`: kotlin.String?
+    , 
+    /**
+     * The other public addresses.
+     */
+    var `alt`: List<kotlin.String>
+    , 
+    /**
+     * The addresses registered on this homeserver.
+     */
+    var `local`: List<kotlin.String>
+    , 
+    /**
+     * Whether the room is published in the server's directory.
+     */
+    var `published`: kotlin.Boolean
+    , 
+    /**
+     * Whether we may change the public addresses.
+     */
+    var `canChange`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiRoomAddresses: FfiConverterRustBuffer<FfiRoomAddresses> {
+    override fun read(buf: ByteBuffer): FfiRoomAddresses {
+        return FfiRoomAddresses(
+            FfiConverterOptionalString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiRoomAddresses) = (
+            FfiConverterOptionalString.allocationSize(value.`canonical`) +
+            FfiConverterSequenceString.allocationSize(value.`alt`) +
+            FfiConverterSequenceString.allocationSize(value.`local`) +
+            FfiConverterBoolean.allocationSize(value.`published`) +
+            FfiConverterBoolean.allocationSize(value.`canChange`)
+    )
+
+    override fun write(value: FfiRoomAddresses, buf: ByteBuffer) {
+            FfiConverterOptionalString.write(value.`canonical`, buf)
+            FfiConverterSequenceString.write(value.`alt`, buf)
+            FfiConverterSequenceString.write(value.`local`, buf)
+            FfiConverterBoolean.write(value.`published`, buf)
+            FfiConverterBoolean.write(value.`canChange`, buf)
+    }
+}
+
+
+
+/**
  * One emoji of the short auth string.
  */
 data class FfiSasEmoji (
@@ -7529,6 +8466,69 @@ public object FfiConverterTypeFfiSearchResult: FfiConverterRustBuffer<FfiSearchR
             FfiConverterString.write(value.`sender`, buf)
             FfiConverterString.write(value.`body`, buf)
             FfiConverterULong.write(value.`timestamp`, buf)
+    }
+}
+
+
+
+/**
+ * A room's server ACL.
+ */
+data class FfiServerAcl (
+    /**
+     * The allowed server patterns.
+     */
+    var `allow`: List<kotlin.String>
+    , 
+    /**
+     * The denied server patterns.
+     */
+    var `deny`: List<kotlin.String>
+    , 
+    /**
+     * Whether servers named by IP literals are allowed.
+     */
+    var `allowIpLiterals`: kotlin.Boolean
+    , 
+    /**
+     * Whether we may change the ACL.
+     */
+    var `canChange`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiServerAcl: FfiConverterRustBuffer<FfiServerAcl> {
+    override fun read(buf: ByteBuffer): FfiServerAcl {
+        return FfiServerAcl(
+            FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiServerAcl) = (
+            FfiConverterSequenceString.allocationSize(value.`allow`) +
+            FfiConverterSequenceString.allocationSize(value.`deny`) +
+            FfiConverterBoolean.allocationSize(value.`allowIpLiterals`) +
+            FfiConverterBoolean.allocationSize(value.`canChange`)
+    )
+
+    override fun write(value: FfiServerAcl, buf: ByteBuffer) {
+            FfiConverterSequenceString.write(value.`allow`, buf)
+            FfiConverterSequenceString.write(value.`deny`, buf)
+            FfiConverterBoolean.write(value.`allowIpLiterals`, buf)
+            FfiConverterBoolean.write(value.`canChange`, buf)
     }
 }
 
@@ -7796,6 +8796,78 @@ public object FfiConverterTypeFfiStickerPack: FfiConverterRustBuffer<FfiStickerP
 
 
 
+/**
+ * The room versions an upgrade could go to.
+ */
+data class FfiUpgradeInfo (
+    /**
+     * The room's current version.
+     */
+    var `currentVersion`: kotlin.String
+    , 
+    /**
+     * The stable versions on offer, sorted.
+     */
+    var `stable`: List<kotlin.String>
+    , 
+    /**
+     * The unstable versions on offer, sorted.
+     */
+    var `unstable`: List<kotlin.String>
+    , 
+    /**
+     * The index of the suggested pick, stable and unstable
+     * concatenated.
+     */
+    var `selectedIndex`: kotlin.UInt
+    , 
+    /**
+     * Whether we may upgrade this room at all.
+     */
+    var `canUpgrade`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiUpgradeInfo: FfiConverterRustBuffer<FfiUpgradeInfo> {
+    override fun read(buf: ByteBuffer): FfiUpgradeInfo {
+        return FfiUpgradeInfo(
+            FfiConverterString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiUpgradeInfo) = (
+            FfiConverterString.allocationSize(value.`currentVersion`) +
+            FfiConverterSequenceString.allocationSize(value.`stable`) +
+            FfiConverterSequenceString.allocationSize(value.`unstable`) +
+            FfiConverterUInt.allocationSize(value.`selectedIndex`) +
+            FfiConverterBoolean.allocationSize(value.`canUpgrade`)
+    )
+
+    override fun write(value: FfiUpgradeInfo, buf: ByteBuffer) {
+            FfiConverterString.write(value.`currentVersion`, buf)
+            FfiConverterSequenceString.write(value.`stable`, buf)
+            FfiConverterSequenceString.write(value.`unstable`, buf)
+            FfiConverterUInt.write(value.`selectedIndex`, buf)
+            FfiConverterBoolean.write(value.`canUpgrade`, buf)
+    }
+}
+
+
+
 
 
 /**
@@ -7864,6 +8936,254 @@ public object FfiConverterTypeCoreError : FfiConverterRustBuffer<CoreException> 
     }
 
 }
+
+
+
+/**
+ * One edit to a room's addresses.
+ */
+sealed class FfiAddressAction {
+    
+    /**
+     * Publish the room in (or withdraw it from) the directory.
+     */
+    data class Publish(
+        /**
+         * Whether the room should be listed.
+         */
+        val `published`: kotlin.Boolean) : FfiAddressAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Register an address on this homeserver.
+     */
+    data class RegisterLocal(
+        /**
+         * The address.
+         */
+        val `alias`: kotlin.String) : FfiAddressAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Unregister an address from this homeserver.
+     */
+    data class UnregisterLocal(
+        /**
+         * The address.
+         */
+        val `alias`: kotlin.String) : FfiAddressAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Make an address the canonical one.
+     */
+    data class SetCanonical(
+        /**
+         * The address.
+         */
+        val `alias`: kotlin.String) : FfiAddressAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Remove the canonical address.
+     */
+    data class RemoveCanonical(
+        /**
+         * The address.
+         */
+        val `alias`: kotlin.String) : FfiAddressAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Add a public alternative address.
+     */
+    data class AddAlt(
+        /**
+         * The address.
+         */
+        val `alias`: kotlin.String) : FfiAddressAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Remove a public alternative address.
+     */
+    data class RemoveAlt(
+        /**
+         * The address.
+         */
+        val `alias`: kotlin.String) : FfiAddressAction()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+
+    
+    
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiAddressAction : FfiConverterRustBuffer<FfiAddressAction>{
+    override fun read(buf: ByteBuffer): FfiAddressAction {
+        return when(buf.getInt()) {
+            1 -> FfiAddressAction.Publish(
+                FfiConverterBoolean.read(buf),
+                )
+            2 -> FfiAddressAction.RegisterLocal(
+                FfiConverterString.read(buf),
+                )
+            3 -> FfiAddressAction.UnregisterLocal(
+                FfiConverterString.read(buf),
+                )
+            4 -> FfiAddressAction.SetCanonical(
+                FfiConverterString.read(buf),
+                )
+            5 -> FfiAddressAction.RemoveCanonical(
+                FfiConverterString.read(buf),
+                )
+            6 -> FfiAddressAction.AddAlt(
+                FfiConverterString.read(buf),
+                )
+            7 -> FfiAddressAction.RemoveAlt(
+                FfiConverterString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: FfiAddressAction) = when(value) {
+        is FfiAddressAction.Publish -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterBoolean.allocationSize(value.`published`)
+            )
+        }
+        is FfiAddressAction.RegisterLocal -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`alias`)
+            )
+        }
+        is FfiAddressAction.UnregisterLocal -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`alias`)
+            )
+        }
+        is FfiAddressAction.SetCanonical -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`alias`)
+            )
+        }
+        is FfiAddressAction.RemoveCanonical -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`alias`)
+            )
+        }
+        is FfiAddressAction.AddAlt -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`alias`)
+            )
+        }
+        is FfiAddressAction.RemoveAlt -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`alias`)
+            )
+        }
+    }
+
+    override fun write(value: FfiAddressAction, buf: ByteBuffer) {
+        when(value) {
+            is FfiAddressAction.Publish -> {
+                buf.putInt(1)
+                FfiConverterBoolean.write(value.`published`, buf)
+                Unit
+            }
+            is FfiAddressAction.RegisterLocal -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`alias`, buf)
+                Unit
+            }
+            is FfiAddressAction.UnregisterLocal -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.`alias`, buf)
+                Unit
+            }
+            is FfiAddressAction.SetCanonical -> {
+                buf.putInt(4)
+                FfiConverterString.write(value.`alias`, buf)
+                Unit
+            }
+            is FfiAddressAction.RemoveCanonical -> {
+                buf.putInt(5)
+                FfiConverterString.write(value.`alias`, buf)
+                Unit
+            }
+            is FfiAddressAction.AddAlt -> {
+                buf.putInt(6)
+                FfiConverterString.write(value.`alias`, buf)
+                Unit
+            }
+            is FfiAddressAction.RemoveAlt -> {
+                buf.putInt(7)
+                FfiConverterString.write(value.`alias`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
 
 
 
@@ -8178,6 +9498,117 @@ public object FfiConverterTypeFfiHistoryKind: FfiConverterRustBuffer<FfiHistoryK
     override fun allocationSize(value: FfiHistoryKind) = 4UL
 
     override fun write(value: FfiHistoryKind, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * Who can read a room's history.
+ */
+
+enum class FfiHistoryVisibility {
+    
+    /**
+     * Anyone, member or not.
+     */
+    WORLD_READABLE,
+    /**
+     * Members, for everything sent since they could have known of the
+     * room.
+     */
+    SHARED,
+    /**
+     * Members, since their invitation.
+     */
+    INVITED,
+    /**
+     * Members, since they joined.
+     */
+    JOINED;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiHistoryVisibility: FfiConverterRustBuffer<FfiHistoryVisibility> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiHistoryVisibility.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiHistoryVisibility) = 4UL
+
+    override fun write(value: FfiHistoryVisibility, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * The join rule of a room, as the choice the details page offers.
+ */
+
+enum class FfiJoinRuleValue {
+    
+    /**
+     * Anyone can join.
+     */
+    PUBLIC,
+    /**
+     * Only invited users can join.
+     */
+    INVITE,
+    /**
+     * Users can knock to request an invite.
+     */
+    KNOCK,
+    /**
+     * Members of an allowed room can join.
+     */
+    RESTRICTED,
+    /**
+     * Members of an allowed room can join, others can knock.
+     */
+    KNOCK_RESTRICTED,
+    /**
+     * A rule this page cannot edit.
+     */
+    UNSUPPORTED;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiJoinRuleValue: FfiConverterRustBuffer<FfiJoinRuleValue> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiJoinRuleValue.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiJoinRuleValue) = 4UL
+
+    override fun write(value: FfiJoinRuleValue, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
