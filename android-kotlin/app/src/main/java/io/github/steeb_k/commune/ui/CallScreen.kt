@@ -100,13 +100,20 @@ fun CallScreen(state: CommuneState) {
     ) {
         // Stepping out of the call to read the room behind it. The call
         // carries on; the bar at the top of every page brings it back.
+        //
+        // Not while it is still ringing: an unanswered call is shown over
+        // the lock screen, and stepping out of it there would be a way
+        // into the whole application without unlocking. There is nothing
+        // to step back to before answering anyway.
         Row(modifier = Modifier.fillMaxWidth()) {
-            IconButton(onClick = { state.minimizeCall() }) {
-                Icon(
-                    Icons.Filled.KeyboardArrowDown,
-                    contentDescription = "Leave the call on screen",
-                    tint = labelColor,
-                )
+            if (call.state != CommuneState.CallPhase.Ringing) {
+                IconButton(onClick = { state.minimizeCall() }) {
+                    Icon(
+                        Icons.Filled.KeyboardArrowDown,
+                        contentDescription = "Leave the call on screen",
+                        tint = labelColor,
+                    )
+                }
             }
         }
 
