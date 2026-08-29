@@ -350,6 +350,8 @@ class CommuneState(context: Context) {
         closePinned()
         closeRoomSearch()
         closeHistory()
+        clearSelection()
+        closeEventSource()
         closeAddresses()
         closeServerAcl()
         closePermissions()
@@ -506,6 +508,187 @@ class CommuneState(context: Context) {
 
     private fun coreMessage(error: Exception, fallback: String): String =
         (error as? io.github.steeb_k.commune.core.CoreException.Failed)?.msg ?: fallback
+
+    // The event menu extras: link, source, report, forward, discard,
+    // save, and the selection mode.
+    fun copyEventLink(eventId: String) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                try {
+                    val link = app.eventPermalink(room.roomId, eventId)
+                    main.post {
+                        val clipboard = appContext
+                            .getSystemService(android.content.ClipboardManager::class.java)
+                        clipboard.setPrimaryClip(
+                            android.content.ClipData.newPlainText("Message link", link)
+                        )
+                        toast("Message link copied to clipboard")
+                    }
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not build the link"))
+                }
+            }
+        }
+    }
+
+    /// The raw JSON on show in the properties dialog; null when closed.
+    var eventSource by mutableStateOf<String?>(null)
+        private set
+
+    fun openEventSource(eventId: String) {
+        val room = openRoom ?: return
+        eventSource = "Loading…"
+        thread {
+            runBlocking {
+                val source = try {
+                    app.eventSource(room.roomId, eventId)
+                } catch (e: Exception) {
+                    coreMessage(e, "Could not fetch the event")
+                }
+                main.post { if (eventSource != null) eventSource = source }
+            }
+        }
+    }
+
+    fun closeEventSource() {
+        eventSource = null
+    }
+
+    fun reportEvent(eventId: String, reason: String, onDone: (String?) -> Unit) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val error = try {
+                    app.reportEvent(room.roomId, eventId, reason.ifBlank { null })
+                    null
+                } catch (e: Exception) {
+                    coreMessage(e, "Could not report the event")
+                }
+                main.post { onDone(error) }
+            }
+        }
+    }
+
+    fun forwardEvent(eventId: String, targetRoomId: String) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                try {
+                    app.forwardEvent(room.roomId, eventId, targetRoomId)
+                    toast("Message forwarded")
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not forward the message"))
+                }
+            }
+        }
+    }
+
+    fun discardEcho(uniqueId: String) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                try {
+                    app.discardLocalEcho(room.roomId, uniqueId)
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not discard the message"))
+                }
+            }
+        }
+    }
+
+    fun saveEventMedia(event: FfiTimelineItem.Event) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val path = try {
+                    app.getTimelineMedia(room.roomId, event.uniqueId)
+                } catch (_: Exception) {
+                    null
+                }
+                if (path != null && saveToDownloads(path, event.body, null)) {
+                    toast("Saved to Downloads")
+                } else {
+                    toast("Could not save the file")
+                }
+            }
+        }
+    }
+
+    /// The timeline's selection mode: the set of selected unique IDs.
+    var selectedIds by mutableStateOf<Set<String>>(emptySet())
+        private set
+    var selectMode by mutableStateOf(false)
+        private set
+
+    fun startSelection(uniqueId: String) {
+        selectMode = true
+        selectedIds = setOf(uniqueId)
+    }
+
+    fun toggleSelected(uniqueId: String) {
+        selectedIds = if (uniqueId in selectedIds) {
+            selectedIds - uniqueId
+        } else {
+            selectedIds + uniqueId
+        }
+        if (selectedIds.isEmpty()) selectMode = false
+    }
+
+    fun clearSelection() {
+        selectMode = false
+        selectedIds = emptySet()
+    }
+
+    /// The selected events, in timeline order.
+    fun selectedEvents(): List<FfiTimelineItem.Event> = timeline
+        .filterIsInstance<FfiTimelineItem.Event>()
+        .filter { it.uniqueId in selectedIds }
+
+    fun copySelectedText() {
+        val text = selectedEvents().joinToString("\n") { it.body }
+        val clipboard = appContext
+            .getSystemService(android.content.ClipboardManager::class.java)
+        clipboard.setPrimaryClip(
+            android.content.ClipData.newPlainText("Messages", text)
+        )
+        toast("Copied")
+        clearSelection()
+    }
+
+    fun removeSelected() {
+        val ids = selectedEvents().mapNotNull { it.eventId }
+        clearSelection()
+        thread {
+            runBlocking {
+                for (eventId in ids) {
+                    try {
+                        app.redactEvent(openRoom?.roomId ?: return@runBlocking, eventId)
+                    } catch (e: Exception) {
+                        toast(coreMessage(e, "Could not remove a message"))
+                    }
+                }
+            }
+        }
+    }
+
+    fun forwardSelected(targetRoomId: String) {
+        val room = openRoom ?: return
+        val ids = selectedEvents().mapNotNull { it.eventId }
+        clearSelection()
+        thread {
+            runBlocking {
+                for (eventId in ids) {
+                    try {
+                        app.forwardEvent(room.roomId, eventId, targetRoomId)
+                    } catch (e: Exception) {
+                        toast(coreMessage(e, "Could not forward a message"))
+                    }
+                }
+                toast("Forwarded")
+            }
+        }
+    }
 
     fun sendGif(gif: FfiGif) {
         val room = openRoom ?: return

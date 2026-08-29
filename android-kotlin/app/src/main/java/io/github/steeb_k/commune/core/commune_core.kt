@@ -801,15 +801,23 @@ internal object IntegrityCheckingUniffiLib {
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_create_room(
     ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_discard_local_echo(
+    ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_edit_message(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_enable_recovery(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_event_permalink(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_event_source(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_explore_rooms(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_export_room_keys(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_fetch_gif_preview(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_forward_event(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_get_avatar(
     ): Short
@@ -862,6 +870,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_commune_core_checksum_method_coreapp_remove_room_avatar(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_rename_device(
+    ): Short
+    external fun uniffi_commune_core_checksum_method_coreapp_report_event(
     ): Short
     external fun uniffi_commune_core_checksum_method_coreapp_request_verification(
     ): Short
@@ -1044,15 +1054,23 @@ external fun uniffi_commune_core_fn_method_coreapp_create_direct_chat(`ptr`: Lon
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_create_room(`ptr`: Long,`name`: RustBuffer.ByValue,`topic`: RustBuffer.ByValue,`public`: Byte,`encrypted`: Byte,`alias`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_discard_local_echo(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_edit_message(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`newBody`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_enable_recovery(`ptr`: Long,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_event_permalink(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_event_source(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_explore_rooms(`ptr`: Long,`search`: RustBuffer.ByValue,`since`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_export_room_keys(`ptr`: Long,`path`: RustBuffer.ByValue,`passphrase`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_fetch_gif_preview(`ptr`: Long,`url`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_forward_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`targetRoomId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_avatar(`ptr`: Long,`mxcUri`: RustBuffer.ByValue,`size`: Int,
 ): Long
@@ -1105,6 +1123,8 @@ external fun uniffi_commune_core_fn_method_coreapp_remove_push_gateway(`ptr`: Lo
 external fun uniffi_commune_core_fn_method_coreapp_remove_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_rename_device(`ptr`: Long,`deviceId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_report_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_request_verification(`ptr`: Long,
 ): Long
@@ -1432,10 +1452,19 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_create_room() != 41384.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_discard_local_echo() != 49737.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_edit_message() != 19406.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_enable_recovery() != 5558.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_event_permalink() != 41148.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_event_source() != 60370.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_explore_rooms() != 15182.toShort()) {
@@ -1445,6 +1474,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_fetch_gif_preview() != 17739.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_forward_event() != 52545.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_avatar() != 49706.toShort()) {
@@ -1523,6 +1555,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_rename_device() != 388.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_report_event() != 3178.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_request_verification() != 29392.toShort()) {
@@ -2287,6 +2322,12 @@ public interface CoreAppInterface {
     suspend fun `createRoom`(`name`: kotlin.String, `topic`: kotlin.String?, `public`: kotlin.Boolean, `encrypted`: kotlin.Boolean, `alias`: kotlin.String?): kotlin.String
     
     /**
+     * Discard a message that never sent: redact its local echo, as the
+     * application's cancel-send does.
+     */
+    suspend fun `discardLocalEcho`(`roomId`: kotlin.String, `uniqueId`: kotlin.String)
+    
+    /**
      * Replace the given event's content with the given plain text.
      */
     suspend fun `editMessage`(`roomId`: kotlin.String, `eventId`: kotlin.String, `newBody`: kotlin.String)
@@ -2295,6 +2336,19 @@ public interface CoreAppInterface {
      * Set up recovery, returning the recovery key to write down.
      */
     suspend fun `enableRecovery`(): kotlin.String
+    
+    /**
+     * A matrix.to link to the given event, with the routing the SDK
+     * computes — what the application's Copy Message Link puts on the
+     * clipboard.
+     */
+    suspend fun `eventPermalink`(`roomId`: kotlin.String, `eventId`: kotlin.String): kotlin.String
+    
+    /**
+     * The raw JSON of the given event, pretty-printed — the properties
+     * dialog's source view.
+     */
+    suspend fun `eventSource`(`roomId`: kotlin.String, `eventId`: kotlin.String): kotlin.String
     
     /**
      * One page of the public room directory, optionally filtered by a
@@ -2314,6 +2368,16 @@ public interface CoreAppInterface {
      * configuration and one size guard for everything the app fetches.
      */
     suspend fun `fetchGifPreview`(`url`: kotlin.String): kotlin.ByteArray
+    
+    /**
+     * Send the given event's content to another room, verbatim.
+     *
+     * NOTE: the application's Forward menu item is a stub (its action
+     * is never registered), so there is no wire precedent to mirror —
+     * re-sending the original content as a fresh event of the same
+     * type is the design here.
+     */
+    suspend fun `forwardEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String, `targetRoomId`: kotlin.String)
     
     /**
      * Fetch the avatar at the given MXC URI into a file, returning its
@@ -2465,6 +2529,12 @@ public interface CoreAppInterface {
      * Rename one of the account's sessions.
      */
     suspend fun `renameDevice`(`deviceId`: kotlin.String, `name`: kotlin.String)
+    
+    /**
+     * Report the given event to the homeserver administrator, as the
+     * application's report action does.
+     */
+    suspend fun `reportEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String, `reason`: kotlin.String?)
     
     /**
      * Ask the account's verified sessions to verify this one. The flow
@@ -3205,6 +3275,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Discard a message that never sent: redact its local echo, as the
+     * application's cancel-send does.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `discardLocalEcho`(`roomId`: kotlin.String, `uniqueId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_discard_local_echo(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`uniqueId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Replace the given event's content with the given plain text.
      */
     @Throws(CoreException::class)
@@ -3240,6 +3336,57 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_enable_recovery(
                 uniffiHandle,
                 
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * A matrix.to link to the given event, with the routing the SDK
+     * computes — what the application's Copy Message Link puts on the
+     * clipboard.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `eventPermalink`(`roomId`: kotlin.String, `eventId`: kotlin.String) : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_event_permalink(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The raw JSON of the given event, pretty-printed — the properties
+     * dialog's source view.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `eventSource`(`roomId`: kotlin.String, `eventId`: kotlin.String) : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_event_source(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
@@ -3324,6 +3471,36 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterByteArray.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Send the given event's content to another room, verbatim.
+     *
+     * NOTE: the application's Forward menu item is a stub (its action
+     * is never registered), so there is no wire precedent to mirror —
+     * re-sending the original content as a fresh event of the same
+     * type is the design here.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `forwardEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String, `targetRoomId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_forward_event(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),FfiConverterString.lower(`targetRoomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -3947,6 +4124,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_rename_device(
                 uniffiHandle,
                 FfiConverterString.lower(`deviceId`),FfiConverterString.lower(`name`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Report the given event to the homeserver administrator, as the
+     * application's report action does.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `reportEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String, `reason`: kotlin.String?) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_report_event(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),FfiConverterOptionalString.lower(`reason`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },

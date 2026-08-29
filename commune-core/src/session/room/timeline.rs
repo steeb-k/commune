@@ -495,6 +495,36 @@ impl Timeline {
         }
     }
 
+    /// Discard the local echo with the given unique ID: redact it
+    /// through the timeline, which for an unsent message aborts the
+    /// send, as the application's cancel-send action does.
+    pub async fn discard_local_echo(&self, unique_id: &str) -> Result<(), ()> {
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return Err(());
+        };
+
+        let unique_id = unique_id.to_owned();
+        let handle = spawn_tokio!(async move {
+            let identifier = matrix_timeline
+                .items()
+                .await
+                .iter()
+                .find(|item| item.unique_id().0 == unique_id)
+                .and_then(|item| item.as_event())
+                .map(matrix_sdk_ui::timeline::EventTimelineItem::identifier);
+
+            match identifier {
+                Some(identifier) => matrix_timeline
+                    .redact(&identifier, None)
+                    .await
+                    .map_err(|_| ()),
+                None => Err(()),
+            }
+        });
+
+        handle.await.expect("task was not aborted")
+    }
+
     /// Send a recorded voice message: an audio attachment with its
     /// duration and the voice-message marker.
     pub async fn send_voice(

@@ -4292,6 +4292,266 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// A matrix.to link to the given event, with the routing the SDK
+    /// computes — what the application's Copy Message Link puts on the
+    /// clipboard.
+    pub async fn event_permalink(
+        &self,
+        room_id: String,
+        event_id: String,
+    ) -> Result<String, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid event ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                room.matrix_room()
+                    .matrix_to_event_permalink(event_id)
+                    .await
+                    .map(|uri| uri.to_string())
+                    .map_err(|link_error| CoreError::Failed {
+                        msg: format!("Could not build the link: {link_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// The raw JSON of the given event, pretty-printed — the properties
+    /// dialog's source view.
+    pub async fn event_source(
+        &self,
+        room_id: String,
+        event_id: String,
+    ) -> Result<String, CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid event ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                let event =
+                    room.matrix_room()
+                        .event(&event_id, None)
+                        .await
+                        .map_err(|event_error| CoreError::Failed {
+                            msg: format!("Could not fetch the event: {event_error}"),
+                        })?;
+
+                let value =
+                    event
+                        .raw()
+                        .deserialize_as::<serde_json::Value>()
+                        .map_err(|json_error| CoreError::Failed {
+                            msg: format!("Could not read the event: {json_error}"),
+                        })?;
+                serde_json::to_string_pretty(&value).map_err(|json_error| CoreError::Failed {
+                    msg: format!("Could not render the event: {json_error}"),
+                })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Report the given event to the homeserver administrator, as the
+    /// application's report action does.
+    pub async fn report_event(
+        &self,
+        room_id: String,
+        event_id: String,
+        reason: Option<String>,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid event ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                room.matrix_room()
+                    .report_content(event_id, reason)
+                    .await
+                    .map(|_| ())
+                    .map_err(|report_error| CoreError::Failed {
+                        msg: format!("Could not report the event: {report_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Send the given event's content to another room, verbatim.
+    ///
+    /// NOTE: the application's Forward menu item is a stub (its action
+    /// is never registered), so there is no wire precedent to mirror —
+    /// re-sending the original content as a fresh event of the same
+    /// type is the design here.
+    pub async fn forward_event(
+        &self,
+        room_id: String,
+        event_id: String,
+        target_room_id: String,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid event ID".to_owned(),
+                })?;
+                let target_room_id =
+                    ruma::RoomId::parse(&target_room_id).map_err(|_| CoreError::Failed {
+                        msg: "Invalid room ID".to_owned(),
+                    })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+                let target =
+                    session
+                        .room_list()
+                        .get(&target_room_id)
+                        .ok_or_else(|| CoreError::Failed {
+                            msg: "Unknown room".to_owned(),
+                        })?;
+
+                let event =
+                    room.matrix_room()
+                        .event(&event_id, None)
+                        .await
+                        .map_err(|event_error| CoreError::Failed {
+                            msg: format!("Could not fetch the event: {event_error}"),
+                        })?;
+                let value =
+                    event
+                        .raw()
+                        .deserialize_as::<serde_json::Value>()
+                        .map_err(|json_error| CoreError::Failed {
+                            msg: format!("Could not read the event: {json_error}"),
+                        })?;
+                let event_type = value
+                    .get("type")
+                    .and_then(|event_type| event_type.as_str())
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "The event has no type".to_owned(),
+                    })?
+                    .to_owned();
+                let content = value
+                    .get("content")
+                    .cloned()
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "The event has no content".to_owned(),
+                    })?;
+                let raw_content = serde_json::from_value::<
+                    ruma::serde::Raw<ruma::events::AnyMessageLikeEventContent>,
+                >(content)
+                .map_err(|json_error| CoreError::Failed {
+                    msg: format!("Could not carry the content over: {json_error}"),
+                })?;
+
+                target
+                    .matrix_room()
+                    .send_raw(&event_type, raw_content)
+                    .await
+                    .map(|_| ())
+                    .map_err(|send_error| CoreError::Failed {
+                        msg: format!("Could not forward the message: {send_error}"),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
+    /// Discard a message that never sent: redact its local echo, as the
+    /// application's cancel-send does.
+    pub async fn discard_local_echo(
+        &self,
+        room_id: String,
+        unique_id: String,
+    ) -> Result<(), CoreError> {
+        let Some(session) = self.first_ready_session() else {
+            return Err(CoreError::Failed {
+                msg: "No session".to_owned(),
+            });
+        };
+
+        RUNTIME
+            .spawn(async move {
+                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
+                    msg: "Invalid room ID".to_owned(),
+                })?;
+                let room = session
+                    .room_list()
+                    .get(&room_id)
+                    .ok_or_else(|| CoreError::Failed {
+                        msg: "Unknown room".to_owned(),
+                    })?;
+
+                room.live_timeline()
+                    .discard_local_echo(&unique_id)
+                    .await
+                    .map_err(|()| CoreError::Failed {
+                        msg: "Could not discard the message".to_owned(),
+                    })
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Retry the messages that failed to send, by waking the send queue
     /// back up.
     ///
