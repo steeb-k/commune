@@ -335,12 +335,27 @@ session wants UI work sooner.
 
 ### Track 3 — convergence
 
-After the facade stabilizes.
+**Underway since 29 August 2026. The plan of record is
+`doc/track3-convergence.md`; read it rather than this section, which is kept
+only for the history of how the work was priced.**
 
 18. The GTK app consumes `commune-core` module by module, deleting its
     duplicated model layer; the doc ledgers get updated as each module
     moves (the per-feature docs are written against the current shape —
     budget for this, `AGENTS.md` treats them as load-bearing).
+
+    What this chunk did not say, and what a measured pass over the crate
+    found on 29 August: the application cannot consume the core while
+    `facade.rs` holds the logic. `impl CoreApp` is 135 methods and about
+    5,650 lines, and permissions, server ACLs, the upgrade rules, call
+    signalling, image packs, verification and device management all live
+    inside it rather than in `session/`. Decomposing it is a phase of its
+    own and a hard prerequisite for every stateful module. The same pass
+    settled four questions this section left open — full spine rather than
+    the leaves alone, the GTK sources as the authority wherever the two
+    disagree, the work staying on this branch, and convergence before the
+    remaining parity gaps. All four are recorded in
+    `doc/track3-convergence.md`.
 
 ## Risks and standing costs
 

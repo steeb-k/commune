@@ -8,10 +8,15 @@ Rust core over UniFFI.
 
 The native core and the bindings come out of `../commune-core`:
 
+Everything below needs `--features ffi`: the facade and the UniFFI
+scaffolding are behind it, so a build without it exports nothing. The GTK
+application links the same crate with the feature off — see Track 3 of
+`../doc/kotlin-plan.md`. `--features cli` implies it.
+
 ```sh
 # 1. The .so, per ABI (in the WSL build environment; NDK env as in
 #    doc/kotlin-plan.md):
-cargo build --lib --target x86_64-linux-android
+cargo build --lib --features ffi --target x86_64-linux-android
 llvm-strip -o libcommune_core.stripped.so .../libcommune_core.so
 
 # 2. Copy it in (never committed — see .gitignore):

@@ -8,6 +8,11 @@
 #
 # The Kotlin bindings are generated separately (see README.md): they
 # change when the facade changes, the .so on every core change.
+#
+# `--features ffi` is not optional: the facade and the UniFFI scaffolding
+# are behind it, so without it the cdylib exports nothing and the app
+# fails at load time rather than at build time. The GTK application links
+# the same crate with the feature off — see Track 3 of doc/kotlin-plan.md.
 set -eu
 
 NDK_VERSION=${NDK_VERSION:-27.2.12479018}
@@ -50,7 +55,7 @@ for target in "${targets[@]}"; do
     "AR_${env_target}=$NDK_BIN/llvm-ar" \
     "RANLIB_${env_target}=$NDK_BIN/llvm-ranlib" \
     "CARGO_TARGET_$(echo "$env_target" | tr '[:lower:]' '[:upper:]')_LINKER=$clang" \
-    cargo build --manifest-path "$CORE_DIR/Cargo.toml" --lib --target "$target" "${profile_flag[@]}"
+    cargo build --manifest-path "$CORE_DIR/Cargo.toml" --lib --features ffi --target "$target" "${profile_flag[@]}"
 
   mkdir -p "$JNILIBS_DIR/$abi"
   "$NDK_BIN/llvm-strip" \

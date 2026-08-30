@@ -1,3 +1,13 @@
+# The application and the headless core it is being moved onto resolve one
+# dependency graph and share one lock file, so a version can never differ
+# between the GTK build and the Android one. See Track 3 of
+# `doc/kotlin-plan.md`.
+[workspace]
+members = ["commune-core"]
+# The pre-commit checks are a build tool, not part of the application; they
+# keep their own lock so their dependencies never reach the shipped binary.
+exclude = ["hooks/checks"]
+
 [package]
 name = "commune"
 version = "1.0.0-rc1"
