@@ -1,16 +1,16 @@
 //! The headless Commune core.
 //!
 //! Everything here must build with no GTK, no glib and no display: this
-//! crate is what the Kotlin UI reaches over `UniFFI` and what the GTK UI
-//! will consume directly once Track 3 of `doc/kotlin-plan.md` lands.
-//! The extraction chunks populate it module by module; the modules below
-//! are chunk 1, lifted from `src/` with their `GObject` and gettext touches
-//! removed and nothing else changed.
+//! crate is what the Kotlin UI reaches over `UniFFI`, and what the GTK UI
+//! is being moved onto module by module — see `doc/track3-convergence.md`.
+//! The `UniFFI` surface is behind the `ffi` feature, so the GTK build links
+//! this crate without an FFI runtime; the Android build turns it on.
 
 use std::sync::LazyLock;
 
 pub mod config;
 pub mod events;
+#[cfg(feature = "ffi")]
 pub mod facade;
 pub mod http;
 pub mod klipy;
@@ -24,6 +24,7 @@ pub mod settings;
 pub mod tls;
 pub mod utils;
 
+#[cfg(feature = "ffi")]
 uniffi::setup_scaffolding!();
 
 /// The default tokio runtime to be used for async tasks.
@@ -55,7 +56,7 @@ pub trait UserFacingError {
 
 /// The core's own version, exported so the very first generated Kotlin
 /// binding has something real to call.
-#[uniffi::export]
+#[cfg_attr(feature = "ffi", uniffi::export)]
 #[must_use]
 pub fn core_version() -> String {
     env!("CARGO_PKG_VERSION").to_owned()

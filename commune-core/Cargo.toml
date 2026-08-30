@@ -1,6 +1,7 @@
 # The headless core shared between the GTK UI and the Kotlin UI.
-# See doc/kotlin-plan.md. Deliberately detached from the application's
-# build ([workspace] below) until Track 3 points the GTK app at it.
+# See doc/kotlin-plan.md. A member of the application's workspace since
+# Track 3 began: one lock file, one resolved dependency graph, and the
+# application's fmt/machete/deny gates cover this crate too.
 #
 # The matrix-sdk and ruma revisions and feature lists MUST stay identical to
 # the application's Cargo.toml, so the two variants have one behavior and one
@@ -35,8 +36,13 @@ path = "src/bin/uniffi-bindgen.rs"
 required-features = ["cli"]
 
 [features]
-# The bindings generator; not part of the library.
-cli = ["uniffi/cli"]
+# The `UniFFI` surface: `facade.rs` and the scaffolding it needs. On for the
+# Android build; off for the GTK application, which links this crate directly
+# and has no FFI boundary to cross. See Track 3 of `doc/kotlin-plan.md`.
+ffi = ["dep:uniffi"]
+# The bindings generator; not part of the library, and meaningless without the
+# surface it generates bindings for.
+cli = ["ffi", "uniffi/cli"]
 
 # Please keep dependencies sorted.
 [dependencies]
@@ -68,7 +74,7 @@ zeroize = "1"
 
 # The same uniffi revision the pinned matrix-rust-sdk workspace uses, so the
 # facade and matrix-sdk-ffi stay on one FFI runtime.
-uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", rev = "e5f4821410bea19e71984ea5e06a7bc8b11ed9e5", version = "0.31.0", default-features = false, features = ["cargo-metadata"] }
+uniffi = { git = "https://github.com/mozilla/uniffi-rs.git", rev = "e5f4821410bea19e71984ea5e06a7bc8b11ed9e5", version = "0.31.0", default-features = false, features = ["cargo-metadata"], optional = true }
 
 [dependencies.matrix-sdk]
 # version = "0.18"
@@ -181,8 +187,6 @@ new_without_default = "allow"
 struct_field_names = "allow"
 unsafe_derive_deserialize = "allow"
 wildcard_imports = "allow"
-
-[workspace]
 
 [dev-dependencies]
 anyhow = "1"

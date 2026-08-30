@@ -77,6 +77,15 @@ section is kept current and is the thing to read before picking that work up
 again; the ledgers say what exists, only the plan says what is next and what it
 was repriced from.
 
+`doc/track3-convergence.md` is the plan for moving this application off its own
+model layer and onto `commune-core`, the headless crate the Kotlin variant
+already runs on. Read it before touching `src/session/`, `src/session_list/`,
+`src/secret/` or the portable half of `src/utils/`, because those are the
+modules it deletes. It also carries the divergence ledger: every place the
+core's transcription drifted from these sources, found as the convergence
+reaches it. `doc/kotlin-plan.md` is the older document that priced the Kotlin
+variant; its Track 3 section now defers to this one.
+
 Three of the ledgers are HTML pages rather than Markdown, and they are the ones
 that get forgotten: `doc/client-comparison.html` (Commune against nine other
 clients), `doc/spec-gaps.html` (Commune against the Client-Server API) and
