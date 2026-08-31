@@ -28,9 +28,30 @@ cargo run --features cli --bin uniffi-bindgen -- \
     generate --library target/debug/commune_core.dll \
     --language kotlin --out-dir target/bindings
 
-# 4. The APK (Gradle 9.3.1, AGP 9.1.0 — both in the build machine's cache):
-ANDROID_HOME=$HOME/android/sdk gradle assembleDebug
+# 4. The APK. There is no `gradlew` here and no `gradle` on the build
+#    machine's PATH, so reach the cached distribution directly:
+GRADLE=$(ls -d ~/.gradle/wrapper/dists/gradle-9.3.1-bin/*/gradle-9.3.1/bin/gradle | head -1)
+ANDROID_HOME=$HOME/android/sdk "$GRADLE" assembleDebug
 ```
+
+`build-core.sh --all` does steps 1 and 2 for both ABIs in one go, which is
+what Track 3's per-commit gate runs.
+
+### The KLIPY API key
+
+The GIF search needs one, and it is a credential: put it in
+`local.properties` beside this file, the only thing here that git ignores.
+
+```properties
+communeKlipyApiKey=…
+```
+
+**Not `gradle.properties`** — that one is tracked, and a credential in it is
+a credential committed. `~/.gradle/gradle.properties` and
+`-PcommuneKlipyApiKey=…` work as well. With no key the GIF search is inert
+rather than broken, exactly as an empty `klipy-api-key` Meson option leaves
+it on the desktop. `../doc/gif-search.md` has the whole story, including how
+the key came to be published once.
 
 Debug builds install as `io.github.steeb_k.commune.skeleton`, so they never
 displace the GTK build (or its seeded test session) on a device. Release
