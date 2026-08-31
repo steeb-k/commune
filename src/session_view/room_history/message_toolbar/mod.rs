@@ -1205,14 +1205,16 @@ mod imp {
             let client = session.client();
             let is_encrypted = room.is_encrypted();
 
-            let SelectedGif {
+            // Through the wrapper: the fields are moved out of the core's
+            // struct, and `Deref` only lends them.
+            let commune_core::klipy::SelectedGif {
                 url,
                 width,
                 height,
                 size,
                 slug,
                 title,
-            } = gif;
+            } = gif.into_inner();
 
             let handle = spawn_tokio!(async move {
                 let data = http::fetch(&url, MAX_GIF_SIZE).await?;

@@ -33,7 +33,6 @@ pub(crate) mod expression;
 mod expression_list_model;
 mod fixed_selection;
 mod grouping_list_model;
-pub(crate) mod http;
 pub(crate) mod key_bindings;
 pub(crate) mod klipy;
 mod location;
@@ -55,7 +54,6 @@ mod single_item_list_model;
 pub(crate) mod sourceview;
 pub(crate) mod string;
 mod template_callbacks;
-pub(crate) mod tls;
 pub(crate) mod toast;
 #[cfg(target_os = "windows")]
 pub(crate) mod windows_app_id;
@@ -65,6 +63,14 @@ pub(crate) mod windows_frame;
 pub(crate) mod windows_notifications;
 #[cfg(target_os = "windows")]
 pub(crate) mod windows_toast_activator;
+
+// Two leaves of Track 3 that moved wholesale, re-exported under the paths
+// they already had so that `utils::tls::matrix_client()` and
+// `utils::http::fetch()` read as they always did. Neither has a `glib` type
+// or a `gettext` call in it, so there was nothing left behind to wrap: the
+// application's copies were the core's copies with `pub(crate)` written on
+// them. See `doc/track3-convergence.md`.
+pub(crate) use commune_core::{http, tls};
 
 pub(crate) use self::{
     expression_list_model::ExpressionListModel,

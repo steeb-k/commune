@@ -880,8 +880,6 @@ dependencies = [
  "regex",
  "ruma",
  "rusqlite",
- "rustls",
- "rustls-pemfile",
  "secular",
  "serde",
  "serde_json",

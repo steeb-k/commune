@@ -28,9 +28,14 @@ use ruma::{
 use tracing::{debug, error, warn};
 
 mod emoticon_source;
-mod events;
 mod image_pack;
 mod pack_image;
+
+// The `m.image_pack` and `m.emotes` event types, which are the core's now:
+// ruma `EventContent` definitions and a shortcode validator, with no `glib`
+// type and no sentence anywhere in them. Bound to the name the module already
+// used, so every path below reads unchanged. See `doc/track3-convergence.md`.
+use commune_core::events::image_packs as events;
 
 use self::events::{
     EmoteRoomsEvent, EmoteRoomsEventContent, EnabledPacks, ImagePackRoomsEvent,
