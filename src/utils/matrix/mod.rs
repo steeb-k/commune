@@ -1,34 +1,18 @@
 //! Collection of methods related to the Matrix specification.
 
-use std::{borrow::Cow, fmt, path::Path, str::FromStr};
+use std::{borrow::Cow, fmt, str::FromStr};
 
 use gettextrs::gettext;
 use gtk::{glib, prelude::*};
-use matrix_sdk::{
-    AuthSession, Client, SessionMeta, SessionTokens,
-    authentication::{
-        matrix::MatrixSession,
-        oauth::{OAuthSession, UserSession},
-    },
-    config::RequestConfig,
-    deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
-    encryption::{BackupDownloadStrategy, EncryptionSettings},
-    search_index::SearchIndexStoreKind,
-};
 use ruma::{
-    EventId, IdParseError, MatrixToUri, MatrixUri, MatrixUriError, MilliSecondsSinceUnixEpoch,
-    OwnedEventId, OwnedRoomAliasId, OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName,
-    OwnedTransactionId, OwnedUserId, RoomId, RoomOrAliasId, UserId,
-    events::{
-        AnyStrippedStateEvent, AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
-        room::message::{OriginalSyncRoomMessageEvent, Relation as MessageRelation},
-    },
+    IdParseError, MatrixToUri, MatrixUri, MatrixUriError, MilliSecondsSinceUnixEpoch, OwnedEventId,
+    OwnedRoomAliasId, OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, OwnedUserId, RoomId,
+    RoomOrAliasId,
     html::{
         Children, Html, NodeRef, StrTendril,
         matrix::{AnchorUri, MatrixElement},
     },
     matrix_uri::MatrixId,
-    serde::Raw,
 };
 use thiserror::Error;
 
@@ -37,132 +21,31 @@ mod media_message;
 mod mutual_rooms;
 mod url_preview;
 
+/// What is left of this module, and why.
+///
+/// Everything defined below is here because it cannot be anywhere else: it
+/// returns a `Pill` widget, it produces a `glib::DateTime`, or it is a
+/// `gettext` call. The Matrix-specification half — the password rules,
+/// `@room` detection, raw event comparison, the client builder — is
+/// `commune_core::matrix` now, re-exported here under the paths it already
+/// had so that no consumer changed. See `doc/track3-convergence.md`.
+///
+/// `ClientSetupError` is one of them and is the one that keeps an
+/// implementation on this side: its variants were transcribed from here
+/// unchanged, so all that had to stay behind is the sentences, which
+/// `gettext` reaches and the core cannot.
+pub(crate) use commune_core::matrix::{
+    AT_ROOM, AnySyncOrStrippedTimelineEvent, ClientSetupError, MessageCacheKey,
+    client_with_stored_session, find_at_room, original_message_event_from_raw, raw_eq,
+    validate_password,
+};
+
 pub(crate) use self::{media_message::*, mutual_rooms::fetch_mutual_rooms, url_preview::*};
 use crate::{
     components::{AvatarImageSafetySetting, Pill},
     prelude::*,
-    secret::StoredSession,
     session::Room,
 };
-
-/// The result of a password validation.
-#[derive(Debug, Default, Clone, Copy)]
-#[allow(clippy::struct_excessive_bools)]
-pub(crate) struct PasswordValidity {
-    /// Whether the password includes at least one lowercase letter.
-    pub(crate) has_lowercase: bool,
-    /// Whether the password includes at least one uppercase letter.
-    pub(crate) has_uppercase: bool,
-    /// Whether the password includes at least one number.
-    pub(crate) has_number: bool,
-    /// Whether the password includes at least one symbol.
-    pub(crate) has_symbol: bool,
-    /// Whether the password is at least 8 characters long.
-    pub(crate) has_length: bool,
-    /// The percentage of checks passed for the password, between 0 and 100.
-    ///
-    /// If progress is 100, the password is valid.
-    pub(crate) progress: u32,
-}
-
-impl PasswordValidity {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-/// Validate a password according to the Matrix specification.
-///
-/// A password should include a lower-case letter, an upper-case letter, a
-/// number and a symbol and be at a minimum 8 characters in length.
-///
-/// See: <https://spec.matrix.org/v1.1/client-server-api/#notes-on-password-management>
-pub(crate) fn validate_password(password: &str) -> PasswordValidity {
-    let mut validity = PasswordValidity::new();
-
-    for char in password.chars() {
-        if char.is_numeric() {
-            validity.has_number = true;
-        } else if char.is_lowercase() {
-            validity.has_lowercase = true;
-        } else if char.is_uppercase() {
-            validity.has_uppercase = true;
-        } else {
-            validity.has_symbol = true;
-        }
-    }
-
-    validity.has_length = password.len() >= 8;
-
-    let mut passed = 0;
-    if validity.has_number {
-        passed += 1;
-    }
-    if validity.has_lowercase {
-        passed += 1;
-    }
-    if validity.has_uppercase {
-        passed += 1;
-    }
-    if validity.has_symbol {
-        passed += 1;
-    }
-    if validity.has_length {
-        passed += 1;
-    }
-    validity.progress = passed * 100 / 5;
-
-    validity
-}
-
-/// An deserialized event received in a sync response.
-#[derive(Debug, Clone)]
-pub(crate) enum AnySyncOrStrippedTimelineEvent {
-    /// An event from a joined or left room.
-    Sync(Box<AnySyncTimelineEvent>),
-    /// An event from an invited room.
-    Stripped(Box<AnyStrippedStateEvent>),
-}
-
-impl AnySyncOrStrippedTimelineEvent {
-    /// Deserialize the given raw event.
-    pub(crate) fn from_raw(
-        raw: &RawAnySyncOrStrippedTimelineEvent,
-    ) -> Result<Self, serde_json::Error> {
-        let ev = match raw {
-            RawAnySyncOrStrippedTimelineEvent::Sync(ev) => Self::Sync(ev.deserialize()?.into()),
-            RawAnySyncOrStrippedTimelineEvent::Stripped(ev) => {
-                Self::Stripped(Box::new(ev.deserialize()?))
-            }
-        };
-
-        Ok(ev)
-    }
-
-    /// The sender of the event.
-    pub(crate) fn sender(&self) -> &UserId {
-        match self {
-            AnySyncOrStrippedTimelineEvent::Sync(ev) => ev.sender(),
-            AnySyncOrStrippedTimelineEvent::Stripped(ev) => ev.sender(),
-        }
-    }
-
-    /// The ID of the event, if it's not a stripped state event.
-    pub(crate) fn event_id(&self) -> Option<&EventId> {
-        match self {
-            AnySyncOrStrippedTimelineEvent::Sync(ev) => Some(ev.event_id()),
-            AnySyncOrStrippedTimelineEvent::Stripped(_) => None,
-        }
-    }
-}
-
-/// All errors that can occur when setting up the Matrix client.
-///
-/// The core's, because `StoredSession::new()` is the core's and returns one.
-/// The variants are the application's — this enum was transcribed from here
-/// unchanged — so the only thing that had to stay behind is the sentences
-/// below, which `gettext` reaches and the core cannot.
-pub(crate) use commune_core::matrix::ClientSetupError;
 
 impl UserFacingError for ClientSetupError {
     fn to_user_facing(&self) -> String {
@@ -173,104 +56,6 @@ impl UserFacingError for ClientSetupError {
             Self::NoSessionTokens => gettext("Could not access the session tokens"),
         }
     }
-}
-
-/// Where the message search index for a session should live.
-///
-/// Everywhere but Windows this is a directory in the cache, encrypted with the
-/// same passphrase as the databases so that message bodies are not readable at
-/// rest. The search index can always be rebuilt from the event cache, which is
-/// why the cache directory is the right place for it.
-#[cfg(not(target_os = "windows"))]
-fn search_index_store(cache_path: &Path, passphrase: &str) -> SearchIndexStoreKind {
-    SearchIndexStoreKind::EncryptedDirectory(cache_path.join("search_index"), passphrase.to_owned())
-}
-
-/// Where the message search index for a session should live.
-///
-/// On Windows it cannot live on disk at all. The SDK gives each room a
-/// directory named after its room ID — `self.path.join(self.room_id.as_str())`
-/// in `matrix-sdk-search` — and a room ID contains a colon, which Windows will
-/// not accept in a file name. Every room fails to index, once per batch of
-/// events, and the only visible symptom is a log full of
-/// `InvalidFilename` errors and a search that finds nothing.
-///
-/// An in-memory index works and is not a large concession: it is built from the
-/// event cache as events arrive, so search covers what has been synced this
-/// run. What is lost is the index surviving a restart, and the encryption at
-/// rest that a stored index needed in the first place.
-///
-/// This should go away if the SDK ever names those directories with something
-/// that is legal on every platform.
-#[cfg(target_os = "windows")]
-fn search_index_store(_cache_path: &Path, _passphrase: &str) -> SearchIndexStoreKind {
-    SearchIndexStoreKind::InMemory
-}
-
-/// Create a [`Client`] with the given stored session.
-pub(crate) async fn client_with_stored_session(
-    session: StoredSession,
-    tokens: SessionTokens,
-) -> Result<Client, ClientSetupError> {
-    let has_refresh_token = tokens.refresh_token.is_some();
-    let data_path = session.data_path();
-    let cache_path = session.cache_path();
-
-    // Through the wrapper: the fields are moved out of the core's struct, and
-    // `Deref` only lends them.
-    let commune_core::secret::StoredSession {
-        homeserver,
-        user_id,
-        device_id,
-        passphrase,
-        client_id,
-        ..
-    } = session.into_inner();
-
-    let meta = SessionMeta { user_id, device_id };
-    let session_data: AuthSession = if let Some(client_id) = client_id {
-        OAuthSession {
-            user: UserSession { meta, tokens },
-            client_id,
-        }
-        .into()
-    } else {
-        MatrixSession { meta, tokens }.into()
-    };
-
-    let encryption_settings = EncryptionSettings {
-        auto_enable_cross_signing: true,
-        backup_download_strategy: BackupDownloadStrategy::AfterDecryptionFailure,
-        // This only enables room keys backup and not recovery, which would leave us in an awkward
-        // state, because we want both to be enabled at the same time.
-        auto_enable_backups: false,
-    };
-
-    // Worked out before the builder takes ownership of `cache_path`.
-    let search_index_store = search_index_store(&cache_path, &passphrase);
-
-    let mut client_builder = Client::builder()
-        // Otherwise the SDK builds its own client with the TLS backend that
-        // does not work on Android. See `crate::utils::tls`.
-        .http_client(crate::utils::tls::matrix_client())
-        .homeserver_url(homeserver)
-        .sqlite_store_with_cache_path(data_path, cache_path, Some(&passphrase))
-        // force_auth option to solve an issue with some servers configuration to require
-        // auth for profiles:
-        // https://gitlab.gnome.org/World/fractal/-/issues/934
-        .request_config(RequestConfig::new().retry_limit(2).force_auth())
-        .with_encryption_settings(encryption_settings)
-        .search_index_store(search_index_store);
-
-    if has_refresh_token {
-        client_builder = client_builder.handle_refresh_tokens();
-    }
-
-    let client = client_builder.build().await?;
-
-    client.restore_session(session_data).await?;
-
-    Ok(client)
 }
 
 /// Find mentions in the given HTML string.
@@ -324,55 +109,6 @@ fn node_as_mention(node: &NodeRef, room: &Room) -> Option<(Pill, StrTendril)> {
     let pill = id.into_pill(room)?;
 
     Some((pill, content))
-}
-
-/// The textual representation of a room mention.
-pub(crate) const AT_ROOM: &str = "@room";
-
-/// Find `@room` in the given string.
-///
-/// This uses the same algorithm as the pushrules from the Matrix spec to detect
-/// it in the `body`.
-///
-/// Returns the position of the first match.
-pub(crate) fn find_at_room(s: &str) -> Option<usize> {
-    for (pos, _) in s.match_indices(AT_ROOM) {
-        let is_at_word_start = pos == 0 || s[..pos].ends_with(char_is_ascii_word_boundary);
-        if !is_at_word_start {
-            continue;
-        }
-
-        let pos_after_match = pos + 5;
-        let is_at_word_end = pos_after_match == s.len()
-            || s[pos_after_match..].starts_with(char_is_ascii_word_boundary);
-        if is_at_word_end {
-            return Some(pos);
-        }
-    }
-
-    None
-}
-
-/// Whether the given `char` is a word boundary, according to the Matrix spec.
-///
-/// A word boundary is any character not in the sets `[A-Z]`, `[a-z]`, `[0-9]`
-/// or `_`.
-fn char_is_ascii_word_boundary(c: char) -> bool {
-    !c.is_ascii_alphanumeric() && c != '_'
-}
-
-/// Compare two raw JSON sources.
-pub(crate) fn raw_eq<T, U>(lhs: Option<&Raw<T>>, rhs: Option<&Raw<U>>) -> bool {
-    let Some(lhs) = lhs else {
-        // They are equal only if both are `None`.
-        return rhs.is_none();
-    };
-    let Some(rhs) = rhs else {
-        // They cannot be equal.
-        return false;
-    };
-
-    lhs.json().get() == rhs.json().get()
 }
 
 /// A URI for a Matrix ID.
@@ -648,91 +384,9 @@ pub(crate) fn timestamp_to_date(ts: MilliSecondsSinceUnixEpoch) -> glib::DateTim
     seconds_since_unix_epoch_to_date(ts.as_secs().into())
 }
 
-/// Deserialize the given raw event as an original room message event, with its
-/// bundled edit applied.
-///
-/// Returns `None` if the event is not an original `m.room.message` event, or if
-/// it is an edit, since edits are bundled with the event they replace.
-pub(crate) fn original_message_event_from_raw(
-    raw: &Raw<AnySyncTimelineEvent>,
-) -> Option<OriginalSyncRoomMessageEvent> {
-    let Ok(AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::RoomMessage(
-        SyncMessageLikeEvent::Original(mut message_event),
-    ))) = raw.deserialize()
-    else {
-        return None;
-    };
-
-    // Filter out edits, they should be bundled with the original event.
-    if matches!(
-        message_event.content.relates_to,
-        Some(MessageRelation::Replacement(_))
-    ) {
-        return None;
-    }
-
-    // Apply bundled edit.
-    if let Some(MessageRelation::Replacement(replacement)) = message_event
-        .unsigned
-        .relations
-        .replace
-        .as_ref()
-        .and_then(|e| e.content.relates_to.as_ref())
-    {
-        message_event
-            .content
-            .apply_replacement(replacement.new_content.clone());
-    }
-
-    Some(message_event)
-}
-
 /// Convert the given number of seconds since Unix EPOCH to a `GDateTime`.
 pub(crate) fn seconds_since_unix_epoch_to_date(secs: i64) -> glib::DateTime {
     glib::DateTime::from_unix_utc(secs)
         .and_then(|date| date.to_local())
         .expect("constructing GDateTime from timestamp should work")
-}
-
-/// The data used as a cache key for messages.
-///
-/// This is used when there is no reliable way to detect if the content of a
-/// message changed. For example, the URI of a media file might change between a
-/// local echo and a remote echo, but we do not need to reload the media in this
-/// case, and we have no other way to know that both URIs point to the same
-/// file.
-#[derive(Debug, Clone, Default)]
-pub(crate) struct MessageCacheKey {
-    /// The transaction ID of the event.
-    ///
-    /// Local echo should keep its transaction ID after the message is sent, so
-    /// we do not need to reload the message if it did not change.
-    pub(crate) transaction_id: Option<OwnedTransactionId>,
-    /// The global ID of the event.
-    ///
-    /// Local echo that was sent and remote echo should have the same event ID,
-    /// so we do not need to reload the message if it did not change.
-    pub(crate) event_id: Option<OwnedEventId>,
-    /// Whether the message is edited.
-    ///
-    /// The message must be reloaded when it was edited.
-    pub(crate) is_edited: bool,
-}
-
-impl MessageCacheKey {
-    /// Whether the given new `MessageCacheKey` should trigger a reload of the
-    /// message compared to this one.
-    pub(crate) fn should_reload(&self, new: &MessageCacheKey) -> bool {
-        if new.is_edited {
-            return true;
-        }
-
-        let transaction_id_invalidated = self.transaction_id.is_none()
-            || new.transaction_id.is_none()
-            || self.transaction_id != new.transaction_id;
-        let event_id_invalidated =
-            self.event_id.is_none() || new.event_id.is_none() || self.event_id != new.event_id;
-
-        transaction_id_invalidated && event_id_invalidated
-    }
 }
