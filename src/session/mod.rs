@@ -863,7 +863,9 @@ impl Session {
 
         let stored_session_clone = stored_session.clone();
         let client = spawn_tokio!(async move {
-            let client = matrix::client_with_stored_session(stored_session_clone, tokens).await?;
+            let client =
+                matrix::client_with_stored_session(stored_session_clone.into_inner(), tokens)
+                    .await?;
 
             // Make sure that we use the proper retention policy.
             let media = client.media();
