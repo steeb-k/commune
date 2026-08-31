@@ -76,12 +76,34 @@ presented, never a stored one.
 ### The key is a build option, not a constant
 
 `meson.options` has `klipy-api-key`, empty by default, which reaches the code
-as `config::KLIPY_API_KEY`. The repository is public, and a key committed to
-it would be a published key. With no key, `klipy::is_available()` is `false`,
-the GIF tab is never shown and the settings row is hidden — the feature is
-simply not in the build.
+as `config::KLIPY_API_KEY` in a generated, git-ignored `src/config.rs`. The
+repository is public, and a key committed to it would be a published key. With
+no key, `klipy::is_available()` is `false`, the GIF tab is never shown and the
+settings row is hidden — the feature is simply not in the build.
 
 Set it with `meson configure _build -Dklipy-api-key=…`.
+
+**This rule holds for the core and for the Kotlin build too, and it did not
+always.** `commune-core` is where the client now lives, and its first version
+hard-coded the key as a `const` in `commune-core/src/klipy.rs` — a tracked
+file — because the core has no build system of its own to take an option
+from. That published the key for four days on `origin/fractal-kotlin`; see the
+divergence ledger in `doc/track3-convergence.md`. The key is not the core's to
+know: the embedder passes it to `commune_core::config::init()`, the desktop
+from the Meson option above and the Kotlin build from a
+`communeKlipyApiKey` Gradle property that reaches it as
+`BuildConfig.KLIPY_API_KEY`. Both default to empty.
+
+For an Android build, put the key in your own `local.properties` or
+`~/.gradle/gradle.properties`:
+
+```properties
+communeKlipyApiKey=…
+```
+
+or pass `-PcommuneKlipyApiKey=…`. Neither file is tracked. The Kotlin side
+asks `gifSearchAvailable()` over the FFI for the same answer
+`klipy::is_available()` gives the desktop.
 
 ### Nothing is requested until the user searches
 

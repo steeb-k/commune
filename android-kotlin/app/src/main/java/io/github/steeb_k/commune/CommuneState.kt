@@ -173,6 +173,11 @@ class CommuneState(context: Context) {
                 profile = "skeleton",
                 dataDir = context.noBackupFilesDir.resolve("commune").absolutePath,
                 cacheDir = context.cacheDir.resolve("commune").absolutePath,
+                // From the `communeKlipyApiKey` Gradle property, which is
+                // empty unless the person building set one. Null rather than
+                // empty so the core reads it the same way the desktop's
+                // empty Meson option reads: the GIF search is not available.
+                klipyApiKey = BuildConfig.KLIPY_API_KEY.ifEmpty { null },
             )
         )
         app = CoreApp()

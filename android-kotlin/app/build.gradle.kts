@@ -16,6 +16,19 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+
+        // The KLIPY API key for the GIF search. It is a credential, so it is
+        // never in this repository: set `communeKlipyApiKey` in your own
+        // `local.properties` or `~/.gradle/gradle.properties`, or pass
+        // `-PcommuneKlipyApiKey=…` on the command line. This mirrors the
+        // desktop build's `klipy-api-key` Meson option, empty default
+        // included — with no key the GIF search is inert rather than broken,
+        // which is what `gifSearchAvailable()` reports.
+        buildConfigField(
+            "String",
+            "KLIPY_API_KEY",
+            "\"${project.findProperty("communeKlipyApiKey") as String? ?: ""}\"",
+        )
     }
 
     signingConfigs {
@@ -51,6 +64,8 @@ android {
 
     buildFeatures {
         compose = true
+        // For KLIPY_API_KEY above.
+        buildConfig = true
     }
 }
 

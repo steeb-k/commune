@@ -47,6 +47,16 @@ pub struct CoreConfig {
     /// and the core only substitutes into it. `None` uses the English below,
     /// which is what the untranslated Kotlin application wants today.
     pub credential_label: Option<String>,
+    /// The KLIPY API key the GIF search uses.
+    ///
+    /// It is a credential, so it is not allowed to be in this repository:
+    /// the GTK application takes it from the `klipy-api-key` Meson option
+    /// into a generated, git-ignored `src/config.rs`, and the Kotlin
+    /// application takes it from a Gradle property into `BuildConfig`. Both
+    /// default to empty. `None` or an empty string means
+    /// [`crate::klipy::is_available()`] is `false` and the feature is inert,
+    /// which is what a build by anyone without a key of their own gets.
+    pub klipy_api_key: Option<String>,
 }
 
 impl fmt::Debug for CoreConfig {
@@ -58,6 +68,8 @@ impl fmt::Debug for CoreConfig {
             .field("cache_dir", &self.cache_dir)
             .field("settings_store", &self.settings_store.is_some())
             .field("credential_label", &self.credential_label)
+            // Never the value: it is a credential, and this type is Debug.
+            .field("klipy_api_key", &self.klipy_api_key.is_some())
             .finish()
     }
 }
@@ -84,6 +96,8 @@ pub(crate) struct ResolvedConfig {
         expect(dead_code, reason = "no label to set on this platform's backend")
     )]
     pub(crate) credential_label: String,
+    /// The KLIPY API key, empty when the embedder provided none.
+    pub(crate) klipy_api_key: String,
 }
 
 /// The English label for a stored session, used when the embedder provides
@@ -106,11 +120,13 @@ pub fn init(config: CoreConfig) {
         cache_dir,
         settings_store,
         credential_label,
+        klipy_api_key,
     } = config;
 
     let settings_store =
         settings_store.unwrap_or_else(|| Arc::new(FileSettingsStore::new(&data_dir)));
     let credential_label = credential_label.unwrap_or_else(|| DEFAULT_CREDENTIAL_LABEL.to_owned());
+    let klipy_api_key = klipy_api_key.unwrap_or_default();
 
     let _ = CONFIG.set(ResolvedConfig {
         app_id,
@@ -119,6 +135,7 @@ pub fn init(config: CoreConfig) {
         cache_dir,
         settings_store,
         credential_label,
+        klipy_api_key,
     });
 }
 
@@ -161,6 +178,11 @@ pub(crate) fn credential_label(user_id: &str) -> String {
     get().credential_label.replace("{user_id}", user_id)
 }
 
+/// The KLIPY API key, or the empty string if the embedder provided none.
+pub(crate) fn klipy_api_key() -> &'static str {
+    &get().klipy_api_key
+}
+
 /// Initialize the configuration for this crate's tests.
 ///
 /// The config is process-global and set once, so every test that needs it
@@ -174,5 +196,6 @@ pub(crate) fn init_test_config() {
         cache_dir: std::env::temp_dir().join("commune-core-test").join("cache"),
         settings_store: None,
         credential_label: None,
+        klipy_api_key: None,
     });
 }

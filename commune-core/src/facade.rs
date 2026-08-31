@@ -31,6 +31,12 @@ pub struct FfiCoreConfig {
     pub data_dir: String,
     /// The directory cached data lives under.
     pub cache_dir: String,
+    /// The KLIPY API key for the GIF search, from the embedder's build
+    /// configuration. `None` or empty makes the feature inert, which is what
+    /// a build without a key of its own gets — see
+    /// [`crate::klipy::is_available()`]. It is a credential and is never
+    /// stored in this repository.
+    pub klipy_api_key: Option<String>,
 }
 
 /// Provide the core with the embedder's configuration.
@@ -71,7 +77,19 @@ pub fn init_core(ffi_config: FfiCoreConfig) {
         // core's English. When it grows them, this is where its own string
         // resource arrives.
         credential_label: None,
+        klipy_api_key: ffi_config.klipy_api_key,
     });
+}
+
+/// Whether the GIF search is available in this build.
+///
+/// The desktop application hides the sticker picker's GIF tab entirely when
+/// no API key was configured. The Kotlin picker should do the same rather
+/// than presenting a search that can only fail.
+#[uniffi::export]
+#[must_use]
+pub fn gif_search_available() -> bool {
+    crate::klipy::is_available()
 }
 
 /// An error handed across the FFI.
