@@ -42,3 +42,12 @@ check-file = false
 [type.png]
 extend-glob = ["*.png"]
 check-file = false
+
+# `android-kotlin/gradle/wrapper/gradle-wrapper.jar`. A jar is a zip, and
+# typos reads the compressed bytes as text: the wrapper alone produced eight
+# "spelling mistakes" out of deflate output, one of which it wanted to correct
+# from `Iz` to `Is`. `.gitattributes` marks jars binary for git's sake; this
+# is the same statement made to the spell checker.
+[type.jar]
+extend-glob = ["*.jar"]
+check-file = false
