@@ -28,14 +28,26 @@ cargo run --features cli --bin uniffi-bindgen -- \
     generate --library target/debug/commune_core.dll \
     --language kotlin --out-dir target/bindings
 
-# 4. The APK. There is no `gradlew` here and no `gradle` on the build
-#    machine's PATH, so reach the cached distribution directly:
-GRADLE=$(ls -d ~/.gradle/wrapper/dists/gradle-9.3.1-bin/*/gradle-9.3.1/bin/gradle | head -1)
-ANDROID_HOME=$HOME/android/sdk "$GRADLE" assembleDebug
+# 4. The APK, through the wrapper:
+ANDROID_HOME=$HOME/android/sdk ./gradlew assembleDebug
 ```
 
 `build-core.sh --all` does steps 1 and 2 for both ABIs in one go, which is
 what Track 3's per-commit gate runs.
+
+### Why there is a wrapper
+
+`gradlew` and `gradle/wrapper/` are committed, `gradle-wrapper.jar`
+included, which is how a Gradle wrapper is meant to be shipped: the point of
+it is that a checkout builds with nothing installed but a JDK, and a wrapper
+you have to fetch first cannot do that.
+
+It is here because its absence was not free. This README used to say
+`gradle assembleDebug`, and there is no `gradle` on the build machine's
+PATH — so the instruction had never worked from a clean shell, and the APK
+went unbuilt through a change to `build.gradle.kts` that did not compile.
+The wrapper pins 9.3.1, the version the build was developed against, instead
+of whatever a given machine happens to have.
 
 ### The KLIPY API key
 

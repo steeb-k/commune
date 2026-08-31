@@ -26,3 +26,17 @@ hooks export-ignore
 # out with CRLF and stopped the build 2654 targets in. None of these are ever
 # run by a Windows shell, so all of them can simply be LF.
 *.sh text eol=lf
+
+# A jar is a zip. `text=auto` above detects that and leaves it alone, but
+# saying so outright costs nothing and documents the intent next to the rule
+# that would otherwise be suspected of mangling it. `.typos.toml` makes the
+# same statement to the spell checker, which does not read this file and did
+# try to correct the wrapper jar's deflate output.
+*.jar binary
+
+# And the mirror image, for the one kind of file that wants the other answer.
+# `cmd.exe` parses a batch file line by line as it runs it, and a `goto` into
+# a block whose lines end in LF alone can land in the wrong place — so a
+# `.bat` checked out under this file's blanket `eol=lf` is a script that
+# might work and might not. `android-kotlin/gradlew.bat` is the only one here.
+*.bat text eol=crlf
