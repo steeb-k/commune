@@ -3,6 +3,24 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose") version "2.2.10"
 }
 
+// A build setting that must not enter the repository.
+//
+// `local.properties` is the only file next to this one that git ignores —
+// `gradle.properties` is tracked, so a credential put there is a credential
+// committed, which is exactly how the KLIPY key was published once already
+// (see doc/gif-search.md). Gradle does not load `local.properties` into
+// project properties by itself, so it is read here; `~/.gradle/`'s
+// `gradle.properties` and `-P` on the command line are the other two ways in,
+// and both are outside the repository too.
+fun secretProperty(name: String): String =
+    java.util.Properties()
+        .apply {
+            rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
+        }
+        .getProperty(name)
+        ?: project.findProperty(name) as String?
+        ?: ""
+
 android {
     namespace = "io.github.steeb_k.commune"
     compileSdk = 36
@@ -17,17 +35,15 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        // The KLIPY API key for the GIF search. It is a credential, so it is
-        // never in this repository: set `communeKlipyApiKey` in your own
-        // `local.properties` or `~/.gradle/gradle.properties`, or pass
-        // `-PcommuneKlipyApiKey=…` on the command line. This mirrors the
-        // desktop build's `klipy-api-key` Meson option, empty default
-        // included — with no key the GIF search is inert rather than broken,
-        // which is what `gifSearchAvailable()` reports.
+        // The KLIPY API key for the GIF search, through `secretProperty` so
+        // that it can only come from somewhere git does not track. This
+        // mirrors the desktop build's `klipy-api-key` Meson option, empty
+        // default included — with no key the GIF search is inert rather than
+        // broken, which is what `gifSearchAvailable()` reports.
         buildConfigField(
             "String",
             "KLIPY_API_KEY",
-            "\"${project.findProperty("communeKlipyApiKey") as String? ?: ""}\"",
+            "\"${secretProperty("communeKlipyApiKey")}\"",
         )
     }
 
