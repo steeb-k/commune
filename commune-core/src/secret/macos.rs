@@ -202,10 +202,7 @@ fn store_session_inner(session: &StoredSession) -> Result<(), SecretError> {
     );
 
     let mut options = PasswordOptions::new_generic_password(config::app_id(), &session.id);
-    options.set_label(&format!(
-        "Commune: Matrix credentials for {}",
-        session.user_id
-    ));
+    options.set_label(&config::credential_label(session.user_id.as_str()));
 
     // This adds the item, or updates it if the service and account pair already
     // exists, which is the overwriting behaviour that `SecretExt` asks for.

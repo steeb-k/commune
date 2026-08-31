@@ -601,7 +601,7 @@ mod imp {
                 warn!("Could not save current session: {err}");
             }
 
-            let session_info = session.info().clone();
+            let session_info = session.info().clone().into_inner();
 
             if Secret::store_session(session_info).await.is_err() {
                 toast!(self.obj(), gettext("Could not store session"));

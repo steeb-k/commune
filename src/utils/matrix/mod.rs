@@ -5,7 +5,7 @@ use std::{borrow::Cow, fmt, path::Path, str::FromStr};
 use gettextrs::gettext;
 use gtk::{glib, prelude::*};
 use matrix_sdk::{
-    AuthSession, Client, ClientBuildError, SessionMeta, SessionTokens,
+    AuthSession, Client, SessionMeta, SessionTokens,
     authentication::{
         matrix::MatrixSession,
         oauth::{OAuthSession, UserSession},
@@ -157,21 +157,12 @@ impl AnySyncOrStrippedTimelineEvent {
 }
 
 /// All errors that can occur when setting up the Matrix client.
-#[derive(Error, Debug)]
-pub(crate) enum ClientSetupError {
-    /// An error when building the client.
-    #[error("Matrix client build error: {0}")]
-    Client(#[from] ClientBuildError),
-    /// An error when using the client.
-    #[error("Matrix client restoration error: {0}")]
-    Sdk(#[from] matrix_sdk::Error),
-    /// An error creating the unique local ID of the session.
-    #[error("Could not generate unique session ID")]
-    NoSessionId,
-    /// An error accessing the session tokens.
-    #[error("Could not access session tokens")]
-    NoSessionTokens,
-}
+///
+/// The core's, because `StoredSession::new()` is the core's and returns one.
+/// The variants are the application's — this enum was transcribed from here
+/// unchanged — so the only thing that had to stay behind is the sentences
+/// below, which `gettext` reaches and the core cannot.
+pub(crate) use commune_core::matrix::ClientSetupError;
 
 impl UserFacingError for ClientSetupError {
     fn to_user_facing(&self) -> String {
@@ -225,14 +216,16 @@ pub(crate) async fn client_with_stored_session(
     let data_path = session.data_path();
     let cache_path = session.cache_path();
 
-    let StoredSession {
+    // Through the wrapper: the fields are moved out of the core's struct, and
+    // `Deref` only lends them.
+    let commune_core::secret::StoredSession {
         homeserver,
         user_id,
         device_id,
         passphrase,
         client_id,
         ..
-    } = session;
+    } = session.into_inner();
 
     let meta = SessionMeta { user_id, device_id };
     let session_data: AuthSession = if let Some(client_id) = client_id {

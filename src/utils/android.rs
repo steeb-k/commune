@@ -147,6 +147,13 @@ pub(crate) fn init() -> Result<(), AndroidJniError> {
     let _ = JAVA_VM.set(vm);
     debug!("Captured the Java VM");
 
+    // The core keeps its own copy, because it is also linked into a library
+    // the Kotlin application loads, where this function does not exist. Its
+    // `JNI_OnLoad` only runs for `System.loadLibrary`, which is not how the
+    // application gets here, so the secret store's Keystore calls would find
+    // no VM at all if we did not hand ours over.
+    commune_core::platform::android::seed_vm(env.get_java_vm()?);
+
     Ok(())
 }
 

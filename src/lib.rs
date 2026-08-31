@@ -47,6 +47,13 @@ mod window;
 
 use std::sync::LazyLock;
 
+/// The default tokio runtime to be used for async tasks.
+///
+/// The core's, not one of our own. Both crates run Matrix work on tokio, and
+/// two runtimes in one process would mean two thread pools and objects
+/// dropped under a guard for the runtime they were not made on — which is
+/// what `TokioDrop` exists to prevent. There is one runtime; this is it.
+pub(crate) use commune_core::RUNTIME;
 use gettextrs::*;
 #[cfg(not(target_os = "android"))]
 use tracing_subscriber::fmt;
@@ -59,11 +66,6 @@ use self::{
     utils::{OneshotNotifier, app_bundle},
     window::Window,
 };
-
-/// The default tokio runtime to be used for async tasks
-static RUNTIME: LazyLock<tokio::runtime::Runtime> = LazyLock::new(|| {
-    tokio::runtime::Runtime::new().expect("creating tokio runtime should succeed")
-});
 
 /// The notifier to make sure that only one `GtkMediaFile` is played at a single
 /// time.

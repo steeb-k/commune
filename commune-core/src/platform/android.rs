@@ -78,6 +78,21 @@ pub unsafe extern "system" fn JNI_OnLoad(
     JNI_VERSION_1_6
 }
 
+/// Take the `JavaVM` from an embedder that already has one.
+///
+/// The GTK application is in exactly that position: it captures the VM from
+/// `gdk_android_display_get_env()` on the GTK thread for its own use, and it
+/// links this crate as a library rather than loading it with
+/// `System.loadLibrary`, so [`JNI_OnLoad`] may never run for it. The secret
+/// store needs nothing but the VM. Calling this when the VM is already
+/// captured is free, and a race stores the same VM either way.
+pub fn seed_vm(vm: JavaVM) {
+    if JAVA_VM.get().is_none() {
+        let _ = JAVA_VM.set(vm);
+        debug!("Captured the Java VM from the embedder");
+    }
+}
+
 /// Capture the `JavaVM` and application `Context` out of a JNI entry point.
 ///
 /// Calling this when both are already captured is free, and a race stores
