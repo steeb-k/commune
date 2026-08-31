@@ -129,12 +129,16 @@ recorded here as it is found, with the phase that closes it.
 
 | Found | Where | Divergence | Closes in |
 |---|---|---|---|
-| 29 Aug 2026 | `facade.rs` `CallFlow` | `remote_user_id` is written at two sites and read at none. The GTK original guards `handle_candidates`, `handle_answer`, `handle_negotiate`, `handle_hangup` and `handle_reject` with `is_remote_party(sender, party_id)` (`src/session/calls/call.rs:354`), which is how a call ignores events from the wrong party. The core has no equivalent guard. Surfaced as a `dead_code` warning once the crate came under the application's roof — which is the mechanism this whole track is for. | Phase 4, module 9 |
+| 29 Aug 2026 | `facade.rs` call handlers | **No `is_remote_party` guard at all.** The application puts every call handler but `handle_reject` behind `is_remote_party(sender, party_id)` (`src/session/calls/call.rs:354`); the core checked only whether the sender was us. `m.call.hangup` checked nothing whatever, so any participant in the room could end somebody else's call by sending a hangup carrying its ID, and a third party's candidates were fed into a live connection. Surfaced as a `dead_code` warning on the unused `CallFlow::remote_user_id` the moment the crate came under the application's roof — which is the mechanism this whole track exists to build. **Closed 31 Aug**, with the guard ported verbatim and six tests over its truth table. Unit-tested only: it has **not** been put in front of a live call yet, and calls are the one area of this application where that has meant a shipped bug before. The guard only ever rejects events, so it cannot invent behaviour, but it could in principle reject one it should have taken — the case to watch is whether a party ID stays identical across a peer's invite, candidates and hangup, which is what the specification says and what the harness would confirm. | Done, live check owed |
+| 31 Aug 2026 | `facade.rs`, `m.call.sdp_stream_metadata_changed` | The core sends this event but has **no handler for receiving it**. The application has `handle_stream_metadata` (`src/session/calls/call.rs:1298`), which is how the far end muting its microphone or camera reaches the interface. On the Kotlin side a remote mute is currently invisible. | Phase 4, module 9 |
+| 31 Aug 2026 | `facade.rs` candidates and negotiate handlers | Both drop **every** event whose sender is our own user. The application drops only its own party's echo, because a party is a user _and_ a device: another of our own devices answering our invite is a legitimate remote party. Kept as-is deliberately — the broader check is documented in the core as the fix for a real bug where the echo of our own answer ended the call, and narrowing it wants a two-device test rather than a guess. | Phase 4, module 9 |
 
 ## Gates
 
 Every commit: the application's `cargo check` and `cargo clippy --all-targets
--- -D warnings`; `cargo test -p commune-core`; the Kotlin core still builds for
+-- -D warnings`; `cargo test -p commune-core --features ffi`, because
+`facade.rs` and its tests are behind that feature and a plain `cargo test`
+silently skips them; the Kotlin core still builds for
 its ABIs; the pre-commit hook. All of these need the UCRT64 toolchain and the
 `x86_64-pc-windows-gnu` target on this machine, and the worktree needs
 `src/config.rs` and `hooks/checks-bin.exe` copied in from the main checkout,

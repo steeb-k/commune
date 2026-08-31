@@ -1223,7 +1223,6 @@ impl CoreApp {
                                     .party_id
                                     .as_ref()
                                     .map(ToString::to_string),
-                                remote_user_id: event.sender.to_string(),
                                 outgoing: false,
                                 answer_selected: false,
                             },
@@ -1329,6 +1328,11 @@ impl CoreApp {
                         if !flows.has(&call_id) {
                             return;
                         }
+                        let their_party =
+                            event.content.party_id.as_ref().map(ToString::to_string);
+                        if !flows.is_remote_party(&call_id, false, their_party.as_deref()) {
+                            return;
+                        }
                         let candidates: Vec<FfiIceCandidate> = event
                             .content
                             .candidates
@@ -1355,9 +1359,11 @@ impl CoreApp {
             ));
 
             let hangup_flows = flows.clone();
+            let hangup_own = own_user_id.clone();
             handles.push(
                 client.add_event_handler(move |event: OriginalSyncCallHangupEvent| {
                     let flows = hangup_flows.clone();
+                    let own_user_id = hangup_own.clone();
                     async move {
                         use ruma::events::call::hangup::Reason;
 
@@ -1376,6 +1382,18 @@ impl CoreApp {
                             },
                         );
                         if !flows.has(&call_id) {
+                            return;
+                        }
+                        // Anybody in the room can put this event on the
+                        // wire. Only the party we are actually talking to
+                        // gets to end the call with it.
+                        let their_party =
+                            event.content.party_id.as_ref().map(ToString::to_string);
+                        if !flows.is_remote_party(
+                            &call_id,
+                            event.sender == own_user_id,
+                            their_party.as_deref(),
+                        ) {
                             return;
                         }
                         flows.remove(&call_id);
@@ -1398,8 +1416,21 @@ impl CoreApp {
                         if !flows.has(&call_id) {
                             return;
                         }
+                        // `handle_reject` is the one handler the
+                        // application does not put behind
+                        // `is_remote_party`, because a reject from our own
+                        // user means something on its own. It still drops
+                        // our own echo: this device declining is not this
+                        // device being told it was declined elsewhere.
+                        let sender_is_own = event.sender == own_user_id;
+                        if sender_is_own
+                            && flows.party_id(&call_id).as_deref()
+                                == Some(event.content.party_id.as_str())
+                        {
+                            return;
+                        }
                         flows.remove(&call_id);
-                        let end = if event.sender == own_user_id {
+                        let end = if sender_is_own {
                             FfiCallEnd::AnsweredElsewhere
                         } else {
                             FfiCallEnd::Declined
@@ -1426,6 +1457,13 @@ impl CoreApp {
                         }
                         let call_id = event.content.call_id.to_string();
                         if !flows.has(&call_id) {
+                            return;
+                        }
+                        if !flows.is_remote_party(
+                            &call_id,
+                            false,
+                            Some(event.content.party_id.as_str()),
+                        ) {
                             return;
                         }
                         let description = event.content.description;
@@ -1542,7 +1580,6 @@ impl CoreApp {
                         room_id: room_id.clone(),
                         party_id,
                         remote_party_id: None,
-                        remote_user_id: invitee,
                         outgoing: true,
                         answer_selected: false,
                     },
@@ -7563,7 +7600,6 @@ struct CallFlow {
     room_id: String,
     party_id: String,
     remote_party_id: Option<String>,
-    remote_user_id: String,
     outgoing: bool,
     /// Whether this end, as the caller, has already picked an answer and
     /// said so. The first answer wins; every later one is ignored.
@@ -7681,6 +7717,35 @@ impl CallFlows {
             .expect("mutex is not poisoned")
             .get(call_id)
             .is_some_and(|flow| flow.outgoing)
+    }
+
+    /// Whether the given party is the one this call is talking to.
+    ///
+    /// The application's `Call::is_remote_party`, which guards every one of
+    /// its handlers but `handle_reject`, and which had no equivalent here.
+    /// A party is a user and a device, and both halves matter, because a
+    /// room holds more than one of each: without this, a third
+    /// participant's hangup ended a call that was none of theirs, and their
+    /// candidates were handed to it.
+    ///
+    /// A call whose flow has already gone is nobody's to act on, so a
+    /// missing one answers `false` rather than letting a late event
+    /// resurrect it.
+    fn is_remote_party(&self, call_id: &str, sender_is_own: bool, party_id: Option<&str>) -> bool {
+        let calls = self.calls.lock().expect("mutex is not poisoned");
+        let Some(flow) = calls.get(call_id) else {
+            return false;
+        };
+
+        if sender_is_own && party_id == Some(flow.party_id.as_str()) {
+            // Our own event, echoed back through the sync.
+            return false;
+        }
+
+        match &flow.remote_party_id {
+            Some(known) => party_id.is_none_or(|id| id == known),
+            None => true,
+        }
     }
 
     /// Claim the right to answer for this call: returns our own party ID
@@ -8402,5 +8467,77 @@ fn ffi_timeline_item(
             VirtualTimelineItem::ReadMarker => FfiTimelineItem::ReadMarker,
             VirtualTimelineItem::TimelineStart => FfiTimelineItem::TimelineStart,
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{CallFlow, CallFlows};
+
+    /// A call in flight, talking to `remote` if that is known yet.
+    fn flow_with(remote: Option<&str>) -> CallFlows {
+        let flows = CallFlows::default();
+        flows.insert(
+            "call".to_owned(),
+            CallFlow {
+                room_id: "!room:localhost".to_owned(),
+                party_id: "ours".to_owned(),
+                remote_party_id: remote.map(ToOwned::to_owned),
+                outgoing: true,
+                answer_selected: false,
+            },
+        );
+        flows
+    }
+
+    /// A late event for a call that has already ended must not be able to
+    /// bring it back.
+    #[test]
+    fn an_unknown_call_has_no_remote_party() {
+        let flows = CallFlows::default();
+        assert!(!flows.is_remote_party("call", false, Some("theirs")));
+    }
+
+    /// Before an answer names the other party, anybody in the room could
+    /// still turn out to be it — which is what the invite is for.
+    #[test]
+    fn an_unanswered_call_accepts_any_party() {
+        let flows = flow_with(None);
+        assert!(flows.is_remote_party("call", false, Some("theirs")));
+        assert!(flows.is_remote_party("call", false, None));
+    }
+
+    /// The whole point: once the other party is known, a third
+    /// participant's events belong to somebody else's call.
+    #[test]
+    fn a_known_call_refuses_a_stranger() {
+        let flows = flow_with(Some("theirs"));
+        assert!(flows.is_remote_party("call", false, Some("theirs")));
+        assert!(!flows.is_remote_party("call", false, Some("somebody-else")));
+    }
+
+    /// Version 0 of the call events has no party ID at all, and the
+    /// application reads that as "the one party there can be".
+    #[test]
+    fn a_missing_party_id_is_the_known_one() {
+        let flows = flow_with(Some("theirs"));
+        assert!(flows.is_remote_party("call", false, None));
+    }
+
+    /// Our own event coming back through the sync is not the other end
+    /// talking.
+    #[test]
+    fn our_own_echo_is_not_the_remote_party() {
+        let flows = flow_with(None);
+        assert!(!flows.is_remote_party("call", true, Some("ours")));
+    }
+
+    /// A party is a user and a device. Another device of ours answering
+    /// our own invite is a genuine remote party, and the application
+    /// says so.
+    #[test]
+    fn our_other_device_can_be_the_remote_party() {
+        let flows = flow_with(None);
+        assert!(flows.is_remote_party("call", true, Some("our-other-device")));
     }
 }
