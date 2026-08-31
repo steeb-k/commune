@@ -205,10 +205,36 @@ platforms do not fight over `target/`:
 * `cargo check --all-targets` under **archlinux**, which has `gtk4`,
   `libadwaita-1` and `gstreamer-1.0` and so can compile the whole
   application. This is the only thing on this machine that compiles
-  `src/secret.rs`'s Linux arm at all.
+  `src/secret.rs`'s Linux arm at all. It also runs
+  `android-kotlin/build-core.sh --all`, which is the only thing that compiles
+  `commune-core/src/platform/android.rs`.
 
 Call `wsl.exe` from PowerShell with a script file rather than a command
-string; see the `wsl-invocation-gotchas` note.
+string; see the `wsl-invocation-gotchas` note. If a distribution starts
+returning `Input/output error` for ordinary commands, the host disk is full:
+`wsl --shutdown` and check `C:` before anything else.
+
+**The Linux clippy is not green, and it is the core that is not green.**
+`cargo clippy --all-targets -- -D warnings` passes on Windows and fails on
+Linux with thirteen errors, every one of them in `commune-core` and none in
+`src/`. Nine are `result_unit_err` on the `pub async fn … -> Result<(), ()>`
+signatures in `session/room/timeline.rs`; four are `result_large_err` on
+`oo7::Error` in `secret/linux.rs`. None of the four signatures was touched by
+the migration — what changed is that they can be seen at all. Two things
+converged to hide them: `secret/linux.rs` cannot be compiled on Windows on any
+toolchain, and the MSYS2 clippy is 0.1.97 where the Arch one is 0.1.98, which
+flags the `Result<(), ()>` returns the older one lets through.
+
+They are left alone deliberately. `timeline.rs`'s unit errors are the facade's
+shape and belong to Phase 3, where the error enums are the point; boxing
+`oo7::Error` is a change to the backend this leaf just finished stabilising,
+and doing it in the same commit would mean the migration and a refactor could
+not be told apart in a bisect. The core has more of this debt behind the `ffi`
+feature — `cargo clippy -p commune-core --all-targets --features ffi -- -D
+warnings` finds fifteen further errors in `facade.rs`, `too_many_lines` and
+`struct_excessive_bools`. **The core has never been held to `-D warnings` and
+does not pass it.** Phase 3 is where that is settled, because that is the
+phase that rewrites the code all of it is in.
 
 Per module, from Phase 2 on: the module's section of `doc/eyeball-tests.md` on
 the GTK application and of `doc/eyeball-android.md` on the Kotlin one. Calls
