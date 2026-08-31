@@ -2,10 +2,14 @@
 //! picker.
 //!
 //! This is the application's `utils::klipy` with the GTK affordances removed:
-//! the `glib::Boxed` derives are gone (the facade re-exposes these as
-//! `UniFFI` records), and the fallback title is a plain string instead of a
-//! gettext
-//! lookup, because the core has no translation catalog.
+//! the `glib::Boxed` derives are gone, because the facade re-exposes these as
+//! `UniFFI` records.
+//!
+//! The API key is a credential and does not live here. The embedder passes it
+//! to [`crate::config::init()`] — the GTK application from its `klipy-api-key`
+//! Meson option, the Kotlin application from a Gradle property — and both
+//! default to empty. When it is empty this whole feature is inert:
+//! [`is_available()`] returns `false` and the GIF tab is never built.
 //!
 //! Only the GIF endpoints are used. The API mixes sponsored items into its
 //! results, marked by their `type`; [`GifPage`] drops everything that is not a
@@ -19,13 +23,10 @@
 
 use serde::Deserialize;
 
-use crate::http::{self, CLIENT, HttpError};
-
-/// The API key.
-///
-/// The application bakes this in with a Meson option; the core has no build
-/// system of its own, so the same key lives here.
-const KLIPY_API_KEY: &str = "KLIPY-API-KEY-PURGED-FROM-HISTORY";
+use crate::{
+    config,
+    http::{self, CLIENT, HttpError},
+};
 
 /// The base URL of the API, without the key.
 const API_BASE_URL: &str = "https://api.klipy.com/api/v1";
@@ -50,6 +51,16 @@ const MAX_RESPONSE_SIZE: u64 = 4 * 1024 * 1024;
 /// size, and about not making the sender wait for it either: the host these
 /// come from serves about 300 KB/s.
 pub const MAX_SEND_FILESIZE: u64 = 4 * 1024 * 1024;
+
+/// Whether the GIF search is available in this build.
+///
+/// It is not when the embedder supplied no API key, which is what a build by
+/// anyone who does not have one of their own gets. Callers are expected to
+/// hide the feature rather than to let it fail.
+#[must_use]
+pub fn is_available() -> bool {
+    !config::klipy_api_key().is_empty()
+}
 
 /// An error that occurred while talking to the API.
 #[derive(Debug, thiserror::Error)]
@@ -82,7 +93,10 @@ async fn get<T: for<'de> Deserialize<'de>>(
             },
         )
         .finish();
-    let url = format!("{API_BASE_URL}/{KLIPY_API_KEY}/{path}?{query_string}");
+    let url = format!(
+        "{API_BASE_URL}/{}/{path}?{query_string}",
+        config::klipy_api_key()
+    );
 
     let body = http::fetch(&url, MAX_RESPONSE_SIZE).await?;
     let response: ApiResponse<T> = serde_json::from_slice(&body)?;
@@ -113,7 +127,10 @@ pub async fn search(query: &str, page: u32) -> Result<GifPage, KlipyError> {
 /// The slug is only valid for the response it came in, so this must be called
 /// with the slug of the GIF that was presented, not a stored one.
 pub async fn report_share(slug: &str) {
-    let url = format!("{API_BASE_URL}/{KLIPY_API_KEY}/gifs/share/{slug}");
+    let url = format!(
+        "{API_BASE_URL}/{}/gifs/share/{slug}",
+        config::klipy_api_key()
+    );
 
     if let Err(error) = CLIENT.post(url).send().await {
         tracing::debug!("Could not report a shared GIF: {error}");

@@ -224,6 +224,12 @@ mod imp {
                 settings_store: None,
                 // Translated here, substituted there: see `secret.rs`.
                 credential_label: Some(crate::secret::credential_label_template()),
+                // From the `klipy-api-key` Meson option, through the
+                // generated and git-ignored `src/config.rs`. Empty in a build
+                // by anyone who has no key of their own, which turns the GIF
+                // search off rather than making it fail.
+                klipy_api_key: (!crate::config::KLIPY_API_KEY.is_empty())
+                    .then(|| crate::config::KLIPY_API_KEY.to_owned()),
             });
 
             // Needs libadwaita started, so it cannot be done at construction.

@@ -821,6 +821,8 @@ internal object IntegrityCheckingUniffiLib {
 ): Short
 external fun uniffi_commune_core_checksum_func_decode_blurhash(
 ): Short
+external fun uniffi_commune_core_checksum_func_gif_search_available(
+): Short
 external fun uniffi_commune_core_checksum_func_init_core(
 ): Short
 external fun uniffi_commune_core_checksum_method_calllistener_on_incoming(
@@ -1483,6 +1485,8 @@ external fun uniffi_commune_core_fn_func_core_version(uniffi_out_err: UniffiRust
 ): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_func_decode_blurhash(`blurhash`: RustBuffer.ByValue,`width`: Int,`height`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_func_gif_search_available(uniffi_out_err: UniffiRustCallStatus, 
+): Byte
 external fun uniffi_commune_core_fn_func_init_core(`ffiConfig`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun ffi_commune_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1608,6 +1612,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_func_decode_blurhash() != 5311.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_func_gif_search_available() != 26209.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_func_init_core() != 39848.toShort()) {
@@ -8932,6 +8939,15 @@ data class FfiCoreConfig (
      * The directory cached data lives under.
      */
     var `cacheDir`: kotlin.String
+    , 
+    /**
+     * The KLIPY API key for the GIF search, from the embedder's build
+     * configuration. `None` or empty makes the feature inert, which is what
+     * a build without a key of its own gets — see
+     * [`crate::klipy::is_available()`]. It is a credential and is never
+     * stored in this repository.
+     */
+    var `klipyApiKey`: kotlin.String?
     
 ){
     
@@ -8952,6 +8968,7 @@ public object FfiConverterTypeFfiCoreConfig: FfiConverterRustBuffer<FfiCoreConfi
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -8959,7 +8976,8 @@ public object FfiConverterTypeFfiCoreConfig: FfiConverterRustBuffer<FfiCoreConfi
             FfiConverterString.allocationSize(value.`appId`) +
             FfiConverterString.allocationSize(value.`profile`) +
             FfiConverterString.allocationSize(value.`dataDir`) +
-            FfiConverterString.allocationSize(value.`cacheDir`)
+            FfiConverterString.allocationSize(value.`cacheDir`) +
+            FfiConverterOptionalString.allocationSize(value.`klipyApiKey`)
     )
 
     override fun write(value: FfiCoreConfig, buf: ByteBuffer) {
@@ -8967,6 +8985,7 @@ public object FfiConverterTypeFfiCoreConfig: FfiConverterRustBuffer<FfiCoreConfi
             FfiConverterString.write(value.`profile`, buf)
             FfiConverterString.write(value.`dataDir`, buf)
             FfiConverterString.write(value.`cacheDir`, buf)
+            FfiConverterOptionalString.write(value.`klipyApiKey`, buf)
     }
 }
 
@@ -14128,6 +14147,23 @@ public object FfiConverterSequenceTypeFfiTimelineItem: FfiConverterRustBuffer<Li
     UniffiLib.uniffi_commune_core_fn_func_decode_blurhash(
     
         FfiConverterString.lower(`blurhash`),FfiConverterUInt.lower(`width`),FfiConverterUInt.lower(`height`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Whether the GIF search is available in this build.
+         *
+         * The desktop application hides the sticker picker's GIF tab entirely when
+         * no API key was configured. The Kotlin picker should do the same rather
+         * than presenting a search that can only fail.
+         */ fun `gifSearchAvailable`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_func_gif_search_available(
+    
+        _status)
 }
     )
     }
