@@ -230,6 +230,32 @@ string; see the `wsl-invocation-gotchas` note. If a distribution starts
 returning `Input/output error` for ordinary commands, the host disk is full:
 `wsl --shutdown` and check `C:` before anything else.
 
+**The GTK application has not been compiled for Android since this track
+began, and both leaves touched Android-only code.** Leaf 1 deleted
+`src/secret/android/` and added a `seed_vm()` call to `src/utils/android.rs`;
+leaf 2 deleted `src/utils/tls.rs`, whose Android arm was the entire reason
+`rustls` was a dependency. None of it is compiled by a Windows or Linux
+build. The environment for it is gone: the `commune-android` worktree was
+deleted, this one has no `.pixiewood/`, and the 59 stub `.pc` files still in
+`~/android/commune-pc` are `-uninstalled` ones pointing into that deleted
+tree, with no `gtk4.pc` among them. Rebuilding it is the pixiewood `prepare`
+run `doc/android.md` describes, which is hours rather than minutes.
+
+Three things are waiting on it, in descending order of how much they would
+hurt:
+
+* `commune_core::config::init()` now runs in `Application::startup` and asks
+  `utils::DataType::Persistent.dir_path()` for a path. On Android that
+  derives from `XDG_DATA_DIRS` and **panics if the GTK glue has not set it**.
+  It used to be asked lazily, at session restore; it is asked at startup now.
+  Both are after the glue runs, so this should be fine — but "should be" is
+  doing the work, and the failure is a crash on launch.
+* The core exports `JNI_OnLoad`. Linked into the application's `.so` it would
+  capture the VM early, which is harmless and arguably useful, and nothing in
+  `src/` or `build-aux/` defines a competing one. Unverified.
+* Whether the Android arms of `tls.rs` and the secret backends compile at all
+  from their new home.
+
 **The Linux clippy is not green, and it is the core that is not green.**
 `cargo clippy --all-targets -- -D warnings` passes on Windows and fails on
 Linux with thirteen errors, every one of them in `commune-core` and none in
