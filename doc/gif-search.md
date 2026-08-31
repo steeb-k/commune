@@ -94,16 +94,23 @@ from the Meson option above and the Kotlin build from a
 `communeKlipyApiKey` Gradle property that reaches it as
 `BuildConfig.KLIPY_API_KEY`. Both default to empty.
 
-For an Android build, put the key in your own `local.properties` or
-`~/.gradle/gradle.properties`:
+For an Android build, put the key in `android-kotlin/local.properties`:
 
 ```properties
 communeKlipyApiKey=…
 ```
 
-or pass `-PcommuneKlipyApiKey=…`. Neither file is tracked. The Kotlin side
-asks `gifSearchAvailable()` over the FFI for the same answer
-`klipy::is_available()` gives the desktop.
+`~/.gradle/gradle.properties` and `-PcommuneKlipyApiKey=…` work too. **Not
+`android-kotlin/gradle.properties`** — that one is tracked, and a credential
+in it is a credential committed, which is the whole of the mistake above.
+`local.properties` is the only file beside the build that git ignores.
+
+Gradle does not load `local.properties` into project properties on its own,
+so `app/build.gradle.kts` reads it through a `secretProperty()` helper. That
+matters more than it sounds: the failure mode of getting this wrong is not an
+error but an empty key, and an empty key is a build where the GIF tab is
+simply absent. The Kotlin side asks `gifSearchAvailable()` over the FFI for
+the same answer `klipy::is_available()` gives the desktop.
 
 ### Nothing is requested until the user searches
 
