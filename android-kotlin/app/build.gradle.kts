@@ -1,3 +1,8 @@
+// Imported rather than written as `java.util.Properties`: in the Gradle
+// Kotlin DSL `java` resolves to the Java plugin's accessor, not to the
+// package, and the unqualified name is the only spelling that compiles.
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose") version "2.2.10"
@@ -12,14 +17,17 @@ plugins {
 // project properties by itself, so it is read here; `~/.gradle/`'s
 // `gradle.properties` and `-P` on the command line are the other two ways in,
 // and both are outside the repository too.
-fun secretProperty(name: String): String =
-    java.util.Properties()
-        .apply {
-            rootProject.file("local.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
-        }
-        .getProperty(name)
-        ?: project.findProperty(name) as String?
-        ?: ""
+fun secretProperty(name: String): String {
+    val local = rootProject.file("local.properties")
+
+    if (local.isFile) {
+        val properties = Properties()
+        local.inputStream().use { properties.load(it) }
+        properties.getProperty(name)?.let { return it }
+    }
+
+    return project.findProperty(name) as String? ?: ""
+}
 
 android {
     namespace = "io.github.steeb_k.commune"
