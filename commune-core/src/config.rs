@@ -35,6 +35,18 @@ pub struct CoreConfig {
     /// `data_dir` ([`FileSettingsStore`]); the GTK application passes its
     /// `GSettings` here instead.
     pub settings_store: Option<Arc<dyn SettingsStore>>,
+    /// The label the platform's secret backend shows for a stored session, as
+    /// a template with `{user_id}` standing in for the Matrix ID.
+    ///
+    /// It is the only sentence this crate writes that a person reads outside
+    /// the application — in Seahorse, in Keychain Access — and the GTK
+    /// application has always translated it. The core cannot: `gettext`
+    /// belongs to the UI layer, which is the rule `doc/track3-convergence.md`
+    /// states as anything that renders a sentence staying where `gettext` can
+    /// reach it. So the embedder hands the sentence over already translated
+    /// and the core only substitutes into it. `None` uses the English below,
+    /// which is what the untranslated Kotlin application wants today.
+    pub credential_label: Option<String>,
 }
 
 impl fmt::Debug for CoreConfig {
@@ -45,6 +57,7 @@ impl fmt::Debug for CoreConfig {
             .field("data_dir", &self.data_dir)
             .field("cache_dir", &self.cache_dir)
             .field("settings_store", &self.settings_store.is_some())
+            .field("credential_label", &self.credential_label)
             .finish()
     }
 }
@@ -61,7 +74,21 @@ pub(crate) struct ResolvedConfig {
     pub(crate) cache_dir: PathBuf,
     /// Where named settings live.
     pub(crate) settings_store: Arc<dyn SettingsStore>,
+    /// The secret backend's label for a session, with `{user_id}` in it.
+    ///
+    /// Only Linux and macOS have anywhere to show it. The Windows Credential
+    /// Manager has no label field at all, and the Android backend writes
+    /// files nobody browses, so both carry the value and never read it.
+    #[cfg_attr(
+        not(any(target_os = "linux", target_os = "macos")),
+        expect(dead_code, reason = "no label to set on this platform's backend")
+    )]
+    pub(crate) credential_label: String,
 }
+
+/// The English label for a stored session, used when the embedder provides
+/// none of its own.
+const DEFAULT_CREDENTIAL_LABEL: &str = "Commune: Matrix credentials for {user_id}";
 
 /// The embedder's configuration, set once at startup.
 static CONFIG: OnceLock<ResolvedConfig> = OnceLock::new();
@@ -78,10 +105,12 @@ pub fn init(config: CoreConfig) {
         data_dir,
         cache_dir,
         settings_store,
+        credential_label,
     } = config;
 
     let settings_store =
         settings_store.unwrap_or_else(|| Arc::new(FileSettingsStore::new(&data_dir)));
+    let credential_label = credential_label.unwrap_or_else(|| DEFAULT_CREDENTIAL_LABEL.to_owned());
 
     let _ = CONFIG.set(ResolvedConfig {
         app_id,
@@ -89,6 +118,7 @@ pub fn init(config: CoreConfig) {
         data_dir,
         cache_dir,
         settings_store,
+        credential_label,
     });
 }
 
@@ -121,6 +151,16 @@ pub(crate) fn settings_store() -> Arc<dyn SettingsStore> {
     get().settings_store.clone()
 }
 
+/// The label the secret backend should show for the session of the given user.
+///
+/// Only `{user_id}` is substituted, and a template that does not contain it
+/// is used as it stands — a translation that dropped the placeholder gives a
+/// label with no Matrix ID in it rather than a panic.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+pub(crate) fn credential_label(user_id: &str) -> String {
+    get().credential_label.replace("{user_id}", user_id)
+}
+
 /// Initialize the configuration for this crate's tests.
 ///
 /// The config is process-global and set once, so every test that needs it
@@ -133,5 +173,6 @@ pub(crate) fn init_test_config() {
         data_dir: std::env::temp_dir().join("commune-core-test").join("data"),
         cache_dir: std::env::temp_dir().join("commune-core-test").join("cache"),
         settings_store: None,
+        credential_label: None,
     });
 }

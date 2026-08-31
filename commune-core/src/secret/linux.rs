@@ -12,8 +12,10 @@ use tokio::fs;
 use tracing::{debug, error, info};
 use url::Url;
 
-use super::{SESSION_ID_LENGTH, SecretError, SecretExt, SessionTokens, StoredSession};
-use crate::{UserFacingError, config, matrix, spawn_tokio};
+use super::{
+    KeyringError, SESSION_ID_LENGTH, SecretError, SecretExt, SessionTokens, StoredSession,
+};
+use crate::{config, matrix, spawn_tokio};
 
 /// The current version of the stored session.
 const CURRENT_VERSION: u8 = 7;
@@ -168,7 +170,7 @@ async fn store_session_inner(session: StoredSession) -> Result<(), oo7::Error> {
 
     keyring
         .create_item(
-            &format!("Commune: Matrix credentials for {}", session.user_id),
+            &config::credential_label(session.user_id.as_str()),
             &attributes,
             secret,
             true,
@@ -489,24 +491,30 @@ enum LinuxSecretError {
 
 impl From<oo7::Error> for SecretError {
     fn from(value: oo7::Error) -> Self {
-        Self::Service(value.to_user_facing())
+        Self::Keyring(KeyringError::from(&value))
     }
 }
 
-impl UserFacingError for oo7::Error {
-    fn to_user_facing(&self) -> String {
-        match self {
-            oo7::Error::File(error) => error.to_user_facing(),
-            oo7::Error::DBus(error) => error.to_user_facing(),
+/// The classification the application has always applied to `oo7`'s errors,
+/// as a value rather than as a sentence.
+///
+/// Each arm here corresponds one-to-one with a sentence the GTK application
+/// draws through `gettext`, and with the English one [`KeyringError`] renders
+/// for an embedder without translations.
+impl From<&oo7::Error> for KeyringError {
+    fn from(value: &oo7::Error) -> Self {
+        match value {
+            oo7::Error::File(error) => error.into(),
+            oo7::Error::DBus(error) => error.into(),
         }
     }
 }
 
-impl UserFacingError for oo7::file::Error {
-    fn to_user_facing(&self) -> String {
+impl From<&oo7::file::Error> for KeyringError {
+    fn from(value: &oo7::file::Error) -> Self {
         use oo7::file::Error;
 
-        match self {
+        match value {
             Error::FileHeaderMismatch(_)
             | Error::VersionMismatch(_)
             | Error::NoData
@@ -519,64 +527,38 @@ impl UserFacingError for oo7::file::Error {
             | Error::IncorrectSecret
             | Error::Crypto(_)
             | Error::Utf8(_)
-            | Error::PartiallyCorruptedKeyring { .. } => {
-                String::from("The secret storage file is corrupted.")
+            | Error::PartiallyCorruptedKeyring { .. } => Self::CorruptedFile,
+            Error::NoParentDir(_) | Error::NoDataDir => Self::NoFileLocation,
+            Error::Io(_) => Self::FileIo,
+            Error::TargetFileChanged(_) => Self::FileChanged,
+            Error::Portal(ashpd::Error::Portal(ashpd::PortalError::Cancelled(_))) => {
+                Self::PortalCancelled
             }
-            Error::NoParentDir(_) | Error::NoDataDir => {
-                String::from("Could not access the secret storage file location.")
-            }
-            Error::Io(_) => {
-                String::from("An unexpected error occurred when accessing the secret storage file.")
-            }
-            Error::TargetFileChanged(_) => {
-                String::from("The secret storage file has been changed by another process.")
-            }
-            Error::Portal(ashpd::Error::Portal(ashpd::PortalError::Cancelled(_))) => String::from(
-                "The request to the Flatpak Secret Portal was cancelled. Make sure to accept any prompt asking to access it.",
-            ),
-            Error::Portal(ashpd::Error::PortalNotFound(_)) => String::from(
-                "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is installed, and it is at least at version 1.5.0.",
-            ),
-            Error::Portal(_) => String::from(
-                "An unexpected error occurred when interacting with the D-Bus Secret Portal backend.",
-            ),
-            Error::WeakKey(_) => String::from(
-                "The Flatpak Secret Portal provided a key that is too weak to be secure.",
-            ),
-            Error::Locked => String::from("The collection or item is locked."),
+            Error::Portal(ashpd::Error::PortalNotFound(_)) => Self::PortalNotAvailable,
+            Error::Portal(_) => Self::Portal,
+            Error::WeakKey(_) => Self::PortalWeakKey,
+            Error::Locked => Self::Locked,
             // Can only occur when using the `replace_item_index` or `delete_item_index` methods.
             Error::InvalidItemIndex(_) => unreachable!(),
         }
     }
 }
 
-impl UserFacingError for oo7::dbus::Error {
-    fn to_user_facing(&self) -> String {
+impl From<&oo7::dbus::Error> for KeyringError {
+    fn from(value: &oo7::dbus::Error) -> Self {
         use oo7::dbus::{Error, ServiceError};
 
-        match self {
-            Error::Deleted => String::from("The item was deleted."),
+        match value {
+            Error::Deleted => Self::ItemDeleted,
             Error::Service(s) => match s {
-                ServiceError::ZBus(_) => String::from(
-                    "An unexpected error occurred when interacting with the D-Bus Secret Service.",
-                ),
-                ServiceError::IsLocked(_) => String::from("The collection or item is locked."),
-                ServiceError::NoSession(_) => {
-                    String::from("The D-Bus Secret Service session does not exist.")
-                }
-                ServiceError::NoSuchObject(_) => {
-                    String::from("The collection or item does not exist.")
-                }
+                ServiceError::ZBus(_) => Self::Service,
+                ServiceError::IsLocked(_) => Self::Locked,
+                ServiceError::NoSession(_) => Self::NoServiceSession,
+                ServiceError::NoSuchObject(_) => Self::NoSuchObject,
             },
-            Error::Dismissed => String::from(
-                "The request to the D-Bus Secret Service was cancelled. Make sure to accept any prompt asking to access it.",
-            ),
-            Error::NotFound(_) => String::from(
-                "Could not access the default collection. Make sure a keyring was created and set as default.",
-            ),
-            Error::ZBus(_) | Error::Crypto(_) | Error::IO(_) => String::from(
-                "An unexpected error occurred when interacting with the D-Bus Secret Service.",
-            ),
+            Error::Dismissed => Self::ServiceDismissed,
+            Error::NotFound(_) => Self::NoDefaultCollection,
+            Error::ZBus(_) | Error::Crypto(_) | Error::IO(_) => Self::Service,
         }
     }
 }

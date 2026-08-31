@@ -1467,3 +1467,39 @@ draws or does. The Android half of the same merge has its own sheet,
       signatures, the second try should never fire: an SVG, an AVIF and a HEIC
       all still draw, and a corrupt file still reads as unsupported rather
       than looping.
+
+## The secret store moved into the core — `doc/track3-convergence.md`
+
+Phase 2, leaf 1. Nothing about this is meant to be visible, which is exactly
+why it is here: the five backends that read and write the account are now the
+core's copies, and an account that cannot be read is an account that is gone.
+The compiler cannot see any of this — the store's contents are on the machine,
+not in the source.
+
+* [ ] **An existing session still restores.** Start the build over an
+      installation that already has one, and the account comes back with no
+      login: same rooms, same history, same device. Nothing in the store's
+      format changed, so a session written by the old build is read by this
+      one. **This is the one that matters** — if it fails, every other line
+      here is moot.
+* [ ] **A new login is still stored.** Log in, quit, start again. It comes
+      back. The passphrase, the tokens and the OAuth client ID all travel the
+      same path they did.
+* [ ] **Logging out empties it.** Log out, restart, and the greeter is what
+      comes up rather than a broken session — the delete path runs through the
+      core now, including the token file beside the databases.
+* [ ] **Two sessions still both restore, in the order they were in.** The
+      sidebar order comes from settings and the sessions come from the store,
+      and the wrapper the application puts around each one sits between them.
+* [ ] **On Linux, the keyring entry reads in the user's language.** Open
+      Seahorse (or `secret-tool search`) and look at the label of a Commune
+      item — in a translated locale it must be that translation, not English.
+      The sentence is the application's and the writing is the core's, and
+      this is the only place the seam between them shows.
+* [ ] **On macOS, the same in Keychain Access.** One item per session under
+      the application ID, labelled with the Matrix ID.
+* [ ] **On Linux, a locked keyring says so in the user's language.** Lock the
+      login keyring and start the application: the error under "Could not
+      restore previous sessions" must be the translated "The collection or
+      item is locked.", not English. Fifteen sentences take this path; one is
+      enough to prove the wiring.

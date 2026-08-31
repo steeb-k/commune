@@ -119,8 +119,7 @@ src/login/reset_password_page.blp
 src/login/reset_password_page.rs
 src/login/session_setup_view.blp
 src/macos_menu_bar.blp
-src/secret/linux.rs
-src/secret/macos.rs
+src/secret.rs
 src/session/image_packs/mod.rs
 src/session/mod.rs
 src/session/notifications/mod.rs

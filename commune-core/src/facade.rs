@@ -67,6 +67,10 @@ pub fn init_core(ffi_config: FfiCoreConfig) {
         data_dir: ffi_config.data_dir.into(),
         cache_dir: ffi_config.cache_dir.into(),
         settings_store: None,
+        // The Kotlin application has no translations yet, so it takes the
+        // core's English. When it grows them, this is where its own string
+        // resource arrives.
+        credential_label: None,
     });
 }
 

@@ -202,6 +202,30 @@ mod imp {
             // deliberately does neither.
             self.parent_startup();
 
+            // Tell the core who it is embedded in. Nothing in
+            // `commune_core` may be touched before this: the configuration is
+            // a `OnceLock` and reading it unset is a panic, deliberately, so
+            // that a missing call fails at the first use rather than quietly
+            // writing sessions to the wrong place.
+            //
+            // The two directories are the application's own answers — the
+            // XDG, macOS and Android derivations in `utils::DataType`, which
+            // the core has no `GLib` to work out for itself — resolved once
+            // here rather than per call. They cannot change while the process
+            // runs.
+            commune_core::config::init(commune_core::config::CoreConfig {
+                app_id: crate::APP_ID.to_owned(),
+                profile: crate::PROFILE.as_str().to_owned(),
+                data_dir: crate::utils::DataType::Persistent.dir_path(),
+                cache_dir: crate::utils::DataType::Cache.dir_path(),
+                // The GSettings-backed store is owed by the time
+                // `session_list/` moves; nothing under `secret/` reads a
+                // setting, so the core's own file store goes unused for now.
+                settings_store: None,
+                // Translated here, substituted there: see `secret.rs`.
+                credential_label: Some(crate::secret::credential_label_template()),
+            });
+
             // Needs libadwaita started, so it cannot be done at construction.
             self.set_up_color_scheme();
 

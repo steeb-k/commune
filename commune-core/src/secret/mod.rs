@@ -28,7 +28,7 @@ use self::file::SecretFile;
 use crate::{UserFacingError, matrix::ClientSetupError, paths::DataType, spawn_tokio};
 
 /// The length of a session ID, in chars or bytes as the string is ASCII.
-pub(crate) const SESSION_ID_LENGTH: usize = 8;
+pub const SESSION_ID_LENGTH: usize = 8;
 /// The length of a passphrase, in chars or bytes as the string is ASCII.
 pub(crate) const PASSPHRASE_LENGTH: usize = 30;
 
@@ -100,14 +100,129 @@ mod unimplemented {
 #[derive(Debug, Error)]
 pub enum SecretError {
     /// An error occurred interacting with the secret service.
+    ///
+    /// The message comes from the platform and is not something this crate
+    /// can say anything better about, so it is carried as it stands.
     #[error("Service error: {0}")]
     Service(String),
+    /// The Linux keyring or Secret Portal refused, in one of the ways worth
+    /// telling them apart.
+    #[cfg(target_os = "linux")]
+    #[error("Keyring error: {0}")]
+    Keyring(#[from] KeyringError),
 }
 
 impl UserFacingError for SecretError {
     fn to_user_facing(&self) -> String {
         match self {
             SecretError::Service(error) => error.clone(),
+            #[cfg(target_os = "linux")]
+            SecretError::Keyring(error) => error.to_user_facing(),
+        }
+    }
+}
+
+/// What went wrong with the Linux secret backend, as one of the cases the
+/// user can be told apart.
+///
+/// `oo7`'s own errors carry far more detail than a person can act on, and the
+/// application has always collapsed them into these fifteen sentences. They
+/// stay a value rather than a string because the sentence belongs to whatever
+/// is drawing it: the GTK application runs each of these through `gettext`,
+/// and the core's own rendering below is the English fallback for an embedder
+/// with no translations. Turning them into a string here is what the first
+/// transcription did, and it is how the translations were lost.
+#[cfg(target_os = "linux")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+pub enum KeyringError {
+    /// The keyring file cannot be read as a keyring file.
+    #[error("The secret storage file is corrupted")]
+    CorruptedFile,
+    /// The directory the keyring file should live in is not reachable.
+    #[error("Could not access the secret storage file location")]
+    NoFileLocation,
+    /// Reading or writing the keyring file failed.
+    #[error("Could not access the secret storage file")]
+    FileIo,
+    /// Another process wrote the keyring file underneath us.
+    #[error("The secret storage file has been changed by another process")]
+    FileChanged,
+    /// The user dismissed the Flatpak Secret Portal's prompt.
+    #[error("The request to the Flatpak Secret Portal was cancelled")]
+    PortalCancelled,
+    /// There is no Secret Portal on the bus.
+    #[error("The Flatpak Secret Portal is not available")]
+    PortalNotAvailable,
+    /// The Secret Portal failed in some other way.
+    #[error("The Flatpak Secret Portal failed")]
+    Portal,
+    /// The Secret Portal handed back a key that is not strong enough.
+    #[error("The Flatpak Secret Portal provided a key that is too weak to be secure")]
+    PortalWeakKey,
+    /// The collection or item is locked.
+    #[error("The collection or item is locked")]
+    Locked,
+    /// The item was deleted while we were using it.
+    #[error("The item was deleted")]
+    ItemDeleted,
+    /// The D-Bus Secret Service failed in some other way.
+    #[error("The D-Bus Secret Service failed")]
+    Service,
+    /// The Secret Service session does not exist.
+    #[error("The D-Bus Secret Service session does not exist")]
+    NoServiceSession,
+    /// The collection or item does not exist.
+    #[error("The collection or item does not exist")]
+    NoSuchObject,
+    /// The user dismissed the Secret Service's prompt.
+    #[error("The request to the D-Bus Secret Service was cancelled")]
+    ServiceDismissed,
+    /// There is no default collection to store the session in.
+    #[error("Could not access the default collection")]
+    NoDefaultCollection,
+}
+
+#[cfg(target_os = "linux")]
+impl UserFacingError for KeyringError {
+    fn to_user_facing(&self) -> String {
+        match self {
+            Self::CorruptedFile => String::from("The secret storage file is corrupted."),
+            Self::NoFileLocation => {
+                String::from("Could not access the secret storage file location.")
+            }
+            Self::FileIo => {
+                String::from("An unexpected error occurred when accessing the secret storage file.")
+            }
+            Self::FileChanged => {
+                String::from("The secret storage file has been changed by another process.")
+            }
+            Self::PortalCancelled => String::from(
+                "The request to the Flatpak Secret Portal was cancelled. Make sure to accept any prompt asking to access it.",
+            ),
+            Self::PortalNotAvailable => String::from(
+                "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is installed, and it is at least at version 1.5.0.",
+            ),
+            Self::Portal => String::from(
+                "An unexpected error occurred when interacting with the D-Bus Secret Portal backend.",
+            ),
+            Self::PortalWeakKey => String::from(
+                "The Flatpak Secret Portal provided a key that is too weak to be secure.",
+            ),
+            Self::Locked => String::from("The collection or item is locked."),
+            Self::ItemDeleted => String::from("The item was deleted."),
+            Self::Service => String::from(
+                "An unexpected error occurred when interacting with the D-Bus Secret Service.",
+            ),
+            Self::NoServiceSession => {
+                String::from("The D-Bus Secret Service session does not exist.")
+            }
+            Self::NoSuchObject => String::from("The collection or item does not exist."),
+            Self::ServiceDismissed => String::from(
+                "The request to the D-Bus Secret Service was cancelled. Make sure to accept any prompt asking to access it.",
+            ),
+            Self::NoDefaultCollection => String::from(
+                "Could not access the default collection. Make sure a keyring was created and set as default.",
+            ),
         }
     }
 }

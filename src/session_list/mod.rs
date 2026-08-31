@@ -157,7 +157,13 @@ mod imp {
             self.set_state(LoadingState::Loading);
 
             let mut sessions = match Secret::restore_sessions().await {
-                Ok(sessions) => sessions,
+                // Into the application's `glib::Boxed` wrapper here, where the
+                // core hands them over, so nothing below has to know there is
+                // one.
+                Ok(sessions) => sessions
+                    .into_iter()
+                    .map(StoredSession::from)
+                    .collect::<Vec<_>>(),
                 Err(error) => {
                     let message = format!(
                         "{}\n\n{}",
