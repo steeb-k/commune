@@ -63,6 +63,15 @@ desktop platform's resolved graph shifted. The application is not yet a
 consumer — the path dependency arrives with the first module, because
 `cargo-machete` fails an unused one.
 
+**The bridge is built where it is first needed, not up front.** The order this
+plan first gave — bridge, then leaves — was wrong, and Phase 0 is where that
+showed: the leaves are stateless functions with no observables and no list
+models, so a bridge written before them would have had no consumer to be
+designed against. The leaves go first. The `VectorDiff` half of the bridge
+arrives with `session_list/`, the one leaf that holds state; the property half
+arrives with `room_list/` and `Room`. What follows describes the bridge as a
+whole; it is built in those two pieces.
+
 **Phase 1 — the bridge**, at `src/core_bridge/`. New GTK-side code, written
 once so every later module is mechanical: a `bridge_properties!` macro driving
 `notify_*()` from one `select_all` over the core's `eyeball` subscribers (one
@@ -80,7 +89,20 @@ core twin differ only by `pub(crate)`→`pub`, the `APP_ID`/`PROFILE` constants
 becoming `config::app_id()`/`config::profile()`, and stripped `gettext`.
 `commune_core::config::init()` is called from `src/application.rs` startup with
 the Meson values, the GLib directories and a `GSettings`-backed
-`SettingsStore`.
+`SettingsStore`. `secret/` can pass `None` for the settings store to begin
+with, because nothing under it reads one; the `GSettings` implementation is
+owed by the time `session_list/` moves.
+
+`secret/` carries the first piece of glue, found before a line of it was
+written. `StoredSession` is a construct-only `GObject` property in three places
+— `src/session/mod.rs:885`, `src/session_list/failed_session.rs:67`,
+`src/session_list/new_session.rs:51` — so it derives `glib::Boxed`. The core's
+cannot, and the orphan rule forbids deriving `Boxed` for a foreign type, so the
+application keeps a newtype around the core's struct with the derive on the
+wrapper and a `Deref` through it. Every field access reads as it does today.
+This is the same wrapper pattern the whole spine will need, and finding it on
+2,200 lines of stateless backends rather than on `Room` is the argument for
+doing the leaves first.
 
 **Phase 3 — decompose `facade.rs`.** The prerequisite that chunk 18 of
 `doc/kotlin-plan.md` does not name. `impl CoreApp` runs from line 744 to 6391 —
