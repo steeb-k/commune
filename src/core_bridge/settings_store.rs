@@ -21,8 +21,15 @@
 //! round-trip per call — would do, and would deadlock the moment the main
 //! loop was itself waiting on that task.
 //!
-//! The cost is that a `set` is not durable the instant it returns. It was
-//! never durable in that sense: `GSettings` batches its own writes too.
+//! A write that is *already* on the main context skips `invoke` and goes
+//! straight through, because a closure handed to `invoke` is only ever run by
+//! the main loop: one queued while the application is quitting would never
+//! run at all, and every setting the user flips is written from the main
+//! context. What is left deferred is the core writing from its own worker,
+//! where there is no such deadline.
+//!
+//! The cost is that such a `set` is not durable the instant it returns. It
+//! was never durable in that sense: `GSettings` batches its own writes too.
 
 use std::{
     collections::HashMap,
@@ -111,16 +118,30 @@ impl SettingsStore for GSettingsStore {
         let key = key.to_owned();
         let value = value.to_owned();
 
-        // `invoke` is safe from any thread and runs the closure on the main
-        // context, where a `gio::Settings` may exist. It is constructed in
-        // there rather than captured for the same reason the mirror exists at
-        // all: the object cannot cross a thread boundary.
-        glib::MainContext::default().invoke(move || {
+        // The `gio::Settings` is constructed inside the closure rather than
+        // captured, for the same reason the mirror exists at all: the object
+        // cannot cross a thread boundary.
+        let write = move || {
             let settings = gio::Settings::new(crate::APP_ID);
 
             if let Err(error) = settings.set_string(&key, &value) {
                 warn!("Could not save the {key} setting: {error}");
             }
-        });
+        };
+
+        let main_context = glib::MainContext::default();
+
+        if main_context.is_owner() {
+            // Already on the main context, which is where every setting the
+            // user flips comes from. Write now: a closure handed to `invoke`
+            // is only run by the main loop, so one queued as the application
+            // is quitting would never run at all, and the last thing the user
+            // did before quitting is exactly the change worth keeping.
+            write();
+        } else {
+            // `invoke` is safe from any thread and runs the closure on the
+            // main context, where a `gio::Settings` may exist.
+            main_context.invoke(write);
+        }
     }
 }
