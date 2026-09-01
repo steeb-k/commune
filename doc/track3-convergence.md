@@ -362,7 +362,7 @@ are named in the notes below and are not in the count.
 |---|---|---|---|---|---|---|
 | 1 | Safety — the ignored users | 3 | 85 | `session/ignored_users.rs` | `session/ignored_users.rs` (282) | `IgnoredUsersError` |
 | 2 | The account's other sessions | 3 | 143 | `session/user_sessions.rs` | `session/user_sessions_list/` (987) | `DeviceError` |
-| 3 | The account itself | 16 | 228 | `session/mod.rs` | `session/user.rs` (547), `account_settings/` | `AccountError` |
+| 3 | The account itself | 16 | 228 | `session/mod.rs` | `account_settings/general_page/` (755) | `AccountError` |
 | 4 | Notifications and push | 7 | 246 | `session/notifications.rs` | `session/notifications/notifications_settings.rs` (762) | `NotificationError` |
 | 5 | Media fetch, search, members | 12 | 456 | `matrix/media.rs`, `session/room/search.rs`, `session/room/member.rs` | `session/room/search.rs` (767), `member_list.rs` (387), `typing_list.rs` (102), `room_details/history_viewer/` | `MediaError`, `SearchError` |
 | 6 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/space_children.rs` | `session_view/explore/` (1,287), `session/remote/space_children.rs` (521) | `JoinError`, `DirectoryError` |
@@ -582,6 +582,57 @@ the sidebar's filtering wants anyway.
 The FFI surface is unchanged again: same three signatures, and the
 regenerated Kotlin came back byte-identical.
 
+### Commit 3 — the account's own profile, and one answer instead of two
+
+**This group is smaller than the table said, and the table is corrected
+above.** Of the sixteen methods counted here, thirteen are already thin:
+`has_sessions`, `session_user_id`, `sessions`, `set_active_session`,
+`logout` and the session-settings setters are one-line passthroughs over
+`SessionList` and `commune_core::settings`, and moving them would be churn
+for its own sake. Three had logic, and it is the same piece of logic three
+times.
+
+**`Session` already keeps the profile as an observable, and the facade
+fetched past it.** `SessionInner` holds a
+`SharedObservable<SessionProfile>`, filled from an on-disk cache at startup
+and then from the homeserver, and `session_display_name()` reads it. But
+`account_profile()` called `fetch_user_profile()` itself and returned the
+result without touching the observable — so one core held two answers to the
+question "what is this account called", they were fetched separately, and
+nothing kept them in step. It now refreshes the observable and reads it,
+which is one round trip as before, one answer, and the disk cache updated on
+the way past.
+
+**Neither setter told the profile it had changed, and the application says
+in a comment why that matters.** `src/account_settings/general_page/mod.rs`
+updates its own copy after a successful display-name or avatar change, with
+the reason written out twice: *"If the user is in no rooms, we won't receive
+the update via sync, so change the avatar manually if this request
+succeeds."* An account in no rooms is never told about its own profile
+change. The facade updated nothing, and `Session::profile()` — which the GTK
+application will bind to — would have kept the old name until the process
+restarted. Both setters now correct the observable, which is why
+`set_avatar` splits the upload from the avatar-URL write the way the
+application does: the URI the upload returns is the thing the local copy has
+to be corrected with, and `upload_avatar()` does not hand it back.
+
+**Two gaps found and deliberately not filled**, because Phase 3 is
+decomposition and this document's own ruling is that convergence comes
+before the parity gaps:
+
+* **There is no way to remove the account's avatar.** The application has
+  `remove_avatar()` sending `set_avatar_url(None)` behind a confirmation;
+  the facade has `remove_room_avatar` and no equivalent for the account, so
+  the Kotlin application can replace an avatar and never clear one. Adding
+  it is a new FFI method, which is a feature, not a move.
+* **`set_account_avatar` does not check the upload size** where
+  `set_room_avatar`, `send_attachment` and `send_voice_message` all do. The
+  inconsistency is the facade's own; the application does not check either,
+  so mirroring it is correct here and the guard is a question for whoever
+  makes the four consistent.
+
+The FFI surface is unchanged for the third time.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -615,6 +666,7 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs` ignored users | **The core never followed the list, and never refused a redundant request.** `src/session/ignored_users.rs` subscribes to the SDK's ignore-list changes and re-reads `m.ignored_user_list` whenever one arrives; the facade read the account data once per call and had no subscription at all, so ignoring somebody from the desktop never reached a phone with the Ignored Users screen open — it would sit on a stale list until it was closed and reopened. The application also guards both directions: adding a user already on the list, or removing one that is not, is a warning and a no-op rather than a round trip the server will ignore. Neither guard existed in the core. **Closed 1 Sep** with Phase 3's first commit, which also found the thing the move would have broken: `SessionList::active_session()` returns a session before `prepare()` has run, so a cache-only read would answer "nobody" during startup where the old fetch answered correctly — `ensure_loaded()` keeps that guarantee. | Done |
 | 1 Sep 2026 | `facade.rs`, `list_devices` | **Four divergences in one method, and the worst is what it does when something is wrong.** `src/session/user_sessions_list/` merges `/devices` with the crypto store, so a device known to one source and not the other is still listed; the facade walked `/devices` alone. The application lists what it has when one source fails and errors only when both do; **the facade returned an error the moment `/devices` failed, which is exactly the case a person opens the sessions screen in.** The application follows `devices_stream()` — taking an _empty_ update, because that is how a disconnection arrives without saying whose — and the facade fetched once per call. And the application breaks a sort tie on device ID where the facade had none, so devices the server never dated came back in a different order on every read. **Closed 1 Sep** in `session/user_sessions.rs`, with four tests over the ordering. | Done |
 | 1 Sep 2026 | `facade.rs`, `sign_out_device` | **The core could not tell "wrong password" from "this homeserver wants something else".** Signing a device out goes through user-interactive authentication, which the application answers with an `AuthDialog` that speaks several stages; the facade retried once with a password whatever the homeserver had asked for, and reported the resulting failure as an ordinary error. On a homeserver whose sign-out stage is not `m.login.password` — an OAuth 2.0 one, for instance — that is a request that can never succeed and a message that never says so. **Closed 1 Sep**: the first attempt reads the offered flows, and `DeviceError` separates `NeedsPassword` from `UnsupportedAuth`. The GTK application hands the first to its dialog when the account settings migrate; until then no embedder is worse off, and the Kotlin one stops showing a sentence that is not true. | Done |
+| 1 Sep 2026 | `facade.rs` account profile | **A profile change never reached the profile, and the application's source says in a comment why that is not academic.** `src/account_settings/general_page/mod.rs` updates its own copy of the display name and the avatar after a successful change, because _"if the user is in no rooms, we won't receive the update via sync"_ — an account in no rooms is never told about its own profile change. `set_display_name` and `set_account_avatar` wrote to the homeserver and touched nothing locally, so `Session::profile()`, the observable the GTK application will bind to, kept the old value until the process restarted. Separately, `account_profile()` called `fetch_user_profile()` past that same observable, so one core held two independently-fetched answers to the same question with nothing keeping them in step. **Closed 1 Sep**: both setters correct the observable — which is why `set_avatar` splits the upload from the avatar-URL write, as the application does, since `upload_avatar()` never hands back the URI the local copy needs — and `account_profile()` refreshes the observable and reads it. | Done |
 
 ## Gates
 

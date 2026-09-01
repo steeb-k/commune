@@ -117,6 +117,32 @@ pub struct SessionProfile {
     pub avatar_url: Option<OwnedMxcUri>,
 }
 
+/// What can go wrong while changing the account's own profile.
+#[derive(Debug, thiserror::Error)]
+pub enum AccountError {
+    /// The file could not be read.
+    #[error("the image could not be read")]
+    UnreadableImage,
+    /// The homeserver refused.
+    ///
+    /// Boxed because `matrix_sdk::Error` is large enough that carrying it
+    /// by value makes every `Result` here expensive.
+    #[error(transparent)]
+    Server(#[from] Box<matrix_sdk::Error>),
+}
+
+impl crate::UserFacingError for AccountError {
+    fn to_user_facing(&self) -> String {
+        match self {
+            Self::UnreadableImage => "Could not read the image.".to_owned(),
+            // The embedder renders an SDK error itself — the GTK
+            // application's rendering is translated — so this is the
+            // fallback the Kotlin side gets.
+            Self::Server(error) => error.to_string(),
+        }
+    }
+}
+
 /// A Matrix user session.
 ///
 /// Cheap to clone; every clone shares the same state.
@@ -396,6 +422,66 @@ impl Session {
     /// Subscribe to the profile of the session's own user.
     pub fn subscribe_profile(&self) -> Subscriber<SessionProfile> {
         self.inner.profile.subscribe()
+    }
+
+    /// Re-read the account's profile from the homeserver.
+    ///
+    /// Refreshes the observable and the on-disk cache, which is what
+    /// `prepare()` does once at startup and nothing did again.
+    pub async fn refresh_profile(&self) {
+        self.inner.update_user_profile().await;
+    }
+
+    /// Change the account's display name.
+    ///
+    /// The observable is updated here as well as by the sync that follows,
+    /// for the reason the application's general page gives: an account in
+    /// no rooms is never told about its own profile change, so this is the
+    /// only copy that would ever be corrected.
+    pub async fn set_display_name(&self, name: &str) -> Result<(), AccountError> {
+        let client = self.client();
+        let name = name.to_owned();
+        let stored = name.clone();
+
+        spawn_tokio!(async move { client.account().set_display_name(Some(&name)).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| AccountError::Server(Box::new(error)))?;
+
+        let mut profile = self.inner.profile.get();
+        profile.display_name = Some(stored);
+        self.inner.profile.set_if_not_eq(profile);
+
+        Ok(())
+    }
+
+    /// Upload the given image and make it the account's avatar.
+    ///
+    /// Split into an upload and a set of the avatar URL exactly as the
+    /// application splits it, because the URI the upload returns is what
+    /// the local profile has to be corrected with.
+    pub async fn set_avatar(&self, mime: &mime::Mime, data: Vec<u8>) -> Result<(), AccountError> {
+        let client = self.client();
+        let mime = mime.clone();
+
+        let uri = spawn_tokio!(async move { client.media().upload(&mime, data, None).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| AccountError::Server(Box::new(error)))?
+            .content_uri;
+
+        let client = self.client();
+        let stored = uri.clone();
+        spawn_tokio!(async move { client.account().set_avatar_url(Some(&uri)).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| AccountError::Server(Box::new(error)))?;
+
+        let mut profile = self.inner.profile.get();
+        profile.avatar_url = Some(stored);
+        self.inner.profile.set_if_not_eq(profile);
+
+        Ok(())
     }
 
     /// A weak reference to this session.
