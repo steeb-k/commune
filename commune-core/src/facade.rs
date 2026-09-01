@@ -163,6 +163,54 @@ impl From<crate::session::MediaHistoryError> for CoreError {
     }
 }
 
+impl From<crate::session::JoinError> for CoreError {
+    fn from(error: crate::session::JoinError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::DirectChatError> for CoreError {
+    fn from(error: crate::session::DirectChatError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::RemoteRoomError> for CoreError {
+    fn from(error: crate::session::RemoteRoomError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::SpaceChildrenError> for CoreError {
+    fn from(error: crate::session::SpaceChildrenError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::DirectoryError> for CoreError {
+    fn from(error: crate::session::DirectoryError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::CreateRoomError> for CoreError {
+    fn from(error: crate::session::CreateRoomError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 /// A room's display name, semantically: the Empty variants are the UI's
 /// sentences to make.
 #[derive(uniffi::Enum)]
@@ -2619,68 +2667,33 @@ impl CoreApp {
         room_id: String,
         category: FfiTargetRoomCategory,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
-                room.change_category(category.into())
-                    .await
-                    .map_err(|change_error| CoreError::Failed {
-                        msg: format!("Could not move the room: {change_error}"),
-                    })
-            })
+        room.change_category(category.into())
             .await
-            .expect("task was not aborted")
+            .map_err(|change_error| CoreError::Failed {
+                msg: format!("Could not move the room: {change_error}"),
+            })
     }
 
     /// Open a direct chat with the given user: the existing one when
     /// there is one, a newly created encrypted DM otherwise. Returns the
     /// room ID.
     pub async fn create_direct_chat(&self, user_id: String) -> Result<String, CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
+        let user_id = parse_user_id(&user_id)?;
 
+        // The wait for the new room to reach the list is a timer-less
+        // `get_wait`, but the room list's stream is driven by the sync
+        // task, so this runs on the runtime with it.
         RUNTIME
             .spawn(async move {
-                let user_id = ruma::UserId::parse(&user_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid user ID".to_owned(),
-                })?;
-
-                // The application reuses an existing direct chat rather
-                // than opening a second one.
-                let existing = session.room_list().snapshot().iter().find_map(|room| {
-                    (room.is_joined() && room.direct_member_user_id().as_deref() == Some(&user_id))
-                        .then(|| room.room_id().to_string())
-                });
-                if let Some(room_id) = existing {
-                    return Ok(room_id);
-                }
-
-                let client = session.client();
-                client
-                    .create_dm(&user_id)
+                session
+                    .room_list()
+                    .get_or_create_direct_chat(&user_id)
                     .await
                     .map(|room| room.room_id().to_string())
-                    .map_err(|create_error| CoreError::Failed {
-                        msg: format!("Could not create the direct chat: {create_error}"),
-                    })
+                    .map_err(CoreError::from)
             })
             .await
             .expect("task was not aborted")
@@ -2688,40 +2701,28 @@ impl CoreApp {
 
     /// Join the room with the given ID or alias. Returns the room ID.
     pub async fn join_room(&self, room_id_or_alias: String) -> Result<String, CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
 
-        RUNTIME
-            .spawn(async move {
-                let id_or_alias =
-                    ruma::RoomOrAliasId::parse(room_id_or_alias.trim()).map_err(|_| {
-                        CoreError::Failed {
-                            msg: "Not a room ID or alias".to_owned(),
-                        }
-                    })?;
-
-                let client = session.client();
-                match client.join_room_by_id_or_alias(&id_or_alias, &[]).await {
-                    Ok(room) => Ok(room.room_id().to_string()),
-                    Err(join_error) => {
-                        // A room that cannot be joined may still take a
-                        // knock; the sidebar's knock machinery handles the
-                        // approval from there.
-                        client
-                            .knock(id_or_alias.clone(), None, Vec::new())
-                            .await
-                            .map(|room| room.room_id().to_string())
-                            .map_err(|_| CoreError::Failed {
-                                msg: format!("Could not join the room: {join_error}"),
-                            })
-                    }
+        // A matrix.to link or a matrix: URI is taken too, with its `via`
+        // servers, as the application's join dialog takes them.
+        let uri =
+            crate::matrix::MatrixRoomIdUri::parse(room_id_or_alias.trim()).ok_or_else(|| {
+                CoreError::Failed {
+                    msg: "Not a room ID or alias".to_owned(),
                 }
-            })
+            })?;
+
+        // The application previews the room first and then knocks or
+        // joins by what the preview said the join rule is; without a
+        // preview to show, this does the same two steps back to back.
+        let remote_room = session.remote_room(uri).await.map_err(CoreError::from)?;
+
+        session
+            .room_list()
+            .knock_or_join(&remote_room)
             .await
-            .expect("task was not aborted")
+            .map(|room_id| room_id.to_string())
+            .map_err(CoreError::from)
     }
 
     /// Follow device verifications with the given listener, accepting
@@ -2932,52 +2933,42 @@ impl CoreApp {
 
     /// The rooms inside the given space, from the server's hierarchy.
     pub async fn space_children(&self, space_id: String) -> Result<Vec<FfiSpaceChild>, CoreError> {
-        use ruma::api::client::space::get_hierarchy;
+        let session = self.session()?;
+        let space_id = parse_room_id(&space_id)?;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-
-        RUNTIME
-            .spawn(async move {
-                let space_id = ruma::RoomId::parse(&space_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-
-                let client = session.client();
-                let request = get_hierarchy::v1::Request::new(space_id.clone());
-                let response =
-                    client
-                        .send(request)
-                        .await
-                        .map_err(|hierarchy_error| CoreError::Failed {
-                            msg: format!("Could not load the space: {hierarchy_error}"),
-                        })?;
-
-                Ok(response
-                    .rooms
-                    .into_iter()
-                    .filter(|chunk| chunk.summary.room_id != space_id)
-                    .map(|chunk| {
-                        let summary = &chunk.summary;
-                        FfiSpaceChild {
-                            room_id: summary.room_id.to_string(),
-                            name: summary.name.clone(),
-                            topic: summary.topic.clone(),
-                            num_joined_members: summary.num_joined_members.into(),
-                            is_joined: session
-                                .room_list()
-                                .get(&summary.room_id)
-                                .is_some_and(|room| room.is_joined()),
-                            is_space: summary.room_type == Some(ruma::room::RoomType::Space),
-                        }
-                    })
-                    .collect())
-            })
+        let hierarchy = crate::session::SpaceChildren::load(&session, space_id)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)?;
+
+        // The application presents the hierarchy as a tree that opens a
+        // subspace on demand; the FFI's list is flat, so the tree is walked
+        // depth-first here — every row the tree could show, in the order
+        // it would show them, with the same guard against a space that
+        // contains itself.
+        let mut rows = Vec::new();
+        let mut pending = hierarchy.children();
+        pending.reverse();
+        while let Some(child) = pending.pop() {
+            if let Some(children) = child.children(&hierarchy) {
+                pending.extend(children.into_iter().rev());
+            }
+            rows.push(child);
+        }
+
+        Ok(rows
+            .iter()
+            .map(|child| {
+                let room = &child.room;
+                FfiSpaceChild {
+                    room_id: room.room_id.to_string(),
+                    name: room.name.clone(),
+                    topic: room.topic.clone(),
+                    num_joined_members: u64::from(room.joined_members_count),
+                    is_joined: room.local_room(session.room_list()).is_some(),
+                    is_space: room.is_space,
+                }
+            })
+            .collect())
     }
 
     /// Feed a scanned QR code into the verification with the given flow
@@ -3794,51 +3785,35 @@ impl CoreApp {
         encrypted: bool,
         alias: Option<String>,
     ) -> Result<String, CoreError> {
-        use ruma::{
-            api::client::room::{Visibility, create_room},
-            assign,
-            events::{InitialStateEvent, room::encryption::RoomEncryptionEventContent},
+        use crate::session::{CreateRoomOptions, CreateRoomVisibility};
+
+        let session = self.session()?;
+
+        // The application's dialog refuses a public room without an
+        // address; this side has no form to refuse in, so an absent one is
+        // sent as empty and the homeserver answers. A leading `#` is
+        // stripped because the Kotlin form has no suffix showing the
+        // server name, so people type the whole alias.
+        let visibility = if public {
+            CreateRoomVisibility::Public {
+                address: alias
+                    .map(|a| a.trim().trim_start_matches('#').to_owned())
+                    .unwrap_or_default(),
+            }
+        } else {
+            CreateRoomVisibility::Private { encrypted }
         };
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-
-        RUNTIME
-            .spawn(async move {
-                let mut request = assign!(create_room::v3::Request::new(), {
-                    name: Some(name.trim().to_owned()),
-                    topic: topic.filter(|t| !t.trim().is_empty()),
-                });
-
-                if public {
-                    request.visibility = Visibility::Public;
-                    request.room_alias_name =
-                        alias.map(|a| a.trim().trim_start_matches('#').to_owned());
-                } else {
-                    request.visibility = Visibility::Private;
-                    if encrypted {
-                        let event = InitialStateEvent::with_empty_state_key(
-                            RoomEncryptionEventContent::with_recommended_defaults(),
-                        );
-                        request.initial_state = vec![event.to_raw_any()];
-                    }
-                }
-
-                let room = session
-                    .client()
-                    .create_room(request)
-                    .await
-                    .map_err(|create_error| CoreError::Failed {
-                        msg: format!("Could not create the room: {create_error}"),
-                    })?;
-
-                Ok(room.room_id().to_string())
+        session
+            .create_room(CreateRoomOptions {
+                name: Some(name),
+                topic,
+                is_space: false,
+                visibility,
             })
             .await
-            .expect("task was not aborted")
+            .map(|room_id| room_id.to_string())
+            .map_err(CoreError::from)
     }
 
     /// The account's sessions, ours first.
@@ -5987,61 +5962,39 @@ impl CoreApp {
         search: Option<String>,
         since: Option<String>,
     ) -> Result<FfiPublicRoomPage, CoreError> {
-        use ruma::{
-            api::client::directory::get_public_rooms_filtered,
-            assign,
-            directory::{Filter, RoomNetwork},
-            uint,
+        let session = self.session()?;
+
+        // Our own homeserver on the Matrix network: the application's
+        // server chooser and third-party networks are not on this side of
+        // the FFI yet.
+        let query = crate::session::PublicRoomsQuery {
+            search_term: search.filter(|term| !term.is_empty()),
+            server: None,
+            third_party_network: None,
         };
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-
-        RUNTIME
-            .spawn(async move {
-                let request = assign!(get_public_rooms_filtered::v3::Request::new(), {
-                    limit: Some(uint!(20)),
-                    since,
-                    room_network: RoomNetwork::Matrix,
-                    filter: assign!(Filter::new(), {
-                        generic_search_term: search.filter(|term| !term.is_empty()),
-                    }),
-                });
-
-                let response = session
-                    .client()
-                    .public_rooms_filtered(request)
-                    .await
-                    .map_err(|explore_error| CoreError::Failed {
-                        msg: format!("Could not load the directory: {explore_error}"),
-                    })?;
-
-                let rooms = response
-                    .chunk
-                    .into_iter()
-                    .map(|chunk| {
-                        let is_joined = session.room_list().get(&chunk.room_id).is_some();
-                        FfiPublicRoom {
-                            room_id: chunk.room_id.to_string(),
-                            name: chunk.name,
-                            topic: chunk.topic,
-                            alias: chunk.canonical_alias.map(|alias| alias.to_string()),
-                            joined_members: chunk.num_joined_members.into(),
-                            is_joined,
-                        }
-                    })
-                    .collect();
-
-                Ok(FfiPublicRoomPage {
-                    rooms,
-                    next_batch: response.next_batch,
-                })
-            })
+        let page = session
+            .public_rooms(&query, since)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)?;
+
+        let rooms = page
+            .rooms
+            .iter()
+            .map(|room| FfiPublicRoom {
+                room_id: room.room_id.to_string(),
+                name: room.name.clone(),
+                topic: room.topic.clone(),
+                alias: room.canonical_alias.as_ref().map(ToString::to_string),
+                joined_members: u64::from(room.joined_members_count),
+                is_joined: room.local_room(session.room_list()).is_some(),
+            })
+            .collect();
+
+        Ok(FfiPublicRoomPage {
+            rooms,
+            next_batch: page.next_batch,
+        })
     }
 
     /// Fetch the media of a history event into a file, returning its path.
@@ -6432,6 +6385,13 @@ where
     };
     let value = raw.deserialize_as::<serde_json::Value>().ok()?;
     serde_json::from_value(value.get("content")?.clone()).ok()
+}
+
+/// Parse a room ID handed over the FFI.
+fn parse_room_id(room_id: &str) -> Result<ruma::OwnedRoomId, CoreError> {
+    ruma::RoomId::parse(room_id).map_err(|_| CoreError::Failed {
+        msg: "Invalid room ID".to_owned(),
+    })
 }
 
 /// Parse a user ID handed over the FFI, trimmed as the application trims
@@ -7267,9 +7227,7 @@ impl CoreApp {
     /// was written out 39 times and "Unknown room" 34.
     fn room(&self, room_id: &str) -> Result<crate::session::Room, CoreError> {
         let session = self.session()?;
-        let room_id = ruma::RoomId::parse(room_id).map_err(|_| CoreError::Failed {
-            msg: "Invalid room ID".to_owned(),
-        })?;
+        let room_id = parse_room_id(room_id)?;
 
         session
             .room_list()

@@ -26,8 +26,11 @@
 //! sync loop sleeps and dials sockets). `SessionList` already does; the FFI
 //! facade will wrap calls in `RUNTIME.spawn`.
 
+mod create_room;
+mod directory;
 mod ignored_users;
 mod notifications;
+mod remote;
 mod room;
 mod room_list;
 mod sidebar;
@@ -64,15 +67,18 @@ use tracing::{debug, error, info};
 use url::Url;
 
 pub use self::{
+    create_room::{CreateRoomError, CreateRoomOptions, CreateRoomVisibility},
+    directory::{DirectoryError, PublicRoomsPage, PublicRoomsQuery},
     ignored_users::{IgnoredUsers, IgnoredUsersError},
     notifications::PushError,
+    remote::{RemoteRoom, RemoteRoomError, SpaceChild, SpaceChildren, SpaceChildrenError},
     room::{
         MediaHistoryError, MediaHistoryEvent, MediaHistoryKind, MediaHistoryPage, Member,
         MemberList, MemberRole, Membership, ReceiptPosition, Room, RoomCategory, RoomDisplayName,
         RoomHighlight, RoomSearch, SearchError, SearchResult, TargetRoomCategory, Timeline,
         TimelineFocusKind,
     },
-    room_list::{RoomList, RoomMetainfo},
+    room_list::{DirectChatError, JoinError, RoomList, RoomMetainfo},
     sidebar::SidebarSectionName,
     user_sessions::{Device, DeviceError, UserSessions},
 };
