@@ -131,6 +131,14 @@ impl From<crate::session::DeviceError> for CoreError {
     }
 }
 
+impl From<crate::session::PushError> for CoreError {
+    fn from(error: crate::session::PushError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 impl From<crate::session::AccountError> for CoreError {
     fn from(error: crate::session::AccountError) -> Self {
         Self::Failed {
@@ -6098,86 +6106,23 @@ impl CoreApp {
         gateway_url: String,
         pushkey: String,
     ) -> Result<(), CoreError> {
-        use ruma::{
-            api::client::push::{Pusher, PusherIds, PusherInit, PusherKind, set_pusher},
-            push::HttpPusherData,
-        };
+        let session = self.session()?;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-
-        RUNTIME
-            .spawn(async move {
-                // The application id was once hardcoded to the debug
-                // build's, so a device that registered before this fix has
-                // a pusher under that id aimed at the very endpoint about
-                // to be registered again. Two pushers, one endpoint, every
-                // notification twice — so the old one goes first. A device
-                // that never registered under it deletes nothing, which the
-                // homeserver does not mind.
-                const LEGACY_APP_ID: &str = "io.github.steeb_k.commune.skeleton";
-                if config::app_id() != LEGACY_APP_ID {
-                    let legacy = PusherIds::new(pushkey.clone(), LEGACY_APP_ID.to_owned());
-                    if let Err(legacy_error) = session
-                        .client()
-                        .send(set_pusher::v3::Request::delete(legacy))
-                        .await
-                    {
-                        tracing::debug!("No legacy pusher to remove: {legacy_error}");
-                    }
-                }
-
-                let pusher: Pusher = PusherInit {
-                    ids: PusherIds::new(pushkey, config::app_id().to_owned()),
-                    kind: PusherKind::Http(HttpPusherData::new(gateway_url)),
-                    app_display_name: "Commune".to_owned(),
-                    device_display_name: "Commune on Android".to_owned(),
-                    profile_tag: None,
-                    lang: "en".to_owned(),
-                }
-                .into();
-
-                session
-                    .client()
-                    .send(set_pusher::v3::Request::post(pusher))
-                    .await
-                    .map(|_| ())
-                    .map_err(|pusher_error| CoreError::Failed {
-                        msg: format!("Could not set the pusher: {pusher_error}"),
-                    })
-            })
+        session
+            .set_push_gateway(&gateway_url, &pushkey)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// Remove the pusher with the given pushkey, so the homeserver stops
     /// pushing to it.
     pub async fn remove_push_gateway(&self, pushkey: String) -> Result<(), CoreError> {
-        use ruma::api::client::push::{PusherIds, set_pusher};
+        let session = self.session()?;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-
-        RUNTIME
-            .spawn(async move {
-                let ids = PusherIds::new(pushkey, config::app_id().to_owned());
-                session
-                    .client()
-                    .send(set_pusher::v3::Request::delete(ids))
-                    .await
-                    .map(|_| ())
-                    .map_err(|pusher_error| CoreError::Failed {
-                        msg: format!("Could not remove the pusher: {pusher_error}"),
-                    })
-            })
+        session
+            .remove_push_gateway(&pushkey)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// One page of the public room directory, optionally filtered by a

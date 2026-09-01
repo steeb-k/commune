@@ -27,6 +27,7 @@
 //! facade will wrap calls in `RUNTIME.spawn`.
 
 mod ignored_users;
+mod notifications;
 mod room;
 mod room_list;
 mod sidebar;
@@ -64,6 +65,7 @@ use url::Url;
 
 pub use self::{
     ignored_users::{IgnoredUsers, IgnoredUsersError},
+    notifications::PushError,
     room::{
         Member, MemberList, MemberRole, Membership, ReceiptPosition, Room, RoomCategory,
         RoomDisplayName, RoomHighlight, TargetRoomCategory, Timeline, TimelineFocusKind,

@@ -363,7 +363,8 @@ are named in the notes below and are not in the count.
 | 1 | Safety — the ignored users | 3 | 85 | `session/ignored_users.rs` | `session/ignored_users.rs` (282) | `IgnoredUsersError` |
 | 2 | The account's other sessions | 3 | 143 | `session/user_sessions.rs` | `session/user_sessions_list/` (987) | `DeviceError` |
 | 3 | The account itself | 16 | 228 | `session/mod.rs` | `account_settings/general_page/` (755) | `AccountError` |
-| 4 | Notifications and push | 7 | 246 | `session/notifications.rs` | `session/notifications/notifications_settings.rs` (762) | `NotificationError` |
+| 4 | Push registration | 2 | 90 | `session/notifications.rs` | `utils/android_push.rs` (700) | `PushError` |
+| — | The push rules | 5 | 156 | stay in `facade.rs` — one-line SDK passthroughs | `notifications_settings.rs` (762) | — |
 | 5 | Media fetch, search, members | 12 | 456 | `matrix/media.rs`, `session/room/search.rs`, `session/room/member.rs` | `session/room/search.rs` (767), `member_list.rs` (387), `typing_list.rs` (102), `room_details/history_viewer/` | `MediaError`, `SearchError` |
 | 6 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/space_children.rs` | `session_view/explore/` (1,287), `session/remote/space_children.rs` (521) | `JoinError`, `DirectoryError` |
 | 7 | Login and registration | 9 | 354 | `login.rs` | `login/` (3,290 over ten files) | `LoginError` |
@@ -633,6 +634,66 @@ before the parity gaps:
 
 The FFI surface is unchanged for the third time.
 
+### Commit 4 — the pusher, and the field the transcription dropped
+
+**The authority for this one is not where the plan said it was.** The table
+above named `session/notifications/notifications_settings.rs`, and that is
+the authority for the push _rules_ — which the facade already reaches
+through the SDK's own `NotificationSettings` in five one-line methods that
+stay exactly as they are, by the same ruling that keeps `kick_user` a
+passthrough. The authority for the _pusher_ is
+`src/utils/android_push.rs`, the GTK Android port's own UnifiedPush
+implementation. That file is residue this track does not aim at, but it is
+still the mature version of this exact feature, and reading it is what this
+phase is for.
+
+**It sets `PushFormat::EventIdOnly` and the facade does not — and this
+commit does not change that, which is the more useful finding.** With the
+field unset the specification has the homeserver POST the whole event to the
+push gateway: for an unencrypted room, the sender, the room and the message
+body, through a third-party service the user chose only as a wake-up. The
+application can afford to narrow it because its Android notification path
+fetches the event by ID after the push arrives.
+
+**The Kotlin application cannot, and checking before changing it is what
+caught this.** `Push.kt` posts straight from the gateway payload — its
+header comment says so — and reads four fields `event_id_only` does not
+carry: `type`, to stop a call push becoming a message notification, which
+its own comment records as a bug already fixed once; and
+`sender_display_name`, `room_name` and `content.body`, without which every
+notification reads "Commune / New message". Narrowing the format in the core
+would have emptied the notifications of the only application that uses it
+and revived that bug, silently, with every gate still green.
+
+**So the push format is a contract with whoever writes the notification, not
+a field the core gets to choose.** It is owed a decision — narrow the format
+and teach `Push.kt` to fetch the event, or keep the payload and accept what
+it discloses — and that decision is the user's. It is in the ledger as open.
+
+**It skips a registration that would change nothing.** The application asks
+`/pushers` first and returns early when the endpoint is already registered.
+The facade re-POSTed on every call.
+
+**And one thing this commit deliberately does not do, because the
+application's source says it is dangerous.** A pusher under our application
+id with some _other_ pushkey looks stale and is not ours: the application id
+is identical for every install of this client, so "everything under our app
+id" on the homeserver includes the user's other phones, and tidying them
+away would silently unregister push on all of them. `android_push.rs` avoids
+this by remembering the endpoint it moved off — `State::previous_endpoint`,
+with the reasoning written out — and deleting only that one. The core keeps
+no such record, so it deletes only what it can prove is its own: the legacy
+application id, which is keyed on this device's own pushkey. **The
+consequence is honest and worth naming: an endpoint that changes without the
+old one being retired leaves a pusher the homeserver keeps POSTing to.**
+Closing that needs somewhere to remember the previous endpoint, which is a
+design question and not a transcription fix.
+
+Two smaller things stay as they are and are already in the ledger: the
+pusher still announces itself as `Commune on Android` whatever the embedder
+is, and `lang` is still `"en"` — which `EventIdOnly` makes moot, since a
+homeserver sending only an event ID has no text to localise.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -667,6 +728,8 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `list_devices` | **Four divergences in one method, and the worst is what it does when something is wrong.** `src/session/user_sessions_list/` merges `/devices` with the crypto store, so a device known to one source and not the other is still listed; the facade walked `/devices` alone. The application lists what it has when one source fails and errors only when both do; **the facade returned an error the moment `/devices` failed, which is exactly the case a person opens the sessions screen in.** The application follows `devices_stream()` — taking an _empty_ update, because that is how a disconnection arrives without saying whose — and the facade fetched once per call. And the application breaks a sort tie on device ID where the facade had none, so devices the server never dated came back in a different order on every read. **Closed 1 Sep** in `session/user_sessions.rs`, with four tests over the ordering. | Done |
 | 1 Sep 2026 | `facade.rs`, `sign_out_device` | **The core could not tell "wrong password" from "this homeserver wants something else".** Signing a device out goes through user-interactive authentication, which the application answers with an `AuthDialog` that speaks several stages; the facade retried once with a password whatever the homeserver had asked for, and reported the resulting failure as an ordinary error. On a homeserver whose sign-out stage is not `m.login.password` — an OAuth 2.0 one, for instance — that is a request that can never succeed and a message that never says so. **Closed 1 Sep**: the first attempt reads the offered flows, and `DeviceError` separates `NeedsPassword` from `UnsupportedAuth`. The GTK application hands the first to its dialog when the account settings migrate; until then no embedder is worse off, and the Kotlin one stops showing a sentence that is not true. | Done |
 | 1 Sep 2026 | `facade.rs` account profile | **A profile change never reached the profile, and the application's source says in a comment why that is not academic.** `src/account_settings/general_page/mod.rs` updates its own copy of the display name and the avatar after a successful change, because _"if the user is in no rooms, we won't receive the update via sync"_ — an account in no rooms is never told about its own profile change. `set_display_name` and `set_account_avatar` wrote to the homeserver and touched nothing locally, so `Session::profile()`, the observable the GTK application will bind to, kept the old value until the process restarted. Separately, `account_profile()` called `fetch_user_profile()` past that same observable, so one core held two independently-fetched answers to the same question with nothing keeping them in step. **Closed 1 Sep**: both setters correct the observable — which is why `set_avatar` splits the upload from the avatar-URL write, as the application does, since `upload_avatar()` never hands back the URI the local copy needs — and `account_profile()` refreshes the observable and reads it. | Done |
+| 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **No push format is set, so the homeserver POSTs whole events to the push gateway — and narrowing it is not the core's call.** `src/utils/android_push.rs` sets `PushFormat::EventIdOnly` and its comment calls that _"mandatory for content, not merely preferred: events are E2EE, so a full payload would carry ciphertext at best — and the metadata that does not need to travel, still would."_ The facade leaves `format` unset, which the specification reads as "send everything": in an unencrypted room the gateway receives the sender, the room and the message body. **But the application can narrow it only because its Android notification path fetches the event by ID afterwards, and the Kotlin application posts straight from the payload** — `Push.kt` reads `type` to keep a call push from becoming a message notification (a bug its own comment records fixing), and `sender_display_name`, `room_name` and `content.body` for the text. Setting `EventIdOnly` in the core would empty every Kotlin notification and revive that bug with every gate still green; it was written, caught by reading `Push.kt`, and reverted. **Owed a decision: narrow the format and teach `Push.kt` to fetch the event, or keep the payload and accept the disclosure.** | Open, needs a decision |
+| 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **The obvious cleanup would unregister the user's other phones, and the application's source is what says so.** A pusher held under our application id with a different pushkey looks stale; it is usually another device. `android_push.rs` deletes only the endpoint that registration itself moved off, remembered in `State::previous_endpoint`, precisely because "the `app_id` is the same for every Commune on Android". The core has no such record and so removes nothing but the legacy application id, which is keyed on this device's own pushkey. **Left open deliberately**: an endpoint that changes without the old one being retired leaves a pusher the homeserver keeps POSTing to. Closing it wants somewhere to remember the previous endpoint, which is a design question rather than a transcription fix. | Open by decision |
 
 ## Gates
 
