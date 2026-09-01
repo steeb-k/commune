@@ -121,6 +121,26 @@ core had turned two sets of translatable strings into English on the way past,
 which is the pair of ledger rows below. **The rule that comes out of this leaf,
 for every leaf after it: a value crosses into the core, a sentence does not.**
 
+**Leaf 3, `utils/matrix/`, is the first one that is a split rather than a
+move**, and it is what the plan's note about a 176-line divergence actually
+meant: the application's `mod.rs` was a _superset_ of the core's, not a copy
+of it. `mod.rs` goes from 750 lines to 191, and everything still defined in
+it returns a `Pill`, produces a `glib::DateTime`, or is a `gettext` call.
+
+`MatrixIdUri` is the interesting one. Three `glib` impls —
+`StaticVariantType`, `ToVariant`, `FromVariant` — blocked it, because the
+orphan rule forbids them once the type is foreign. The `secret/` answer, a
+newtype, was not needed: all three only ever round-tripped through `String`,
+and only two sites used them. A `MatrixIdUriExt` trait carries
+`variant_type`/`as_variant`/`from_variant` and `into_pill` instead, and the
+`GAction` parameter is the same string it always was. **Not every glib
+integration needs a wrapper — check what the impl actually does first.**
+
+`password.rs` is **not** a leaf and the plan naming it as one was an error.
+It is `adw::PasswordEntryRow`, a meter and a label; its own first line says
+the rules are `validate_password` and that these two functions draw them.
+The rules moved, the drawing stays.
+
 **Leaf 2 is done too: `tls.rs`, `http.rs`, the image-pack event types and
 `klipy.rs`.** Another 1,150 lines out of `src/`, and the shape of it is worth
 recording because it is the shape the rest of Phase 2 will have. Three of the
