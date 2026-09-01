@@ -34,9 +34,10 @@ use thiserror::Error;
 
 pub mod ext_traits;
 pub mod media;
+mod mutual_rooms;
 mod url_preview;
 
-pub use self::url_preview::previewable_url;
+pub use self::{mutual_rooms::fetch_mutual_rooms, url_preview::previewable_url};
 use crate::{UserFacingError, secret::StoredSession};
 
 /// The result of a password validation.
