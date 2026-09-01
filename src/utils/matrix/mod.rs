@@ -1,20 +1,13 @@
 //! Collection of methods related to the Matrix specification.
 
-use std::{borrow::Cow, fmt, str::FromStr};
+use std::borrow::Cow;
 
 use gettextrs::gettext;
 use gtk::{glib, prelude::*};
 use ruma::{
-    IdParseError, MatrixToUri, MatrixUri, MatrixUriError, MilliSecondsSinceUnixEpoch, OwnedEventId,
-    OwnedRoomAliasId, OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, OwnedUserId, RoomId,
-    RoomOrAliasId,
-    html::{
-        Children, Html, NodeRef, StrTendril,
-        matrix::{AnchorUri, MatrixElement},
-    },
-    matrix_uri::MatrixId,
+    MilliSecondsSinceUnixEpoch,
+    html::{Children, Html, NodeRef, StrTendril, matrix::MatrixElement},
 };
-use thiserror::Error;
 
 pub(crate) mod ext_traits;
 mod media_message;
@@ -35,9 +28,9 @@ mod url_preview;
 /// unchanged, so all that had to stay behind is the sentences, which
 /// `gettext` reaches and the core cannot.
 pub(crate) use commune_core::matrix::{
-    AT_ROOM, AnySyncOrStrippedTimelineEvent, ClientSetupError, MessageCacheKey,
-    client_with_stored_session, find_at_room, original_message_event_from_raw, raw_eq,
-    validate_password,
+    AT_ROOM, AnySyncOrStrippedTimelineEvent, ClientSetupError, MatrixEventIdUri, MatrixIdUri,
+    MatrixRoomIdUri, MessageCacheKey, client_with_stored_session, find_at_room,
+    original_message_event_from_raw, raw_eq, validate_password,
 };
 
 pub(crate) use self::{media_message::*, mutual_rooms::fetch_mutual_rooms, url_preview::*};
@@ -111,54 +104,48 @@ fn node_as_mention(node: &NodeRef, room: &Room) -> Option<(Pill, StrTendril)> {
     Some((pill, content))
 }
 
-/// A URI for a Matrix ID.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum MatrixIdUri {
-    /// A room.
-    Room(MatrixRoomIdUri),
-    /// A user.
-    User(OwnedUserId),
-    /// An event.
-    Event(MatrixEventIdUri),
-}
+/// What the application can do with a [`MatrixIdUri`] that the core cannot.
+///
+/// The type is the core's, so these cannot be inherent methods, and two of
+/// the three cannot be trait implementations either: `ToVariant` and friends
+/// are `glib`'s traits and `MatrixIdUri` is now a foreign type, which the
+/// orphan rule forbids. The variant form was only ever the string form —
+/// the implementations this replaces were `self.to_string().to_variant()` and
+/// `Self::parse(&variant.get::<String>()?)` — so nothing is lost by naming
+/// the conversion instead of deriving it, and the `GAction` parameter type it
+/// travels as is now visible at the call site rather than hidden behind a
+/// trait.
+pub(crate) trait MatrixIdUriExt {
+    /// The `GVariant` type a `MatrixIdUri` travels as.
+    fn variant_type() -> Cow<'static, glib::VariantTy>;
 
-impl MatrixIdUri {
-    /// Constructs a `MatrixIdUri` from the given ID and servers list.
-    fn try_from_parts(id: MatrixId, via: &[OwnedServerName]) -> Result<Self, ()> {
-        let uri = match id {
-            MatrixId::Room(room_id) => Self::Room(MatrixRoomIdUri {
-                id: room_id.into(),
-                via: via.to_owned(),
-            }),
-            MatrixId::RoomAlias(room_alias) => Self::Room(MatrixRoomIdUri {
-                id: room_alias.into(),
-                via: via.to_owned(),
-            }),
-            MatrixId::User(user_id) => Self::User(user_id),
-            MatrixId::Event(room_id, event_id) => Self::Event(MatrixEventIdUri {
-                event_id,
-                room_uri: MatrixRoomIdUri {
-                    id: room_id,
-                    via: via.to_owned(),
-                },
-            }),
-            _ => return Err(()),
-        };
+    /// This URI as a `GVariant`, for a `GAction` parameter.
+    ///
+    /// Named `as_variant` rather than `to_variant` so that it cannot be
+    /// confused with `glib`'s trait method of that name.
+    fn as_variant(&self) -> glib::Variant;
 
-        Ok(uri)
-    }
-
-    /// Try parsing a `&str` into a `MatrixIdUri`.
-    pub(crate) fn parse(s: &str) -> Result<Self, MatrixIdUriParseError> {
-        if let Ok(uri) = MatrixToUri::parse(s) {
-            return uri.try_into();
-        }
-
-        MatrixUri::parse(s)?.try_into()
-    }
+    /// Read a URI back out of a `GAction` parameter.
+    fn from_variant(variant: &glib::Variant) -> Option<MatrixIdUri>;
 
     /// Try to construct a [`Pill`] from this ID in the given room.
-    pub(crate) fn into_pill(self, room: &Room) -> Option<Pill> {
+    fn into_pill(self, room: &Room) -> Option<Pill>;
+}
+
+impl MatrixIdUriExt for MatrixIdUri {
+    fn variant_type() -> Cow<'static, glib::VariantTy> {
+        String::static_variant_type()
+    }
+
+    fn as_variant(&self) -> glib::Variant {
+        self.to_string().to_variant()
+    }
+
+    fn from_variant(variant: &glib::Variant) -> Option<MatrixIdUri> {
+        MatrixIdUri::parse(&variant.get::<String>()?).ok()
+    }
+
+    fn into_pill(self, room: &Room) -> Option<Pill> {
         match self {
             Self::Room(room_uri) => {
                 let session = room.session()?;
@@ -189,194 +176,6 @@ impl MatrixIdUri {
             Self::Event(_) => None,
         }
     }
-
-    /// Get this ID as a `matrix:` URI.
-    pub(crate) fn as_matrix_uri(&self) -> MatrixUri {
-        match self {
-            MatrixIdUri::Room(room_uri) => match <&RoomId>::try_from(&*room_uri.id) {
-                Ok(room_id) => room_id.matrix_uri_via(room_uri.via.clone(), false),
-                Err(room_alias) => room_alias.matrix_uri(false),
-            },
-            MatrixIdUri::User(user_id) => user_id.matrix_uri(false),
-            MatrixIdUri::Event(event_uri) => {
-                let room_id = <&RoomId>::try_from(&*event_uri.room_uri.id)
-                    .expect("room alias should not be used to construct event URI");
-
-                room_id.matrix_event_uri_via(
-                    event_uri.event_id.clone(),
-                    event_uri.room_uri.via.clone(),
-                )
-            }
-        }
-    }
-}
-
-impl fmt::Display for MatrixIdUri {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.as_matrix_uri().fmt(f)
-    }
-}
-
-impl TryFrom<&MatrixUri> for MatrixIdUri {
-    type Error = MatrixIdUriParseError;
-
-    fn try_from(uri: &MatrixUri) -> Result<Self, Self::Error> {
-        // We ignore the action, because we always offer to join a room or DM a user.
-        Self::try_from_parts(uri.id().clone(), uri.via())
-            .map_err(|()| MatrixIdUriParseError::UnsupportedId(uri.id().clone()))
-    }
-}
-
-impl TryFrom<MatrixUri> for MatrixIdUri {
-    type Error = MatrixIdUriParseError;
-
-    fn try_from(uri: MatrixUri) -> Result<Self, Self::Error> {
-        Self::try_from(&uri)
-    }
-}
-
-impl TryFrom<&MatrixToUri> for MatrixIdUri {
-    type Error = MatrixIdUriParseError;
-
-    fn try_from(uri: &MatrixToUri) -> Result<Self, Self::Error> {
-        Self::try_from_parts(uri.id().clone(), uri.via())
-            .map_err(|()| MatrixIdUriParseError::UnsupportedId(uri.id().clone()))
-    }
-}
-
-impl TryFrom<MatrixToUri> for MatrixIdUri {
-    type Error = MatrixIdUriParseError;
-
-    fn try_from(uri: MatrixToUri) -> Result<Self, Self::Error> {
-        Self::try_from(&uri)
-    }
-}
-
-impl FromStr for MatrixIdUri {
-    type Err = MatrixIdUriParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::parse(s)
-    }
-}
-
-impl TryFrom<&str> for MatrixIdUri {
-    type Error = MatrixIdUriParseError;
-
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
-        Self::parse(s)
-    }
-}
-
-impl TryFrom<&AnchorUri> for MatrixIdUri {
-    type Error = MatrixIdUriParseError;
-
-    fn try_from(value: &AnchorUri) -> Result<Self, Self::Error> {
-        match value {
-            AnchorUri::Matrix(uri) => MatrixIdUri::try_from(uri),
-            AnchorUri::MatrixTo(uri) => MatrixIdUri::try_from(uri),
-            // The same error that should be returned by `parse()` when parsing a non-Matrix URI.
-            _ => Err(IdParseError::InvalidMatrixUri(MatrixUriError::WrongScheme).into()),
-        }
-    }
-}
-
-impl TryFrom<AnchorUri> for MatrixIdUri {
-    type Error = MatrixIdUriParseError;
-
-    fn try_from(value: AnchorUri) -> Result<Self, Self::Error> {
-        Self::try_from(&value)
-    }
-}
-
-impl StaticVariantType for MatrixIdUri {
-    fn static_variant_type() -> Cow<'static, glib::VariantTy> {
-        String::static_variant_type()
-    }
-}
-
-impl ToVariant for MatrixIdUri {
-    fn to_variant(&self) -> glib::Variant {
-        self.to_string().to_variant()
-    }
-}
-
-impl FromVariant for MatrixIdUri {
-    fn from_variant(variant: &glib::Variant) -> Option<Self> {
-        Self::parse(&variant.get::<String>()?).ok()
-    }
-}
-
-/// A URI for a Matrix room ID.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct MatrixRoomIdUri {
-    /// The room ID.
-    pub(crate) id: OwnedRoomOrAliasId,
-    /// Matrix servers usable to route a `RoomId`.
-    pub(crate) via: Vec<OwnedServerName>,
-}
-
-impl MatrixRoomIdUri {
-    /// Try parsing a `&str` into a `MatrixRoomIdUri`.
-    pub(crate) fn parse(s: &str) -> Option<MatrixRoomIdUri> {
-        MatrixIdUri::parse(s)
-            .ok()
-            .and_then(|uri| match uri {
-                MatrixIdUri::Room(room_uri) => Some(room_uri),
-                _ => None,
-            })
-            .or_else(|| RoomOrAliasId::parse(s).ok().map(Into::into))
-    }
-}
-
-impl From<OwnedRoomOrAliasId> for MatrixRoomIdUri {
-    fn from(id: OwnedRoomOrAliasId) -> Self {
-        Self {
-            id,
-            via: Vec::new(),
-        }
-    }
-}
-
-impl From<OwnedRoomId> for MatrixRoomIdUri {
-    fn from(value: OwnedRoomId) -> Self {
-        OwnedRoomOrAliasId::from(value).into()
-    }
-}
-
-impl From<OwnedRoomAliasId> for MatrixRoomIdUri {
-    fn from(value: OwnedRoomAliasId) -> Self {
-        OwnedRoomOrAliasId::from(value).into()
-    }
-}
-
-impl From<&MatrixRoomIdUri> for MatrixUri {
-    fn from(value: &MatrixRoomIdUri) -> Self {
-        match <&RoomId>::try_from(&*value.id) {
-            Ok(room_id) => room_id.matrix_uri_via(value.via.clone(), false),
-            Err(alias) => alias.matrix_uri(false),
-        }
-    }
-}
-
-/// A URI for a Matrix event ID.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct MatrixEventIdUri {
-    /// The event ID.
-    pub event_id: OwnedEventId,
-    /// The event's room ID URI.
-    pub room_uri: MatrixRoomIdUri,
-}
-
-/// Errors encountered when parsing a Matrix ID URI.
-#[derive(Debug, Clone, Error)]
-pub(crate) enum MatrixIdUriParseError {
-    /// Not a valid Matrix URI.
-    #[error(transparent)]
-    InvalidUri(#[from] IdParseError),
-    /// Unsupported Matrix ID.
-    #[error("unsupported Matrix ID: {0:?}")]
-    UnsupportedId(MatrixId),
 }
 
 /// Convert the given timestamp to a `GDateTime`.
