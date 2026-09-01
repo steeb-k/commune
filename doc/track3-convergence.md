@@ -67,10 +67,19 @@ consumer — the path dependency arrives with the first module, because
 plan first gave — bridge, then leaves — was wrong, and Phase 0 is where that
 showed: the leaves are stateless functions with no observables and no list
 models, so a bridge written before them would have had no consumer to be
-designed against. The leaves go first. The `VectorDiff` half of the bridge
-arrives with `session_list/`, the one leaf that holds state; the property half
-arrives with `room_list/` and `Room`. What follows describes the bridge as a
-whole; it is built in those two pieces.
+designed against. The leaves go first.
+
+**The `VectorDiff` half of the bridge still has no consumer, and cannot get
+one in Phase 2.** This plan said it arrived with `session_list/`, "the one
+leaf that holds state". `session_list/` is not a leaf. The application's
+`SessionList` holds `crate::session::Session` `GObject`s; the core's holds
+`commune_core::session::Session` and constructs them itself in
+`restore_stored_session`. There is no seam that lets one be a view over the
+other until `src/session/` has moved, which is Phase 4 — the whole spine. So
+the list half of the bridge is written with `room_list/`, alongside the
+property half, and Phase 2 gets no further into that directory than the
+settings underneath it. What follows describes the bridge as a whole; it is
+built when its consumers exist.
 
 **Phase 1 has started, with its first piece.** `src/core_bridge/` exists and
 holds `settings_store.rs`, the `GSettings`-backed `SettingsStore` that
@@ -107,15 +116,15 @@ and `UserFacingError` implemented for the core's error types, which is where
 `gettext` re-enters.
 
 **Phase 2 — the leaves.** `secret/`, `tls.rs`, `http.rs`, `utils/matrix/`,
-`klipy.rs`, `password.rs`, the image-pack event types, `session_list/`. About
-7,000 lines of duplication, at no behavioural risk: `src/secret/mod.rs` and its
+`klipy.rs`, the image-pack event types, and the session settings under
+`session_list/`. About 7,000 lines of duplication, at no behavioural risk: `src/secret/mod.rs` and its
 core twin differed only by `pub(crate)`→`pub`, the `APP_ID`/`PROFILE` constants
 becoming `config::app_id()`/`config::profile()`, and stripped `gettext`.
 `commune_core::config::init()` is called from `src/application.rs` startup with
 the Meson values, the GLib directories and a `GSettings`-backed
 `SettingsStore`. `secret/` passes `None` for the settings store to begin
 with, because nothing under it reads one; the `GSettings` implementation is
-owed by the time `session_list/` moves.
+owed by the time the session settings move.
 
 **Leaf 1, `secret/`, is done.** The 2,200 lines under `src/secret/` are gone —
 five backends, the encrypted token file, the Android Keystore glue — and
@@ -202,6 +211,61 @@ Six dependencies left the application's manifest with the backends — `oo7`,
 and `serde_bytes`, along with the `Win32_Security_Credentials` feature — and
 `Cargo.lock` changed by exactly the seven lines that says, with no version
 moving anywhere: the core already depended on all of them.
+
+**Leaf 4 is the session settings, and it is what `session_list/` had to
+offer Phase 2.** `src/session_list/session_list_settings.rs` is gone and
+`src/session/session_settings.rs` went from 347 lines to 175 — 479 lines of
+serde, persistence and migration replaced by `commune_core::settings`, which
+already reads and writes the same `"sessions"` key of the same schema through
+the `SettingsStore` the application now provides. `StoredSessionSettings`,
+`SectionsExpanded`, `MediaPreviewsSetting` and its global enum, and the
+`CURRENT_VERSION` constant all leave `src/`.
+
+**Nothing had drifted.** That is the finding, and it is worth as much as a
+divergence would have been: the two `StoredSessionSettings` matched field for
+field, serde attribute for serde attribute, the two `SectionsExpanded`
+defaults held the same eight variants, and both `load` implementations
+truncated over-long session IDs the same way. The JSON on disk is byte-safe
+across this change, which is the only thing a user could have noticed.
+
+What survives in `src/` is the shell, and it is a smaller thing than the
+`secret/` seam. `SessionSettings` stays a `GObject` because three `.blp` rows
+bind to it **bidirectionally** — `public-read-receipts-enabled` and
+`typing-enabled` on the safety page, `notifications-enabled` on the
+notifications settings — and a `bind_property` needs a real property with a
+real `notify`. So the shell holds a `commune_core::settings::SessionSettings`,
+forwards every method to it, and adds the three `notify_*()` calls.
+
+**It needs nothing from the `eyeball` half of the bridge, and the reason
+generalises.** The core has no observables on these values and does not need
+any: nothing but a setter on the shell can change a session setting, so a
+`notify` emitted by that setter cannot be missed. The property bridge is only
+owed where something _other_ than the `GObject` can change the value — which
+is most of `room_list/` and `Room`, and none of this.
+
+`SessionListSettings` needed no shell at all. It was a `#[property(get)]` on
+`SessionList`, and nothing binds it: two Rust call sites read it. It is the
+core's type behind a plain method now — the `utils/matrix/` lesson a second
+time, that a `glib` impl is worth checking before it is worth wrapping.
+
+Two seams were needed and both are temporary. `SidebarSectionName` is
+duplicated identically but for the `glib::Enum` derive and a translated
+`Display`, and it cannot converge while it is a property type whose two
+conversions go through `RoomCategory`, itself a `glib::Enum` in 26 files —
+so a nine-arm `From` sits at the settings boundary until `room_list/` moves.
+And `global_account_data.rs`'s version-0 migration read three fields of
+`StoredSessionSettings` directly; it goes through the core's `version()` and
+two `legacy_*()` accessors instead.
+
+**One real bug in `settings_store.rs`, found by writing its first consumer.**
+Every write deferred to the main context with `invoke()` — and a closure
+handed to `invoke` is only ever run by the main loop, so one queued while the
+application is quitting never runs at all. Until this leaf nothing wrote
+through the store, so nothing could be lost; from here every session setting
+does, and the last thing a user changes before quitting is exactly the change
+worth keeping. A write that is already on the main context now goes straight
+through, and only the core writing from its own worker is deferred, where
+there is no such deadline.
 
 **Phase 3 — decompose `facade.rs`.** The prerequisite that chunk 18 of
 `doc/kotlin-plan.md` does not name. `impl CoreApp` runs from line 744 to 6391 —
@@ -318,6 +382,14 @@ the migration — what changed is that they can be seen at all. Two things
 converged to hide them: `secret/linux.rs` cannot be compiled on Windows on any
 toolchain, and the MSYS2 clippy is 0.1.97 where the Arch one is 0.1.98, which
 flags the `Result<(), ()>` returns the older one lets through.
+
+Because clippy stops at the first crate that fails, those thirteen also hide
+`src/`. To lint the application on Linux until Phase 3 clears them, allow
+exactly the two lints they are:
+
+```sh
+cargo clippy -p commune --all-targets -- -D warnings   -A clippy::result_unit_err -A clippy::result_large_err
+```
 
 They are left alone deliberately. `timeline.rs`'s unit errors are the facade's
 shape and belong to Phase 3, where the error enums are the point; boxing

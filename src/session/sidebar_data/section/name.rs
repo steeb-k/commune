@@ -108,3 +108,26 @@ impl fmt::Display for SidebarSectionName {
         f.write_str(&label)
     }
 }
+
+/// The core's name for the same section.
+///
+/// The two enums have the same variants and the same kebab-case
+/// serialization — the core's is this one with the `glib::Enum` derive and
+/// the translated `Display` taken off. They stay separate until `room_list/`
+/// moves, because this one is a `GObject` property type and `RoomCategory`,
+/// which its two conversions need, is one too.
+impl From<SidebarSectionName> for commune_core::session::SidebarSectionName {
+    fn from(value: SidebarSectionName) -> Self {
+        match value {
+            SidebarSectionName::VerificationRequest => Self::VerificationRequest,
+            SidebarSectionName::InviteRequest => Self::InviteRequest,
+            SidebarSectionName::Invited => Self::Invited,
+            SidebarSectionName::ServerNotice => Self::ServerNotice,
+            SidebarSectionName::Space => Self::Space,
+            SidebarSectionName::Favorite => Self::Favorite,
+            SidebarSectionName::Normal => Self::Normal,
+            SidebarSectionName::LowPriority => Self::LowPriority,
+            SidebarSectionName::Left => Self::Left,
+        }
+    }
+}

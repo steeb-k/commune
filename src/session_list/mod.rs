@@ -1,5 +1,6 @@
 use std::{cmp::Ordering, ffi::OsString};
 
+use commune_core::settings::SessionListSettings;
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
@@ -8,15 +9,12 @@ use tracing::{error, info};
 mod failed_session;
 mod new_session;
 mod session_info;
-mod session_list_settings;
 
-pub(crate) use self::{
-    failed_session::*, new_session::*, session_info::*, session_list_settings::*,
-};
+pub(crate) use self::{failed_session::*, new_session::*, session_info::*};
 use crate::{
     prelude::*,
     secret::{Secret, StoredSession},
-    session::Session,
+    session::{Session, SessionSettings},
     spawn, spawn_tokio,
     utils::{DataType, LoadingState},
 };
@@ -41,8 +39,10 @@ mod imp {
         #[property(get, nullable)]
         error: RefCell<Option<String>>,
         /// The settings of the sessions.
-        #[property(get)]
-        settings: SessionListSettings,
+        ///
+        /// Not a property: nothing binds it, and the core's type is not a
+        /// `GObject`.
+        pub(super) settings: SessionListSettings,
         /// Whether this list is empty.
         #[property(get = Self::is_empty)]
         is_empty: PhantomData<bool>,
@@ -278,7 +278,7 @@ mod imp {
 
         /// Restore a stored session.
         async fn restore_stored_session(&self, session_info: &StoredSession) {
-            let settings = self.settings.get_or_create(&session_info.id);
+            let settings = SessionSettings::new(self.settings.get_or_create(&session_info.id));
             match Session::new(session_info.clone(), settings).await {
                 Ok(session) => {
                     session.prepare().await;
@@ -303,6 +303,11 @@ impl SessionList {
     /// Create a new empty `SessionList`.
     pub fn new() -> Self {
         glib::Object::new()
+    }
+
+    /// The settings of the sessions.
+    pub(crate) fn settings(&self) -> SessionListSettings {
+        self.imp().settings.clone()
     }
 
     /// The session with the given ID, if any.

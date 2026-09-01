@@ -267,25 +267,22 @@ mod imp {
         /// Apply any necessary migrations.
         pub(super) async fn apply_migrations(&self) {
             let session_settings = self.session().settings();
-            let mut stored_settings = session_settings.stored_settings();
 
-            if stored_settings.version != 0 {
+            if session_settings.stored_version() != 0 {
                 // No migration to apply.
                 return;
             }
 
             // Align the account data with the stored settings.
-            let stored_media_previews_enabled = stored_settings
-                .media_previews_enabled
-                .take()
-                .map_or(DEFAULT_MEDIA_PREVIEWS, |setting| setting.global.into());
+            let stored_media_previews_enabled = session_settings
+                .legacy_media_previews_enabled()
+                .unwrap_or(DEFAULT_MEDIA_PREVIEWS);
             let _ = self
                 .set_media_previews_enabled(stored_media_previews_enabled)
                 .await;
 
-            let stored_invite_avatars_enabled = stored_settings
-                .invite_avatars_enabled
-                .take()
+            let stored_invite_avatars_enabled = session_settings
+                .legacy_invite_avatars_enabled()
                 .unwrap_or(DEFAULT_INVITE_AVATARS_ENABLED);
             let _ = self
                 .set_invite_avatars_enabled(stored_invite_avatars_enabled)

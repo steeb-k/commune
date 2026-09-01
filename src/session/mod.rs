@@ -895,10 +895,12 @@ impl Session {
     /// Create a new session from the session of the given Matrix client.
     pub(crate) async fn create(client: &Client) -> Result<Self, ClientSetupError> {
         let stored_session = StoredSession::new(client).await?;
-        let settings = Application::default()
-            .session_list()
-            .settings()
-            .get_or_create(&stored_session.id);
+        let settings = SessionSettings::new(
+            Application::default()
+                .session_list()
+                .settings()
+                .get_or_create(&stored_session.id),
+        );
 
         Self::new(stored_session, settings).await
     }

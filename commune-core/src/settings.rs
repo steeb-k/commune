@@ -323,7 +323,8 @@ impl SessionSettings {
     }
 
     /// The stored settings.
-    pub(crate) fn stored_settings(&self) -> StoredSessionSettings {
+    #[must_use]
+    pub fn stored_settings(&self) -> StoredSessionSettings {
         self.0.stored.lock().expect("mutex is not poisoned").clone()
     }
 
@@ -445,7 +446,7 @@ impl SessionSettings {
     }
 
     /// Delete the settings from the application settings.
-    pub(crate) fn delete(&self) {
+    pub fn delete(&self) {
         if let Some(list) = self.0.list.upgrade() {
             SessionListSettings(list).remove(&self.0.session_id);
         }
