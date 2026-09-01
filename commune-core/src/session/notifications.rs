@@ -6,8 +6,9 @@
 //!
 //! Two things it does that this does not, and both are deliberate rather
 //! than dropped — see [`Session::set_push_gateway`] for the push format,
-//! which is a contract with the embedder's notification code and not the
-//! core's to choose, and for the pusher this must not delete.
+//! which is a contract with the embedder's notification code and was
+//! settled by keeping the payload, and for the pusher this must not
+//! delete.
 
 use ruma::api::client::push::{Pusher, PusherIds, PusherInit, PusherKind, get_pushers, set_pusher};
 use tracing::{debug, info};
@@ -48,21 +49,28 @@ impl super::Session {
     /// (`…/_matrix/push/v1/notify`) and `pushkey` the endpoint that
     /// identifies this device.
     ///
-    /// **The push format is left unset, and that is a decision rather than
-    /// an omission.** `src/utils/android_push.rs` sets
+    /// **The push format is left unset, and that was decided rather than
+    /// overlooked.** `src/utils/android_push.rs` sets
     /// `PushFormat::EventIdOnly` and calls it mandatory, because otherwise
     /// the homeserver POSTs the whole event to the gateway — for an
     /// unencrypted room, the sender, the room and the body, through a
     /// third-party service the user chose only as a wake-up. The
     /// application can afford that narrowing because its Android
     /// notification path fetches the event by ID afterwards. The Kotlin
-    /// application does not: `Push.kt` posts straight from the gateway
+    /// application cannot: `Push.kt` posts straight from the gateway
     /// payload — it reads `type` to keep a call push from becoming a
     /// message notification, and `sender`, `room_name` and `content.body`
     /// to have anything to say — so narrowing the format here would empty
     /// its notifications and revive a bug its own comment records fixing.
-    /// **The format belongs with whoever writes the notification, so this
-    /// is owed a decision, not a patch.**
+    ///
+    /// **Settled 1 September 2026: keep the payload.** The notification
+    /// arrives complete and instantly, without waking a sync to fetch what
+    /// the push already carried, and what it discloses to the gateway is
+    /// accepted. An encrypted room discloses nothing but its metadata in
+    /// any case, since the body is ciphertext. **Whoever changes this must
+    /// change `Push.kt` in the same commit**, or every notification on
+    /// Android silently becomes "Commune / New message" and a call push
+    /// starts posting one.
     ///
     /// **A pusher this account holds under our application id but with
     /// another pushkey is not ours to remove**, however stale it looks.
@@ -114,8 +122,8 @@ impl super::Session {
             }
 
             // No `format`, which the specification reads as "send the
-            // whole event". See the note on this method: it is the
-            // embedder's payload, not the core's to narrow.
+            // whole event". Deliberate — see the note on this method, and
+            // do not narrow it without changing `Push.kt` too.
             let data = HttpPusherData::new(gateway_url);
 
             let pusher: Pusher = PusherInit {
