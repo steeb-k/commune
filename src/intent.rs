@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use gtk::{glib, prelude::*};
 
-use crate::{session::VerificationKey, utils::matrix::MatrixIdUri};
+use crate::{prelude::*, session::VerificationKey, utils::matrix::MatrixIdUri};
 
 /// Intents that can be handled by a session.
 ///
@@ -70,7 +70,10 @@ impl SessionIntent {
             payload,
         } = variant.get()?;
 
-        Some((session_id, Self::ShowMatrixId(payload.get()?)))
+        Some((
+            session_id,
+            Self::ShowMatrixId(MatrixIdUri::from_variant(&payload)?),
+        ))
     }
 
     /// Convert the given `GVariant` to a
@@ -107,7 +110,7 @@ impl SessionIntent {
     /// Convert this intent to a `GVariant` with the given session ID.
     pub(crate) fn to_variant_with_session_id(&self, session_id: String) -> glib::Variant {
         let payload = match self {
-            Self::ShowMatrixId(uri) => uri.to_variant(),
+            Self::ShowMatrixId(uri) => uri.as_variant(),
             Self::ShowIdentityVerification(key) => key.to_variant(),
             Self::CallAction(action) => action.to_variant(),
         };

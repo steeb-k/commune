@@ -206,13 +206,13 @@ mod imp {
 
             klass.install_action(
                 "session.show-matrix-uri",
-                Some(&MatrixIdUri::static_variant_type()),
+                Some(&MatrixIdUri::variant_type()),
                 |obj, _, parameter| {
                     let Some(parameter) = parameter else {
                         error!("Could not show missing Matrix URI");
                         return;
                     };
-                    let Some(uri) = parameter.get::<MatrixIdUri>() else {
+                    let Some(uri) = MatrixIdUri::from_variant(parameter) else {
                         error!("Could not show invalid Matrix URI");
                         return;
                     };

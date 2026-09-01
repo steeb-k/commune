@@ -9,7 +9,7 @@ pub(crate) use crate::{
     user_facing_error::UserFacingError,
     utils::{
         ChildPropertyExt, IsABin, LocationExt,
-        matrix::ext_traits::*,
+        matrix::{MatrixIdUriExt, ext_traits::*},
         string::{OptionStringExt, StrExt, StrMutExt},
     },
 };
