@@ -366,7 +366,7 @@ are named in the notes below and are not in the count.
 | 4 | Push registration | 2 | 90 | `session/notifications.rs` | `utils/android_push.rs` (700) | `PushError` |
 | — | The push rules | 5 | 156 | stay in `facade.rs` — one-line SDK passthroughs | `notifications_settings.rs` (762) | — |
 | 5 | Media fetch, search, members | 12 | 456 | `matrix/media.rs`, `session/room/search.rs`, `session/room/media_history.rs`, `session/room/member.rs` | `session/room/search.rs` (767), `member_list.rs` (387), `typing_list.rs` (102), `room_details/history_viewer/timeline.rs` (260) and `event.rs` (149), `utils/matrix/media_message.rs` (515) | `SearchError`, `MediaHistoryError` |
-| 6 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/space_children.rs` | `session_view/explore/` (1,287), `session/remote/space_children.rs` (521) | `JoinError`, `DirectoryError` |
+| 6 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/room.rs`, `session/remote/space_children.rs`, `session/create_room.rs` | `session_view/explore/` (1,287), `session/remote/room.rs` (550), `session/remote/space_children.rs` (521), `session/room_list/` (730), `components/dialogs/room_preview.rs` (630), `session/user.rs` (547), `session_view/create_room_dialog.rs` (342) | `JoinError`, `DirectChatError`, `RemoteRoomError`, `SpaceChildrenError`, `DirectoryError`, `CreateRoomError` |
 | 7 | Login and registration | 9 | 354 | `login.rs` | `login/` (3,290 over ten files) | `LoginError` |
 | 8 | Image packs, stickers, GIFs | 13 | 525 | `session/image_packs/` | `session/image_packs/` (1,323) | `PackError` |
 | 9 | Verification and security | 14 | 621 | `session/verification.rs`, `session/security.rs` | `session/verification/` (1,538), `session/security.rs` (491) | `VerificationError`, `SecurityError` |
@@ -822,6 +822,107 @@ and the explanation lives in an ordinary comment inside the method. The
 rule for the rest of the phase: **an exported method's doc comment is
 part of the surface; say what changed in the body, not above it.**
 
+### Commit 6 — joining, the directory and the spaces, and a room the core could not describe
+
+**Two stay, six move, and the table's row was a third of the authority.**
+`rooms` is a passthrough over the room list's snapshot and
+`set_room_list_listener` is decision One's task; `change_room_category`
+was already a passthrough over `Room::change_category` and only lost its
+preamble. The other five each turned out to need something the plan's row
+did not name: the application never joins a room it has not first
+_described_, and the description — `session/remote/room.rs`, a `RemoteRoom`
+built from a room summary — is what the join, the directory and the space
+hierarchy all hand around. It is now `session/remote/room.rs` in the core
+too, as a value: the summary's fields, the lookup that tries the summary
+endpoint and falls back to the hierarchy endpoint when a homeserver lacks
+it, and the identifier matching that finds the session's own copy of a
+remote room. The row names the files the read added.
+
+**`join_room` joined first and knocked on any failure — and never told the
+sidebar it was joining.** The application looks the room up, then knocks
+_if the join rule allows knocking_ and joins otherwise
+(`components/dialogs/room_preview.rs` and `explore/public_room_row.rs`,
+the same eight lines in both). The facade went straight to the client:
+`join_room_by_id_or_alias`, and on _any_ error a knock, so a public room
+behind a flaky connection got a knock request it could not want. It also
+bypassed `RoomList::join_by_id_or_alias`, which is where the list records
+that a join is in flight — the state the sidebar's "joining" row and the
+preview's spinner read — so a join from the Kotlin side was invisible
+until the room arrived. And it parsed a `RoomOrAliasId` where the
+application parses a `MatrixRoomIdUri`: a pasted matrix.to link, and the
+`via` servers a link carries for a room the homeserver cannot reach on
+its own, were refused. All three follow the application now:
+`Session::remote_room` describes, `RoomList::knock_or_join` decides, and
+the parser is the application's.
+
+**`RoomList::join_by_id_or_alias` and `knock` returned English sentences,
+inside the core.** `Result<OwnedRoomId, String>` with "Could not join room
+{identifier}" already rendered — the leaf-1 rule, in a file that was
+transcribed before the rule was written. Nothing called them, which is the
+only reason it was not a shipped bug; they return `JoinError` now, and the
+application's `gettext_f` gets the identifier back as a value.
+
+**`create_direct_chat` could create a duplicate, and the application's
+source says why.** `User::get_or_create_direct_chat` checks the room list
+first, as the facade did — and then asks the SDK's `get_dm_room`, with the
+reason written out: *"the local check needs the room's direct member to be
+computed; the SDK's reads `m.direct` itself, so it still finds the direct
+chat whose membership does not currently look like one — which is exactly
+the case that used to end in a duplicate room."* The facade had the first
+check only, and its first check took the first joined room with that
+direct member where `RoomList::direct_chat` takes the one with the latest
+activity. Both are the core's `RoomList::get_or_create_direct_chat` now —
+on the list, because the core has no `User` object to hang it on, which is
+a placement choice this record owns.
+
+**`space_children` listed every descendant, flat and unordered, from one
+batch.** The application walks the whole hierarchy (up to ten batches of
+twenty, and says when it stopped early), builds each space's children
+from its `m.space.child` events in the order the specification defines,
+drops a child whose event names no `via` server — that is how the
+relationship is undone — and shows a tree that opens a subspace on demand,
+with a guard against a space that contains itself. The facade sent one
+request with no limit, filtered out the root, and returned whatever the
+server had walked in whatever order it walked it: grandchildren beside
+children, a removed room still listed if the server still returned it,
+and a space of more than one batch silently cut. `session/remote/space_children.rs`
+is the application's object as a value. **The FFI's list is flat, so the
+facade walks the tree depth-first** — every row the application's tree
+could show, in the order it would show them, with the same cycle guard —
+which keeps every room the Kotlin screen used to show and gives them the
+application's order.
+
+**`create_room` and `explore_rooms` were faithful, and moved anyway.**
+Both build a request the application builds identically — the space
+kind and its power-level override the dialog adds are in
+`Session::create_room` too, behind an `is_space` the FFI does not yet
+pass — and the one thing the move adds is the error the dialog
+distinguishes: `CreateRoomError::AddressTaken` for the homeserver's
+`RoomInUse`, which the Kotlin form now gets as a sentence rather than an
+SDK error dump. The directory query carries the server and third-party
+network the application's server chooser sets; the FFI passes neither.
+
+**Four gaps found and not filled**, by the standing ruling:
+
+* **Nothing on the FFI says a space listing was truncated**, or that a
+  child is suggested, or carries a child's `via` servers. The Kotlin
+  screen's Join button re-looks the room up by ID alone, so a room only
+  reachable through a server the space names cannot be joined from there.
+* **The Kotlin space screen is a flat list**, hence the depth-first walk
+  above. A tree wants a depth on the record.
+* **No server chooser and no third-party networks on the explore page.**
+* **No space creation from the Kotlin side.** `is_space` is in the core's
+  options and `false` on the FFI.
+
+One semantic change is deliberate and recorded: a space child's `is_joined`
+used to mean "joined"; it now means what the application's `local_room`
+means — the session has a room under that ID or alias, joined or not —
+so a room the user left shows as one they can open rather than one they
+can join, which is what the application shows.
+
+The FFI surface is unchanged for the sixth time, the bindings came back
+byte-identical, and the exported doc comments were left alone this time.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -862,6 +963,10 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `session/room/mod.rs`, `set_category` | **A room joined after startup never got its typing subscription, and its member list was never reloaded.** The application's `set_category` re-runs `set_up_typing()` and `members.reload()` when the state becomes joined, because the list an invite had was likely not complete. The core ran `set_up_typing` at construction only, and said so in a comment — _"a freshly joined room's typing arrives after a restart"_ — so accepting an invite or joining from the directory gave a room that showed nobody typing and an invite-time member list until the process restarted. **Closed 1 Sep**: `set_category` does what the application's does. | Done |
 | 1 Sep 2026 | `facade.rs`, `room_members` | **The facade polled the member list's state every 200 ms for up to ten seconds.** The list's state is an observable the application binds to; the facade slept on it. On a server that refuses to list the members the old wait ran out its full ten seconds before answering with what the store had. **Closed 1 Sep**: `MemberList::loaded()` subscribes and returns at `Ready` or `Error`. | Done |
 | 1 Sep 2026 | `history_viewer/timeline.rs` | **The application drops the last page of a room's media history when the homeserver omits `end`.** `load_inner` appends a chunk only under `if let Some(end_token) = events.end`; the specification lets a homeserver omit `end` on a final page that still holds events. The facade returned the chunk and the token together and the Kotlin viewer appends before checking the token, which is the better behaviour and is what `Room::media_history_page` keeps. Not a transcription drift but the reverse, and recorded so the GTK migration decides it rather than inherits it. | Phase 4, bridge decision |
+| 1 Sep 2026 | `facade.rs`, `join_room` | **Joined first and knocked on any failure, without telling the room list.** The application describes the room (`session/remote/room.rs`, summary endpoint with a hierarchy fallback) and then knocks if the join rule allows it and joins otherwise; the facade went to the client directly, knocked on _any_ join error — a public room behind a bad connection got a knock request — and bypassed `RoomList::join_by_id_or_alias`, so the list never recorded the join in flight and the sidebar never showed it. It also parsed a bare `RoomOrAliasId` where the application parses a `MatrixRoomIdUri`, refusing a pasted matrix.to link and dropping its `via` servers. **Closed 1 Sep**: `Session::remote_room`, `RoomList::knock_or_join`, and the application's parser. | Done |
+| 1 Sep 2026 | `session/room_list.rs`, `join_by_id_or_alias` and `knock` | **Two rendered English sentences inside the core** — `Result<OwnedRoomId, String>` carrying "Could not join room {identifier}" — in a file transcribed before the leaf-1 rule was written. Nothing called them, which is why it never shipped. **Closed 1 Sep** with `JoinError`, which carries the identifier as a value for the application's `gettext_f`. | Done |
+| 1 Sep 2026 | `facade.rs`, `create_direct_chat` | **Could create a second direct chat with the same person.** `User::get_or_create_direct_chat` checks the room list, then the SDK's `get_dm_room` over `m.direct`, with a comment saying the second check exists because the first misses a direct chat whose membership does not currently look like one — "exactly the case that used to end in a duplicate room". The facade had the first check only, and took the first match where `RoomList::direct_chat` takes the latest-active. **Closed 1 Sep** as `RoomList::get_or_create_direct_chat`. | Done |
+| 1 Sep 2026 | `facade.rs`, `space_children` | **One batch, every descendant, no order.** The application walks up to ten batches and says when it stopped, orders each space's children by their `m.space.child` events as the specification defines, drops a child whose event names no `via` server, and guards against a space that contains itself. The facade sent one unbounded request and returned the server's walk as it came: grandchildren beside children, unordered, silently cut for a large space. **Closed 1 Sep** in `session/remote/space_children.rs`; the FFI flattens the tree depth-first because the Kotlin screen is flat. Not on the FFI yet: truncation, suggestion, the `via` servers a Join from that screen would need. | Done, FFI fields owed |
 
 ## Gates
 

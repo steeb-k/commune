@@ -18,13 +18,79 @@ use indexmap::IndexMap;
 use matrix_sdk::sync::RoomUpdates;
 use ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId, UserId};
 use serde::{Deserialize, Serialize};
-use tracing::{error, warn};
+use tracing::{debug, error, warn};
 
-use super::{Room, WeakSession};
-use crate::{RUNTIME, spawn_tokio};
+use super::{RemoteRoom, Room, WeakSession};
+use crate::{RUNTIME, UserFacingError, spawn_tokio};
 
 /// The state-store key the rooms metainfo is persisted under.
 const ROOMS_METAINFO_KEY: &str = "rooms_metainfo";
+
+/// What can go wrong while joining a room or asking to.
+#[derive(Debug, thiserror::Error)]
+pub enum JoinError {
+    /// The session this list belongs to is gone.
+    #[error("the session is no longer available")]
+    NoSession,
+    /// The homeserver would not let us join the room.
+    ///
+    /// Boxed because `matrix_sdk::Error` is large enough that carrying it
+    /// by value makes every `Result` in this module expensive.
+    #[error("could not join room {identifier}")]
+    Join {
+        /// The room asked for.
+        identifier: OwnedRoomOrAliasId,
+        /// What the homeserver said.
+        source: Box<matrix_sdk::Error>,
+    },
+    /// The homeserver would not take our request for an invite.
+    #[error("could not request an invite to room {identifier}")]
+    Knock {
+        /// The room asked for.
+        identifier: OwnedRoomOrAliasId,
+        /// What the homeserver said.
+        source: Box<matrix_sdk::Error>,
+    },
+}
+
+impl UserFacingError for JoinError {
+    fn to_user_facing(&self) -> String {
+        // The application renders these with `gettext_f` over the same
+        // identifier; this is the Kotlin side's fallback.
+        match self {
+            Self::NoSession => "The session is no longer available.".to_owned(),
+            Self::Join { identifier, .. } => format!("Could not join room {identifier}"),
+            Self::Knock { identifier, .. } => {
+                format!("Could not request an invite to room {identifier}")
+            }
+        }
+    }
+}
+
+/// What can go wrong while opening a direct chat.
+#[derive(Debug, thiserror::Error)]
+pub enum DirectChatError {
+    /// The session this list belongs to is gone.
+    #[error("the session is no longer available")]
+    NoSession,
+    /// The homeserver would not create the room.
+    ///
+    /// Boxed because `matrix_sdk::Error` is large enough that carrying it
+    /// by value makes every `Result` in this module expensive.
+    #[error(transparent)]
+    Create(#[from] Box<matrix_sdk::Error>),
+}
+
+impl UserFacingError for DirectChatError {
+    fn to_user_facing(&self) -> String {
+        match self {
+            Self::NoSession => "The session is no longer available.".to_owned(),
+            // The embedder has its own rendering of an SDK error — the GTK
+            // application's is translated — so this is only the fallback.
+            Self::Create(error) => error.to_string(),
+        }
+    }
+}
 
 /// List of all rooms known by the user.
 ///
@@ -237,6 +303,53 @@ impl RoomList {
             })
             // Take the room with the latest activity.
             .max_by(|x, y| x.latest_activity().cmp(&y.latest_activity()))
+    }
+
+    /// Get or create a direct chat with the user with the given ID — the
+    /// application's `User::get_or_create_direct_chat()`, on the list
+    /// that holds the rooms rather than on a user object the core does not
+    /// have.
+    ///
+    /// If there is no existing direct chat, a new one is created.
+    pub async fn get_or_create_direct_chat(
+        &self,
+        user_id: &UserId,
+    ) -> Result<Room, DirectChatError> {
+        if let Some(room) = self.direct_chat(user_id) {
+            debug!("Using existing direct chat with {user_id}…");
+            return Ok(room);
+        }
+
+        let Some(session) = self.inner.session.upgrade() else {
+            return Err(DirectChatError::NoSession);
+        };
+        let client = session.client();
+
+        // The local check needs the room's direct member to be computed; the
+        // SDK's reads `m.direct` itself, so it still finds the direct chat
+        // whose membership does not currently look like one — which is
+        // exactly the case that used to end in a duplicate room.
+        if let Some(matrix_room) = client.get_dm_room(user_id)
+            && let Some(room) = self.get(matrix_room.room_id())
+        {
+            debug!("Using the direct chat m.direct names for {user_id}…");
+            return Ok(room);
+        }
+
+        debug!("Creating direct chat with {user_id}…");
+        let user_id = user_id.to_owned();
+        let handle = spawn_tokio!(async move { client.create_dm(&user_id).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(matrix_room) => Ok(self
+                .get_wait(matrix_room.room_id(), None)
+                .await
+                .expect("The newly created room was not found")),
+            Err(create_error) => {
+                error!("Could not create direct chat: {create_error}");
+                Err(Box::new(create_error).into())
+            }
+        }
     }
 
     /// Add a room that was tombstoned but for which we haven't joined the
@@ -461,9 +574,9 @@ impl RoomList {
         &self,
         identifier: OwnedRoomOrAliasId,
         via: Vec<OwnedServerName>,
-    ) -> Result<OwnedRoomId, String> {
+    ) -> Result<OwnedRoomId, JoinError> {
         let Some(session) = self.inner.session.upgrade() else {
-            return Err("Could not upgrade Session".to_owned());
+            return Err(JoinError::NoSession);
         };
         let client = session.client();
         let identifier_clone = identifier.clone();
@@ -485,7 +598,10 @@ impl RoomList {
                 self.remove_joining_room(&identifier);
                 error!("Joining room {identifier} failed: {join_error}");
 
-                Err(format!("Could not join room {identifier}"))
+                Err(JoinError::Join {
+                    identifier,
+                    source: Box::new(join_error),
+                })
             }
         }
     }
@@ -495,9 +611,9 @@ impl RoomList {
         &self,
         identifier: OwnedRoomOrAliasId,
         via: Vec<OwnedServerName>,
-    ) -> Result<OwnedRoomId, String> {
+    ) -> Result<OwnedRoomId, JoinError> {
         let Some(session) = self.inner.session.upgrade() else {
-            return Err("Could not upgrade Session".to_owned());
+            return Err(JoinError::NoSession);
         };
         let client = session.client();
 
@@ -509,8 +625,24 @@ impl RoomList {
             Err(knock_error) => {
                 error!("Invite request for room {identifier} failed: {knock_error}");
 
-                Err(format!("Could not request an invite to room {identifier}"))
+                Err(JoinError::Knock {
+                    identifier,
+                    source: Box::new(knock_error),
+                })
             }
+        }
+    }
+
+    /// Knock on or join the given room, whichever its join rule allows —
+    /// what the application's room preview and public room row both do
+    /// once a room is described.
+    pub async fn knock_or_join(&self, room: &RemoteRoom) -> Result<OwnedRoomId, JoinError> {
+        let uri = room.uri.clone();
+
+        if room.can_knock {
+            self.knock(uri.id, uri.via).await
+        } else {
+            self.join_by_id_or_alias(uri.id, uri.via).await
         }
     }
 }
