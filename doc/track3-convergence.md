@@ -136,6 +136,24 @@ and only two sites used them. A `MatrixIdUriExt` trait carries
 `GAction` parameter is the same string it always was. **Not every glib
 integration needs a wrapper — check what the impl actually does first.**
 
+The submodules went the same way and each of them differently.
+`url_preview.rs` was a straight copy — its fourteen tests were byte for byte
+the core's, so deleting them cost no coverage at all. `mutual_rooms.rs` had
+no twin: it is the MSC2666 endpoint written out over the SDK's HTTP client
+because the pinned ruma only knows the unstable path, with no `glib` or
+`gettext` in it, so it **moved** rather than deduplicating, and the Kotlin
+variant gets shared rooms as a side effect. `ext_traits.rs` was the
+application's file minus one trait, and that trait — `TimelineEventItemIdExt`
+— is `GVariant` conversion, so it stayed and the other four are re-exported.
+
+**`media_message.rs` is not a leaf either, and the core's `media.rs` is not
+its twin.** They are unrelated modules that both say "media": the core's
+fetches media into files for a Compose UI to decode, while the application's
+is `gtk::FileDialog`, toasts, `glib::DateTime` filenames and a dozen
+`gettext` calls wrapped around some event content types. The data types
+inside it might belong below the UI one day, but that is a design question
+about the timeline and belongs to Phase 4, not a mechanical dedup.
+
 `password.rs` is **not** a leaf and the plan naming it as one was an error.
 It is `adw::PasswordEntryRow`, a meter and a label; its own first line says
 the rules are `validate_password` and that these two functions draw them.
