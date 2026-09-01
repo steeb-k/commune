@@ -26,6 +26,7 @@
 //! sync loop sleeps and dials sockets). `SessionList` already does; the FFI
 //! facade will wrap calls in `RUNTIME.spawn`.
 
+mod ignored_users;
 mod room;
 mod room_list;
 mod sidebar;
@@ -61,6 +62,7 @@ use tracing::{debug, error, info};
 use url::Url;
 
 pub use self::{
+    ignored_users::{IgnoredUsers, IgnoredUsersError},
     room::{
         Member, MemberList, MemberRole, Membership, ReceiptPosition, Room, RoomCategory,
         RoomDisplayName, RoomHighlight, TargetRoomCategory, Timeline, TimelineFocusKind,
@@ -170,6 +172,8 @@ struct SessionInner {
     room_updates_rx: Mutex<Option<mpsc::UnboundedReceiver<RoomUpdates>>>,
     /// The room list of this session.
     room_list: std::sync::OnceLock<RoomList>,
+    /// The users this account ignores.
+    ignored_users: std::sync::OnceLock<IgnoredUsers>,
     /// The task feeding the room list from the sync loop.
     room_updates_handle: Mutex<Option<AbortHandle>>,
 }
@@ -238,6 +242,7 @@ impl Session {
             room_updates_tx,
             room_updates_rx: Mutex::new(Some(room_updates_rx)),
             room_list: std::sync::OnceLock::new(),
+            ignored_users: std::sync::OnceLock::new(),
             room_updates_handle: Mutex::new(None),
         });
 
@@ -275,6 +280,7 @@ impl Session {
 
         self.room_list().load().await;
         self.consume_room_updates();
+        self.ignored_users().load().await;
 
         // The verification, calls and security subsystems attach here once
         // their chunks are extracted.
@@ -399,6 +405,14 @@ impl Session {
         self.inner
             .room_list
             .get_or_init(|| RoomList::new(self.downgrade()))
+    }
+
+    /// The users this account ignores.
+    #[must_use]
+    pub fn ignored_users(&self) -> &IgnoredUsers {
+        self.inner
+            .ignored_users
+            .get_or_init(|| IgnoredUsers::new(self.downgrade()))
     }
 
     /// Feed the room list from the sync loop's room updates.

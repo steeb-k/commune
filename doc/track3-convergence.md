@@ -360,8 +360,8 @@ are named in the notes below and are not in the count.
 
 | # | Group | Methods | Lines | Core destination | GTK authority | Error enum |
 |---|---|---|---|---|---|---|
-| 1 | Scaffolding | 0 | 0 | `session/observables.rs`, the error enums | — | — |
-| 2 | Safety, devices, account | 22 | 456 | `session/ignored_users.rs`, `session/user_sessions.rs`, `session/mod.rs` | `session/ignored_users.rs` (282), `session/user_sessions_list/` (987), `session/user.rs` (547) | `AccountError`, `DeviceError` |
+| 1 | Safety — the ignored users | 3 | 85 | `session/ignored_users.rs` | `session/ignored_users.rs` (282) | `IgnoredUsersError` |
+| 2 | Devices and the account | 19 | 371 | `session/user_sessions.rs`, `session/mod.rs` | `session/user_sessions_list/` (987), `session/user.rs` (547) | `AccountError`, `DeviceError` |
 | 3 | Notifications and push | 7 | 246 | `session/notifications.rs` | `session/notifications/notifications_settings.rs` (762) | `NotificationError` |
 | 4 | Media fetch, search, members | 12 | 456 | `matrix/media.rs`, `session/room/search.rs`, `session/room/member.rs` | `session/room/search.rs` (767), `member_list.rs` (387), `typing_list.rs` (102), `room_details/history_viewer/` | `MediaError`, `SearchError` |
 | 5 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/space_children.rs` | `session_view/explore/` (1,287), `session/remote/space_children.rs` (521) | `JoinError`, `DirectoryError` |
@@ -404,12 +404,13 @@ document, `kick_user`, `ban_user`, `set_member_power_level` and
 
 ### The order, and why
 
-Scaffolding first, because everything is written against it. Then group 2,
-the smallest group with real logic, to prove the pattern on something whose
-failure mode fits in one screen. Then outward by size, with two constraints
-overriding that order: **login comes before the groups that need a
-session**, because it is where the Android-only hardcoding below is fixed
-and a GTK login has to keep working through it; and **calls come last**,
+Smallest-with-real-logic first, to prove the pattern on something whose
+failure mode fits in one screen — and the shared scaffolding rides in with
+it rather than going first, for the reason the record of commit 1 below
+gives. Then outward by size, with two constraints overriding that order:
+**login comes before the groups that need a session**, because it is where
+the Android-only hardcoding below is fixed and a GTK login has to keep
+working through it; and **calls come last**,
 because the call-guard fix already in the ledger is still owed a live check,
 and putting the rewrite in front of that check would mean the harness could
 not tell which change it was measuring.
@@ -459,13 +460,74 @@ clippy -p commune-core --all-targets --features ffi -- -D warnings` must be
 green by the end of it.** It currently finds fifteen errors in `facade.rs` —
 `too_many_lines` and `struct_excessive_bools` — on top of the thirteen the
 Linux lint stops at. The core has never been held to `-D warnings`; the
-phase that rewrites the code all of it is in is the phase that settles that,
-and each commit should leave the count lower than it found it rather than
-deferring the whole thing to the last one.
+phase that rewrites the code all of it is in is the phase that settles that.
+**The per-commit requirement is that the count is no worse, and that a
+group's own lints leave with it** — most of the fifteen sit in code a later
+commit deletes outright, so fixing them early is churn in the diff of the
+commit that removes them.
 
 The Kotlin application is the regression suite. It is the only consumer of
 these 135 methods, so a group that compiles and whose Kotlin screens still
 work is a group that moved correctly.
+
+### Commit 1 — the ignored users, and two corrections to this plan
+
+**The scaffolding is not its own commit, and the ordering above is wrong to
+say so.** This document records the lesson twice already — the bridge is
+built where it is first needed, and Phase 0's original order was reversed
+for exactly that reason — and a resolution helper written against zero
+callers is that mistake at a smaller scale. So the helpers arrive with their
+first real consumer instead: `CoreApp::session()` and `parse_user_id()` land
+here, with three call sites rather than a hundred imagined ones, and the
+error-rendering seam lands as one `From` impl rather than twelve written
+blind.
+
+**`src/session/ignored_users.rs` is the authority, and it had two things the
+facade did not.** Both are behaviour, and both are in the ledger below.
+The application subscribes to the SDK's ignore-list changes and re-reads the
+account data whenever one arrives; the facade read it once, per call, so
+ignoring somebody from the desktop never reached a phone that had the screen
+open. And the application refuses a redundant request — adding a user
+already on the list is a warning and a no-op — where the facade always spent
+the round trip.
+
+`commune-core/src/session/ignored_users.rs` is the two of them plus the list
+itself, hung off `Session` exactly as `RoomList` is: a `OnceLock` field, a
+`Session::ignored_users()` accessor, and a `load()` from `prepare()`. What
+stayed in the application is the `items_changed` computation — the shortest
+splice that turns the old list into the new one exists to stop
+`gio::ListModel` rebuilding rows, and belongs to the bridge.
+
+**The list is a `Vec`, not the application's `IndexSet`.** The keys of
+`m.ignored_user_list` are already unique, order is the only other thing the
+set preserved, and the index lookups it made cheap were `gio::ListModel`'s.
+That is `utils/matrix/`'s lesson a third time: check what the type is
+actually doing before carrying it across.
+
+**One thing the move would have broken, caught by reading
+`active_session()`.** A cached read is not the same guarantee as a fetch:
+`SessionList::active_session()` returns a session as soon as its `Session`
+exists, which is _before_ `prepare()` has run, so `ignored_users()` reading
+only the cache would answer "nobody" during startup where the old one
+answered correctly. `ensure_loaded()` is what keeps the old guarantee, and it
+is why that method is still `async` — it earns the keyword rather than
+carrying it out of habit.
+
+**The FFI surface is unchanged**, deliberately: the same three methods with
+the same signatures, so the generated Kotlin is byte-identical and the Kotlin
+application is a regression suite that needed no edit to be one. That is the
+property every commit of this phase should try to keep.
+
+**On the clippy count, this plan's instruction was too strong.** "Each commit
+should leave the count lower than it found it" is wrong where the remaining
+errors sit in code a later commit rewrites: nine of the fifteen are redundant
+closures and `map(…).unwrap_or(…)` inside the call handlers, the join-rule
+reader and the upgrade builder, and five more are `too_many_lines` on methods
+that stop existing when their group moves. Fixing those now is churn that
+muddies the diff of the commit that deletes them. **The requirement is that a
+commit leaves the count no worse, and that a group's own lints go with it.**
+This one added two — a `#[must_use]` on a type already carrying it, and an
+`async` with nothing to await — and removed both before landing.
 
 ## What never enters the core
 
@@ -497,6 +559,7 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **The pusher describes an Android device, in English, whatever the embedder is.** `app_display_name` is `"Commune"` and `device_display_name` is `"Commune on Android"`, both literals; the `LEGACY_APP_ID` deletion that runs first cleans up after a specific Android debug build. The device name is what a user sees in another client's session list when they audit what is pushing to them, so a desktop session announcing itself as Android is wrong in the one place the string is read. Embedder values, `CoreConfig` again — and the legacy cleanup is Android's alone and should say so. | Phase 3, group 3 |
 | 1 Sep 2026 | `facade.rs`, `check_upload_size` | **The upload-size refusal is a rendered English sentence, with a private byte formatter.** The core builds `"This file is too large, the homeserver takes up to {size}"` and formats the number with its own `format_size`. The application says the same thing at `src/session_view/room_history/message_toolbar/mod.rs:1310` as a `gettext_f` over `glib::format_size`. It is the most commonly hit error in the file — every oversized attachment, avatar and pack image goes through it — and it is a sentence, so it must not cross: the core owes a value (`UploadTooLarge { max_bytes }`) and the two embedders own the wording. The two formatters agree on decimal units, so the rendered text is identical today; only the translation is lost. | Phase 3, group 9 |
 | 1 Sep 2026 | `facade.rs`, `ensure_packs_room` | **The packs room is created with an English name and topic.** `"Sticker Packs"` and `"The sticker and emoticon packs that you created. Invite someone here to share them."` are literals; `src/session/image_packs/mod.rs:627` wraps both in `gettext`. This one is worse than a lost error message, because a room name is not an error: it is written into `m.room.name` on the server, it shows in the sidebar next to the conversations, and it is _permanent_ — a user whose packs room was created by the Kotlin build keeps the English name after they translate their client, because nothing re-creates the room. Embedder-supplied strings, and the room the core makes should carry whichever the embedder passed. | Phase 3, group 7 |
+| 1 Sep 2026 | `facade.rs` ignored users | **The core never followed the list, and never refused a redundant request.** `src/session/ignored_users.rs` subscribes to the SDK's ignore-list changes and re-reads `m.ignored_user_list` whenever one arrives; the facade read the account data once per call and had no subscription at all, so ignoring somebody from the desktop never reached a phone with the Ignored Users screen open — it would sit on a stale list until it was closed and reopened. The application also guards both directions: adding a user already on the list, or removing one that is not, is a warning and a no-op rather than a round trip the server will ignore. Neither guard existed in the core. **Closed 1 Sep** with Phase 3's first commit, which also found the thing the move would have broken: `SessionList::active_session()` returns a session before `prepare()` has run, so a cache-only read would answer "nobody" during startup where the old fetch answered correctly — `ensure_loaded()` keeps that guarantee. | Done |
 
 ## Gates
 

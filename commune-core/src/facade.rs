@@ -109,6 +109,20 @@ impl From<String> for CoreError {
     }
 }
 
+/// The core's error enums render themselves for the FFI.
+///
+/// This is where the English lives for the Kotlin side, and the reason a
+/// core module returns a value rather than a sentence: the GTK application
+/// implements `UserFacingError` over the same enum with `gettext`, and the
+/// two renderings never have to agree.
+impl From<crate::session::IgnoredUsersError> for CoreError {
+    fn from(error: crate::session::IgnoredUsersError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 /// A room's display name, semantically: the Empty variants are the UI's
 /// sentences to make.
 #[derive(uniffi::Enum)]
@@ -4203,86 +4217,48 @@ impl CoreApp {
     /// The users the account ignores, as `m.ignored_user_list` lists
     /// them — the application's safety page order.
     pub async fn ignored_users(&self) -> Vec<String> {
-        use ruma::events::ignored_user_list::IgnoredUserListEventContent;
-
-        let Some(session) = self.first_ready_session() else {
+        let Ok(session) = self.session() else {
             return Vec::new();
         };
 
+        // Reading the cache alone would answer "nobody" for a session that
+        // is active but has not finished preparing.
+        let ensure = session.clone();
         RUNTIME
-            .spawn(async move {
-                let Ok(Some(raw)) = session
-                    .client()
-                    .account()
-                    .account_data::<IgnoredUserListEventContent>()
-                    .await
-                else {
-                    return Vec::new();
-                };
-                raw.deserialize()
-                    .map(|content| {
-                        content
-                            .ignored_users
-                            .into_keys()
-                            .map(|user_id| user_id.to_string())
-                            .collect()
-                    })
-                    .unwrap_or_default()
-            })
+            .spawn(async move { ensure.ignored_users().ensure_loaded().await })
             .await
-            .expect("task was not aborted")
+            .expect("task was not aborted");
+
+        session
+            .ignored_users()
+            .snapshot()
+            .iter()
+            .map(ToString::to_string)
+            .collect()
     }
 
     /// Ignore the given user: their messages disappear everywhere.
     pub async fn ignore_user(&self, user_id: String) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
+        let user_id = parse_user_id(&user_id)?;
 
         RUNTIME
-            .spawn(async move {
-                let user_id = ruma::UserId::parse(&user_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid user ID".to_owned(),
-                })?;
-                session
-                    .client()
-                    .account()
-                    .ignore_user(&user_id)
-                    .await
-                    .map_err(|ignore_error| CoreError::Failed {
-                        msg: format!("Could not ignore the user: {ignore_error}"),
-                    })
-            })
+            .spawn(async move { session.ignored_users().add(&user_id).await })
             .await
             .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// Stop ignoring the given user.
     pub async fn unignore_user(&self, user_id: String) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
+        let user_id = parse_user_id(&user_id)?;
 
         RUNTIME
-            .spawn(async move {
-                let user_id = ruma::UserId::parse(&user_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid user ID".to_owned(),
-                })?;
-                session
-                    .client()
-                    .account()
-                    .unignore_user(&user_id)
-                    .await
-                    .map_err(|unignore_error| CoreError::Failed {
-                        msg: format!("Could not stop ignoring the user: {unignore_error}"),
-                    })
-            })
+            .spawn(async move { session.ignored_users().remove(&user_id).await })
             .await
             .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// The keywords that trigger notifications, from the account's
@@ -6730,6 +6706,14 @@ where
     serde_json::from_value(value.get("content")?.clone()).ok()
 }
 
+/// Parse a user ID handed over the FFI, trimmed as the application trims
+/// what somebody typed.
+fn parse_user_id(user_id: &str) -> Result<ruma::OwnedUserId, CoreError> {
+    ruma::UserId::parse(user_id.trim()).map_err(|_| CoreError::Failed {
+        msg: "That is not a valid user ID".to_owned(),
+    })
+}
+
 /// Whether our own user may send the given state event in the room.
 async fn can_send_state(
     matrix_room: &matrix_sdk::Room,
@@ -7535,6 +7519,17 @@ impl CoreApp {
     /// is gone, the first session that is ready.
     fn first_ready_session(&self) -> Option<Session> {
         self.session_list.active_session()
+    }
+
+    /// The active session, or the error the FFI reports when there is
+    /// none.
+    ///
+    /// The same four lines were written out 66 times before Phase 3; every
+    /// method that resolves one is expected to come through here.
+    fn session(&self) -> Result<Session, CoreError> {
+        self.first_ready_session().ok_or_else(|| CoreError::Failed {
+            msg: "No session".to_owned(),
+        })
     }
 }
 
