@@ -67,8 +67,10 @@ pub use self::{
     ignored_users::{IgnoredUsers, IgnoredUsersError},
     notifications::PushError,
     room::{
-        Member, MemberList, MemberRole, Membership, ReceiptPosition, Room, RoomCategory,
-        RoomDisplayName, RoomHighlight, TargetRoomCategory, Timeline, TimelineFocusKind,
+        MediaHistoryError, MediaHistoryEvent, MediaHistoryKind, MediaHistoryPage, Member,
+        MemberList, MemberRole, Membership, ReceiptPosition, Room, RoomCategory, RoomDisplayName,
+        RoomHighlight, RoomSearch, SearchError, SearchResult, TargetRoomCategory, Timeline,
+        TimelineFocusKind,
     },
     room_list::{RoomList, RoomMetainfo},
     sidebar::SidebarSectionName,

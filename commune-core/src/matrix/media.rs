@@ -10,12 +10,94 @@ use std::path::PathBuf;
 
 use matrix_sdk::{
     Client,
-    media::{MediaFormat, MediaRequestParameters, MediaThumbnailSettings},
+    media::{MediaEventContent, MediaFormat, MediaRequestParameters, MediaThumbnailSettings},
 };
-use ruma::{MxcUri, UInt, events::room::MediaSource};
+use ruma::{
+    MxcUri, UInt,
+    events::{
+        room::{
+            MediaSource,
+            message::{
+                AudioMessageEventContent, FileMessageEventContent, ImageMessageEventContent,
+                MessageType, VideoMessageEventContent,
+            },
+        },
+        sticker::StickerEventContent,
+    },
+};
 use tracing::error;
 
 use crate::{paths::DataType, spawn_tokio};
+
+/// A media message: a message whose content is a file to fetch.
+///
+/// The portable half of the application's `MediaMessage`
+/// (`src/utils/matrix/media_message.rs`): the variants and the fetch. What
+/// stayed behind is every method that renders a name — "Voice Message",
+/// the generated filename of a voice message — because they are sentences,
+/// and the save dialog, because it is a widget.
+#[derive(Debug, Clone)]
+pub enum MediaMessage {
+    /// An audio.
+    Audio(AudioMessageEventContent),
+    /// A file.
+    File(FileMessageEventContent),
+    /// An image.
+    Image(ImageMessageEventContent),
+    /// A video.
+    Video(VideoMessageEventContent),
+    /// A sticker.
+    Sticker(Box<StickerEventContent>),
+}
+
+impl MediaMessage {
+    /// Construct a `MediaMessage` from the given message.
+    #[must_use]
+    pub fn from_message(msgtype: &MessageType) -> Option<Self> {
+        match msgtype {
+            MessageType::Audio(c) => Some(Self::Audio(c.clone())),
+            MessageType::File(c) => Some(Self::File(c.clone())),
+            MessageType::Image(c) => Some(Self::Image(c.clone())),
+            MessageType::Video(c) => Some(Self::Video(c.clone())),
+            _ => None,
+        }
+    }
+
+    /// The source of the file of this media.
+    ///
+    /// An encrypted source carries its keys, which is why a media message
+    /// is taken from the event rather than rebuilt from a URI.
+    #[must_use]
+    pub fn source(&self) -> Option<MediaSource> {
+        match self {
+            Self::Audio(c) => c.source(),
+            Self::File(c) => c.source(),
+            Self::Image(c) => c.source(),
+            Self::Video(c) => c.source(),
+            Self::Sticker(c) => c.source(),
+        }
+    }
+
+    /// Fetch the content of this media with the given client into a file,
+    /// returning its path.
+    ///
+    /// Returns `None` if the fetch failed, as [`get_media_file()`] does.
+    pub async fn into_file(self, client: &Client) -> Option<PathBuf> {
+        let source = self.source()?;
+        let request = MediaRequestParameters {
+            source,
+            format: MediaFormat::File,
+        };
+
+        get_media_file(client, request).await
+    }
+}
+
+impl From<StickerEventContent> for MediaMessage {
+    fn from(value: StickerEventContent) -> Self {
+        Self::Sticker(value.into())
+    }
+}
 
 /// Fetch the media for the given request, returning the path of a file
 /// holding it.

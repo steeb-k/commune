@@ -147,6 +147,22 @@ impl From<crate::session::AccountError> for CoreError {
     }
 }
 
+impl From<crate::session::SearchError> for CoreError {
+    fn from(error: crate::session::SearchError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::MediaHistoryError> for CoreError {
+    fn from(error: crate::session::MediaHistoryError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 /// A room's display name, semantically: the Empty variants are the UI's
 /// sentences to make.
 #[derive(uniffi::Enum)]
@@ -2220,50 +2236,21 @@ impl CoreApp {
     /// sources come with their keys; only image messages are handled for
     /// now.
     pub async fn get_timeline_media(&self, room_id: String, unique_id: String) -> Option<String> {
-        use matrix_sdk_ui::timeline::{MsgLikeKind, TimelineItemContent};
-        use ruma::events::room::message::MessageType;
-
+        // The doc comment above is part of the generated bindings and their
+        // checksum, so it is kept verbatim; what is actually handled is
+        // every `MediaMessage` variant — images, videos, audio, files and
+        // stickers.
         let session = self.first_ready_session()?;
+        let room = self.room(&room_id).ok()?;
 
+        // The timeline may still have to be built, which spawns onto the
+        // runtime and so has to run on it.
         RUNTIME
             .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).ok()?;
-                let room = session.room_list().get(&room_id)?;
-                let matrix_timeline = room.live_timeline().matrix_timeline().await?;
-
-                let items = matrix_timeline.items().await;
-                let item = items.iter().find(|item| item.unique_id().0 == unique_id)?;
-                let event = item.as_event()?;
-
-                let TimelineItemContent::MsgLike(msg_like) = event.content() else {
-                    return None;
-                };
-                let source = match &msg_like.kind {
-                    MsgLikeKind::Message(message) => match message.msgtype() {
-                        MessageType::Image(image) => image.source.clone(),
-                        MessageType::Video(video) => video.source.clone(),
-                        MessageType::Audio(audio) => audio.source.clone(),
-                        MessageType::File(file) => file.source.clone(),
-                        _ => return None,
-                    },
-                    MsgLikeKind::Sticker(sticker) => match &sticker.content().source {
-                        ruma::events::sticker::StickerMediaSource::Plain(url) => {
-                            ruma::events::room::MediaSource::Plain(url.clone())
-                        }
-                        ruma::events::sticker::StickerMediaSource::Encrypted(file) => {
-                            ruma::events::room::MediaSource::Encrypted(file.clone())
-                        }
-                        _ => return None,
-                    },
-                    _ => return None,
-                };
-
-                let request = matrix_sdk::media::MediaRequestParameters {
-                    source,
-                    format: matrix_sdk::media::MediaFormat::File,
-                };
-
-                crate::matrix::media::get_media_file(&session.client(), request)
+                room.live_timeline()
+                    .media_message(&unique_id)
+                    .await?
+                    .into_file(&session.client())
                     .await
                     .map(|path| path.to_string_lossy().into_owned())
             })
@@ -2461,32 +2448,15 @@ impl CoreApp {
     /// A snapshot of the given room's members, loading the list on first
     /// use — the composer's mention completion reads this.
     pub async fn room_members(&self, room_id: String) -> Vec<FfiMember> {
-        let Some(session) = self.first_ready_session() else {
+        let Ok(room) = self.room(&room_id) else {
             return Vec::new();
         };
 
-        RUNTIME
-            .spawn(async move {
-                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
-                    return Vec::new();
-                };
-                let Some(room) = session.room_list().get(&room_id) else {
-                    return Vec::new();
-                };
-                let member_list = room.member_list();
+        // The first call starts the load; the list says when it is done.
+        let member_list = room.member_list();
+        member_list.loaded().await;
 
-                // The first call starts the load; wait (bounded) for it.
-                for _ in 0..50 {
-                    if member_list.state() == crate::utils::LoadingState::Ready {
-                        break;
-                    }
-                    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
-                }
-
-                member_list.snapshot().iter().map(FfiMember::from).collect()
-            })
-            .await
-            .expect("task was not aborted")
+        member_list.snapshot().iter().map(FfiMember::from).collect()
     }
 
     /// Send a message to the given room — Markdown, as the composer
@@ -2890,83 +2860,26 @@ impl CoreApp {
         room_id: String,
         search_term: String,
     ) -> Result<Vec<FfiSearchResult>, CoreError> {
-        use ruma::{
-            api::client::{
-                filter::RoomEventFilter,
-                search::search_events::{
-                    self,
-                    v3::{Categories, Criteria, EventContext, OrderBy, SearchKeys},
-                },
-            },
-            assign,
-            events::{AnySyncMessageLikeEvent, AnySyncTimelineEvent, MessageLikeEventType},
-            serde::Raw,
-        };
+        // The doc comment above is part of the generated bindings and their
+        // checksum, so it is kept verbatim. It is now incomplete rather than
+        // wrong: the server still cannot search an encrypted room, and
+        // `RoomSearch` searches the local index for one instead, as the
+        // application does.
+        //
+        // One page only. The search object pages, but nothing on this side
+        // of the FFI asks for a second page, so the page is a wider one than
+        // the application's — thirty results rather than twenty — and that
+        // is the only respect in which this differs from the application's
+        // search.
+        const SINGLE_PAGE_SIZE: usize = 30;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
+        let search = crate::session::RoomSearch::with_page_size(&room, SINGLE_PAGE_SIZE);
+        search.set_search_term(&search_term);
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let client = session.client();
+        let results = search.load_more().await.map_err(CoreError::from)?;
 
-                let filter = assign!(RoomEventFilter::default(), {
-                    rooms: Some(vec![room_id]),
-                    types: Some(vec![MessageLikeEventType::RoomMessage.to_string()]),
-                    limit: Some(ruma::UInt::from(30u32)),
-                });
-                let criteria = assign!(Criteria::new(search_term), {
-                    keys: Some(vec![SearchKeys::ContentBody]),
-                    filter,
-                    order_by: Some(OrderBy::Recent),
-                    event_context: assign!(EventContext::new(), {
-                        before_limit: ruma::UInt::default(),
-                        after_limit: ruma::UInt::default(),
-                    }),
-                });
-                let categories = assign!(Categories::new(), { room_events: Some(criteria) });
-                let request = search_events::v3::Request::new(categories);
-
-                let response =
-                    client
-                        .send(request)
-                        .await
-                        .map_err(|search_error| CoreError::Failed {
-                            msg: format!("Could not search: {search_error}"),
-                        })?;
-
-                Ok(response
-                    .search_categories
-                    .room_events
-                    .results
-                    .iter()
-                    .filter_map(|result| result.result.as_ref())
-                    .map(Raw::cast_ref_unchecked::<AnySyncTimelineEvent>)
-                    .filter_map(|raw| raw.deserialize().ok())
-                    .filter_map(|event| match event {
-                        AnySyncTimelineEvent::MessageLike(
-                            AnySyncMessageLikeEvent::RoomMessage(message),
-                        ) => {
-                            let original = message.as_original()?;
-                            Some(FfiSearchResult {
-                                event_id: original.event_id.to_string(),
-                                sender: original.sender.to_string(),
-                                body: original.content.msgtype.body().to_owned(),
-                                timestamp: original.origin_server_ts.get().into(),
-                            })
-                        }
-                        _ => None,
-                    })
-                    .collect())
-            })
-            .await
-            .expect("task was not aborted")
+        Ok(results.iter().map(FfiSearchResult::from).collect())
     }
 
     /// Set the given room's name and topic.
@@ -3706,75 +3619,17 @@ impl CoreApp {
         room_id: String,
         from: Option<String>,
     ) -> Result<FfiHistoryPage, CoreError> {
-        use ruma::{
-            api::client::filter::{RoomEventFilter, UrlFilter},
-            assign,
-            events::MessageLikeEventType,
-            uint,
-        };
+        let room = self.room(&room_id)?;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
-                // In an encrypted room the server cannot see the content, so
-                // the URL filter would drop everything.
-                let filter = if room.is_encrypted() {
-                    assign!(RoomEventFilter::default(), {
-                        types: Some(vec![
-                            MessageLikeEventType::RoomEncrypted.to_string(),
-                            MessageLikeEventType::RoomMessage.to_string(),
-                        ]),
-                    })
-                } else {
-                    assign!(RoomEventFilter::default(), {
-                        types: Some(vec![MessageLikeEventType::RoomMessage.to_string()]),
-                        url_filter: Some(UrlFilter::EventsWithUrl),
-                    })
-                };
-                let options = assign!(
-                    matrix_sdk::room::MessagesOptions::backward().from(from.as_deref()),
-                    {
-                        limit: uint!(20),
-                        filter,
-                    }
-                );
-
-                let response =
-                    room.matrix_room()
-                        .messages(options)
-                        .await
-                        .map_err(|messages_error| CoreError::Failed {
-                            msg: format!("Could not load the media history: {messages_error}"),
-                        })?;
-
-                let events = response
-                    .chunk
-                    .iter()
-                    .filter_map(|event| ffi_history_event(event.raw()))
-                    .collect();
-
-                Ok(FfiHistoryPage {
-                    events,
-                    next_token: response.end,
-                })
-            })
+        let page = room
+            .media_history_page(from.as_deref())
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)?;
+
+        Ok(FfiHistoryPage {
+            events: page.events.iter().map(FfiHistoryEvent::from).collect(),
+            next_token: page.end,
+        })
     }
 
     /// Log the session out and remove it from the app.
@@ -6191,87 +6046,94 @@ impl CoreApp {
 
     /// Fetch the media of a history event into a file, returning its path.
     pub async fn get_history_media(&self, room_id: String, event_id: String) -> Option<String> {
-        use ruma::events::room::message::MessageType;
-
         let session = self.first_ready_session()?;
+        let room = self.room(&room_id).ok()?;
+        let event_id = ruma::EventId::parse(&event_id).ok()?;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).ok()?;
-                let event_id = ruma::EventId::parse(&event_id).ok()?;
-                let room = session.room_list().get(&room_id)?;
-
-                let event = room.matrix_room().event(&event_id, None).await.ok()?;
-                let message = crate::matrix::original_message_event_from_raw(event.raw())?;
-                let source = match &message.content.msgtype {
-                    MessageType::Image(image) => image.source.clone(),
-                    MessageType::Video(video) => video.source.clone(),
-                    MessageType::Audio(audio) => audio.source.clone(),
-                    MessageType::File(file) => file.source.clone(),
-                    _ => return None,
-                };
-
-                let request = matrix_sdk::media::MediaRequestParameters {
-                    source,
-                    format: matrix_sdk::media::MediaFormat::File,
-                };
-
-                crate::matrix::media::get_media_file(&session.client(), request)
-                    .await
-                    .map(|path| path.to_string_lossy().into_owned())
-            })
+        // The application's history viewer keeps the event it listed; the
+        // FFI hands an ID across, so the event is fetched again — from the
+        // store when it is there.
+        let matrix_room = room.matrix_room().clone();
+        let event = RUNTIME
+            .spawn(async move { matrix_room.event(&event_id, None).await })
             .await
             .expect("task was not aborted")
+            .ok()?;
+        let message = crate::matrix::original_message_event_from_raw(event.raw())?;
+
+        crate::matrix::media::MediaMessage::from_message(&message.content.msgtype)?
+            .into_file(&session.client())
+            .await
+            .map(|path| path.to_string_lossy().into_owned())
     }
 }
 
-/// Build the FFI view of one media-history event, if the raw event is a
-/// media message.
-fn ffi_history_event(
-    raw: &ruma::serde::Raw<ruma::events::AnySyncTimelineEvent>,
-) -> Option<FfiHistoryEvent> {
-    use ruma::events::room::message::MessageType;
+impl From<crate::session::MediaHistoryKind> for FfiHistoryKind {
+    fn from(kind: crate::session::MediaHistoryKind) -> Self {
+        use crate::session::MediaHistoryKind;
 
-    let message = crate::matrix::original_message_event_from_raw(raw)?;
+        match kind {
+            MediaHistoryKind::Media => Self::Media,
+            MediaHistoryKind::File => Self::File,
+            MediaHistoryKind::Audio => Self::Audio,
+        }
+    }
+}
 
-    let (kind, body, mime_type, size) = match &message.content.msgtype {
-        MessageType::Image(image) => (
-            FfiHistoryKind::Media,
-            image.filename().to_owned(),
-            image.info.as_ref().and_then(|info| info.mimetype.clone()),
-            image.info.as_ref().and_then(|info| info.size),
-        ),
-        MessageType::Video(video) => (
-            FfiHistoryKind::Media,
-            video.filename().to_owned(),
-            video.info.as_ref().and_then(|info| info.mimetype.clone()),
-            video.info.as_ref().and_then(|info| info.size),
-        ),
-        MessageType::Audio(audio) => (
-            FfiHistoryKind::Audio,
-            audio.filename().to_owned(),
-            audio.info.as_ref().and_then(|info| info.mimetype.clone()),
-            audio.info.as_ref().and_then(|info| info.size),
-        ),
-        MessageType::File(file) => (
-            FfiHistoryKind::File,
-            file.filename().to_owned(),
-            file.info.as_ref().and_then(|info| info.mimetype.clone()),
-            file.info.as_ref().and_then(|info| info.size),
-        ),
-        _ => return None,
-    };
+/// The FFI view of one media-history event.
+impl From<&crate::session::MediaHistoryEvent> for FfiHistoryEvent {
+    fn from(event: &crate::session::MediaHistoryEvent) -> Self {
+        use ruma::events::room::message::MessageType;
 
-    Some(FfiHistoryEvent {
-        event_id: message.event_id.to_string(),
-        sender: message.sender.to_string(),
-        timestamp: message.origin_server_ts.0.into(),
-        kind,
-        body,
-        mime_type,
-        size: size.map(u64::from),
-        is_video: matches!(&message.content.msgtype, MessageType::Video(_)),
-    })
+        let message = event.event();
+
+        let (body, mime_type, size) = match &message.content.msgtype {
+            MessageType::Image(image) => (
+                image.filename().to_owned(),
+                image.info.as_ref().and_then(|info| info.mimetype.clone()),
+                image.info.as_ref().and_then(|info| info.size),
+            ),
+            MessageType::Video(video) => (
+                video.filename().to_owned(),
+                video.info.as_ref().and_then(|info| info.mimetype.clone()),
+                video.info.as_ref().and_then(|info| info.size),
+            ),
+            MessageType::Audio(audio) => (
+                audio.filename().to_owned(),
+                audio.info.as_ref().and_then(|info| info.mimetype.clone()),
+                audio.info.as_ref().and_then(|info| info.size),
+            ),
+            MessageType::File(file) => (
+                file.filename().to_owned(),
+                file.info.as_ref().and_then(|info| info.mimetype.clone()),
+                file.info.as_ref().and_then(|info| info.size),
+            ),
+            // The core only builds a history event for the four kinds above.
+            _ => (message.content.body().to_owned(), None, None),
+        };
+
+        Self {
+            event_id: message.event_id.to_string(),
+            sender: message.sender.to_string(),
+            timestamp: message.origin_server_ts.0.into(),
+            kind: event.kind().into(),
+            body,
+            mime_type,
+            size: size.map(u64::from),
+            is_video: matches!(&message.content.msgtype, MessageType::Video(_)),
+        }
+    }
+}
+
+impl From<&crate::session::SearchResult> for FfiSearchResult {
+    fn from(result: &crate::session::SearchResult) -> Self {
+        Self {
+            event_id: result.event_id().to_string(),
+            sender: result.sender_id().to_string(),
+            body: result.body(),
+            timestamp: result.timestamp().get().into(),
+        }
+    }
 }
 
 /// What kind of history page an event belongs on.
@@ -7396,6 +7258,25 @@ impl CoreApp {
         self.first_ready_session().ok_or_else(|| CoreError::Failed {
             msg: "No session".to_owned(),
         })
+    }
+
+    /// The room with the given ID in the active session, or the error the
+    /// FFI reports when the ID does not parse or the room is not known.
+    ///
+    /// The other half of the preamble Phase 3 collapses: "Invalid room ID"
+    /// was written out 39 times and "Unknown room" 34.
+    fn room(&self, room_id: &str) -> Result<crate::session::Room, CoreError> {
+        let session = self.session()?;
+        let room_id = ruma::RoomId::parse(room_id).map_err(|_| CoreError::Failed {
+            msg: "Invalid room ID".to_owned(),
+        })?;
+
+        session
+            .room_list()
+            .get(&room_id)
+            .ok_or_else(|| CoreError::Failed {
+                msg: "Unknown room".to_owned(),
+            })
     }
 }
 

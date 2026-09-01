@@ -18,7 +18,9 @@
 //! [`RoomDisplayName`] — "Empty Room (was X)" is the UI's sentence to make.
 
 mod category;
+mod media_history;
 mod member;
+mod search;
 mod timeline;
 
 use std::sync::{
@@ -49,7 +51,9 @@ use tracing::{debug, error, warn};
 
 pub use self::{
     category::{RoomCategory, RoomHighlight, TargetRoomCategory},
+    media_history::{MediaHistoryError, MediaHistoryEvent, MediaHistoryKind, MediaHistoryPage},
     member::{Member, MemberList, MemberRole, Membership},
+    search::{RoomSearch, SearchError, SearchResult},
     timeline::{ReceiptPosition, Timeline, TimelineFocusKind},
 };
 use crate::{
@@ -522,6 +526,19 @@ impl Room {
             .clone()
     }
 
+    /// One page of the media history of this room — its images, videos,
+    /// files and audio — going backwards from the given token, or from the
+    /// end of the room without one.
+    ///
+    /// The application's history viewers keep the token between pages;
+    /// the homeserver omits it from the last page.
+    pub async fn media_history_page(
+        &self,
+        from: Option<&str>,
+    ) -> Result<MediaHistoryPage, MediaHistoryError> {
+        media_history::load_page(&self.inner.matrix_room, self.is_encrypted(), from).await
+    }
+
     /// A timeline of the room's pinned events.
     ///
     /// A fresh timeline each call; the caller keeps it as long as the
@@ -733,7 +750,7 @@ impl RoomInner {
     }
 
     /// Set the category of this room.
-    fn set_category(&self, category: RoomCategory) {
+    fn set_category(self: &Arc<Self>, category: RoomCategory) {
         let old_category = self.category.get();
 
         if old_category == RoomCategory::Outdated || old_category == category {
@@ -744,10 +761,23 @@ impl RoomInner {
 
         // Check if the previous state was different.
         let room_state = self.matrix_room.state();
-        if !old_category.is_state(room_state) && self.is_room_info_initialized.get() {
-            debug!(room_id = %self.matrix_room.room_id(), ?room_state, "The state of the room changed");
-            // The member-list reload and typing setup attach here with
-            // their chunks.
+        if !old_category.is_state(room_state) {
+            if self.is_room_info_initialized.get() {
+                debug!(room_id = %self.matrix_room.room_id(), ?room_state, "The state of the room changed");
+            }
+
+            match room_state {
+                RoomState::Joined => {
+                    if let Some(members) = self.member_list.get() {
+                        // If we where invited or left before, the list was likely not completed
+                        // or might have changed.
+                        members.reload();
+                    }
+
+                    self.set_up_typing();
+                }
+                RoomState::Left | RoomState::Knocked | RoomState::Banned | RoomState::Invited => {}
+            }
         }
     }
 
@@ -1075,7 +1105,7 @@ impl RoomInner {
     }
 
     /// Set the successor of this room.
-    fn set_successor(&self, successor: &Room) {
+    fn set_successor(self: &Arc<Self>, successor: &Room) {
         *self.successor.lock().expect("mutex is not poisoned") =
             Some(Arc::downgrade(&successor.inner));
 
@@ -1283,10 +1313,9 @@ impl RoomInner {
 
     /// Start listening to typing events.
     ///
-    /// Like the application, only joined rooms are listened to; rooms
-    /// joined later get their subscription when their category changes —
-    /// which is not wired yet, so a freshly joined room's typing arrives
-    /// after a restart. Noted in the module docs.
+    /// Like the application, only joined rooms are listened to; a room
+    /// joined later gets its subscription from `set_category()` when its
+    /// state becomes joined.
     fn set_up_typing(self: &Arc<Self>) {
         if self
             .typing_guard
