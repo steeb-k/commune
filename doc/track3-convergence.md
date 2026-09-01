@@ -268,15 +268,16 @@ through, and only the core writing from its own worker is deferred, where
 there is no such deadline.
 
 **Phase 3 — decompose `facade.rs`.** The prerequisite that chunk 18 of
-`doc/kotlin-plan.md` does not name. `impl CoreApp` runs from line 744 to 6391 —
-135 methods, about 5,650 lines — and it holds permissions, server ACLs, the
+`doc/kotlin-plan.md` does not name. `impl CoreApp` runs from line 766 to 6397 —
+135 exported methods, 5,627 lines — and it holds permissions, server ACLs, the
 upgrade rules, call signalling, image packs, verification and device management
 _inside the UniFFI object_. The GTK application cannot consume that shape. Real
 logic moves down into core modules with typed arguments and real error enums;
 one-line SDK passthroughs (`kick_user`, `ban_user`, `set_member_power_level`,
 `upgrade_room`) stay passthroughs on both sides, because a shared wrapper for
 them would only be a second SDK. The Kotlin application is the regression suite
-for this phase.
+for this phase. **The decomposition is planned in full below — twelve commits
+against a module map**; read that section rather than this paragraph.
 
 **Phase 4 — the spine**, bottom-up, one module per session, each a revertible
 commit: `room_list/` and the category rules first, then `room/` itself, members
@@ -294,6 +295,177 @@ time so translations survive.
 They are updated with the commit that invalidates them, and from Phase 2 on
 every commit touches `src/`, so `client-comparison.html`, `spec-gaps.html` and
 `upstream-defects.html` take the round trip AGENTS.md describes.
+
+## Phase 3 in detail — the decomposition of `facade.rs`
+
+Read end to end on 1 September 2026, and the measurements below are that
+read rather than an estimate. The file is 8,565 lines. `#[uniffi::export]
+impl CoreApp` runs from line 766 to 6397 — **135 exported methods, 5,627
+lines of body** — and around it sit 56 `uniffi` records and enums, six
+`with_foreign` listener traits, 39 free functions, two private `impl
+CoreApp` blocks holding five helpers, `CallFlows`, `VerificationFlows`, and
+six unit tests over the call-party guard.
+
+Reading it whole is what this section is for. The plan below is the
+decomposition; the sessions that follow it are meant to be mechanical, and
+each one a revertible commit the way Phase 2's leaves were.
+
+### The three decisions that govern every commit
+
+**One. The listener traits invert into observables.** Six
+`#[uniffi::export(with_foreign)]` traits — `RoomListListener`,
+`MemberListListener`, `TimelineListener`, `TypingListener`,
+`VerificationListener`, `CallListener` — are the shape the GTK application
+cannot consume, because a `GObject` view-model wants a `Subscriber`, not a
+foreign object it must implement. Every `set_*_listener` in the file is the
+same body: spawn a task, `wait_for_ready_session`, subscribe to something
+the core already has, and push a full snapshot on each change, keeping an
+`AbortHandle` in a `Mutex` so a second registration can cancel the first.
+The core keeps the subscription; `facade.rs` keeps the task, the abort
+handle and the snapshotting, because snapshots-rather-than-diffs and
+one-room-at-a-time are FFI shortcuts, not core behaviour. This is the first
+commit, and it moves no methods: nothing else can be written against a
+moving target.
+
+**Two. `CoreError` is 279 rendered English sentences, and every one of them
+is the leaf-1 finding again.** The enum has a single variant,
+`Failed { msg: String }`. Forty distinct string literals and 86 `format!`
+sites feed it. `secret/linux.rs` cost fifteen translated sentences; this is
+that failure at fourteen times the scale, and it is not yet a shipped bug
+only because nothing but the Kotlin application — which has no translations
+— has ever read one. Each group below gets a real error enum whose variants
+carry values, and `facade.rs` gains the `impl From<…> for CoreError` that
+renders English as the Kotlin side's fallback. The GTK application gets its
+`UserFacingError` impls in Phase 5, with the msgids its existing catalogue
+already holds. **This also clears the nine `result_unit_err` clippy
+errors**: `Timeline`'s `Result<(), ()>` signatures and `with_room_event`'s
+are the same debt, and the Gates section leaves them for exactly this phase.
+
+**Three. The preamble is nine tenths of the boilerplate, and it collapses on
+contact.** `first_ready_session()` is called 102 times, `RUNTIME.spawn` 113
+times, and the same four-line `ok_or_else` prelude repeats: "No session" 66
+times, "Invalid room ID" 39, "Unknown room" 34. It exists because every
+method takes `String` and must parse and resolve it. Once the logic lives on
+`Session` and `Room` with typed arguments — `&RoomId`, `&UserId`,
+`OwnedEventId` — the facade does that resolution once, in a helper returning
+`Result<Room, CoreError>`, and each exported method becomes three lines.
+**The measured 5,627 should come out well under 2,000, and most of the
+reduction is this rather than cleverness.**
+
+### The module map
+
+Line counts are the summed spans of each group's methods inside
+`impl CoreApp`. The free functions and state machinery each group also owns
+are named in the notes below and are not in the count.
+
+| # | Group | Methods | Lines | Core destination | GTK authority | Error enum |
+|---|---|---|---|---|---|---|
+| 1 | Scaffolding | 0 | 0 | `session/observables.rs`, the error enums | — | — |
+| 2 | Safety, devices, account | 22 | 456 | `session/ignored_users.rs`, `session/user_sessions.rs`, `session/mod.rs` | `session/ignored_users.rs` (282), `session/user_sessions_list/` (987), `session/user.rs` (547) | `AccountError`, `DeviceError` |
+| 3 | Notifications and push | 7 | 246 | `session/notifications.rs` | `session/notifications/notifications_settings.rs` (762) | `NotificationError` |
+| 4 | Media fetch, search, members | 12 | 456 | `matrix/media.rs`, `session/room/search.rs`, `session/room/member.rs` | `session/room/search.rs` (767), `member_list.rs` (387), `typing_list.rs` (102), `room_details/history_viewer/` | `MediaError`, `SearchError` |
+| 5 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/space_children.rs` | `session_view/explore/` (1,287), `session/remote/space_children.rs` (521) | `JoinError`, `DirectoryError` |
+| 6 | Login and registration | 9 | 354 | `login.rs` | `login/` (3,290 over ten files) | `LoginError` |
+| 7 | Image packs, stickers, GIFs | 13 | 525 | `session/image_packs/` | `session/image_packs/` (1,323) | `PackError` |
+| 8 | Verification and security | 14 | 621 | `session/verification.rs`, `session/security.rs` | `session/verification/` (1,538), `session/security.rs` (491) | `VerificationError`, `SecurityError` |
+| 9 | Timeline and messaging | 22 | 862 | `session/room/timeline.rs`, `session/room/mod.rs` | `session/room/timeline/` (3,033), `room_history/message_toolbar/` | `TimelineError` |
+| 10 | Room settings — details, join rule, history, addresses | 9 | 559 | `session/room/join_rule.rs`, `session/room/aliases.rs` | `session/room/join_rule.rs` (442), `aliases.rs` (544), the `room_details/` subpages | `RoomSettingsError` |
+| 11 | Permissions, ACL, upgrade, moderation | 10 | 553 | `session/room/permissions.rs`, `server_acl.rs`, `upgrade.rs` | `session/room/permissions.rs` (733), `room_details/permissions/` (2,491), `upgrade_dialog/` (642) | `PermissionsError` |
+| 12 | Calls | 9 | 671 | `session/calls/` | `session/calls/call.rs` (1,607), `mod.rs` (989), `turn.rs` (360) | `CallError` |
+
+Group 2 also carries `session_settings` and its three setters, already
+one-line passthroughs over `commune_core::settings` since leaf 4, and they
+stay that way. Group 7 owns nine free functions — `collect_image_packs`,
+`collect_enabled_packs`, `stored_packs_room`, `ensure_packs_room`,
+`read_pack_content`, `send_pack_content`, `set_pack_enabled_inner`,
+`read_account_data`, `parse_sticker_pack` — about 400 further lines. Group 8
+owns `VerificationFlows` and `VerificationFlow`, about 200. Group 11 owns
+`read_state_content`, `can_send_state`, `allow_room_ids`, `send_canonical`,
+`build_upgrade_info` and `cmp_room_versions`, about 180, of which
+`build_upgrade_info` is the one piece of genuinely intricate rule-following
+in the file. Group 12 owns `CallFlow`, `CallFlows`, `InstalledHandlers`,
+`merge_outcome`, `sdp_has_video`, `first_stream_id`, `opaque_party_id`,
+`send_call_event`, two lifetime constants and the six tests — about 450 —
+and the largest single block anywhere in the file is `set_call_listener`'s
+seven event handlers, 365 lines inside one method.
+
+### What stays in `facade.rs`
+
+The 56 `uniffi` records and enums and their `From` conversions; the six
+listener traits and the tasks that feed them; `init_core`,
+`gif_search_available` and `decode_blurhash`, which are free functions
+already; the `ffi_*` item builders — `ffi_timeline_item`,
+`ffi_message_kind`, `ffi_state_change`, `ffi_reactions`, `ffi_in_reply_to`,
+`ffi_send_state`, `ffi_thread_replies`, `ffi_history_event` — because they
+are the FFI's own shape and nothing else consumes them; and the resolution
+helper the preamble collapses into. Per the ruling already in this
+document, `kick_user`, `ban_user`, `set_member_power_level` and
+`upgrade_room` stay one-line SDK passthroughs on both sides.
+
+### The order, and why
+
+Scaffolding first, because everything is written against it. Then group 2,
+the smallest group with real logic, to prove the pattern on something whose
+failure mode fits in one screen. Then outward by size, with two constraints
+overriding that order: **login comes before the groups that need a
+session**, because it is where the Android-only hardcoding below is fixed
+and a GTK login has to keep working through it; and **calls come last**,
+because the call-guard fix already in the ledger is still owed a live check,
+and putting the rewrite in front of that check would mean the harness could
+not tell which change it was measuring.
+
+Groups 10 and 11 are one subject split in two, because 1,112 lines is more
+than one session should take on and they divide cleanly: the first is state
+events read and written whole, the second is the power-level matrix and what
+it authorises.
+
+### What the read found
+
+**`join_room` and `create_direct_chat` reimplement logic the core already
+has.** `RoomList` exposes `join_by_id_or_alias`, `knock` and `direct_chat`;
+the facade uses none of the three and walks `room_list().snapshot()` by hand
+against the raw `Client` instead. This is the second-implementation problem
+appearing _inside_ the core, which is a sharper version of the thing this
+track exists to fix. Group 5 deletes the facade's copies.
+
+**`search_gifs` and `fetch_gif_preview` touch no session at all.** They are
+free functions wearing a method, and they become `#[uniffi::export]` free
+functions beside `gif_search_available` in group 7.
+
+**`forward_event` has no GTK precedent, and says so in its own doc
+comment** — the application's Forward menu item is a stub whose action is
+never registered. Under the mirror-the-GTK-sources rule that makes it a
+no-precedent design, to be flagged rather than lifted: group 9 keeps it,
+marks it, and leaves the question of what forwarding should send where it
+belongs.
+
+**The `sdp_stream_metadata_changed` receive handler is still missing**, as
+the ledger records. Group 12 is the commit that rewrites the handler set, so
+that is where adding it costs nothing extra — but the ledger assigns the
+verification to Phase 4 module 9, and it needs the two-device check that
+module carries. **Write the handler in group 12, verify it in Phase 4.**
+
+Four further findings are divergence-ledger rows, and are in the table
+below: the Android-only login redirect, the Android-only pusher strings, the
+upload-size refusal, and the packs room's name and topic. The last two are
+the leaf-1 rule again — a value crosses into the core, a sentence does not —
+and the packs room's name is the one of the four a user reads without
+looking for it, because it sits in the sidebar.
+
+### Gates for this phase
+
+Every commit takes the gates listed below, and Phase 3 adds one: **`cargo
+clippy -p commune-core --all-targets --features ffi -- -D warnings` must be
+green by the end of it.** It currently finds fifteen errors in `facade.rs` —
+`too_many_lines` and `struct_excessive_bools` — on top of the thirteen the
+Linux lint stops at. The core has never been held to `-D warnings`; the
+phase that rewrites the code all of it is in is the phase that settles that,
+and each commit should leave the count lower than it found it rather than
+deferring the whole thing to the last one.
+
+The Kotlin application is the regression suite. It is the only consumer of
+these 135 methods, so a group that compiles and whose Kotlin screens still
+work is a group that moved correctly.
 
 ## What never enters the core
 
@@ -321,6 +493,10 @@ recorded here as it is found, with the phase that closes it.
 | 31 Aug 2026 | `klipy.rs` | `Gif::title()`'s fallback for a GIF the API gave no title for was `gettext("GIF")` and became a bare `"GIF"`. It is the fallback body of the event, so it is a sentence, and it goes into the room — it is what a client with no image support shows and what a screen reader announces. **Closed 31 Aug** with leaf 2: `Gif::title()` in `src/utils/klipy.rs` shadows the core's method rather than reaching it through `Deref`, and `to_selection()` overwrites the title the core put in, because that is the one that becomes the event body. | Done |
 | 31 Aug 2026 | `secret/linux.rs`, `secret/macos.rs` | **The label on the stored credential lost its translation.** It is the one string either variant writes that a person reads outside the application — Seahorse and Keychain Access both show it — and the application has always run it through `gettext_f`. The core hard-coded the English. It cannot do otherwise, so **closed 31 Aug** from the other end: `CoreConfig` carries the sentence as a template and the core only substitutes `{user_id}` into it. The application passes its translated one at startup; the Kotlin variant passes `None` and gets the English, which is what it wants until it has translations of its own. | Done |
 | 31 Aug 2026 | `facade.rs` candidates and negotiate handlers | Both drop **every** event whose sender is our own user. The application drops only its own party's echo, because a party is a user _and_ a device: another of our own devices answering our invite is a legitimate remote party. Kept as-is deliberately — the broader check is documented in the core as the fix for a real bug where the echo of our own answer ended the call, and narrowing it wants a two-device test rather than a guess. | Phase 4, module 9 |
+| 1 Sep 2026 | `facade.rs` login flows | **The OAuth and SSO redirect is Android's, hardcoded.** `ANDROID_REDIRECT_URI` is `io.github.steeb-k.commune:/oauth2redirect`, and `oauth_client_registration_data()` builds a fixed native-application registration around it. The desktop application does not use a custom scheme at all: `src/login/local_server.rs` runs a loopback HTTP server and registers _its_ address, because a desktop browser has nowhere to send an app scheme. A GTK login through this core would open an authorization URL the browser could never come back from. The redirect and the registration are embedder facts, like `credential_label` and `klipy_api_key` before them, and belong in `CoreConfig`. | Phase 3, group 6 |
+| 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **The pusher describes an Android device, in English, whatever the embedder is.** `app_display_name` is `"Commune"` and `device_display_name` is `"Commune on Android"`, both literals; the `LEGACY_APP_ID` deletion that runs first cleans up after a specific Android debug build. The device name is what a user sees in another client's session list when they audit what is pushing to them, so a desktop session announcing itself as Android is wrong in the one place the string is read. Embedder values, `CoreConfig` again — and the legacy cleanup is Android's alone and should say so. | Phase 3, group 3 |
+| 1 Sep 2026 | `facade.rs`, `check_upload_size` | **The upload-size refusal is a rendered English sentence, with a private byte formatter.** The core builds `"This file is too large, the homeserver takes up to {size}"` and formats the number with its own `format_size`. The application says the same thing at `src/session_view/room_history/message_toolbar/mod.rs:1310` as a `gettext_f` over `glib::format_size`. It is the most commonly hit error in the file — every oversized attachment, avatar and pack image goes through it — and it is a sentence, so it must not cross: the core owes a value (`UploadTooLarge { max_bytes }`) and the two embedders own the wording. The two formatters agree on decimal units, so the rendered text is identical today; only the translation is lost. | Phase 3, group 9 |
+| 1 Sep 2026 | `facade.rs`, `ensure_packs_room` | **The packs room is created with an English name and topic.** `"Sticker Packs"` and `"The sticker and emoticon packs that you created. Invite someone here to share them."` are literals; `src/session/image_packs/mod.rs:627` wraps both in `gettext`. This one is worse than a lost error message, because a room name is not an error: it is written into `m.room.name` on the server, it shows in the sidebar next to the conversations, and it is _permanent_ — a user whose packs room was created by the Kotlin build keeps the English name after they translate their client, because nothing re-creates the room. Embedder-supplied strings, and the room the core makes should carry whichever the embedder passed. | Phase 3, group 7 |
 
 ## Gates
 
