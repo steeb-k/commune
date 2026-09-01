@@ -131,6 +131,14 @@ impl From<crate::session::DeviceError> for CoreError {
     }
 }
 
+impl From<crate::session::AccountError> for CoreError {
+    fn from(error: crate::session::AccountError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 /// A room's display name, semantically: the Empty variants are the UI's
 /// sentences to make.
 #[derive(uniffi::Enum)]
@@ -3829,46 +3837,31 @@ impl CoreApp {
     pub async fn account_profile(&self) -> Option<FfiProfile> {
         let session = self.first_ready_session()?;
 
+        // The session keeps the profile as an observable, refreshed from
+        // the homeserver and cached on disk. Fetching separately here left
+        // two answers to one question inside the same core.
+        let refresh = session.clone();
         RUNTIME
-            .spawn(async move {
-                let profile = session.client().account().fetch_user_profile().await.ok()?;
-                Some(FfiProfile {
-                    display_name: profile
-                        .get_static::<ruma::api::client::profile::DisplayName>()
-                        .ok()
-                        .flatten(),
-                    avatar_url: profile
-                        .get_static::<ruma::api::client::profile::AvatarUrl>()
-                        .ok()
-                        .flatten()
-                        .map(|url| url.to_string()),
-                })
-            })
+            .spawn(async move { refresh.refresh_profile().await })
             .await
-            .expect("task was not aborted")
+            .expect("task was not aborted");
+
+        let profile = session.profile();
+        Some(FfiProfile {
+            display_name: profile.display_name,
+            avatar_url: profile.avatar_url.map(|url| url.to_string()),
+        })
     }
 
     /// Change the account's display name.
     pub async fn set_display_name(&self, name: String) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
 
         RUNTIME
-            .spawn(async move {
-                session
-                    .client()
-                    .account()
-                    .set_display_name(Some(name.trim()))
-                    .await
-                    .map_err(|profile_error| CoreError::Failed {
-                        msg: format!("Could not change the display name: {profile_error}"),
-                    })
-            })
+            .spawn(async move { session.set_display_name(name.trim()).await })
             .await
             .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// Upload the file at the given path as the account's avatar.
@@ -3877,31 +3870,18 @@ impl CoreApp {
         file_path: String,
         mime_type: String,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
 
         RUNTIME
             .spawn(async move {
-                let bytes = std::fs::read(&file_path).map_err(|read_error| CoreError::Failed {
-                    msg: format!("Could not read the image: {read_error}"),
-                })?;
+                let data = std::fs::read(&file_path)
+                    .map_err(|_| crate::session::AccountError::UnreadableImage)?;
                 let mime = mime_type.parse::<mime::Mime>().unwrap_or(mime::IMAGE_JPEG);
-
-                session
-                    .client()
-                    .account()
-                    .upload_avatar(&mime, bytes)
-                    .await
-                    .map(|_| ())
-                    .map_err(|avatar_error| CoreError::Failed {
-                        msg: format!("Could not upload the avatar: {avatar_error}"),
-                    })
+                session.set_avatar(&mime, data).await
             })
             .await
             .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// Invite the given user to the given room.
