@@ -10,7 +10,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use eyeball::SharedObservable;
+use eyeball::{SharedObservable, Subscriber};
 use eyeball_im::{ObservableVector, VectorDiff};
 use futures_util::Stream;
 use matrix_sdk::{RoomMemberships, room::RoomMember};
@@ -23,7 +23,7 @@ use ruma::{
 };
 use tracing::error;
 
-use crate::{spawn_tokio, utils::LoadingState};
+use crate::{RUNTIME, spawn_tokio, utils::LoadingState};
 
 /// The minimum power level of an administrator.
 pub const POWER_LEVEL_ADMIN: i64 = 100;
@@ -251,6 +251,45 @@ impl MemberList {
     #[must_use]
     pub fn state(&self) -> LoadingState {
         self.inner.state.get()
+    }
+
+    /// Subscribe to the loading state of the list.
+    pub fn subscribe_state(&self) -> Subscriber<LoadingState> {
+        self.inner.state.subscribe()
+    }
+
+    /// Wait until the list has loaded, one way or the other.
+    ///
+    /// Returns once the state is `Ready` or `Error`: what the list holds
+    /// then is what the application presents, an error included — a
+    /// server that will not list the members leaves the store's members
+    /// in place. The application binds to the state; a caller that wants
+    /// the members as a value waits here rather than polling.
+    pub async fn loaded(&self) {
+        let mut state = self.inner.state.subscribe();
+
+        loop {
+            if matches!(state.get(), LoadingState::Ready | LoadingState::Error) {
+                return;
+            }
+            if state.next().await.is_none() {
+                return;
+            }
+        }
+    }
+
+    /// Reload this list.
+    ///
+    /// The application does this when the room becomes joined: if we were
+    /// invited or left before, the list was likely not completed or might
+    /// have changed.
+    pub fn reload(&self) {
+        self.inner.state.set_if_not_eq(LoadingState::Initial);
+
+        let list = self.clone();
+        RUNTIME.spawn(async move {
+            list.load().await;
+        });
     }
 
     /// Load the list: what the store has first, then the server if the

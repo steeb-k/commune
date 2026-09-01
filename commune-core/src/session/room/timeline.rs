@@ -34,7 +34,11 @@ use ruma::{
 };
 use tracing::error;
 
-use crate::{matrix::ext_traits::TimelineItemContentExt, spawn_tokio, utils::LoadingState};
+use crate::{
+    matrix::{ext_traits::TimelineItemContentExt, media::MediaMessage},
+    spawn_tokio,
+    utils::LoadingState,
+};
 
 /// The timeline of a room.
 ///
@@ -109,6 +113,30 @@ impl Timeline {
     #[must_use]
     pub fn has_reached_start(&self) -> bool {
         self.inner.has_reached_start.get()
+    }
+
+    /// The media message of the item with the given unique ID, if it is
+    /// one.
+    ///
+    /// The item is looked up in this timeline so that an encrypted source
+    /// comes with its keys — the application's `Event::media_message()`,
+    /// reached by ID because that is what crosses the FFI.
+    pub async fn media_message(&self, unique_id: &str) -> Option<MediaMessage> {
+        use matrix_sdk_ui::timeline::{MsgLikeKind, TimelineItemContent};
+
+        let matrix_timeline = self.matrix_timeline().await?;
+        let items = matrix_timeline.items().await;
+        let item = items.iter().find(|item| item.unique_id().0 == unique_id)?;
+        let event = item.as_event()?;
+
+        let TimelineItemContent::MsgLike(msg_like) = event.content() else {
+            return None;
+        };
+        match &msg_like.kind {
+            MsgLikeKind::Message(message) => MediaMessage::from_message(message.msgtype()),
+            MsgLikeKind::Sticker(sticker) => Some(sticker.content().clone().into()),
+            _ => None,
+        }
     }
 
     /// The underlying SDK timeline, built on first use.

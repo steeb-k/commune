@@ -365,7 +365,7 @@ are named in the notes below and are not in the count.
 | 3 | The account itself | 16 | 228 | `session/mod.rs` | `account_settings/general_page/` (755) | `AccountError` |
 | 4 | Push registration | 2 | 90 | `session/notifications.rs` | `utils/android_push.rs` (700) | `PushError` |
 | — | The push rules | 5 | 156 | stay in `facade.rs` — one-line SDK passthroughs | `notifications_settings.rs` (762) | — |
-| 5 | Media fetch, search, members | 12 | 456 | `matrix/media.rs`, `session/room/search.rs`, `session/room/member.rs` | `session/room/search.rs` (767), `member_list.rs` (387), `typing_list.rs` (102), `room_details/history_viewer/` | `MediaError`, `SearchError` |
+| 5 | Media fetch, search, members | 12 | 456 | `matrix/media.rs`, `session/room/search.rs`, `session/room/media_history.rs`, `session/room/member.rs` | `session/room/search.rs` (767), `member_list.rs` (387), `typing_list.rs` (102), `room_details/history_viewer/timeline.rs` (260) and `event.rs` (149), `utils/matrix/media_message.rs` (515) | `SearchError`, `MediaHistoryError` |
 | 6 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/space_children.rs` | `session_view/explore/` (1,287), `session/remote/space_children.rs` (521) | `JoinError`, `DirectoryError` |
 | 7 | Login and registration | 9 | 354 | `login.rs` | `login/` (3,290 over ten files) | `LoginError` |
 | 8 | Image packs, stickers, GIFs | 13 | 525 | `session/image_packs/` | `session/image_packs/` (1,323) | `PackError` |
@@ -375,17 +375,17 @@ are named in the notes below and are not in the count.
 | 12 | Permissions, ACL, upgrade, moderation | 10 | 553 | `session/room/permissions.rs`, `server_acl.rs`, `upgrade.rs` | `session/room/permissions.rs` (733), `room_details/permissions/` (2,491), `upgrade_dialog/` (642) | `PermissionsError` |
 | 13 | Calls | 9 | 671 | `session/calls/` | `session/calls/call.rs` (1,607), `mod.rs` (989), `turn.rs` (360) | `CallError` |
 
-Group 2 also carries `session_settings` and its three setters, already
+Group 3 also carries `session_settings` and its three setters, already
 one-line passthroughs over `commune_core::settings` since leaf 4, and they
-stay that way. Group 7 owns nine free functions — `collect_image_packs`,
+stay that way. Group 8 owns nine free functions — `collect_image_packs`,
 `collect_enabled_packs`, `stored_packs_room`, `ensure_packs_room`,
 `read_pack_content`, `send_pack_content`, `set_pack_enabled_inner`,
-`read_account_data`, `parse_sticker_pack` — about 400 further lines. Group 8
-owns `VerificationFlows` and `VerificationFlow`, about 200. Group 11 owns
+`read_account_data`, `parse_sticker_pack` — about 400 further lines. Group 9
+owns `VerificationFlows` and `VerificationFlow`, about 200. Group 12 owns
 `read_state_content`, `can_send_state`, `allow_room_ids`, `send_canonical`,
 `build_upgrade_info` and `cmp_room_versions`, about 180, of which
 `build_upgrade_info` is the one piece of genuinely intricate rule-following
-in the file. Group 12 owns `CallFlow`, `CallFlows`, `InstalledHandlers`,
+in the file. Group 13 owns `CallFlow`, `CallFlows`, `InstalledHandlers`,
 `merge_outcome`, `sdp_has_video`, `first_stream_id`, `opaque_party_id`,
 `send_call_event`, two lifetime constants and the six tests — about 450 —
 and the largest single block anywhere in the file is `set_call_listener`'s
@@ -398,9 +398,10 @@ listener traits and the tasks that feed them; `init_core`,
 `gif_search_available` and `decode_blurhash`, which are free functions
 already; the `ffi_*` item builders — `ffi_timeline_item`,
 `ffi_message_kind`, `ffi_state_change`, `ffi_reactions`, `ffi_in_reply_to`,
-`ffi_send_state`, `ffi_thread_replies`, `ffi_history_event` — because they
-are the FFI's own shape and nothing else consumes them; and the resolution
-helper the preamble collapses into. Per the ruling already in this
+`ffi_send_state`, `ffi_thread_replies`, and the `From` that replaced
+`ffi_history_event` — because they are the FFI's own shape and nothing else
+consumes them; and the resolution helpers the preamble collapses into,
+`session()` and `room()`. Per the ruling already in this
 document, `kick_user`, `ban_user`, `set_member_power_level` and
 `upgrade_room` stay one-line SDK passthroughs on both sides.
 
@@ -417,7 +418,7 @@ because the call-guard fix already in the ledger is still owed a live check,
 and putting the rewrite in front of that check would mean the harness could
 not tell which change it was measuring.
 
-Groups 10 and 11 are one subject split in two, because 1,112 lines is more
+Groups 11 and 12 are one subject split in two, because 1,112 lines is more
 than one session should take on and they divide cleanly: the first is state
 events read and written whole, the second is the power-level matrix and what
 it authorises.
@@ -429,24 +430,29 @@ has.** `RoomList` exposes `join_by_id_or_alias`, `knock` and `direct_chat`;
 the facade uses none of the three and walks `room_list().snapshot()` by hand
 against the raw `Client` instead. This is the second-implementation problem
 appearing _inside_ the core, which is a sharper version of the thing this
-track exists to fix. Group 5 deletes the facade's copies.
+track exists to fix. Group 6 deletes the facade's copies.
 
 **`search_gifs` and `fetch_gif_preview` touch no session at all.** They are
 free functions wearing a method, and they become `#[uniffi::export]` free
-functions beside `gif_search_available` in group 7.
+functions beside `gif_search_available` in group 8.
 
 **`forward_event` has no GTK precedent, and says so in its own doc
 comment** — the application's Forward menu item is a stub whose action is
 never registered. Under the mirror-the-GTK-sources rule that makes it a
-no-precedent design, to be flagged rather than lifted: group 9 keeps it,
+no-precedent design, to be flagged rather than lifted: group 10 keeps it,
 marks it, and leaves the question of what forwarding should send where it
 belongs.
 
 **The `sdp_stream_metadata_changed` receive handler is still missing**, as
-the ledger records. Group 12 is the commit that rewrites the handler set, so
+the ledger records. Group 13 is the commit that rewrites the handler set, so
 that is where adding it costs nothing extra — but the ledger assigns the
 verification to Phase 4 module 9, and it needs the two-device check that
-module carries. **Write the handler in group 12, verify it in Phase 4.**
+module carries. **Write the handler in group 13, verify it in Phase 4.**
+
+(The group numbers in this section and the notes under the table were one
+lower than the table's until commit 5 — an earlier numbering that survived
+the table being renumbered. They now match the table, which is the
+authority.)
 
 Four further findings are divergence-ledger rows, and are in the table
 below: the Android-only login redirect, the Android-only pusher strings, the
@@ -699,6 +705,123 @@ pusher still announces itself as `Commune on Android` whatever the embedder
 is, and `lang` is still `"en"` — which `EventIdOnly` makes moot, since a
 homeserver sending only an event ID has no text to localise.
 
+### Commit 5 — media, search and members, and the search that found nothing
+
+**Of the twelve, five stay and seven move — and the plan's table needed a
+column corrected, not a row.** `set_member_list_listener`,
+`set_typing_listener` and `clear_member_list_listener` are decision One's
+tasks and abort handles, and stay by that decision; `send_typing` is a
+one-line passthrough over `Room::send_typing_notification`, which already
+carries the settings check; `get_avatar`, `get_room_avatar` and
+`get_mxc_media` are one-line passthroughs over `matrix::media`, which was
+already core. The table's `MediaError` does not exist and should not: the
+fetch returns `Option` on both sides, as `get_media_file` did before this
+phase, and inventing an enum for a `None` would be churn. What the table
+was missing is the media history's own module and its authority, and the
+media message's — both are in the row now.
+
+**Search in an encrypted room found nothing, and never could have.** The
+facade sent every search to `/search`, and a homeserver cannot search what
+it cannot read: for an encrypted room the answer is an empty page, every
+time, with no error. `src/session/room/search.rs` chooses its backend by
+`is_encrypted()` — the server for a room it can read, the local search
+index for one it cannot — and sanitises the term for the index's query
+parser, because the parser returns an error rather than nothing for a
+query a person could reasonably type. `commune-core/src/session/room/search.rs`
+is that object, headless: the two backends, the term sanitiser with the
+application's four tests, the recency sort the index needs because it ranks
+by relevance, the paging, and the generation counter that drops a response
+arriving after the term changed. What stayed in the application is the
+abort handle and the `gio::ListStore`. `reindex()` moved too — it feeds the
+index from the event cache after the fact, which is core logic with no FFI
+consumer yet.
+
+**The results were deserialised without the application's helper, and the
+helper does two things the facade did not.** `original_message_event_from_raw`
+drops an edit event — an `m.room.message` carrying `m.new_content`, whose
+body reads `* corrected text` — and applies a bundled edit to the original,
+so a result shows the message as it now reads. The facade matched on
+`AnySyncMessageLikeEvent::RoomMessage` directly, so an edit showed up as a
+result of its own and the original showed its first wording. The core has
+the helper and the search now uses it for both backends, as the application
+does.
+
+**The page is wider on the FFI, on purpose.** The application pages twenty
+results and asks for more as the list scrolls; nothing on the Kotlin side
+asks for a second page, so the facade asked for thirty in one go, and it
+still does — `RoomSearch::with_page_size` takes it as a parameter and the
+facade says why. Narrowing it to the application's twenty would have shown
+the Kotlin user a third less for no gain. Paging and `reindex()` are not on
+the FFI: that is a feature, and the Kotlin search screen has no scroll-to-load
+to call it from.
+
+**A room joined after startup never got its typing, and its member list was
+never reloaded.** The application's `set_category` re-runs `set_up_typing()`
+and `members.reload()` the moment the room's state becomes joined, because
+the list an invite had was likely not complete. The core's own comment said
+the wiring was not done — _"a freshly joined room's typing arrives after a
+restart"_ — and it is now: `set_category` takes `&Arc<Self>` and does what
+the application's does.
+
+**`room_members` polled.** Fifty sleeps of two hundred milliseconds,
+checking `state()` each time, was the facade's way of waiting for the load
+the first `member_list()` starts. The list's state is an observable;
+`MemberList::loaded()` subscribes to it and returns at `Ready` or `Error`,
+which is also the more useful answer on error: the application presents what
+the store gave it when the server would not list the members, and so does
+this, immediately rather than ten seconds later.
+
+**`get_timeline_media` and `get_history_media` extracted the source by
+hand, four message types each, and the timeline one also stickers.** The
+application's `MediaMessage` (`src/utils/matrix/media_message.rs`) is the
+authority: five variants, `from_message`, and a fetch through the SDK's
+`MediaEventContent`, which is where an encrypted source gets its keys.
+`matrix::media::MediaMessage` is the portable half — the enum, the source
+and `into_file()`; what stayed behind is `display_name()`, `filename()` and
+`save_to_file()`, which are sentences and a dialog. `Timeline::media_message`
+finds the item by ID, because that is what crosses the FFI, and keeps the
+sticker arm: the application's `Event::media_message()` has none, but the
+enum does, and the Kotlin sticker bubble is a consumer.
+
+**The media history is the same request on both sides, and the difference
+is in what the application does with the last page.** The filter, the page
+size and the classification into media, file and audio were already a faithful
+transcription. `HistoryViewerTimeline::load_inner` appends a chunk only when
+the response carries an `end` token; a final chunk that arrives without one
+is dropped with `has_reached_start` set. The specification lets a homeserver
+omit `end` on the last page with events in it, so the application can lose
+the oldest page of a room's media. The facade returned the chunk and the
+token together, and the Kotlin viewer appends before it checks the token,
+which is the better behaviour. The core does what the facade did —
+`Room::media_history_page` hands back both — and the choice of what to do
+with a final chunk is the bridge's, recorded in the ledger so the GTK
+migration meets it knowingly rather than by transcription.
+
+**Three gaps found and not filled**, by the same ruling as commit 3:
+
+* **The core's `Member` has no `latest_activity`.** The application's
+  `MemberList::load` walks the live timeline after loading and stamps each
+  member with the timestamp of their last unread-worthy event, which is what
+  its members page sorts by. `FfiMember` has no such field, so nothing
+  consumes it yet; it is a field to add with the sort that wants it.
+* **The application seeds the list with the own member and the direct
+  member before loading.** The core's list is empty until the store answers.
+  Nothing on the Kotlin side reads the list before `loaded()` returns.
+* **The application's `Room` cannot search yet.** `RoomSearch` is core; the
+  GTK `GObject` that wraps it, with its abort handle and list store, is Phase
+  4's.
+
+**The FFI surface is unchanged for the fifth time, and the bindings diff
+caught something the compiler cannot.** `uniffi` copies a method's doc
+comment into the generated Kotlin _and folds it into the method's
+checksum_, so rewording the doc comment on `search_room` and
+`get_timeline_media` moved two checksums and the bindings came back
+different with every signature untouched. The doc comments are restored
+verbatim — one now incomplete rather than wrong, which its body says —
+and the explanation lives in an ordinary comment inside the method. The
+rule for the rest of the phase: **an exported method's doc comment is
+part of the surface; say what changed in the body, not above it.**
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -725,16 +848,20 @@ recorded here as it is found, with the phase that closes it.
 | 31 Aug 2026 | `klipy.rs` | `Gif::title()`'s fallback for a GIF the API gave no title for was `gettext("GIF")` and became a bare `"GIF"`. It is the fallback body of the event, so it is a sentence, and it goes into the room — it is what a client with no image support shows and what a screen reader announces. **Closed 31 Aug** with leaf 2: `Gif::title()` in `src/utils/klipy.rs` shadows the core's method rather than reaching it through `Deref`, and `to_selection()` overwrites the title the core put in, because that is the one that becomes the event body. | Done |
 | 31 Aug 2026 | `secret/linux.rs`, `secret/macos.rs` | **The label on the stored credential lost its translation.** It is the one string either variant writes that a person reads outside the application — Seahorse and Keychain Access both show it — and the application has always run it through `gettext_f`. The core hard-coded the English. It cannot do otherwise, so **closed 31 Aug** from the other end: `CoreConfig` carries the sentence as a template and the core only substitutes `{user_id}` into it. The application passes its translated one at startup; the Kotlin variant passes `None` and gets the English, which is what it wants until it has translations of its own. | Done |
 | 31 Aug 2026 | `facade.rs` candidates and negotiate handlers | Both drop **every** event whose sender is our own user. The application drops only its own party's echo, because a party is a user _and_ a device: another of our own devices answering our invite is a legitimate remote party. Kept as-is deliberately — the broader check is documented in the core as the fix for a real bug where the echo of our own answer ended the call, and narrowing it wants a two-device test rather than a guess. | Phase 4, module 9 |
-| 1 Sep 2026 | `facade.rs` login flows | **The OAuth and SSO redirect is Android's, hardcoded.** `ANDROID_REDIRECT_URI` is `io.github.steeb-k.commune:/oauth2redirect`, and `oauth_client_registration_data()` builds a fixed native-application registration around it. The desktop application does not use a custom scheme at all: `src/login/local_server.rs` runs a loopback HTTP server and registers _its_ address, because a desktop browser has nowhere to send an app scheme. A GTK login through this core would open an authorization URL the browser could never come back from. The redirect and the registration are embedder facts, like `credential_label` and `klipy_api_key` before them, and belong in `CoreConfig`. | Phase 3, group 6 |
-| 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **The pusher describes an Android device, in English, whatever the embedder is.** `app_display_name` is `"Commune"` and `device_display_name` is `"Commune on Android"`, both literals; the `LEGACY_APP_ID` deletion that runs first cleans up after a specific Android debug build. The device name is what a user sees in another client's session list when they audit what is pushing to them, so a desktop session announcing itself as Android is wrong in the one place the string is read. Embedder values, `CoreConfig` again — and the legacy cleanup is Android's alone and should say so. | Phase 3, group 3 |
-| 1 Sep 2026 | `facade.rs`, `check_upload_size` | **The upload-size refusal is a rendered English sentence, with a private byte formatter.** The core builds `"This file is too large, the homeserver takes up to {size}"` and formats the number with its own `format_size`. The application says the same thing at `src/session_view/room_history/message_toolbar/mod.rs:1310` as a `gettext_f` over `glib::format_size`. It is the most commonly hit error in the file — every oversized attachment, avatar and pack image goes through it — and it is a sentence, so it must not cross: the core owes a value (`UploadTooLarge { max_bytes }`) and the two embedders own the wording. The two formatters agree on decimal units, so the rendered text is identical today; only the translation is lost. | Phase 3, group 9 |
-| 1 Sep 2026 | `facade.rs`, `ensure_packs_room` | **The packs room is created with an English name and topic.** `"Sticker Packs"` and `"The sticker and emoticon packs that you created. Invite someone here to share them."` are literals; `src/session/image_packs/mod.rs:627` wraps both in `gettext`. This one is worse than a lost error message, because a room name is not an error: it is written into `m.room.name` on the server, it shows in the sidebar next to the conversations, and it is _permanent_ — a user whose packs room was created by the Kotlin build keeps the English name after they translate their client, because nothing re-creates the room. Embedder-supplied strings, and the room the core makes should carry whichever the embedder passed. | Phase 3, group 7 |
+| 1 Sep 2026 | `facade.rs` login flows | **The OAuth and SSO redirect is Android's, hardcoded.** `ANDROID_REDIRECT_URI` is `io.github.steeb-k.commune:/oauth2redirect`, and `oauth_client_registration_data()` builds a fixed native-application registration around it. The desktop application does not use a custom scheme at all: `src/login/local_server.rs` runs a loopback HTTP server and registers _its_ address, because a desktop browser has nowhere to send an app scheme. A GTK login through this core would open an authorization URL the browser could never come back from. The redirect and the registration are embedder facts, like `credential_label` and `klipy_api_key` before them, and belong in `CoreConfig`. | Phase 3, group 7 |
+| 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **The pusher describes an Android device, in English, whatever the embedder is.** `app_display_name` is `"Commune"` and `device_display_name` is `"Commune on Android"`, both literals; the `LEGACY_APP_ID` deletion that runs first cleans up after a specific Android debug build. The device name is what a user sees in another client's session list when they audit what is pushing to them, so a desktop session announcing itself as Android is wrong in the one place the string is read. Embedder values, `CoreConfig` again — and the legacy cleanup is Android's alone and should say so. Commit 4 moved the pusher and left these as they were; they go into `CoreConfig` with the login redirect, which is the same mechanism. | Phase 3, group 7 |
+| 1 Sep 2026 | `facade.rs`, `check_upload_size` | **The upload-size refusal is a rendered English sentence, with a private byte formatter.** The core builds `"This file is too large, the homeserver takes up to {size}"` and formats the number with its own `format_size`. The application says the same thing at `src/session_view/room_history/message_toolbar/mod.rs:1310` as a `gettext_f` over `glib::format_size`. It is the most commonly hit error in the file — every oversized attachment, avatar and pack image goes through it — and it is a sentence, so it must not cross: the core owes a value (`UploadTooLarge { max_bytes }`) and the two embedders own the wording. The two formatters agree on decimal units, so the rendered text is identical today; only the translation is lost. | Phase 3, group 10 |
+| 1 Sep 2026 | `facade.rs`, `ensure_packs_room` | **The packs room is created with an English name and topic.** `"Sticker Packs"` and `"The sticker and emoticon packs that you created. Invite someone here to share them."` are literals; `src/session/image_packs/mod.rs:627` wraps both in `gettext`. This one is worse than a lost error message, because a room name is not an error: it is written into `m.room.name` on the server, it shows in the sidebar next to the conversations, and it is _permanent_ — a user whose packs room was created by the Kotlin build keeps the English name after they translate their client, because nothing re-creates the room. Embedder-supplied strings, and the room the core makes should carry whichever the embedder passed. | Phase 3, group 8 |
 | 1 Sep 2026 | `facade.rs` ignored users | **The core never followed the list, and never refused a redundant request.** `src/session/ignored_users.rs` subscribes to the SDK's ignore-list changes and re-reads `m.ignored_user_list` whenever one arrives; the facade read the account data once per call and had no subscription at all, so ignoring somebody from the desktop never reached a phone with the Ignored Users screen open — it would sit on a stale list until it was closed and reopened. The application also guards both directions: adding a user already on the list, or removing one that is not, is a warning and a no-op rather than a round trip the server will ignore. Neither guard existed in the core. **Closed 1 Sep** with Phase 3's first commit, which also found the thing the move would have broken: `SessionList::active_session()` returns a session before `prepare()` has run, so a cache-only read would answer "nobody" during startup where the old fetch answered correctly — `ensure_loaded()` keeps that guarantee. | Done |
 | 1 Sep 2026 | `facade.rs`, `list_devices` | **Four divergences in one method, and the worst is what it does when something is wrong.** `src/session/user_sessions_list/` merges `/devices` with the crypto store, so a device known to one source and not the other is still listed; the facade walked `/devices` alone. The application lists what it has when one source fails and errors only when both do; **the facade returned an error the moment `/devices` failed, which is exactly the case a person opens the sessions screen in.** The application follows `devices_stream()` — taking an _empty_ update, because that is how a disconnection arrives without saying whose — and the facade fetched once per call. And the application breaks a sort tie on device ID where the facade had none, so devices the server never dated came back in a different order on every read. **Closed 1 Sep** in `session/user_sessions.rs`, with four tests over the ordering. | Done |
 | 1 Sep 2026 | `facade.rs`, `sign_out_device` | **The core could not tell "wrong password" from "this homeserver wants something else".** Signing a device out goes through user-interactive authentication, which the application answers with an `AuthDialog` that speaks several stages; the facade retried once with a password whatever the homeserver had asked for, and reported the resulting failure as an ordinary error. On a homeserver whose sign-out stage is not `m.login.password` — an OAuth 2.0 one, for instance — that is a request that can never succeed and a message that never says so. **Closed 1 Sep**: the first attempt reads the offered flows, and `DeviceError` separates `NeedsPassword` from `UnsupportedAuth`. The GTK application hands the first to its dialog when the account settings migrate; until then no embedder is worse off, and the Kotlin one stops showing a sentence that is not true. | Done |
 | 1 Sep 2026 | `facade.rs` account profile | **A profile change never reached the profile, and the application's source says in a comment why that is not academic.** `src/account_settings/general_page/mod.rs` updates its own copy of the display name and the avatar after a successful change, because _"if the user is in no rooms, we won't receive the update via sync"_ — an account in no rooms is never told about its own profile change. `set_display_name` and `set_account_avatar` wrote to the homeserver and touched nothing locally, so `Session::profile()`, the observable the GTK application will bind to, kept the old value until the process restarted. Separately, `account_profile()` called `fetch_user_profile()` past that same observable, so one core held two independently-fetched answers to the same question with nothing keeping them in step. **Closed 1 Sep**: both setters correct the observable — which is why `set_avatar` splits the upload from the avatar-URL write, as the application does, since `upload_avatar()` never hands back the URI the local copy needs — and `account_profile()` refreshes the observable and reads it. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **No push format is set, so the homeserver POSTs whole events to the push gateway — and narrowing it is not the core's call.** `src/utils/android_push.rs` sets `PushFormat::EventIdOnly` and its comment calls that _"mandatory for content, not merely preferred: events are E2EE, so a full payload would carry ciphertext at best — and the metadata that does not need to travel, still would."_ The facade leaves `format` unset, which the specification reads as "send everything": in an unencrypted room the gateway receives the sender, the room and the message body. **But the application can narrow it only because its Android notification path fetches the event by ID afterwards, and the Kotlin application posts straight from the payload** — `Push.kt` reads `type` to keep a call push from becoming a message notification (a bug its own comment records fixing), and `sender_display_name`, `room_name` and `content.body` for the text. Setting `EventIdOnly` in the core would empty every Kotlin notification and revive that bug with every gate still green; it was written, caught by reading `Push.kt`, and reverted. **Settled 1 Sep: keep the payload.** The notification arrives whole and instantly rather than waking a sync to re-fetch what already arrived, and the disclosure is accepted — an encrypted room gives up only metadata regardless. The method now carries the constraint that comes with that: narrowing the format later means changing `Push.kt` in the same commit. | Closed by decision |
 | 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **The obvious cleanup would unregister the user's other phones, and the application's source is what says so.** A pusher held under our application id with a different pushkey looks stale; it is usually another device. `android_push.rs` deletes only the endpoint that registration itself moved off, remembered in `State::previous_endpoint`, precisely because "the `app_id` is the same for every Commune on Android". The core has no such record and so removes nothing but the legacy application id, which is keyed on this device's own pushkey. **Left open deliberately**: an endpoint that changes without the old one being retired leaves a pusher the homeserver keeps POSTing to. Closing it wants somewhere to remember the previous endpoint, which is a design question rather than a transcription fix. | Open by decision |
+| 1 Sep 2026 | `facade.rs`, `search_room` | **Searching an encrypted room always found nothing.** Every search went to `/search`, and a homeserver cannot search content it cannot read: for an encrypted room the answer is an empty page, silently, every time. `src/session/room/search.rs` searches the server only where it can read the room and the local search index otherwise, with the term sanitised for the index's query parser — which returns an error rather than nothing for `who's there?` — and the results re-sorted by recency, since the index ranks by relevance. The facade also deserialised results itself rather than through `original_message_event_from_raw`, so an edit event was listed as a result of its own, body beginning with an asterisk, and the original never showed its corrected wording. **Closed 1 Sep** in `session/room/search.rs`, with the sanitiser's four tests; paging and `reindex()` are in the core and not on the FFI, which has no scroll-to-load to call them from. | Done |
+| 1 Sep 2026 | `session/room/mod.rs`, `set_category` | **A room joined after startup never got its typing subscription, and its member list was never reloaded.** The application's `set_category` re-runs `set_up_typing()` and `members.reload()` when the state becomes joined, because the list an invite had was likely not complete. The core ran `set_up_typing` at construction only, and said so in a comment — _"a freshly joined room's typing arrives after a restart"_ — so accepting an invite or joining from the directory gave a room that showed nobody typing and an invite-time member list until the process restarted. **Closed 1 Sep**: `set_category` does what the application's does. | Done |
+| 1 Sep 2026 | `facade.rs`, `room_members` | **The facade polled the member list's state every 200 ms for up to ten seconds.** The list's state is an observable the application binds to; the facade slept on it. On a server that refuses to list the members the old wait ran out its full ten seconds before answering with what the store had. **Closed 1 Sep**: `MemberList::loaded()` subscribes and returns at `Ready` or `Error`. | Done |
+| 1 Sep 2026 | `history_viewer/timeline.rs` | **The application drops the last page of a room's media history when the homeserver omits `end`.** `load_inner` appends a chunk only under `if let Some(end_token) = events.end`; the specification lets a homeserver omit `end` on a final page that still holds events. The facade returned the chunk and the token together and the Kotlin viewer appends before checking the token, which is the better behaviour and is what `Room::media_history_page` keeps. Not a transcription drift but the reverse, and recorded so the GTK migration decides it rather than inherits it. | Phase 4, bridge decision |
 
 ## Gates
 
