@@ -30,6 +30,7 @@ mod components;
 mod config;
 mod account_settings;
 mod contrib;
+mod core_bridge;
 mod error_page;
 mod i18n;
 mod identity_verification_view;

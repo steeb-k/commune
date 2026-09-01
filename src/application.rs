@@ -218,10 +218,13 @@ mod imp {
                 profile: crate::PROFILE.as_str().to_owned(),
                 data_dir: crate::utils::DataType::Persistent.dir_path(),
                 cache_dir: crate::utils::DataType::Cache.dir_path(),
-                // The GSettings-backed store is owed by the time
-                // `session_list/` moves; nothing under `secret/` reads a
-                // setting, so the core's own file store goes unused for now.
-                settings_store: None,
+                // Where the session list's order and every session's own
+                // settings already live, and have for every version of this
+                // application. The core would otherwise fall back to a JSON
+                // file of its own and quietly start from defaults.
+                settings_store: Some(crate::core_bridge::settings_store::GSettingsStore::new(
+                    &self.obj().settings(),
+                )),
                 // Translated here, substituted there: see `secret.rs`.
                 credential_label: Some(crate::secret::credential_label_template()),
                 // From the `klipy-api-key` Meson option, through the
