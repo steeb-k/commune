@@ -40,10 +40,7 @@ struct MutualRoomsPage {
 /// Returns `None` when the homeserver does not answer the endpoint, which is
 /// not an error: the endpoint is recent, and a section that draws nothing is
 /// how its absence should look.
-pub(crate) async fn fetch_mutual_rooms(
-    client: &Client,
-    user_id: OwnedUserId,
-) -> Option<Vec<OwnedRoomId>> {
+pub async fn fetch_mutual_rooms(client: &Client, user_id: OwnedUserId) -> Option<Vec<OwnedRoomId>> {
     let access_token = client.access_token()?;
 
     for path in PATHS {
