@@ -72,6 +72,30 @@ arrives with `session_list/`, the one leaf that holds state; the property half
 arrives with `room_list/` and `Room`. What follows describes the bridge as a
 whole; it is built in those two pieces.
 
+**Phase 1 has started, with its first piece.** `src/core_bridge/` exists and
+holds `settings_store.rs`, the `GSettings`-backed `SettingsStore` that
+`secret/` was allowed to pass `None` for and that `session_list/` cannot be.
+It is here rather than in `utils/` because it is bridge work by the
+definition below: it exists solely to make one side's shape acceptable to the
+other.
+
+The shape is forced by threads. `SettingsStore` is `Send + Sync`, because the
+core reaches it from wherever its work happens and `SessionList::restore` is
+`async` on a tokio worker; `gio::Settings` is a `GObject` and is neither. So
+the values are mirrored in memory: reads never touch `GSettings`, writes
+update the mirror and hand the real write to the main context with
+`invoke()`. The obvious alternative — a round-trip to the main context per
+call — would block a tokio worker on the main loop and deadlock the moment
+the main loop was waiting on that task. A `changed` handler keeps the mirror
+from going stale, because the application still writes some of its own
+settings directly and a mirror that can drift will.
+
+What this buys is that an upgrade does not look like the sidebar forgetting
+the order of the accounts: the session list's order and every session's
+settings are already in the `sessions` key of
+`io.github.steeb_k.Commune`, and the core's own JSON-file fallback would have
+quietly started from defaults.
+
 **Phase 1 — the bridge**, at `src/core_bridge/`. New GTK-side code, written
 once so every later module is mechanical: a `bridge_properties!` macro driving
 `notify_*()` from one `select_all` over the core's `eyeball` subscribers (one
