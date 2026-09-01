@@ -361,17 +361,18 @@ are named in the notes below and are not in the count.
 | # | Group | Methods | Lines | Core destination | GTK authority | Error enum |
 |---|---|---|---|---|---|---|
 | 1 | Safety — the ignored users | 3 | 85 | `session/ignored_users.rs` | `session/ignored_users.rs` (282) | `IgnoredUsersError` |
-| 2 | Devices and the account | 19 | 371 | `session/user_sessions.rs`, `session/mod.rs` | `session/user_sessions_list/` (987), `session/user.rs` (547) | `AccountError`, `DeviceError` |
-| 3 | Notifications and push | 7 | 246 | `session/notifications.rs` | `session/notifications/notifications_settings.rs` (762) | `NotificationError` |
-| 4 | Media fetch, search, members | 12 | 456 | `matrix/media.rs`, `session/room/search.rs`, `session/room/member.rs` | `session/room/search.rs` (767), `member_list.rs` (387), `typing_list.rs` (102), `room_details/history_viewer/` | `MediaError`, `SearchError` |
-| 5 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/space_children.rs` | `session_view/explore/` (1,287), `session/remote/space_children.rs` (521) | `JoinError`, `DirectoryError` |
-| 6 | Login and registration | 9 | 354 | `login.rs` | `login/` (3,290 over ten files) | `LoginError` |
-| 7 | Image packs, stickers, GIFs | 13 | 525 | `session/image_packs/` | `session/image_packs/` (1,323) | `PackError` |
-| 8 | Verification and security | 14 | 621 | `session/verification.rs`, `session/security.rs` | `session/verification/` (1,538), `session/security.rs` (491) | `VerificationError`, `SecurityError` |
-| 9 | Timeline and messaging | 22 | 862 | `session/room/timeline.rs`, `session/room/mod.rs` | `session/room/timeline/` (3,033), `room_history/message_toolbar/` | `TimelineError` |
-| 10 | Room settings — details, join rule, history, addresses | 9 | 559 | `session/room/join_rule.rs`, `session/room/aliases.rs` | `session/room/join_rule.rs` (442), `aliases.rs` (544), the `room_details/` subpages | `RoomSettingsError` |
-| 11 | Permissions, ACL, upgrade, moderation | 10 | 553 | `session/room/permissions.rs`, `server_acl.rs`, `upgrade.rs` | `session/room/permissions.rs` (733), `room_details/permissions/` (2,491), `upgrade_dialog/` (642) | `PermissionsError` |
-| 12 | Calls | 9 | 671 | `session/calls/` | `session/calls/call.rs` (1,607), `mod.rs` (989), `turn.rs` (360) | `CallError` |
+| 2 | The account's other sessions | 3 | 143 | `session/user_sessions.rs` | `session/user_sessions_list/` (987) | `DeviceError` |
+| 3 | The account itself | 16 | 228 | `session/mod.rs` | `session/user.rs` (547), `account_settings/` | `AccountError` |
+| 4 | Notifications and push | 7 | 246 | `session/notifications.rs` | `session/notifications/notifications_settings.rs` (762) | `NotificationError` |
+| 5 | Media fetch, search, members | 12 | 456 | `matrix/media.rs`, `session/room/search.rs`, `session/room/member.rs` | `session/room/search.rs` (767), `member_list.rs` (387), `typing_list.rs` (102), `room_details/history_viewer/` | `MediaError`, `SearchError` |
+| 6 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/space_children.rs` | `session_view/explore/` (1,287), `session/remote/space_children.rs` (521) | `JoinError`, `DirectoryError` |
+| 7 | Login and registration | 9 | 354 | `login.rs` | `login/` (3,290 over ten files) | `LoginError` |
+| 8 | Image packs, stickers, GIFs | 13 | 525 | `session/image_packs/` | `session/image_packs/` (1,323) | `PackError` |
+| 9 | Verification and security | 14 | 621 | `session/verification.rs`, `session/security.rs` | `session/verification/` (1,538), `session/security.rs` (491) | `VerificationError`, `SecurityError` |
+| 10 | Timeline and messaging | 22 | 862 | `session/room/timeline.rs`, `session/room/mod.rs` | `session/room/timeline/` (3,033), `room_history/message_toolbar/` | `TimelineError` |
+| 11 | Room settings — details, join rule, history, addresses | 9 | 559 | `session/room/join_rule.rs`, `session/room/aliases.rs` | `session/room/join_rule.rs` (442), `aliases.rs` (544), the `room_details/` subpages | `RoomSettingsError` |
+| 12 | Permissions, ACL, upgrade, moderation | 10 | 553 | `session/room/permissions.rs`, `server_acl.rs`, `upgrade.rs` | `session/room/permissions.rs` (733), `room_details/permissions/` (2,491), `upgrade_dialog/` (642) | `PermissionsError` |
+| 13 | Calls | 9 | 671 | `session/calls/` | `session/calls/call.rs` (1,607), `mod.rs` (989), `turn.rs` (360) | `CallError` |
 
 Group 2 also carries `session_settings` and its three setters, already
 one-line passthroughs over `commune_core::settings` since leaf 4, and they
@@ -529,6 +530,58 @@ commit leaves the count no worse, and that a group's own lints go with it.**
 This one added two — a `#[must_use]` on a type already carrying it, and an
 `async` with nothing to await — and removed both before landing.
 
+### Commit 2 — the account's other sessions
+
+`src/session/user_sessions_list/` is 987 lines across three files and the
+facade's version of it was 143. The difference is not shape: it is four
+behaviours, and all four are in the ledger below.
+
+**It merges two sources, and the facade merged one.** `/devices` knows the
+display name, the last-seen time and the IP; the crypto store knows whether
+cross-signing vouches for the device. The application walks the crypto
+devices first, takes each one's API half where there is one, and then adds
+whatever the API listed that the crypto store did not — a device that does
+not support encryption at all, which is still a session the account has. The
+facade walked `/devices` alone and asked `get_device()` per row, so a device
+the crypto store knew and the API did not was invisible.
+
+**It degrades, and the facade did not.** When one of the two sources fails
+the application lists what the other gave it; only losing both is an error.
+The facade returned an error the moment `/devices` failed and showed
+nothing — the worse answer for exactly the case a person opens this screen
+in, which is when something is wrong with the account.
+
+**It follows the list.** `devices_stream()` carries device updates, and the
+application reloads on any that names this user. The subtle half is the one
+worth keeping: an update with _nothing_ in it is how a disconnection
+arrives, and it does not say whose, so an empty update is taken rather than
+skipped. The facade had no subscription.
+
+**It breaks ties.** The other sessions sort by last-seen descending and then
+by device ID. The facade sorted by `(!is_current, u64::MAX - last_seen_ts)`
+with no tiebreak, so devices the server never dated came back in whatever
+order the response happened to have — a list that reshuffles under the
+reader between two identical reads. Four tests cover the order, including
+that one.
+
+**`sign_out` gained a distinction the facade could not express.** The
+application answers the homeserver's user-interactive authentication with a
+dialog that speaks more than passwords; the core cannot show a dialog, so
+the facade did a password-only two-pass and reported whatever came back.
+`DeviceError` now separates _the homeserver wants the password_ from _the
+homeserver wants something this core cannot answer_, and the first attempt
+reads the offered flows rather than assuming. The GTK application will hand
+this to its `AuthDialog` when the account settings migrate; the Kotlin one
+gets a sentence that is true.
+
+**The list loads on first use rather than from `prepare()`.** Two requests
+that only the account settings screen ever looks at do not belong on the
+startup path — the ignored users are different, being one cached read that
+the sidebar's filtering wants anyway.
+
+The FFI surface is unchanged again: same three signatures, and the
+regenerated Kotlin came back byte-identical.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -560,6 +613,8 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `check_upload_size` | **The upload-size refusal is a rendered English sentence, with a private byte formatter.** The core builds `"This file is too large, the homeserver takes up to {size}"` and formats the number with its own `format_size`. The application says the same thing at `src/session_view/room_history/message_toolbar/mod.rs:1310` as a `gettext_f` over `glib::format_size`. It is the most commonly hit error in the file — every oversized attachment, avatar and pack image goes through it — and it is a sentence, so it must not cross: the core owes a value (`UploadTooLarge { max_bytes }`) and the two embedders own the wording. The two formatters agree on decimal units, so the rendered text is identical today; only the translation is lost. | Phase 3, group 9 |
 | 1 Sep 2026 | `facade.rs`, `ensure_packs_room` | **The packs room is created with an English name and topic.** `"Sticker Packs"` and `"The sticker and emoticon packs that you created. Invite someone here to share them."` are literals; `src/session/image_packs/mod.rs:627` wraps both in `gettext`. This one is worse than a lost error message, because a room name is not an error: it is written into `m.room.name` on the server, it shows in the sidebar next to the conversations, and it is _permanent_ — a user whose packs room was created by the Kotlin build keeps the English name after they translate their client, because nothing re-creates the room. Embedder-supplied strings, and the room the core makes should carry whichever the embedder passed. | Phase 3, group 7 |
 | 1 Sep 2026 | `facade.rs` ignored users | **The core never followed the list, and never refused a redundant request.** `src/session/ignored_users.rs` subscribes to the SDK's ignore-list changes and re-reads `m.ignored_user_list` whenever one arrives; the facade read the account data once per call and had no subscription at all, so ignoring somebody from the desktop never reached a phone with the Ignored Users screen open — it would sit on a stale list until it was closed and reopened. The application also guards both directions: adding a user already on the list, or removing one that is not, is a warning and a no-op rather than a round trip the server will ignore. Neither guard existed in the core. **Closed 1 Sep** with Phase 3's first commit, which also found the thing the move would have broken: `SessionList::active_session()` returns a session before `prepare()` has run, so a cache-only read would answer "nobody" during startup where the old fetch answered correctly — `ensure_loaded()` keeps that guarantee. | Done |
+| 1 Sep 2026 | `facade.rs`, `list_devices` | **Four divergences in one method, and the worst is what it does when something is wrong.** `src/session/user_sessions_list/` merges `/devices` with the crypto store, so a device known to one source and not the other is still listed; the facade walked `/devices` alone. The application lists what it has when one source fails and errors only when both do; **the facade returned an error the moment `/devices` failed, which is exactly the case a person opens the sessions screen in.** The application follows `devices_stream()` — taking an _empty_ update, because that is how a disconnection arrives without saying whose — and the facade fetched once per call. And the application breaks a sort tie on device ID where the facade had none, so devices the server never dated came back in a different order on every read. **Closed 1 Sep** in `session/user_sessions.rs`, with four tests over the ordering. | Done |
+| 1 Sep 2026 | `facade.rs`, `sign_out_device` | **The core could not tell "wrong password" from "this homeserver wants something else".** Signing a device out goes through user-interactive authentication, which the application answers with an `AuthDialog` that speaks several stages; the facade retried once with a password whatever the homeserver had asked for, and reported the resulting failure as an ordinary error. On a homeserver whose sign-out stage is not `m.login.password` — an OAuth 2.0 one, for instance — that is a request that can never succeed and a message that never says so. **Closed 1 Sep**: the first attempt reads the offered flows, and `DeviceError` separates `NeedsPassword` from `UnsupportedAuth`. The GTK application hands the first to its dialog when the account settings migrate; until then no embedder is worse off, and the Kotlin one stops showing a sentence that is not true. | Done |
 
 ## Gates
 

@@ -123,6 +123,14 @@ impl From<crate::session::IgnoredUsersError> for CoreError {
     }
 }
 
+impl From<crate::session::DeviceError> for CoreError {
+    fn from(error: crate::session::DeviceError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 /// A room's display name, semantically: the Empty variants are the UI's
 /// sentences to make.
 #[derive(uniffi::Enum)]
@@ -3992,91 +4000,43 @@ impl CoreApp {
 
     /// The account's sessions, ours first.
     pub async fn list_devices(&self) -> Result<Vec<FfiDevice>, CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
 
+        let sessions = session.user_sessions().clone();
         RUNTIME
-            .spawn(async move {
-                let client = session.client();
-                let own_device_id = client.device_id().map(ToOwned::to_owned);
-                let own_user_id = client.user_id().map(ToOwned::to_owned);
-
-                let response =
-                    client
-                        .devices()
-                        .await
-                        .map_err(|devices_error| CoreError::Failed {
-                            msg: format!("Could not load the sessions: {devices_error}"),
-                        })?;
-
-                let mut devices = Vec::new();
-                for device in response.devices {
-                    let is_current = own_device_id.as_deref() == Some(&device.device_id);
-                    let is_verified = if let Some(user_id) = &own_user_id {
-                        client
-                            .encryption()
-                            .get_device(user_id, &device.device_id)
-                            .await
-                            .ok()
-                            .flatten()
-                            .is_some_and(|crypto_device| crypto_device.is_verified())
-                    } else {
-                        false
-                    };
-
-                    devices.push(FfiDevice {
-                        device_id: device.device_id.to_string(),
-                        display_name: device.display_name,
-                        is_current,
-                        is_verified,
-                        last_seen_ts: device.last_seen_ts.map(|ts| ts.0.into()),
-                        last_seen_ip: device.last_seen_ip,
-                    });
-                }
-
-                // Ours first, then most recently seen.
-                devices.sort_by_key(|device| {
-                    (
-                        !device.is_current,
-                        u64::MAX - device.last_seen_ts.unwrap_or(0),
-                    )
-                });
-                Ok(devices)
-            })
+            .spawn(async move { sessions.ensure_loaded().await })
             .await
-            .expect("task was not aborted")
+            .expect("task was not aborted");
+
+        let sessions = session.user_sessions();
+        // Only when neither source answered: the application shows what it
+        // has when one of the two fails, and so does the core.
+        if sessions.state() == crate::utils::LoadingState::Error {
+            return Err(crate::session::DeviceError::NotLoaded.into());
+        }
+
+        Ok(sessions
+            .snapshot()
+            .into_iter()
+            .map(FfiDevice::from)
+            .collect())
     }
 
     /// Rename one of the account's sessions.
     pub async fn rename_device(&self, device_id: String, name: String) -> Result<(), CoreError> {
-        use ruma::api::client::device::update_device;
-
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
+        let device_id: ruma::OwnedDeviceId = device_id.into();
 
         RUNTIME
             .spawn(async move {
-                let device_id: ruma::OwnedDeviceId = device_id.into();
-                let request = ruma::assign!(update_device::v3::Request::new(device_id), {
-                    display_name: Some(name.trim().to_owned()),
-                });
                 session
-                    .client()
-                    .send(request)
+                    .user_sessions()
+                    .rename(&device_id, name.trim())
                     .await
-                    .map(|_| ())
-                    .map_err(|rename_error| CoreError::Failed {
-                        msg: format!("Could not rename the session: {rename_error}"),
-                    })
             })
             .await
             .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// Sign another of the account's sessions out. The server demands the
@@ -4086,51 +4046,19 @@ impl CoreApp {
         device_id: String,
         password: String,
     ) -> Result<(), CoreError> {
-        use ruma::api::client::uiaa::{AuthData, MatrixUserIdentifier, Password};
-
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
+        let device_id: ruma::OwnedDeviceId = device_id.into();
 
         RUNTIME
             .spawn(async move {
-                let client = session.client();
-                let device_id: ruma::OwnedDeviceId = device_id.into();
-                let user_id = client.user_id().ok_or_else(|| CoreError::Failed {
-                    msg: "No user".to_owned(),
-                })?;
-
-                // First pass to learn the auth session, second to answer it.
-                let devices = &[device_id];
-                match client.delete_devices(devices, None).await {
-                    Ok(_) => Ok(()),
-                    Err(delete_error) => {
-                        let Some(info) = delete_error.as_uiaa_response() else {
-                            return Err(CoreError::Failed {
-                                msg: format!("Could not sign the session out: {delete_error}"),
-                            });
-                        };
-                        let auth = AuthData::Password(ruma::assign!(
-                            Password::new(
-                                MatrixUserIdentifier::new(user_id.to_string()).into(),
-                                password,
-                            ),
-                            { session: info.session.clone() }
-                        ));
-                        client
-                            .delete_devices(devices, Some(auth))
-                            .await
-                            .map(|_| ())
-                            .map_err(|retry_error| CoreError::Failed {
-                                msg: format!("Could not sign the session out: {retry_error}"),
-                            })
-                    }
-                }
+                session
+                    .user_sessions()
+                    .sign_out(&device_id, Some(&password))
+                    .await
             })
             .await
             .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// How the given room notifies, as far as the user has said.
@@ -6468,6 +6396,19 @@ pub struct FfiDevice {
     pub last_seen_ts: Option<u64>,
     /// The IP it was last seen from.
     pub last_seen_ip: Option<String>,
+}
+
+impl From<crate::session::Device> for FfiDevice {
+    fn from(device: crate::session::Device) -> Self {
+        Self {
+            device_id: device.device_id.to_string(),
+            display_name: device.display_name,
+            is_current: device.is_current,
+            is_verified: device.is_verified,
+            last_seen_ts: device.last_seen_ts,
+            last_seen_ip: device.last_seen_ip,
+        }
+    }
 }
 
 /// How a room notifies.
