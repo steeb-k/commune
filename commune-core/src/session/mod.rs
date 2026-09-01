@@ -30,6 +30,7 @@ mod ignored_users;
 mod room;
 mod room_list;
 mod sidebar;
+mod user_sessions;
 
 use std::{
     sync::{
@@ -69,6 +70,7 @@ pub use self::{
     },
     room_list::{RoomList, RoomMetainfo},
     sidebar::SidebarSectionName,
+    user_sessions::{Device, DeviceError, UserSessions},
 };
 use crate::{
     RUNTIME,
@@ -174,6 +176,8 @@ struct SessionInner {
     room_list: std::sync::OnceLock<RoomList>,
     /// The users this account ignores.
     ignored_users: std::sync::OnceLock<IgnoredUsers>,
+    /// The account's other sessions.
+    user_sessions: std::sync::OnceLock<UserSessions>,
     /// The task feeding the room list from the sync loop.
     room_updates_handle: Mutex<Option<AbortHandle>>,
 }
@@ -243,6 +247,7 @@ impl Session {
             room_updates_rx: Mutex::new(Some(room_updates_rx)),
             room_list: std::sync::OnceLock::new(),
             ignored_users: std::sync::OnceLock::new(),
+            user_sessions: std::sync::OnceLock::new(),
             room_updates_handle: Mutex::new(None),
         });
 
@@ -413,6 +418,17 @@ impl Session {
         self.inner
             .ignored_users
             .get_or_init(|| IgnoredUsers::new(self.downgrade()))
+    }
+
+    /// The account's other sessions.
+    ///
+    /// Not loaded by `prepare()`: the list costs two requests and only the
+    /// account settings ever look at it, so it loads on first use.
+    #[must_use]
+    pub fn user_sessions(&self) -> &UserSessions {
+        self.inner
+            .user_sessions
+            .get_or_init(|| UserSessions::new(self.downgrade()))
     }
 
     /// Feed the room list from the sync loop's room updates.
