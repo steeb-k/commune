@@ -721,8 +721,22 @@ impl Login {
     }
 }
 
-/// Client registration data for the OAuth 2.0 API.
-fn client_registration_data() -> ClientRegistrationData {
+/// The embedder half of the OAuth 2.0 client registration, for the core.
+///
+/// The same values `client_registration_data()` below builds the metadata
+/// from, handed to `commune_core::config` so a login through the core
+/// registers the client the same way this module does.
+pub(crate) fn oauth_client_config() -> commune_core::config::OAuthClientConfig {
+    let (redirect_uris, client_uri) = registration_uris();
+
+    commune_core::config::OAuthClientConfig {
+        client_uri,
+        redirect_uris,
+    }
+}
+
+/// The redirect URIs to register and the client URI to register them under.
+fn registration_uris() -> (Vec<Url>, Url) {
     // Everywhere but Android, register the IPv4 and IPv6 localhost APIs, since
     // that is what the local server redirects to. On Android there is no local
     // server — see `local_server::RedirectHandle` — so the fixed custom-scheme
@@ -759,6 +773,13 @@ fn client_registration_data() -> ClientRegistrationData {
     #[cfg(not(target_os = "android"))]
     let client_uri =
         Url::parse(APP_HOMEPAGE_URL).expect("application homepage URL should be a valid URL");
+
+    (redirect_uris, client_uri)
+}
+
+/// Client registration data for the OAuth 2.0 API.
+fn client_registration_data() -> ClientRegistrationData {
+    let (redirect_uris, client_uri) = registration_uris();
 
     let mut client_metadata = ClientMetadata::new(
         ApplicationType::Native,

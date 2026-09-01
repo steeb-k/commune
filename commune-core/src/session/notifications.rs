@@ -129,11 +129,11 @@ impl super::Session {
             let pusher: Pusher = PusherInit {
                 ids: PusherIds::new(pushkey, config::app_id().to_owned()),
                 kind: PusherKind::Http(data),
-                app_display_name: "Commune".to_owned(),
+                app_display_name: config::app_name().to_owned(),
                 // Shown in other clients' session lists, so it describes
                 // this installation to readers elsewhere and is not
-                // translated. Still names Android; see the ledger.
-                device_display_name: "Commune on Android".to_owned(),
+                // translated. The embedder says which platform it is.
+                device_display_name: config::device_display_name().to_owned(),
                 profile_tag: None,
                 // Moot beside `EventIdOnly`: the homeserver sends no text
                 // to localise. The application computes one from the

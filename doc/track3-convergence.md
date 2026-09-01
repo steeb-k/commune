@@ -367,7 +367,7 @@ are named in the notes below and are not in the count.
 | — | The push rules | 5 | 156 | stay in `facade.rs` — one-line SDK passthroughs | `notifications_settings.rs` (762) | — |
 | 5 | Media fetch, search, members | 12 | 456 | `matrix/media.rs`, `session/room/search.rs`, `session/room/media_history.rs`, `session/room/member.rs` | `session/room/search.rs` (767), `member_list.rs` (387), `typing_list.rs` (102), `room_details/history_viewer/timeline.rs` (260) and `event.rs` (149), `utils/matrix/media_message.rs` (515) | `SearchError`, `MediaHistoryError` |
 | 6 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/room.rs`, `session/remote/space_children.rs`, `session/create_room.rs` | `session_view/explore/` (1,287), `session/remote/room.rs` (550), `session/remote/space_children.rs` (521), `session/room_list/` (730), `components/dialogs/room_preview.rs` (630), `session/user.rs` (547), `session_view/create_room_dialog.rs` (342) | `JoinError`, `DirectChatError`, `RemoteRoomError`, `SpaceChildrenError`, `DirectoryError`, `CreateRoomError` |
-| 7 | Login and registration | 9 | 354 | `login.rs` | `login/` (3,290 over ten files) | `LoginError` |
+| 7 | Login and registration | 9 | 354 | `login.rs`, `config.rs` (`OAuthClientConfig`, `app_name`, `device_display_name`) | `login/` (3,290 over ten files), `components/dialogs/auth/mod.rs` (the stage selection, 755) | `LoginError`, `RegisterError`, `ResetPasswordError` |
 | 8 | Image packs, stickers, GIFs | 13 | 525 | `session/image_packs/` | `session/image_packs/` (1,323) | `PackError` |
 | 9 | Verification and security | 14 | 621 | `session/verification.rs`, `session/security.rs` | `session/verification/` (1,538), `session/security.rs` (491) | `VerificationError`, `SecurityError` |
 | 10 | Timeline and messaging | 22 | 862 | `session/room/timeline.rs`, `session/room/mod.rs` | `session/room/timeline/` (3,033), `room_history/message_toolbar/` | `TimelineError` |
@@ -923,6 +923,100 @@ can join, which is what the application shows.
 The FFI surface is unchanged for the sixth time, the bindings came back
 byte-identical, and the exported doc comments were left alone this time.
 
+### Commit 7 — login, and the redirect that was Android's
+
+**All nine move, into `commune-core/src/login.rs`, as one object.** The
+application's `Login` is a navigation stack holding one client; the core's
+`LoginFlow` is that client and every step it can take — discover, log in
+with a password, build the OAuth 2.0 authorization or the SSO URL, finish
+either, register, check a username, ask for the reset email, set the new
+password — in the order the pages drive them and with the pages left
+behind. The stage selection of `components/dialogs/auth/mod.rs`, which is
+logic rather than dialog, came too as `AuthStage::next`, parameterised by
+the stages the caller can answer: the application answers five with its
+pages, and the FFI answers the two that need nobody.
+
+**The redirect is the embedder's, and the ledger's oldest open row closes
+here.** A login through the OAuth 2.0 API ends with the browser sent back to
+the application, and where it can be sent is not the core's to know: the
+desktop listens on a loopback address, Android registers a custom scheme.
+`CoreConfig::oauth_client` now carries the client URI and the redirect URIs
+each embedder registers — the GTK application hands over the loopback pair
+its `client_registration_data` always built, through
+`login::oauth_client_config()`, and `init_core` hands over Android's scheme
+and the `steeb-k.github.io` client URI its reverse-DNS check needs. Every
+core method that needs the redirect for one login takes it as an argument.
+The Android constants stay in `facade.rs`, because the facade _is_ the
+Android embedder's Rust half; what left is the core's knowledge of them.
+**The pusher's two strings close the same way**: `app_name` names the
+application on a device and a pusher and an OAuth client, and
+`device_display_name` is what the Android embedder sets to say which
+platform it is, the desktop passing nothing because it never registers a
+pusher.
+
+**Discovery treated every failure as "no OAuth".** `homeserver_page.rs`
+asks for the authorization server's metadata and then tells two answers
+apart: `is_not_supported()` falls through to the Matrix native flows, and
+any other error aborts with "Could not set up login". The facade asked
+`.is_ok()` and fell through on both — so a homeserver whose authorization
+server was down for a minute was shown as a password-login homeserver, and
+a person typing their password into it was refused by an endpoint that no
+longer serves them. `LoginFlow::discover` makes the distinction the
+application makes.
+
+**The password login built a client of its own and ignored the discovered
+one.** `SessionList::login_with_password` took a URL, built a second client
+by `homeserver_url` — no `.well-known`, so `matrix.org` went to
+`matrix.org` rather than where its `.well-known` points — and logged in
+through that, while the client discovery had just built sat unused in
+`pending_login`. The application's method page logs in with the client
+its homeserver page built. The facade does the same now, and discovers
+first only when nothing did; the `SessionList` method is gone, and with
+it two rendered English sentences and a third client-building path.
+
+**`adopt_logged_in_client` returned a `String`.** "Could not create the
+session", rendered, inside the core — the leaf-1 rule in
+`session_list.rs`, which was transcribed before the rule was written, as
+`room_list.rs` was. It returns `ClientSetupError` now, which already had
+its `UserFacingError`.
+
+**Three things the application distinguishes that the facade did not.**
+A homeserver refusing registration with `M_FORBIDDEN` means "this
+homeserver does not allow creating an account", not the catch-all
+"Invalid credentials", and `RegisterError::Forbidden` says so. A reset
+email refused with `M_THREEPID_NOT_FOUND` means no account uses that
+address, and `M_THREEPID_DENIED` means the homeserver cannot send email
+at all; the facade showed the SDK's error text for both, and
+`ResetPasswordError` carries each as a value. And the username availability
+check the register page debounces — free, taken, invalid, reserved, or
+"the homeserver did not say" — is `LoginFlow::check_username_availability`,
+with no FFI consumer yet.
+
+**Five gaps found and not filled**, by the standing ruling:
+
+* **No username availability check on the Kotlin register page.** The
+  core has it; the FFI does not expose it.
+* **No account creation through the browser.** `oauth_authorization`
+  takes `create_account` and sends `prompt=create` after checking the
+  homeserver advertises it, as the application does; the FFI passes
+  `false` and registers through the native endpoint only.
+* **The terms are accepted without being shown.** The application's
+  dialog shows the policies and waits; the FFI's headless walk answers
+  the stage on the understanding that creating the account is accepting
+  them, which is what it did before and is recorded on the method.
+* **A resend of the reset email is a new session on the FFI.** The
+  application keeps the secret and bumps `send_attempt` for the same
+  address, which the spec uses to tell a resend from a retry;
+  `FfiResetHandle` carries neither, so the facade always sends a first.
+* **No autodiscovery toggle.** The application's advanced dialog can take
+  a typed URL as it stands; the Kotlin flow always discovers, and the
+  core's `discover` takes the flag.
+
+The FFI surface is unchanged for the seventh time and the bindings came
+back byte-identical. **The clippy count is 13, from 15**: the two
+`too_many_lines` on the old login methods left with them, which is the
+rule working as written.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -949,8 +1043,8 @@ recorded here as it is found, with the phase that closes it.
 | 31 Aug 2026 | `klipy.rs` | `Gif::title()`'s fallback for a GIF the API gave no title for was `gettext("GIF")` and became a bare `"GIF"`. It is the fallback body of the event, so it is a sentence, and it goes into the room — it is what a client with no image support shows and what a screen reader announces. **Closed 31 Aug** with leaf 2: `Gif::title()` in `src/utils/klipy.rs` shadows the core's method rather than reaching it through `Deref`, and `to_selection()` overwrites the title the core put in, because that is the one that becomes the event body. | Done |
 | 31 Aug 2026 | `secret/linux.rs`, `secret/macos.rs` | **The label on the stored credential lost its translation.** It is the one string either variant writes that a person reads outside the application — Seahorse and Keychain Access both show it — and the application has always run it through `gettext_f`. The core hard-coded the English. It cannot do otherwise, so **closed 31 Aug** from the other end: `CoreConfig` carries the sentence as a template and the core only substitutes `{user_id}` into it. The application passes its translated one at startup; the Kotlin variant passes `None` and gets the English, which is what it wants until it has translations of its own. | Done |
 | 31 Aug 2026 | `facade.rs` candidates and negotiate handlers | Both drop **every** event whose sender is our own user. The application drops only its own party's echo, because a party is a user _and_ a device: another of our own devices answering our invite is a legitimate remote party. Kept as-is deliberately — the broader check is documented in the core as the fix for a real bug where the echo of our own answer ended the call, and narrowing it wants a two-device test rather than a guess. | Phase 4, module 9 |
-| 1 Sep 2026 | `facade.rs` login flows | **The OAuth and SSO redirect is Android's, hardcoded.** `ANDROID_REDIRECT_URI` is `io.github.steeb-k.commune:/oauth2redirect`, and `oauth_client_registration_data()` builds a fixed native-application registration around it. The desktop application does not use a custom scheme at all: `src/login/local_server.rs` runs a loopback HTTP server and registers _its_ address, because a desktop browser has nowhere to send an app scheme. A GTK login through this core would open an authorization URL the browser could never come back from. The redirect and the registration are embedder facts, like `credential_label` and `klipy_api_key` before them, and belong in `CoreConfig`. | Phase 3, group 7 |
-| 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **The pusher describes an Android device, in English, whatever the embedder is.** `app_display_name` is `"Commune"` and `device_display_name` is `"Commune on Android"`, both literals; the `LEGACY_APP_ID` deletion that runs first cleans up after a specific Android debug build. The device name is what a user sees in another client's session list when they audit what is pushing to them, so a desktop session announcing itself as Android is wrong in the one place the string is read. Embedder values, `CoreConfig` again — and the legacy cleanup is Android's alone and should say so. Commit 4 moved the pusher and left these as they were; they go into `CoreConfig` with the login redirect, which is the same mechanism. | Phase 3, group 7 |
+| 1 Sep 2026 | `facade.rs` login flows | **The OAuth and SSO redirect is Android's, hardcoded.** `ANDROID_REDIRECT_URI` is `io.github.steeb-k.commune:/oauth2redirect`, and `oauth_client_registration_data()` builds a fixed native-application registration around it. The desktop application does not use a custom scheme at all: `src/login/local_server.rs` runs a loopback HTTP server and registers _its_ address, because a desktop browser has nowhere to send an app scheme. A GTK login through this core would open an authorization URL the browser could never come back from. The redirect and the registration are embedder facts, like `credential_label` and `klipy_api_key` before them, and belong in `CoreConfig`. **Closed 1 Sep**: `CoreConfig::oauth_client` carries each embedder's client URI and redirect URIs — the GTK application's loopback pair, `init_core`'s Android scheme — and every login step that needs the redirect for one login takes it as an argument. The Android constants live in `facade.rs`, which is the Android embedder's Rust half; the core no longer knows them. | Done |
+| 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **The pusher describes an Android device, in English, whatever the embedder is.** `app_display_name` is `"Commune"` and `device_display_name` is `"Commune on Android"`, both literals; the `LEGACY_APP_ID` deletion that runs first cleans up after a specific Android debug build. The device name is what a user sees in another client's session list when they audit what is pushing to them, so a desktop session announcing itself as Android is wrong in the one place the string is read. Embedder values, `CoreConfig` again — and the legacy cleanup is Android's alone and should say so. Commit 4 moved the pusher and left these as they were. **Closed 1 Sep** with the login redirect: `CoreConfig::app_name` names the application on the pusher, on a new device and on the OAuth client, and `CoreConfig::device_display_name` is the Android embedder's to set — the desktop passes none, since it never registers a pusher. The legacy cleanup still runs unconditionally, keyed on this device's pushkey, which is harmless where there is nothing to delete. | Done |
 | 1 Sep 2026 | `facade.rs`, `check_upload_size` | **The upload-size refusal is a rendered English sentence, with a private byte formatter.** The core builds `"This file is too large, the homeserver takes up to {size}"` and formats the number with its own `format_size`. The application says the same thing at `src/session_view/room_history/message_toolbar/mod.rs:1310` as a `gettext_f` over `glib::format_size`. It is the most commonly hit error in the file — every oversized attachment, avatar and pack image goes through it — and it is a sentence, so it must not cross: the core owes a value (`UploadTooLarge { max_bytes }`) and the two embedders own the wording. The two formatters agree on decimal units, so the rendered text is identical today; only the translation is lost. | Phase 3, group 10 |
 | 1 Sep 2026 | `facade.rs`, `ensure_packs_room` | **The packs room is created with an English name and topic.** `"Sticker Packs"` and `"The sticker and emoticon packs that you created. Invite someone here to share them."` are literals; `src/session/image_packs/mod.rs:627` wraps both in `gettext`. This one is worse than a lost error message, because a room name is not an error: it is written into `m.room.name` on the server, it shows in the sidebar next to the conversations, and it is _permanent_ — a user whose packs room was created by the Kotlin build keeps the English name after they translate their client, because nothing re-creates the room. Embedder-supplied strings, and the room the core makes should carry whichever the embedder passed. | Phase 3, group 8 |
 | 1 Sep 2026 | `facade.rs` ignored users | **The core never followed the list, and never refused a redundant request.** `src/session/ignored_users.rs` subscribes to the SDK's ignore-list changes and re-reads `m.ignored_user_list` whenever one arrives; the facade read the account data once per call and had no subscription at all, so ignoring somebody from the desktop never reached a phone with the Ignored Users screen open — it would sit on a stale list until it was closed and reopened. The application also guards both directions: adding a user already on the list, or removing one that is not, is a warning and a no-op rather than a round trip the server will ignore. Neither guard existed in the core. **Closed 1 Sep** with Phase 3's first commit, which also found the thing the move would have broken: `SessionList::active_session()` returns a session before `prepare()` has run, so a cache-only read would answer "nobody" during startup where the old fetch answered correctly — `ensure_loaded()` keeps that guarantee. | Done |
@@ -967,6 +1061,9 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `session/room_list.rs`, `join_by_id_or_alias` and `knock` | **Two rendered English sentences inside the core** — `Result<OwnedRoomId, String>` carrying "Could not join room {identifier}" — in a file transcribed before the leaf-1 rule was written. Nothing called them, which is why it never shipped. **Closed 1 Sep** with `JoinError`, which carries the identifier as a value for the application's `gettext_f`. | Done |
 | 1 Sep 2026 | `facade.rs`, `create_direct_chat` | **Could create a second direct chat with the same person.** `User::get_or_create_direct_chat` checks the room list, then the SDK's `get_dm_room` over `m.direct`, with a comment saying the second check exists because the first misses a direct chat whose membership does not currently look like one — "exactly the case that used to end in a duplicate room". The facade had the first check only, and took the first match where `RoomList::direct_chat` takes the latest-active. **Closed 1 Sep** as `RoomList::get_or_create_direct_chat`. | Done |
 | 1 Sep 2026 | `facade.rs`, `space_children` | **One batch, every descendant, no order.** The application walks up to ten batches and says when it stopped, orders each space's children by their `m.space.child` events as the specification defines, drops a child whose event names no `via` server, and guards against a space that contains itself. The facade sent one unbounded request and returned the server's walk as it came: grandchildren beside children, unordered, silently cut for a large space. **Closed 1 Sep** in `session/remote/space_children.rs`; the FFI flattens the tree depth-first because the Kotlin screen is flat. Not on the FFI yet: truncation, suggestion, the `via` servers a Join from that screen would need. | Done, FFI fields owed |
+| 1 Sep 2026 | `facade.rs`, `discover_login` | **Every failure of the authorization server's discovery read as "no OAuth".** `login/homeserver_page.rs` tells `is_not_supported()` — fall through to the Matrix native flows — from any other error, which aborts with "Could not set up login". The facade asked `.is_ok()`, so a homeserver whose authorization server was briefly unreachable was presented as a password-login homeserver, and a password typed into it was refused by an endpoint that no longer serves that account. **Closed 1 Sep** in `LoginFlow::discover`. | Done |
+| 1 Sep 2026 | `session_list.rs`, `login_with_password` | **A second client, built by URL, logged in while the discovered one sat unused.** The facade's password login called `SessionList::login_with_password`, which built its own client from the typed URL — without `.well-known`, so `matrix.org` went to `matrix.org` and not where its `.well-known` points — and ignored the client discovery had just built; the application's method page logs in with the client its homeserver page built. The same method returned two rendered English sentences in a `String`, and `adopt_logged_in_client` a third. **Closed 1 Sep**: the method is deleted, the facade logs in with the pending flow's client, and `adopt_logged_in_client` returns `ClientSetupError`. | Done |
+| 1 Sep 2026 | `facade.rs`, `register_user` and the reset flow | **Three refusals the application names, shown as SDK error text.** `M_FORBIDDEN` on registration means the homeserver does not allow creating an account (the register page says so explicitly, because the catch-all reads "Invalid credentials"); `M_THREEPID_NOT_FOUND` on the reset email means no account uses the address, and `M_THREEPID_DENIED` that the homeserver cannot send email at all — `reset_password_page.rs` has a sentence for each. The facade formatted the SDK error for all three. **Closed 1 Sep** as `RegisterError::Forbidden`, `ResetPasswordError::EmailNotFound` and `EmailDenied`, values with the sentences as the Kotlin fallback. | Done |
 
 ## Gates
 

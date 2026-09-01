@@ -15,7 +15,29 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use url::Url;
+
 use crate::settings::{FileSettingsStore, SettingsStore};
+
+/// How the embedder registers itself as an OAuth 2.0 client.
+///
+/// A login through the OAuth 2.0 API ends with the browser redirected back
+/// to the application, and where it can be redirected to is an embedder
+/// fact: the desktop application listens on a loopback address, and
+/// registers the IPv4 and IPv6 loopback URIs; Android has no loopback a
+/// browser will follow, so it registers a fixed custom-scheme URI, alone,
+/// since it has to match exactly what the authorization request sends. The
+/// client URI is checked by matrix.org's authorization server against a
+/// custom scheme read as reverse DNS, so it is the embedder's too — see the
+/// application's `client_registration_data` for the whole story.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OAuthClientConfig {
+    /// The URI identifying the client — the project's homepage, or a page
+    /// under the domain the redirect scheme is derived from.
+    pub client_uri: Url,
+    /// The redirect URIs to register.
+    pub redirect_uris: Vec<Url>,
+}
 
 /// The values the embedder provides.
 #[derive(Clone)]
@@ -24,6 +46,22 @@ pub struct CoreConfig {
     /// namespaces everything stored on the platform's secret backend.
     /// It must already carry the profile suffix, as the application's ids do.
     pub app_id: String,
+    /// The name of the application, as it presents itself to homeservers:
+    /// the display name of a device it logs in as, the name of the OAuth 2.0
+    /// client it registers, the application name on the pusher it sets.
+    ///
+    /// Not translated, on purpose: these are read in other clients' session
+    /// lists and in authorization pages, by people who may not share this
+    /// user's locale.
+    pub app_name: String,
+    /// The name the pusher gives this device, shown in other clients'
+    /// session lists when the account audits what pushes to it.
+    ///
+    /// `None` uses the application name alone. The Android embedder says
+    /// which platform it is; the desktop never registers a pusher.
+    pub device_display_name: Option<String>,
+    /// The embedder's OAuth 2.0 client registration.
+    pub oauth_client: OAuthClientConfig,
     /// The build profile name stored in secret attributes on Linux
     /// (`stable`, `devel`, `hack`).
     pub profile: String,
@@ -63,6 +101,9 @@ impl fmt::Debug for CoreConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("CoreConfig")
             .field("app_id", &self.app_id)
+            .field("app_name", &self.app_name)
+            .field("device_display_name", &self.device_display_name)
+            .field("oauth_client", &self.oauth_client)
             .field("profile", &self.profile)
             .field("data_dir", &self.data_dir)
             .field("cache_dir", &self.cache_dir)
@@ -78,6 +119,12 @@ impl fmt::Debug for CoreConfig {
 pub(crate) struct ResolvedConfig {
     /// The application id.
     pub(crate) app_id: String,
+    /// The name of the application.
+    pub(crate) app_name: String,
+    /// The name the pusher gives this device.
+    pub(crate) device_display_name: String,
+    /// The embedder's OAuth 2.0 client registration.
+    pub(crate) oauth_client: OAuthClientConfig,
     /// The build profile name.
     pub(crate) profile: String,
     /// The directory persistent data lives under.
@@ -115,6 +162,9 @@ static CONFIG: OnceLock<ResolvedConfig> = OnceLock::new();
 pub fn init(config: CoreConfig) {
     let CoreConfig {
         app_id,
+        app_name,
+        device_display_name,
+        oauth_client,
         profile,
         data_dir,
         cache_dir,
@@ -125,11 +175,15 @@ pub fn init(config: CoreConfig) {
 
     let settings_store =
         settings_store.unwrap_or_else(|| Arc::new(FileSettingsStore::new(&data_dir)));
+    let device_display_name = device_display_name.unwrap_or_else(|| app_name.clone());
     let credential_label = credential_label.unwrap_or_else(|| DEFAULT_CREDENTIAL_LABEL.to_owned());
     let klipy_api_key = klipy_api_key.unwrap_or_default();
 
     let _ = CONFIG.set(ResolvedConfig {
         app_id,
+        app_name,
+        device_display_name,
+        oauth_client,
         profile,
         data_dir,
         cache_dir,
@@ -155,6 +209,22 @@ pub(crate) fn get() -> &'static ResolvedConfig {
 #[must_use]
 pub fn app_id() -> &'static str {
     &get().app_id
+}
+
+/// The name of the application, as it presents itself to homeservers.
+#[must_use]
+pub fn app_name() -> &'static str {
+    &get().app_name
+}
+
+/// The name the pusher gives this device.
+pub(crate) fn device_display_name() -> &'static str {
+    &get().device_display_name
+}
+
+/// The embedder's OAuth 2.0 client registration.
+pub(crate) fn oauth_client() -> &'static OAuthClientConfig {
+    &get().oauth_client
 }
 
 /// The build profile name.
@@ -191,6 +261,12 @@ pub(crate) fn klipy_api_key() -> &'static str {
 pub(crate) fn init_test_config() {
     init(CoreConfig {
         app_id: "io.github.steeb_k.Commune.CoreTest".to_owned(),
+        app_name: "Commune".to_owned(),
+        device_display_name: None,
+        oauth_client: OAuthClientConfig {
+            client_uri: Url::parse("https://github.com/steeb-k/commune").expect("valid URL"),
+            redirect_uris: vec![Url::parse("http://127.0.0.1/").expect("valid URL")],
+        },
         profile: "test".to_owned(),
         data_dir: std::env::temp_dir().join("commune-core-test").join("data"),
         cache_dir: std::env::temp_dir().join("commune-core-test").join("cache"),

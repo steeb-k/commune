@@ -14,6 +14,7 @@ pub mod events;
 pub mod facade;
 pub mod http;
 pub mod klipy;
+pub mod login;
 pub mod matrix;
 pub mod paths;
 pub mod platform;
