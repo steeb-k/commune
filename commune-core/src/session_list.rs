@@ -366,67 +366,21 @@ impl SessionList {
         self.inner.state.set(LoadingState::Ready);
     }
 
-    /// Log in with a password and add the new session to the list.
-    ///
-    /// This is the core of the login flow: a throwaway in-memory client
-    /// performs the login, `Session::create` snapshots it into a stored
-    /// session backed by the real sqlite store, and the secret backend
-    /// keeps it for the next launch — the same order the application's
-    /// `login/` widgets drive.
-    pub async fn login_with_password(
-        &self,
-        homeserver: url::Url,
-        username: String,
-        password: String,
-    ) -> Result<Session, String> {
-        let login_client = spawn_tokio!(async move {
-            matrix_sdk::Client::builder()
-                .request_config(matrix_sdk::config::RequestConfig::new().retry_limit(2))
-                // Otherwise the SDK builds its own client with the TLS
-                // backend that does not work on Android. See `crate::tls`.
-                .http_client(crate::tls::matrix_client())
-                .homeserver_url(homeserver)
-                .build()
-                .await
-        })
-        .await
-        .expect("task was not aborted")
-        .map_err(|build_error| {
-            error!("Could not build login client: {build_error}");
-            "Could not connect to the homeserver".to_owned()
-        })?;
-
-        let client = login_client.clone();
-        spawn_tokio!(async move {
-            client
-                .matrix_auth()
-                .login_username(&username, &password)
-                .initial_device_display_name("Commune")
-                .send()
-                .await
-        })
-        .await
-        .expect("task was not aborted")
-        .map_err(|login_error| {
-            error!("Could not log in: {login_error}");
-            "Could not log in".to_owned()
-        })?;
-
-        self.adopt_logged_in_client(login_client).await
-    }
-
     /// Adopt an already-authenticated client as a stored session — the
     /// tail of every login flow, whatever authenticated it: snapshot it
     /// into a stored session, seal it for the next launch, prepare it.
+    ///
+    /// The login itself is a [`crate::login::LoginFlow`]'s; this is the
+    /// application's `Login::create_session` and `init_session`, which
+    /// follow whichever step authenticated the client.
     pub async fn adopt_logged_in_client(
         &self,
         login_client: matrix_sdk::Client,
-    ) -> Result<Session, String> {
+    ) -> Result<Session, ClientSetupError> {
         let session = Session::create(&login_client, &self.inner.settings)
             .await
-            .map_err(|create_error| {
+            .inspect_err(|create_error| {
                 error!("Could not create session: {create_error}");
-                "Could not create the session".to_owned()
             })?;
 
         if let Err(store_error) = Secret::store_session(session.info().clone()).await {

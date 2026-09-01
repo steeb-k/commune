@@ -215,6 +215,13 @@ mod imp {
             // runs.
             commune_core::config::init(commune_core::config::CoreConfig {
                 app_id: crate::APP_ID.to_owned(),
+                app_name: crate::APP_NAME.to_owned(),
+                // The desktop never registers a pusher; the Android port's
+                // own `android_push.rs` names its device itself.
+                device_display_name: None,
+                // The same registration `login::client_registration_data`
+                // builds, until the login flow itself moves to the core.
+                oauth_client: crate::login::oauth_client_config(),
                 profile: crate::PROFILE.as_str().to_owned(),
                 data_dir: crate::utils::DataType::Persistent.dir_path(),
                 cache_dir: crate::utils::DataType::Cache.dir_path(),

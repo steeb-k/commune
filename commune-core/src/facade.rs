@@ -69,6 +69,14 @@ pub fn init_core(ffi_config: FfiCoreConfig) {
 
     config::init(config::CoreConfig {
         app_id: ffi_config.app_id,
+        app_name: APP_NAME.to_owned(),
+        // Shown in other clients' session lists when the account audits
+        // what pushes to it; this embedder is the Android one.
+        device_display_name: Some(format!("{APP_NAME} on Android")),
+        oauth_client: config::OAuthClientConfig {
+            client_uri: url::Url::parse(ANDROID_OAUTH_CLIENT_URI).expect("client URI is valid"),
+            redirect_uris: vec![android_redirect_uri()],
+        },
         profile: ffi_config.profile,
         data_dir: ffi_config.data_dir.into(),
         cache_dir: ffi_config.cache_dir.into(),
@@ -205,6 +213,30 @@ impl From<crate::session::DirectoryError> for CoreError {
 
 impl From<crate::session::CreateRoomError> for CoreError {
     fn from(error: crate::session::CreateRoomError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::login::LoginError> for CoreError {
+    fn from(error: crate::login::LoginError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::login::RegisterError> for CoreError {
+    fn from(error: crate::login::RegisterError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::login::ResetPasswordError> for CoreError {
+    fn from(error: crate::login::ResetPasswordError) -> Self {
         Self::Failed {
             msg: crate::UserFacingError::to_user_facing(&error),
         }
@@ -857,9 +889,9 @@ pub struct CoreApp {
     verification: Arc<VerificationFlows>,
     /// The task feeding the member-list listener.
     member_list_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
-    /// The client a login flow built at discovery, kept for the flow's
-    /// next step (SSO, OAuth, registration, password reset).
-    pending_login: Mutex<Option<matrix_sdk::Client>>,
+    /// The login the discovery step started, kept for the flow's next
+    /// step (password, SSO, OAuth, registration, password reset).
+    pending_login: Mutex<Option<crate::login::LoginFlow>>,
     /// The calls in flight and the listener following them.
     calls: Arc<CallFlows>,
 }
@@ -929,22 +961,22 @@ impl CoreApp {
         username: String,
         password: String,
     ) -> Result<(), CoreError> {
-        let homeserver: url::Url = homeserver.parse().map_err(|_| CoreError::Failed {
-            msg: "Invalid homeserver URL".to_owned(),
-        })?;
+        // The application logs in with the client its discovery built; the
+        // Kotlin flow discovers before it shows the password page, so the
+        // pending login is that client. Without one — a caller that skipped
+        // discovery — the homeserver is discovered here first.
+        let flow = match self.pending_login_flow() {
+            Ok(flow) => flow,
+            Err(_) => crate::login::LoginFlow::discover(&homeserver, true)
+                .await
+                .map_err(CoreError::from)?,
+        };
 
-        let list = self.session_list.clone();
-        let session = RUNTIME
-            .spawn(async move {
-                list.login_with_password(homeserver, username, password)
-                    .await
-            })
+        flow.login_with_password(&username, &password)
             .await
-            .expect("task was not aborted")
-            .map_err(|login_error| CoreError::Failed { msg: login_error })?;
+            .map_err(CoreError::from)?;
 
-        self.set_active_session(session.session_id().to_owned());
-        Ok(())
+        self.adopt_login(flow).await
     }
 
     /// What the given homeserver offers for logging in, per the
@@ -952,124 +984,66 @@ impl CoreApp {
     /// resolves, the Matrix native flows otherwise. The client built
     /// here is kept for the flow's next step.
     pub async fn discover_login(&self, homeserver: String) -> Result<FfiLoginMethods, CoreError> {
-        use ruma::api::client::session::get_login_types::v3::LoginType;
+        use crate::login::LoginApi;
 
-        let (client, methods) = RUNTIME
-            .spawn(async move {
-                let client = matrix_sdk::Client::builder()
-                    .request_config(matrix_sdk::config::RequestConfig::new().retry_limit(2))
-                    .http_client(crate::tls::matrix_client())
-                    .server_name_or_homeserver_url(homeserver)
-                    .build()
-                    .await
-                    .map_err(|build_error| CoreError::Failed {
-                        msg: format!("Could not reach the homeserver: {build_error}"),
-                    })?;
-
-                let supports_oauth = client.oauth().server_metadata().await.is_ok();
-
-                let (supports_password, supports_sso) = if supports_oauth {
-                    (false, false)
-                } else {
-                    let flows = client
-                        .matrix_auth()
-                        .get_login_types()
-                        .await
-                        .map_err(|types_error| CoreError::Failed {
-                            msg: format!("Could not ask how to log in: {types_error}"),
-                        })?
-                        .flows;
-                    (
-                        flows
-                            .iter()
-                            .any(|login_type| matches!(login_type, LoginType::Password(_))),
-                        flows
-                            .iter()
-                            .any(|login_type| matches!(login_type, LoginType::Sso(_))),
-                    )
-                };
-
-                let methods = FfiLoginMethods {
-                    homeserver_url: client.homeserver().to_string(),
-                    supports_password,
-                    supports_sso,
-                    supports_oauth,
-                };
-                Ok::<_, CoreError>((client, methods))
-            })
+        // Always with autodiscovery: the application's advanced dialog can
+        // turn it off for a typed URL, and the Kotlin flow has no such
+        // dialog.
+        let flow = crate::login::LoginFlow::discover(&homeserver, true)
             .await
-            .expect("task was not aborted")?;
+            .map_err(CoreError::from)?;
 
-        *self.pending_login.lock().expect("mutex is not poisoned") = Some(client);
+        let (supports_password, supports_sso, supports_oauth) = match flow.api() {
+            LoginApi::OAuth => (false, false, true),
+            LoginApi::Matrix {
+                supports_password,
+                supports_sso,
+            } => (supports_password, supports_sso, false),
+        };
+        let methods = FfiLoginMethods {
+            homeserver_url: flow.homeserver().to_string(),
+            supports_password,
+            supports_sso,
+            supports_oauth,
+        };
+
+        *self.pending_login.lock().expect("mutex is not poisoned") = Some(flow);
         Ok(methods)
     }
 
     /// The Matrix SSO URL to open in the browser; the redirect carries
     /// the login token back on the application's fixed Android scheme.
     pub async fn sso_login_url(&self) -> Result<String, CoreError> {
-        let client = self.pending_login_client()?;
+        let flow = self.pending_login_flow()?;
 
-        RUNTIME
-            .spawn(async move {
-                client
-                    .matrix_auth()
-                    .get_sso_login_url(ANDROID_REDIRECT_URI, None)
-                    .await
-                    .map_err(|url_error| CoreError::Failed {
-                        msg: format!("Could not build the SSO URL: {url_error}"),
-                    })
-            })
+        flow.sso_url(&android_redirect_uri())
             .await
-            .expect("task was not aborted")
+            .map(|url| url.to_string())
+            .map_err(CoreError::from)
     }
 
     /// Finish a Matrix SSO login with the token the redirect carried.
     pub async fn finish_sso_login(&self, login_token: String) -> Result<(), CoreError> {
-        let client = self.pending_login_client()?;
-        let list = self.session_list.clone();
+        let flow = self.pending_login_flow()?;
 
-        RUNTIME
-            .spawn(async move {
-                client
-                    .matrix_auth()
-                    .login_token(&login_token)
-                    .initial_device_display_name("Commune")
-                    .send()
-                    .await
-                    .map_err(|login_error| CoreError::Failed {
-                        msg: format!("Could not log in: {login_error}"),
-                    })?;
-                list.adopt_logged_in_client(client)
-                    .await
-                    .map(|session| session.session_id().to_owned())
-                    .map_err(|adopt_error| CoreError::Failed { msg: adopt_error })
-            })
+        flow.finish_sso_login(crate::login::SsoCallback::Token(login_token))
             .await
-            .expect("task was not aborted")
-            .map(|session_id| self.set_active_session(session_id))
+            .map_err(CoreError::from)?;
+
+        self.adopt_login(flow).await
     }
 
     /// The OAuth 2.0 authorization URL to open in the browser, with the
     /// application's exact client registration.
     pub async fn oauth_login_url(&self) -> Result<String, CoreError> {
-        let client = self.pending_login_client()?;
+        let flow = self.pending_login_flow()?;
 
-        RUNTIME
-            .spawn(async move {
-                let redirect =
-                    url::Url::parse(ANDROID_REDIRECT_URI).expect("redirect URI is valid");
-                let oauth = client.oauth();
-                let data = oauth
-                    .login(redirect, None, Some(oauth_client_registration_data()), None)
-                    .build()
-                    .await
-                    .map_err(|url_error| CoreError::Failed {
-                        msg: format!("Could not set up login: {url_error}"),
-                    })?;
-                Ok(data.url.to_string())
-            })
+        // Never to create an account: the Kotlin flow creates one through
+        // the Matrix native register endpoint only.
+        flow.oauth_authorization(android_redirect_uri(), false)
             .await
-            .expect("task was not aborted")
+            .map(|data| data.url.to_string())
+            .map_err(CoreError::from)
     }
 
     /// Finish an OAuth 2.0 login with the query string the redirect
@@ -1077,138 +1051,65 @@ impl CoreApp {
     pub async fn finish_oauth_login(&self, redirect_query: String) -> Result<(), CoreError> {
         use matrix_sdk::utils::UrlOrQuery;
 
-        let client = self.pending_login_client()?;
-        let list = self.session_list.clone();
+        let flow = self.pending_login_flow()?;
 
-        RUNTIME
-            .spawn(async move {
-                client
-                    .oauth()
-                    .finish_login(UrlOrQuery::Query(redirect_query))
-                    .await
-                    .map_err(|login_error| CoreError::Failed {
-                        msg: format!("Could not log in: {login_error}"),
-                    })?;
-                list.adopt_logged_in_client(client)
-                    .await
-                    .map(|session| session.session_id().to_owned())
-                    .map_err(|adopt_error| CoreError::Failed { msg: adopt_error })
-            })
+        flow.finish_oauth_login(UrlOrQuery::Query(redirect_query))
             .await
-            .expect("task was not aborted")
-            .map(|session_id| self.set_active_session(session_id))
+            .map_err(CoreError::from)?;
+
+        self.adopt_login(flow).await
     }
 
     /// Create an account on the discovered homeserver, walking the
     /// stages a headless client can answer (dummy, and terms — creating
     /// the account is accepting them). Anything more wants a browser.
     pub async fn register_user(&self, username: String, password: String) -> Result<(), CoreError> {
-        use ruma::api::client::{
-            account::register,
-            uiaa::{AuthData, Dummy},
-        };
+        use crate::login::{AuthStage, RegisterError};
 
-        let client = self.pending_login_client()?;
-        let list = self.session_list.clone();
+        let flow = self.pending_login_flow()?;
 
-        RUNTIME
-            .spawn(async move {
-                let build_request = |auth: Option<AuthData>| {
-                    let mut request = register::v3::Request::new();
-                    request.username = Some(username.clone());
-                    request.password = Some(password.clone());
-                    request.initial_device_display_name = Some("Commune".to_owned());
-                    request.auth = auth;
-                    request
-                };
-
-                let mut auth = None;
-                for _attempt in 0..4 {
-                    match client.matrix_auth().register(build_request(auth.take())).await {
-                        Ok(_) => {
-                            return list
-                                .adopt_logged_in_client(client)
-                                .await
-                                .map(|session| session.session_id().to_owned())
-                                .map_err(|adopt_error| CoreError::Failed { msg: adopt_error });
-                        }
-                        Err(register_error) => {
-                            let Some(uiaa) = register_error.as_uiaa_response() else {
-                                return Err(CoreError::Failed {
-                                    msg: format!("Could not create account: {register_error}"),
-                                });
-                            };
-                            let next_stage = uiaa
-                                .flows
-                                .iter()
-                                .filter_map(|flow| {
-                                    flow.stages
-                                        .iter()
-                                        .find(|stage| !uiaa.completed.contains(stage))
-                                })
-                                .find(|stage| {
-                                    stage.as_str() == "m.login.dummy"
-                                        || stage.as_str() == "m.login.terms"
-                                });
-                            auth = match next_stage.map(|stage| stage.as_str()) {
-                                Some("m.login.dummy") => {
-                                    let mut dummy = Dummy::new();
-                                    dummy.session = uiaa.session.clone();
-                                    Some(AuthData::Dummy(dummy))
-                                }
-                                Some("m.login.terms") => AuthData::new(
-                                    "m.login.terms",
-                                    uiaa.session.clone(),
-                                    serde_json::Map::new(),
-                                )
-                                .ok(),
-                                _ => {
-                                    return Err(CoreError::Failed {
-                                        msg: "This homeserver asks for steps this app cannot answer yet"
-                                            .to_owned(),
-                                    });
-                                }
-                            };
-                        }
-                    }
+        // The application's `AuthDialog` loop, without the dialog: the
+        // stages it would have shown a page for are the ones this cannot
+        // answer.
+        let mut auth = None;
+        for _attempt in 0..4 {
+            match flow.register(&username, &password, auth.take()).await {
+                Ok(()) => return self.adopt_login(flow).await,
+                Err(RegisterError::Uiaa(uiaa_info)) => {
+                    let stage = AuthStage::next(&uiaa_info, AuthStage::WITHOUT_INPUT);
+                    auth = stage
+                        .and_then(|stage| stage.auth_data_without_input())
+                        .ok_or_else(|| CoreError::Failed {
+                            msg: "This homeserver asks for steps this app cannot answer yet"
+                                .to_owned(),
+                        })
+                        .map(Some)?;
                 }
-                Err(CoreError::Failed {
-                    msg: "Could not create account".to_owned(),
-                })
-            })
-            .await
-            .expect("task was not aborted")
-            .map(|session_id| self.set_active_session(session_id))
+                Err(register_error) => return Err(register_error.into()),
+            }
+        }
+
+        Err(CoreError::Failed {
+            msg: "Could not create account".to_owned(),
+        })
     }
 
     /// Ask the homeserver to email a password-reset link.
     pub async fn request_password_reset(&self, email: String) -> Result<FfiResetHandle, CoreError> {
-        use ruma::api::client::account::request_password_change_token_via_email;
+        let flow = self.pending_login_flow()?;
 
-        let client = self.pending_login_client()?;
-
-        RUNTIME
-            .spawn(async move {
-                let client_secret = ruma::ClientSecret::new();
-                let request = request_password_change_token_via_email::v3::Request::new(
-                    client_secret.clone(),
-                    email,
-                    1u32.into(),
-                );
-                let response =
-                    client
-                        .send(request)
-                        .await
-                        .map_err(|send_error| CoreError::Failed {
-                            msg: format!("Could not send the email: {send_error}"),
-                        })?;
-                Ok(FfiResetHandle {
-                    sid: response.sid.to_string(),
-                    client_secret: client_secret.to_string(),
-                })
-            })
+        // Always a first send: the handle carries no address or attempt
+        // count, so a resend from this side is a new session rather than
+        // the application's bumped attempt on the same one.
+        let session = flow
+            .request_password_reset_email(&email, None)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)?;
+
+        Ok(FfiResetHandle {
+            sid: session.sid.to_string(),
+            client_secret: session.client_secret.to_string(),
+        })
     }
 
     /// Set the new password once the emailed link was opened, signing
@@ -1218,58 +1119,27 @@ impl CoreApp {
         new_password: String,
         handle: FfiResetHandle,
     ) -> Result<(), CoreError> {
-        use ruma::api::client::{
-            account::change_password,
-            uiaa::{AuthData, ThirdpartyIdCredentials},
+        let flow = self.pending_login_flow()?;
+
+        let sid = ruma::SessionId::parse(handle.sid).map_err(|_| CoreError::Failed {
+            msg: "Invalid reset session".to_owned(),
+        })?;
+        let client_secret =
+            ruma::ClientSecret::parse(handle.client_secret).map_err(|_| CoreError::Failed {
+                msg: "Invalid reset secret".to_owned(),
+            })?;
+        // The address and the attempt count only matter for a resend,
+        // which the handle cannot ask for.
+        let session = crate::login::EmailSession {
+            address: String::new(),
+            sid,
+            client_secret,
+            send_attempt: 1,
         };
 
-        let client = self.pending_login_client()?;
-
-        RUNTIME
-            .spawn(async move {
-                let sid = ruma::SessionId::parse(handle.sid).map_err(|_| CoreError::Failed {
-                    msg: "Invalid reset session".to_owned(),
-                })?;
-                let client_secret =
-                    ruma::ClientSecret::parse(handle.client_secret).map_err(|_| {
-                        CoreError::Failed {
-                            msg: "Invalid reset secret".to_owned(),
-                        }
-                    })?;
-                let credentials = ThirdpartyIdCredentials::new(sid, client_secret);
-                let credentials =
-                    serde_json::to_value(&credentials).map_err(|_| CoreError::Failed {
-                        msg: "Could not build the reset".to_owned(),
-                    })?;
-                let mut data = serde_json::Map::new();
-                data.insert("threepid_creds".to_owned(), credentials);
-                let auth = AuthData::new("m.login.email.identity", None, data).map_err(|_| {
-                    CoreError::Failed {
-                        msg: "Could not build the reset".to_owned(),
-                    }
-                })?;
-
-                let mut request = change_password::v3::Request::new(new_password);
-                // The account has been out of the owner's hands for as
-                // long as the password was unknown; every other session
-                // goes.
-                request.logout_devices = true;
-                request.auth = Some(auth);
-
-                client
-                    .send(request)
-                    .await
-                    .map(|_| ())
-                    .map_err(|send_error| CoreError::Failed {
-                        msg: if send_error.as_uiaa_response().is_some() {
-                            "Open the link in the email first, then try again".to_owned()
-                        } else {
-                            format!("Could not reset the password: {send_error}")
-                        },
-                    })
-            })
+        flow.reset_password(&session, &new_password)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// Follow 1:1 calls with the given listener: the core speaks
@@ -6728,32 +6598,27 @@ pub struct FfiUpgradeInfo {
     pub can_upgrade: bool,
 }
 
+/// The name this embedder presents itself to homeservers under.
+const APP_NAME: &str = "Commune";
+
 /// The fixed Android redirect URI login flows come back on — the
-/// application's own, from its `login/local_server.rs`.
+/// application's own, from its `login/local_server.rs`: a custom scheme
+/// rather than the loopback address other platforms use, because no
+/// browser on Android will follow a redirect to another application's
+/// loopback listener. `MainActivity` receives it as an `Intent`.
 const ANDROID_REDIRECT_URI: &str = "io.github.steeb-k.commune:/oauth2redirect";
 
-/// The application's OAuth 2.0 client registration, exactly as its
-/// `client_registration_data` builds it for Android.
-fn oauth_client_registration_data() -> matrix_sdk::authentication::oauth::ClientRegistrationData {
-    use matrix_sdk::authentication::oauth::registration::{
-        ApplicationType, ClientMetadata, Localized, OAuthGrantType,
-    };
+/// The client URI the Android registration is made under.
+///
+/// matrix.org's authorization server requires the client URI of a native
+/// client whose redirect scheme is not `https` to match that scheme read as
+/// reverse DNS: `steeb-k.github.io` reversed is `io.github.steeb-k`, which
+/// is the domain the scheme above is derived from.
+const ANDROID_OAUTH_CLIENT_URI: &str = "https://steeb-k.github.io/";
 
-    let redirect_uris = vec![url::Url::parse(ANDROID_REDIRECT_URI).expect("redirect URI is valid")];
-    // matrix.org's authorization server requires the client URI to match
-    // the redirect scheme read as reverse DNS.
-    let client_uri = url::Url::parse("https://steeb-k.github.io/").expect("client URI is valid");
-
-    let mut client_metadata = ClientMetadata::new(
-        ApplicationType::Native,
-        vec![OAuthGrantType::AuthorizationCode { redirect_uris }],
-        Localized::new(client_uri, None),
-    );
-    client_metadata.client_name = Some(Localized::new("Commune".to_owned(), None));
-
-    ruma::serde::Raw::new(&client_metadata)
-        .expect("client metadata serializes")
-        .into()
+/// The Android redirect URI, parsed.
+fn android_redirect_uri() -> url::Url {
+    url::Url::parse(ANDROID_REDIRECT_URI).expect("redirect URI is valid")
 }
 
 /// Whether the account has a crypto identity, and whether this session
@@ -7271,9 +7136,8 @@ impl CoreApp {
         Ok((room, flow.1))
     }
 
-    /// The login client the discovery step built, for the flow's next
-    /// step.
-    fn pending_login_client(&self) -> Result<matrix_sdk::Client, CoreError> {
+    /// The login the discovery step started, for the flow's next step.
+    fn pending_login_flow(&self) -> Result<crate::login::LoginFlow, CoreError> {
         self.pending_login
             .lock()
             .expect("mutex is not poisoned")
@@ -7281,6 +7145,29 @@ impl CoreApp {
             .ok_or_else(|| CoreError::Failed {
                 msg: "No login in progress".to_owned(),
             })
+    }
+
+    /// Make the logged-in client of the given flow a stored session and
+    /// the active one — the tail of every login.
+    async fn adopt_login(&self, flow: crate::login::LoginFlow) -> Result<(), CoreError> {
+        let list = self.session_list.clone();
+
+        // `Session::create` opens the sqlite store and `prepare` starts the
+        // sync, so this runs on the runtime.
+        let session_id = RUNTIME
+            .spawn(async move {
+                list.adopt_logged_in_client(flow.into_client())
+                    .await
+                    .map(|session| session.session_id().to_owned())
+            })
+            .await
+            .expect("task was not aborted")
+            .map_err(|adopt_error| CoreError::Failed {
+                msg: crate::UserFacingError::to_user_facing(&adopt_error),
+            })?;
+
+        self.set_active_session(session_id);
+        Ok(())
     }
 }
 
