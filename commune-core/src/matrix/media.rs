@@ -18,8 +18,8 @@ use ruma::{
         room::{
             MediaSource,
             message::{
-                AudioMessageEventContent, FileMessageEventContent, ImageMessageEventContent,
-                MessageType, VideoMessageEventContent,
+                AudioMessageEventContent, FileMessageEventContent, FormattedBody,
+                ImageMessageEventContent, MessageType, VideoMessageEventContent,
             },
         },
         sticker::StickerEventContent,
@@ -27,15 +27,16 @@ use ruma::{
 };
 use tracing::error;
 
-use crate::{paths::DataType, spawn_tokio};
+use crate::{matrix::ext_traits::FormattedBodyExt, paths::DataType, spawn_tokio, utils::StrMutExt};
 
 /// A media message: a message whose content is a file to fetch.
 ///
-/// The portable half of the application's `MediaMessage`
-/// (`src/utils/matrix/media_message.rs`): the variants and the fetch. What
-/// stayed behind is every method that renders a name — "Voice Message",
-/// the generated filename of a voice message — because they are sentences,
-/// and the save dialog, because it is a widget.
+/// The application's `MediaMessage` (`src/utils/matrix/media_message.rs`)
+/// since Phase 4's module 8: the variants, the caption and the fetch, as
+/// bytes or as a file. What stayed behind, as an extension trait over
+/// this, is every method that renders a name — "Voice Message", the
+/// generated filename of a voice message — because they are sentences, and
+/// the save dialog, because it is a widget.
 #[derive(Debug, Clone)]
 pub enum MediaMessage {
     /// An audio.
@@ -78,6 +79,65 @@ impl MediaMessage {
         }
     }
 
+    /// The caption of the media, if any.
+    ///
+    /// Returns `Some((body, formatted_body))` if the media includes a
+    /// caption: a body that is not only whitespace, and its formatted
+    /// counterpart with the same rule.
+    #[must_use]
+    pub fn caption(&self) -> Option<(String, Option<FormattedBody>)> {
+        let mut caption = match self {
+            Self::Audio(c) => c
+                .caption()
+                .map(|caption| (caption.to_owned(), c.formatted.clone())),
+            Self::File(c) => c
+                .caption()
+                .map(|caption| (caption.to_owned(), c.formatted.clone())),
+            Self::Image(c) => c
+                .caption()
+                .map(|caption| (caption.to_owned(), c.formatted.clone())),
+            Self::Video(c) => c
+                .caption()
+                .map(|caption| (caption.to_owned(), c.formatted.clone())),
+            Self::Sticker(_) => None,
+        };
+
+        caption.take_if(|(caption, formatted)| {
+            caption.clean_string();
+            formatted.clean_string();
+
+            caption.is_empty()
+        });
+
+        caption
+    }
+
+    /// Fetch the content of this media with the given client.
+    ///
+    /// Returns an error if something occurred while fetching the content.
+    pub async fn into_content(self, client: &Client) -> Result<Vec<u8>, matrix_sdk::Error> {
+        let media = client.media();
+
+        macro_rules! content {
+            ($event_content:expr) => {{
+                Ok(
+                    spawn_tokio!(async move { media.get_file(&$event_content, true).await })
+                        .await
+                        .expect("task was not aborted")?
+                        .expect("All media message types have a file"),
+                )
+            }};
+        }
+
+        match self {
+            Self::Audio(c) => content!(c),
+            Self::File(c) => content!(c),
+            Self::Image(c) => content!(c),
+            Self::Video(c) => content!(c),
+            Self::Sticker(c) => content!(*c),
+        }
+    }
+
     /// Fetch the content of this media with the given client into a file,
     /// returning its path.
     ///
@@ -90,6 +150,18 @@ impl MediaMessage {
         };
 
         get_media_file(client, request).await
+    }
+}
+
+impl From<AudioMessageEventContent> for MediaMessage {
+    fn from(value: AudioMessageEventContent) -> Self {
+        Self::Audio(value)
+    }
+}
+
+impl From<FileMessageEventContent> for MediaMessage {
+    fn from(value: FileMessageEventContent) -> Self {
+        Self::File(value)
     }
 }
 

@@ -108,9 +108,9 @@ pub use self::{
         POWER_LEVEL_MAX, Permissions, PermissionsError, PermissionsState, PowerLevelsMatrix,
         ReceiptPosition, Room, RoomAliases, RoomCategory, RoomDetailsError, RoomDisplayName,
         RoomHighlight, RoomSearch, RoomSettingsError, SearchError, SearchResult, ServerAclError,
-        ServerNotice, TargetRoomCategory, Timeline, TimelineError, TimelineFocusKind, UpgradeInfo,
-        acls_are_equal, check_acl, check_upload_size, cmp_room_versions, compose_message,
-        compute_join_rule, emoticon_plain, unrestricted_acl,
+        ServerNotice, TargetRoomCategory, ThreadList, ThreadListError, Timeline, TimelineError,
+        TimelineFocusKind, UpgradeInfo, acls_are_equal, check_acl, check_upload_size,
+        cmp_room_versions, compose_message, compute_join_rule, emoticon_plain, unrestricted_acl,
     },
     room_list::{DirectChatError, JoinError, RoomList, RoomMetainfo},
     security::{

@@ -14,6 +14,7 @@ use self::waveform::Waveform;
 use super::gst_media_stream::GstMediaStream;
 use crate::{
     MEDIA_FILE_NOTIFIER,
+    prelude::*,
     session::Session,
     spawn,
     utils::{

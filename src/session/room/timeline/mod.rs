@@ -1,31 +1,14 @@
-use std::{
-    collections::HashMap,
-    ops::ControlFlow,
-    sync::{Arc, atomic::AtomicBool},
-};
+use std::{collections::HashMap, ops::ControlFlow, sync::Arc};
 
+use commune_core::session::{MAX_BATCH_SIZE, Timeline as CoreTimeline, TimelineFocusKind};
 use futures_util::StreamExt;
-use gtk::{
-    gio, glib,
-    glib::{clone, closure_local},
-    prelude::*,
-    subclass::prelude::*,
-};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk_ui::{
     eyeball_im::VectorDiff,
-    timeline::{
-        RoomExt, Timeline as SdkTimeline, TimelineEventFocusThreadMode, TimelineEventItemId,
-        TimelineFocus, TimelineItem as SdkTimelineItem, default_event_filter,
-    },
+    timeline::{Timeline as SdkTimeline, TimelineEventItemId, TimelineItem as SdkTimelineItem},
 };
 use ruma::{
-    OwnedEventId, UserId,
-    api::client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
-    events::{
-        AnySyncMessageLikeEvent, AnySyncStateEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
-        SyncStateEvent, room::message::MessageType, tag::TagName,
-    },
-    room_version_rules::RoomVersionRules,
+    OwnedEventId, UserId, api::client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
 };
 use tokio::task::AbortHandle;
 use tracing::error;
@@ -41,15 +24,13 @@ pub(crate) use self::{
     timeline_item::{TimelineItem, TimelineItemExt, TimelineItemImpl},
     virtual_item::{VirtualItem, VirtualItemKind},
 };
-use super::{ReceiptPosition, Room, RoomCategory};
+use super::{ReceiptPosition, Room};
 use crate::{
-    prelude::*,
+    core_bridge::ObjectWatcher,
     spawn, spawn_tokio,
     utils::{LoadingState, SingleItemListModel},
 };
 
-/// The number of events to request when loading more history.
-const MAX_BATCH_SIZE: u16 = 20;
 /// The maximum time between contiguous events before we show their header, in
 /// milliseconds.
 ///
@@ -59,12 +40,11 @@ const MAX_TIME_BETWEEN_HEADERS: u64 = 20 * 60 * 1000;
 mod imp {
     use std::{
         cell::{Cell, OnceCell, RefCell},
-        iter,
         marker::PhantomData,
-        sync::{LazyLock, atomic::Ordering},
+        sync::LazyLock,
     };
 
-    use glib::subclass::Signal;
+    use glib::clone;
 
     use super::*;
 
@@ -74,13 +54,10 @@ mod imp {
         /// The room containing this timeline.
         #[property(get, set = Self::set_room, construct_only)]
         room: OnceCell<Room>,
+        /// The timeline, as the core keeps it.
+        core: OnceCell<CoreTimeline>,
         /// The underlying SDK timeline.
         matrix_timeline: OnceCell<Arc<SdkTimeline>>,
-        /// Whether this is the timeline of the server notices room.
-        ///
-        /// Read by the event filter, which runs off the main thread, so it
-        /// cannot ask the room for its category.
-        is_server_notice_room: Arc<AtomicBool>,
         /// Items added at the start of the timeline.
         ///
         /// Currently this can only contain one item at a time.
@@ -107,31 +84,25 @@ mod imp {
         /// The loading state of the timeline.
         #[property(get, builder(LoadingState::default()))]
         state: Cell<LoadingState>,
-        /// The event this timeline is focused on.
+        /// Whether this timeline is focused on a single event.
         ///
         /// If this is set, this is not the live timeline of the room: it is a
         /// timeline centered on a single event, e.g. a search result or a
         /// permalink. Such a timeline never receives new events from sync.
-        focused_event_id: OnceCell<Option<OwnedEventId>>,
-        /// Whether this timeline is focused on a single event.
         #[property(get = Self::is_focused)]
         is_focused: PhantomData<bool>,
-        /// Whether this timeline shows the events pinned in the room.
-        pinned: Cell<bool>,
         /// Whether this timeline shows the events pinned in the room.
         ///
         /// Such a timeline is not live, and the SDK refuses to paginate it:
         /// the pinned events are the whole of it.
         #[property(get = Self::is_pinned)]
         is_pinned: PhantomData<bool>,
-        /// The root event of the thread this timeline shows, if any.
+        /// Whether this timeline shows a single thread.
         ///
         /// Such a timeline holds only the events of that thread, starting at
         /// its root. It receives new thread events from sync and can be
         /// paginated backwards, but its bottom is the present, so it never
         /// paginates forwards.
-        thread_root: OnceCell<Option<OwnedEventId>>,
-        /// Whether this timeline shows a single thread.
         #[property(get = Self::is_thread)]
         is_thread: PhantomData<bool>,
         /// Whether we are loading events at the start of the timeline.
@@ -158,9 +129,9 @@ mod imp {
         /// Whether we have the `m.room.create` event in the timeline.
         #[property(get)]
         has_room_create: Cell<bool>,
+        /// The task following the core's timeline.
+        watch_handle: RefCell<Option<AbortHandle>>,
         diff_handle: OnceCell<AbortHandle>,
-        back_pagination_status_handle: OnceCell<AbortHandle>,
-        read_receipts_changed_handle: OnceCell<AbortHandle>,
     }
 
     #[glib::object_subclass]
@@ -171,12 +142,6 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for Timeline {
-        fn signals() -> &'static [Signal] {
-            static SIGNALS: LazyLock<Vec<Signal>> =
-                LazyLock::new(|| vec![Signal::builder("read-change-trigger").build()]);
-            SIGNALS.as_ref()
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -204,13 +169,10 @@ mod imp {
         }
 
         fn dispose(&self) {
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
+            }
             if let Some(handle) = self.diff_handle.get() {
-                handle.abort();
-            }
-            if let Some(handle) = self.back_pagination_status_handle.get() {
-                handle.abort();
-            }
-            if let Some(handle) = self.read_receipts_changed_handle.get() {
                 handle.abort();
             }
         }
@@ -220,17 +182,6 @@ mod imp {
         /// Set the room containing this timeline.
         fn set_room(&self, room: Room) {
             let room = self.room.get_or_init(|| room);
-
-            room.connect_category_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |room| {
-                    imp.is_server_notice_room.store(
-                        room.category() == RoomCategory::ServerNotice,
-                        Ordering::Relaxed,
-                    );
-                }
-            ));
 
             room.typing_list().connect_is_empty_notify(clone!(
                 #[weak(rename_to = imp)]
@@ -248,101 +199,71 @@ mod imp {
             self.room.get().expect("room should be initialized")
         }
 
-        /// Initialize the underlying SDK timeline.
-        #[allow(clippy::too_many_lines)]
+        /// Set the timeline, as the core keeps it.
+        pub(super) fn set_core(&self, core: CoreTimeline) {
+            self.core.set(core).expect("core should be uninitialized");
+        }
+
+        /// The timeline, as the core keeps it.
+        pub(super) fn core(&self) -> &CoreTimeline {
+            self.core.get().expect("core should be initialized")
+        }
+
+        /// Follow the core's timeline: build the SDK timeline through it,
+        /// mirror its state and present its items.
         pub(super) async fn init_matrix_timeline(&self) {
-            let room = self.room();
+            type T = super::Timeline;
 
-            let own_user_id = room.own_member().user_id().to_owned();
-            let matrix_room = room.matrix_room().clone();
+            let core = self.core().clone();
 
-            // The category of the room might not have been loaded yet, and the
-            // filter cannot wait for it, so ask the store directly. The
-            // `m.server_notice` tag is what identifies the room.
-            let is_server_notice_room = self.is_server_notice_room.clone();
-            {
-                let matrix_room = matrix_room.clone();
-                let handle = spawn_tokio!(async move { matrix_room.tags().await });
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(core.subscribe_state(), |obj: &T, state| {
+                    obj.imp().set_state(state.into());
+                })
+                .follow(core.subscribe_is_loading_start(), |obj: &T, is_loading| {
+                    obj.imp().set_loading_start(is_loading);
+                })
+                .follow(core.subscribe_is_loading_end(), |obj: &T, is_loading| {
+                    obj.imp().set_loading_end(is_loading);
+                })
+                .follow(core.subscribe_has_reached_start(), |obj: &T, reached| {
+                    obj.imp().set_has_reached_start(reached);
+                })
+                .follow(core.subscribe_has_reached_end(), |obj: &T, reached| {
+                    obj.imp().set_has_reached_end(reached);
+                })
+                .spawn();
+            self.watch_handle.replace(Some(handle));
 
-                if let Ok(Some(tags)) = handle.await.expect("task was not aborted") {
-                    is_server_notice_room
-                        .store(tags.contains_key(&TagName::ServerNotice), Ordering::Relaxed);
-                }
-            }
+            let core_clone = core.clone();
+            let matrix_timeline = spawn_tokio!(async move { core_clone.matrix_timeline().await })
+                .await
+                .expect("task was not aborted");
 
-            let filter = {
-                let own_user_id = own_user_id.clone();
-                move |any: &AnySyncTimelineEvent, rules: &RoomVersionRules| -> bool {
-                    show_in_timeline(
-                        any,
-                        rules,
-                        &own_user_id,
-                        is_server_notice_room.load(Ordering::Relaxed),
-                    )
-                }
-            };
-            let focused_event_id = self.focused_event_id().cloned();
-            let is_pinned = self.pinned.get();
-            let thread_root = self.thread_root().cloned();
-            let handle = spawn_tokio!(async move {
-                // Unparsable events are requested from the SDK because one of
-                // them means something: an invalid or empty `m.room.policy`
-                // content unsets the room's policy server, per the spec, and
-                // deserves its sentence. The GTK-side filter hides the rest.
-                let mut builder = matrix_room
-                    .timeline_builder()
-                    .event_filter(filter)
-                    .add_failed_to_parse(true);
-
-                // Threaded events are hidden from the live and focused
-                // timelines: since a thread can be opened from its root, they
-                // have somewhere better to be read.
-                if is_pinned {
-                    builder = builder.with_focus(TimelineFocus::PinnedEvents);
-                } else if let Some(root_event_id) = thread_root {
-                    builder = builder.with_focus(TimelineFocus::Thread { root_event_id });
-                } else if let Some(target) = focused_event_id {
-                    builder = builder.with_focus(TimelineFocus::Event {
-                        target,
-                        num_context_events: MAX_BATCH_SIZE,
-                        thread_mode: TimelineEventFocusThreadMode::Automatic {
-                            hide_threaded_events: true,
-                        },
-                    });
-                } else {
-                    builder = builder.with_focus(TimelineFocus::Live {
-                        hide_threaded_events: true,
-                    });
-                }
-
-                builder.build().await
-            });
-
-            let matrix_timeline = match handle.await.expect("task was not aborted") {
-                Ok(timeline) => timeline,
-                Err(error) => {
-                    error!("Could not create timeline: {error}");
-                    self.set_state(LoadingState::Error);
-                    return;
-                }
+            let Some(matrix_timeline) = matrix_timeline else {
+                // Already logged by the core; its state says so too.
+                self.set_state(LoadingState::Error);
+                return;
             };
 
-            let matrix_timeline = Arc::new(matrix_timeline);
             self.matrix_timeline
-                .set(matrix_timeline.clone())
+                .set(matrix_timeline)
                 .expect("matrix timeline is uninitialized");
 
-            if !self.is_focused() {
-                // The live timeline is always at the end of the room's history.
-                self.set_has_reached_end(true);
-            }
-            if self.pinned.get() {
-                // The pinned events are the whole of this timeline. The SDK
-                // refuses to paginate it, so never ask.
-                self.set_has_reached_start(true);
-            }
+            // What the core already knows, after subscribing so that
+            // nothing between the two is lost.
+            self.set_has_reached_start(core.has_reached_start());
+            self.set_has_reached_end(core.has_reached_end());
 
-            let (values, timeline_stream) = matrix_timeline.subscribe().await;
+            let core_clone = core.clone();
+            let subscription = spawn_tokio!(async move { core_clone.subscribe_items().await })
+                .await
+                .expect("task was not aborted");
+
+            let Some((values, timeline_stream)) = subscription else {
+                self.set_state(LoadingState::Error);
+                return;
+            };
 
             if *IS_AT_TRACE_LEVEL {
                 tracing::trace!(
@@ -357,7 +278,7 @@ mod imp {
             }
 
             let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let room_id = room.room_id().to_owned();
+            let room_id = self.room().room_id().to_owned();
             let fut = timeline_stream.for_each(move |diff_list| {
                 let obj_weak = obj_weak.clone();
                 let room_id = room_id.clone();
@@ -383,72 +304,51 @@ mod imp {
                 .set(diff_handle.abort_handle())
                 .expect("handle should be uninitialized");
 
-            if self.is_live() {
-                // A timeline that is not live never gets new events and must not
-                // move the read receipt of the user, so it does not need any of
-                // this.
-                self.watch_read_receipts().await;
-            }
-
             if self.is_live() && self.preload.get() {
                 self.preload().await;
             }
 
-            self.set_state(LoadingState::Ready);
-        }
-
-        /// Set the event this timeline is focused on.
-        pub(super) fn set_focused_event_id(&self, event_id: Option<OwnedEventId>) {
-            self.focused_event_id
-                .set(event_id)
-                .expect("focused event ID should be uninitialized");
+            self.set_state(core.state().into());
         }
 
         /// The event this timeline is focused on, if any.
-        pub(super) fn focused_event_id(&self) -> Option<&OwnedEventId> {
-            self.focused_event_id.get().and_then(Option::as_ref)
+        pub(super) fn focused_event_id(&self) -> Option<OwnedEventId> {
+            match self.core().focus() {
+                TimelineFocusKind::Event { target } => Some(target.clone()),
+                _ => None,
+            }
         }
 
         /// Whether this timeline is focused on a single event.
         fn is_focused(&self) -> bool {
-            self.focused_event_id().is_some()
-        }
-
-        /// Set whether this timeline shows the events pinned in the room.
-        pub(super) fn set_pinned(&self, pinned: bool) {
-            self.pinned.set(pinned);
+            matches!(self.core().focus(), TimelineFocusKind::Event { .. })
         }
 
         /// Whether this timeline shows the events pinned in the room.
         fn is_pinned(&self) -> bool {
-            self.pinned.get()
-        }
-
-        /// Set the root event of the thread this timeline shows.
-        pub(super) fn set_thread_root(&self, thread_root: Option<OwnedEventId>) {
-            self.thread_root
-                .set(thread_root)
-                .expect("thread root should be uninitialized");
+            matches!(self.core().focus(), TimelineFocusKind::Pinned)
         }
 
         /// The root event of the thread this timeline shows, if any.
-        pub(super) fn thread_root(&self) -> Option<&OwnedEventId> {
-            self.thread_root.get().and_then(Option::as_ref)
+        pub(super) fn thread_root(&self) -> Option<OwnedEventId> {
+            match self.core().focus() {
+                TimelineFocusKind::Thread { root } => Some(root.clone()),
+                _ => None,
+            }
         }
 
         /// Whether this timeline shows a single thread.
         fn is_thread(&self) -> bool {
-            self.thread_root().is_some()
+            matches!(self.core().focus(), TimelineFocusKind::Thread { .. })
         }
 
         /// Whether this is the live timeline of the room.
         ///
-        /// A live timeline is the only one that tracks the room's own read
-        /// receipts, shows who is typing, or is preloaded. A thread timeline
-        /// receives new events from sync too, but its receipts are the
-        /// thread's, not the room's.
+        /// A live timeline is the only one that shows who is typing, or is
+        /// preloaded. A thread timeline receives new events from sync too,
+        /// but its receipts are the thread's, not the room's.
         fn is_live(&self) -> bool {
-            !self.is_focused() && !self.pinned.get() && !self.is_thread()
+            matches!(self.core().focus(), TimelineFocusKind::Live)
         }
 
         /// The underlying SDK timeline.
@@ -524,17 +424,6 @@ mod imp {
             self.obj().notify_state();
         }
 
-        /// Update the loading state of the timeline.
-        fn update_loading_state(&self) {
-            let is_loading = self.is_loading_start.get() || self.is_loading_end.get();
-
-            if is_loading {
-                self.set_state(LoadingState::Loading);
-            } else if self.state.get() != LoadingState::Error {
-                self.set_state(LoadingState::Ready);
-            }
-        }
-
         /// Set whether we are loading events at the start of the timeline.
         fn set_loading_start(&self, is_loading_start: bool) {
             if self.is_loading_start.get() == is_loading_start {
@@ -543,7 +432,6 @@ mod imp {
 
             self.is_loading_start.set(is_loading_start);
 
-            self.update_loading_state();
             self.start_items().set_is_hidden(!is_loading_start);
             self.obj().notify_is_loading_start();
         }
@@ -556,7 +444,6 @@ mod imp {
 
             self.is_loading_end.set(is_loading_end);
 
-            self.update_loading_state();
             self.end_spinner_items().set_is_hidden(!is_loading_end);
             self.obj().notify_is_loading_end();
         }
@@ -606,16 +493,10 @@ mod imp {
         /// Clear the state of the timeline.
         ///
         /// This doesn't handle removing items in `sdk_items` because it can be
-        /// optimized by the caller of the function.
+        /// optimized by the caller of the function. What was known about the
+        /// ends of the history is the core's to forget.
         fn clear(&self) {
             self.event_map.borrow_mut().clear();
-            if !self.pinned.get() {
-                self.set_has_reached_start(false);
-            }
-            if self.is_focused() {
-                // The live timeline is always at the end of the room's history.
-                self.set_has_reached_end(false);
-            }
             self.set_has_room_create(false);
         }
 
@@ -668,12 +549,9 @@ mod imp {
                 self.log_items();
             }
 
-            let obj = self.obj();
             if self.is_empty() != was_empty {
-                obj.notify_is_empty();
+                self.obj().notify_is_empty();
             }
-
-            obj.emit_read_change_trigger();
         }
 
         /// Attempt to minimize the given list of diffs.
@@ -791,13 +669,6 @@ mod imp {
             // Update the header visibility of all the new additions, and the first item
             // after this batch.
             self.update_items_headers(pos, additions.len() as u32);
-
-            // Try to update the latest unread message.
-            if !additions.is_empty() {
-                self.room().update_latest_activity(
-                    additions.iter().filter_map(|i| i.downcast_ref::<Event>()),
-                );
-            }
         }
 
         /// Update the headers of the item at the given position and the given
@@ -893,12 +764,7 @@ mod imp {
         /// Whether we can load more events at the start of the timeline with
         /// the current state.
         pub(super) fn can_paginate_backwards(&self) -> bool {
-            // We do not want to load twice at the same time, and it's useless to try to
-            // load more history before the timeline is ready or if we have
-            // reached the start of the timeline.
-            self.state.get() != LoadingState::Initial
-                && !self.is_loading_start.get()
-                && !self.has_reached_start.get()
+            self.core().can_paginate_backwards()
         }
 
         /// Load more events at the start of the timeline until the given
@@ -907,56 +773,15 @@ mod imp {
         where
             F: Fn() -> ControlFlow<()>,
         {
-            self.set_loading_start(true);
-
-            loop {
-                if !self.paginate_backwards_inner().await {
-                    break;
-                }
-
-                if continue_fn().is_break() {
-                    break;
-                }
-            }
-
-            self.set_loading_start(false);
-        }
-
-        /// Load more events at the start of the timeline.
-        ///
-        /// Returns `true` if more events can be loaded.
-        async fn paginate_backwards_inner(&self) -> bool {
-            let matrix_timeline = self.matrix_timeline().clone();
-            let handle =
-                spawn_tokio!(
-                    async move { matrix_timeline.paginate_backwards(MAX_BATCH_SIZE).await }
-                );
-
-            match handle.await.expect("task was not aborted") {
-                Ok(reached_start) => {
-                    if reached_start {
-                        self.set_has_reached_start(true);
-                    }
-
-                    !reached_start
-                }
-                Err(error) => {
-                    error!("Could not load timeline: {error}");
-                    self.set_state(LoadingState::Error);
-                    false
-                }
-            }
+            self.core()
+                .paginate_backwards_while(|| continue_fn().is_continue())
+                .await;
         }
 
         /// Whether we can load more events at the end of the timeline with the
         /// current state.
         pub(super) fn can_paginate_forwards(&self) -> bool {
-            // Only a focused timeline can load events forwards: the live timeline is
-            // already at the end of the room's history.
-            self.is_focused()
-                && self.state.get() != LoadingState::Initial
-                && !self.is_loading_end.get()
-                && !self.has_reached_end.get()
+            self.core().can_paginate_forwards()
         }
 
         /// Load more events at the end of the timeline until the given function
@@ -965,45 +790,9 @@ mod imp {
         where
             F: Fn() -> ControlFlow<()>,
         {
-            self.set_loading_end(true);
-
-            loop {
-                if !self.paginate_forwards_inner().await {
-                    break;
-                }
-
-                if continue_fn().is_break() {
-                    break;
-                }
-            }
-
-            self.set_loading_end(false);
-        }
-
-        /// Load more events at the end of the timeline.
-        ///
-        /// Returns `true` if more events can be loaded.
-        async fn paginate_forwards_inner(&self) -> bool {
-            let matrix_timeline = self.matrix_timeline().clone();
-            let handle =
-                spawn_tokio!(
-                    async move { matrix_timeline.paginate_forwards(MAX_BATCH_SIZE).await }
-                );
-
-            match handle.await.expect("task was not aborted") {
-                Ok(reached_end) => {
-                    if reached_end {
-                        self.set_has_reached_end(true);
-                    }
-
-                    !reached_end
-                }
-                Err(error) => {
-                    error!("Could not load timeline: {error}");
-                    self.set_state(LoadingState::Error);
-                    false
-                }
-            }
+            self.core()
+                .paginate_forwards_while(|| continue_fn().is_continue())
+                .await;
         }
 
         /// Add the typing row to the timeline, if it isn't present already.
@@ -1023,42 +812,6 @@ mod imp {
             }
 
             self.end_items().set_is_hidden(true);
-        }
-
-        /// Listen to read receipts changes.
-        async fn watch_read_receipts(&self) {
-            let room_id = self.room().room_id().to_owned();
-            let matrix_timeline = self.matrix_timeline();
-
-            let stream = matrix_timeline
-                .subscribe_own_user_read_receipts_changed()
-                .await;
-
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let fut = stream.for_each(move |()| {
-                let obj_weak = obj_weak.clone();
-                let room_id = room_id.clone();
-                async move {
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        spawn!(async move {
-                            if let Some(obj) = obj_weak.upgrade() {
-                                obj.emit_read_change_trigger();
-                            } else {
-                                error!(
-                                    "Could not emit read change trigger for room {room_id}: \
-                                     could not upgrade weak reference"
-                                );
-                            }
-                        });
-                    });
-                }
-            });
-
-            let handle = spawn_tokio!(fut);
-            self.read_receipts_changed_handle
-                .set(handle.abort_handle())
-                .expect("handle is uninitialized");
         }
     }
 
@@ -1110,9 +863,6 @@ mod imp {
                 self.event_map
                     .borrow_mut()
                     .insert(event.identifier(), event.clone());
-
-                // Try to update the latest unread message.
-                self.room().update_latest_activity(iter::once(event));
             }
         }
 
@@ -1233,14 +983,16 @@ glib::wrapper! {
     ///
     /// There is no strict message ordering enforced by the Timeline; items
     /// will be appended/prepended to existing items in the order they are
-    /// received by the server.
+    /// received by the server. The timeline is the core's; this presents its
+    /// items as `GObject`s, with the headers, the virtual rows and the diff
+    /// minimizing a `GListModel` wants.
     pub struct Timeline(ObjectSubclass<imp::Timeline>);
 }
 
 impl Timeline {
     /// Construct a new `Timeline` for the given room.
     pub(crate) fn new(room: &Room) -> Self {
-        Self::construct(room, None, false, None)
+        Self::construct(room, room.core().live_timeline())
     }
 
     /// Construct a new `Timeline` for the given room, focused on the event with
@@ -1250,7 +1002,7 @@ impl Timeline {
     /// both directions, but it never receives new events from sync, so it
     /// cannot replace the live timeline of the room.
     pub(crate) fn new_focused(room: &Room, event_id: OwnedEventId) -> Self {
-        Self::construct(room, Some(event_id), false, None)
+        Self::construct(room, room.core().focused_timeline(event_id))
     }
 
     /// Construct a new `Timeline` showing the events pinned in the given room.
@@ -1260,7 +1012,7 @@ impl Timeline {
     /// pinned events are the whole of it — and it never receives new events
     /// from sync.
     pub(crate) fn new_pinned(room: &Room) -> Self {
-        Self::construct(room, None, true, None)
+        Self::construct(room, room.core().pinned_timeline())
     }
 
     /// Construct a new `Timeline` showing the thread rooted at the event with
@@ -1272,28 +1024,20 @@ impl Timeline {
     /// Anything sent through it carries the thread relation, and a read
     /// receipt sent through it is the thread's, not the room's.
     pub(crate) fn new_threaded(room: &Room, root_event_id: OwnedEventId) -> Self {
-        Self::construct(room, None, false, Some(root_event_id))
+        Self::construct(room, room.core().thread_timeline(root_event_id))
     }
 
-    /// Construct a new `Timeline` for the given room, optionally focused on the
-    /// event with the given ID, showing the room's pinned events, or showing a
-    /// single thread.
-    fn construct(
-        room: &Room,
-        focused_event_id: Option<OwnedEventId>,
-        pinned: bool,
-        thread_root: Option<OwnedEventId>,
-    ) -> Self {
+    /// Construct a new `Timeline` for the given room, presenting the given
+    /// timeline of the core.
+    fn construct(room: &Room, core: CoreTimeline) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
             .build();
 
         let imp = obj.imp();
-        imp.set_focused_event_id(focused_event_id);
-        imp.set_pinned(pinned);
-        imp.set_thread_root(thread_root);
+        imp.set_core(core);
 
-        spawn!(clone!(
+        spawn!(glib::clone!(
             #[weak]
             imp,
             async move {
@@ -1306,12 +1050,12 @@ impl Timeline {
 
     /// The event this timeline is focused on, if any.
     pub(crate) fn focused_event_id(&self) -> Option<OwnedEventId> {
-        self.imp().focused_event_id().cloned()
+        self.imp().focused_event_id()
     }
 
     /// The root event of the thread this timeline shows, if any.
     pub(crate) fn thread_root(&self) -> Option<OwnedEventId> {
-        self.imp().thread_root().cloned()
+        self.imp().thread_root()
     }
 
     /// Send the given receipt through this timeline.
@@ -1333,21 +1077,13 @@ impl Timeline {
             t => t,
         };
 
-        let matrix_timeline = self.matrix_timeline();
-        let handle = spawn_tokio!(async move {
-            match position {
-                ReceiptPosition::End => matrix_timeline.mark_as_read(receipt_type).await,
-                ReceiptPosition::Event(event_id) => {
-                    matrix_timeline
-                        .send_single_receipt(receipt_type, event_id)
-                        .await
-                }
-            }
-        });
-
-        if let Err(error) = handle.await.expect("task was not aborted") {
-            error!("Could not send read receipt: {error}");
-        }
+        let core = self.imp().core().clone();
+        spawn_tokio!(async move {
+            core.send_receipt_resolved(receipt_type, position.into())
+                .await;
+        })
+        .await
+        .expect("task was not aborted");
     }
 
     /// The underlying SDK timeline.
@@ -1412,47 +1148,6 @@ impl Timeline {
         self.imp().remove_empty_typing_row();
     }
 
-    /// Whether this timeline has unread messages.
-    ///
-    /// Returns `None` if it is not possible to know, for example if there are
-    /// no events in the Timeline.
-    pub(crate) async fn has_unread_messages(&self) -> Option<bool> {
-        let session = self.room().session()?;
-        let own_user_id = session.user_id().clone();
-        let matrix_timeline = self.matrix_timeline();
-
-        let user_receipt_item = spawn_tokio!(async move {
-            matrix_timeline
-                .latest_user_read_receipt_timeline_event_id(&own_user_id)
-                .await
-        })
-        .await
-        .expect("task was not aborted");
-
-        let sdk_items = self.imp().sdk_items();
-        let count = sdk_items.n_items();
-
-        for pos in (0..count).rev() {
-            let Some(event) = sdk_items.item(pos).and_downcast::<Event>() else {
-                continue;
-            };
-
-            if user_receipt_item.is_some() && event.event_id() == user_receipt_item {
-                // The event is the oldest one, we have read it all.
-                return Some(false);
-            }
-            if event.counts_as_unread() {
-                // There is at least one unread event.
-                return Some(true);
-            }
-        }
-
-        // This should only happen if we do not have a read receipt item in the
-        // timeline, and there are not enough events in the timeline to know if there
-        // are unread messages.
-        None
-    }
-
     /// The IDs of redactable events sent by the given user in this timeline.
     pub(crate) fn redactable_events_for(&self, user_id: &UserId) -> Vec<OwnedEventId> {
         let mut events = vec![];
@@ -1478,117 +1173,5 @@ impl Timeline {
         }
 
         events
-    }
-
-    /// Emit the trigger that a read change might have occurred.
-    fn emit_read_change_trigger(&self) {
-        self.emit_by_name::<()>("read-change-trigger", &[]);
-    }
-
-    /// Connect to the trigger emitted when a read change might have occurred.
-    pub(crate) fn connect_read_change_trigger<F: Fn(&Self) + 'static>(
-        &self,
-        f: F,
-    ) -> glib::SignalHandlerId {
-        self.connect_closure(
-            "read-change-trigger",
-            true,
-            closure_local!(move |obj: Self| {
-                f(&obj);
-            }),
-        )
-    }
-}
-
-/// Whether the given event should be shown in the timeline.
-fn show_in_timeline(
-    any: &AnySyncTimelineEvent,
-    rules: &RoomVersionRules,
-    own_user_id: &UserId,
-    is_server_notice_room: bool,
-) -> bool {
-    // Make sure we do not show events that cannot be shown.
-    if !default_event_filter(any, rules) {
-        return false;
-    }
-
-    // Only show events we want.
-    match any {
-        AnySyncTimelineEvent::MessageLike(msg) => match msg {
-            AnySyncMessageLikeEvent::RoomMessage(SyncMessageLikeEvent::Original(ev)) => {
-                match ev.content.msgtype {
-                    // "Events with a `m.server_notice` `msgtype` outside of the
-                    // server notice room must be ignored by clients." Anybody
-                    // can send one, and we present them as coming from the
-                    // homeserver, so this is the whole of the protection.
-                    MessageType::ServerNotice(_) => is_server_notice_room,
-                    MessageType::Audio(_)
-                    | MessageType::Emote(_)
-                    | MessageType::File(_)
-                    | MessageType::Image(_)
-                    | MessageType::Location(_)
-                    | MessageType::Notice(_)
-                    | MessageType::Text(_)
-                    | MessageType::Video(_) => true,
-                    _ => false,
-                }
-            }
-            AnySyncMessageLikeEvent::Sticker(SyncMessageLikeEvent::Original(_))
-            | AnySyncMessageLikeEvent::RoomEncrypted(SyncMessageLikeEvent::Original(_))
-            // A call leaves a row where it happened. The rest of the module's
-            // events are signalling and would be a dozen rows for one call;
-            // the invite is the one that says a call took place, and the row
-            // it draws says what became of it.
-            //
-            // Shown whether or not it rang: "when clients suppress ringing for
-            // an incoming call invite, they SHOULD still display the call
-            // invite in the room and annotate that it was ignored".
-            | AnySyncMessageLikeEvent::CallInvite(SyncMessageLikeEvent::Original(_)) => true,
-            AnySyncMessageLikeEvent::RtcNotification(SyncMessageLikeEvent::Original(ev)) => {
-                ev.sender == own_user_id
-                    || ev.content.mentions.as_ref().is_some_and(|mentions| {
-                        mentions.room || mentions.user_ids.contains(own_user_id)
-                    })
-            }
-            _ => false,
-        },
-        AnySyncTimelineEvent::State(AnySyncStateEvent::RoomMember(SyncStateEvent::Original(
-            member_event,
-        ))) => {
-            // Do not show member events if the content that we support has not
-            // changed. This avoids duplicate "user has joined" events in the
-            // timeline which are confusing and wrong.
-            !member_event
-                .unsigned
-                .prev_content
-                .as_ref()
-                .is_some_and(|prev_content| {
-                    prev_content.membership == member_event.content.membership
-                        && prev_content.displayname == member_event.content.displayname
-                        && prev_content.avatar_url == member_event.content.avatar_url
-                })
-        }
-        AnySyncTimelineEvent::State(state) => matches!(
-            state,
-            AnySyncStateEvent::RoomMember(_)
-                | AnySyncStateEvent::RoomCreate(_)
-                | AnySyncStateEvent::RoomEncryption(_)
-                | AnySyncStateEvent::RoomThirdPartyInvite(_)
-                // Pinning is an act of moderation and the pinned messages view
-                // does not say who did it, so the room says so instead.
-                | AnySyncStateEvent::RoomPinnedEvents(_)
-                // `update_with_other_state` has written the sentence for this
-                // one since the ACL editor landed, and this list is what kept
-                // it from ever being drawn.
-                | AnySyncStateEvent::RoomServerAcl(_)
-                // Which server checks this room's messages is an act of
-                // moderation too, and one worth a sentence.
-                | AnySyncStateEvent::RoomPolicy(_)
-                // The moderation policy rules: who wrote which rule, about
-                // whom, and why, is the whole history of a policy room.
-                | AnySyncStateEvent::PolicyRuleUser(_)
-                | AnySyncStateEvent::PolicyRuleRoom(_)
-                | AnySyncStateEvent::PolicyRuleServer(_)
-        ),
     }
 }

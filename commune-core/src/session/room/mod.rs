@@ -26,6 +26,7 @@ mod member;
 mod permissions;
 mod search;
 mod server_acl;
+mod thread_list;
 mod timeline;
 mod upgrade;
 
@@ -89,6 +90,7 @@ pub use self::{
     },
     search::{RoomSearch, SearchError, SearchResult},
     server_acl::{AclProblem, ServerAclError, acls_are_equal, check_acl, unrestricted_acl},
+    thread_list::{ThreadList, ThreadListError},
     timeline::{
         MAX_BATCH_SIZE, ReceiptPosition, Timeline, TimelineError, TimelineFocusKind,
         check_upload_size,
@@ -379,11 +381,9 @@ struct RoomInner {
     active_server_notice: SharedObservable<Option<ServerNotice>>,
     /// The pinned event IDs that `active_server_notice` was computed from.
     server_notice_pinned_ids: Mutex<Vec<OwnedEventId>>,
-    /// Whether an embedder reports the read state from a timeline of its
-    /// own.
+    /// Whether the read-state watcher has answered from the live timeline.
     ///
-    /// While one does, the notification-count approximation stays out of
-    /// its way.
+    /// Until it has, the notification-count approximation stands in.
     read_state_reported: AtomicBool,
     /// The task watching the send queue for recoverable errors.
     send_queue_handle: Mutex<Option<AbortHandle>>,
@@ -876,33 +876,6 @@ impl Room {
         self.inner.active_server_notice.subscribe()
     }
 
-    /// Take the read state an embedder computed from a timeline of its own.
-    ///
-    /// The application's timeline model walks the room's events the way
-    /// the specification asks (MSC2654) and knows whether anything is
-    /// unread; until that model is the core's, it reports here, and the
-    /// observable the metainfo persists is the one it set. From the first
-    /// report on, the core's notification-count approximation stands
-    /// aside.
-    pub fn note_is_read(&self, is_read: bool) {
-        self.inner
-            .read_state_reported
-            .store(true, Ordering::Relaxed);
-        self.inner.is_read.set_if_not_eq(is_read);
-        self.inner.update_highlight();
-    }
-
-    /// Take a latest-activity timestamp an embedder found in a timeline of
-    /// its own.
-    ///
-    /// Only ever moves the activity forward.
-    pub fn note_latest_activity(&self, timestamp: u64) {
-        let current = self.inner.latest_activity.get();
-        self.inner
-            .latest_activity
-            .set_if_not_eq(current.max(timestamp));
-    }
-
     /// Whether this room was forgotten.
     pub(crate) fn subscribe_forgotten(&self) -> Subscriber<bool> {
         self.inner.forgotten.subscribe()
@@ -940,10 +913,37 @@ impl Room {
             .get_or_init(|| {
                 let timeline =
                     Timeline::new(self.inner.matrix_room.clone(), self.inner.session.clone());
+                timeline.watch_category(self.category(), self.subscribe_category());
                 RoomInner::watch_read_state(&self.inner, &timeline);
                 timeline
             })
             .clone()
+    }
+
+    /// A timeline of this room centered on the given event.
+    ///
+    /// A fresh timeline each call; the caller keeps it as long as the
+    /// event is open. It can be paginated in both directions, but it never
+    /// receives new events from sync, so it cannot replace the live
+    /// timeline of the room.
+    #[must_use]
+    pub fn focused_timeline(&self, target: ruma::OwnedEventId) -> Timeline {
+        let timeline = Timeline::with_focus(
+            self.inner.matrix_room.clone(),
+            TimelineFocusKind::Event { target },
+            self.inner.session.clone(),
+        );
+        timeline.watch_category(self.category(), self.subscribe_category());
+        timeline
+    }
+
+    /// The list of threads of this room.
+    ///
+    /// A fresh list each call; the caller keeps it as long as the threads
+    /// are open.
+    #[must_use]
+    pub fn thread_list(&self) -> ThreadList {
+        ThreadList::new(self.inner.matrix_room.clone())
     }
 
     /// The member list of this room.
@@ -984,11 +984,13 @@ impl Room {
     /// pinned view is open.
     #[must_use]
     pub fn pinned_timeline(&self) -> Timeline {
-        Timeline::with_focus(
+        let timeline = Timeline::with_focus(
             self.inner.matrix_room.clone(),
             TimelineFocusKind::Pinned,
             self.inner.session.clone(),
-        )
+        );
+        timeline.watch_category(self.category(), self.subscribe_category());
+        timeline
     }
 
     /// A timeline of the thread rooted at the given event.
@@ -997,11 +999,13 @@ impl Room {
     /// thread is open.
     #[must_use]
     pub fn thread_timeline(&self, root: ruma::OwnedEventId) -> Timeline {
-        Timeline::with_focus(
+        let timeline = Timeline::with_focus(
             self.inner.matrix_room.clone(),
             TimelineFocusKind::Thread { root },
             self.inner.session.clone(),
-        )
+        );
+        timeline.watch_category(self.category(), self.subscribe_category());
+        timeline
     }
 
     /// Send the given receipt.
@@ -2227,6 +2231,9 @@ impl RoomInner {
         if self.is_marked_unread.get() {
             self.is_read.set_if_not_eq(false);
         } else if let Some(has_unread) = timeline.has_unread_messages().await {
+            // From the first answer on, the notification-count
+            // approximation stands aside.
+            self.read_state_reported.store(true, Ordering::Relaxed);
             self.is_read.set_if_not_eq(!has_unread);
         }
 

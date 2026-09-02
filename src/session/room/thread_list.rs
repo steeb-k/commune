@@ -1,5 +1,4 @@
-use std::sync::Arc;
-
+use commune_core::session::ThreadList as CoreThreadList;
 use futures_util::StreamExt;
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
@@ -7,17 +6,15 @@ use matrix_sdk_ui::{
     eyeball_im::VectorDiff,
     timeline::{
         MsgLikeKind, TimelineItemContent,
-        thread_list_service::{
-            ThreadListItem, ThreadListItemEvent, ThreadListPaginationState, ThreadListService,
-        },
+        thread_list_service::{ThreadListItem, ThreadListItemEvent},
     },
 };
 use ruma::OwnedEventId;
 use tokio::task::AbortHandle;
-use tracing::error;
 
 use super::{Member, Room};
 use crate::{
+    core_bridge::ObjectWatcher,
     spawn, spawn_tokio,
     utils::{LoadingState, matrix::timestamp_to_date},
 };
@@ -40,19 +37,18 @@ fn content_preview(content: Option<&TimelineItemContent>) -> String {
 }
 
 mod imp {
-    use std::{
-        cell::{Cell, OnceCell, RefCell},
-        fmt,
-    };
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use super::*;
 
-    #[derive(Default, glib::Properties)]
+    #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::ThreadList)]
     pub struct ThreadList {
         /// The room the threads of which are listed.
         #[property(get, set = Self::set_room, construct_only)]
         room: OnceCell<Room>,
+        /// The list, as the core loads it.
+        core: OnceCell<CoreThreadList>,
         /// The list of threads.
         #[property(get = Self::list_owned)]
         list: OnceCell<gio::ListStore>,
@@ -62,21 +58,10 @@ mod imp {
         /// Whether the whole thread list was loaded.
         #[property(get)]
         has_reached_end: Cell<bool>,
-        /// The underlying SDK service.
-        service: RefCell<Option<Arc<ThreadListService>>>,
-        /// The handle watching the service's items for live updates.
+        /// The task following the core's state.
+        watch_handle: RefCell<Option<AbortHandle>>,
+        /// The handle watching the core's items for live updates.
         diff_handle: RefCell<Option<AbortHandle>>,
-    }
-
-    // The SDK service does not implement `Debug`, so this cannot be derived.
-    impl fmt::Debug for ThreadList {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            f.debug_struct("ThreadList")
-                .field("room", &self.room)
-                .field("loading_state", &self.loading_state)
-                .field("has_reached_end", &self.has_reached_end)
-                .finish_non_exhaustive()
-        }
     }
 
     #[glib::object_subclass]
@@ -88,6 +73,9 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for ThreadList {
         fn dispose(&self) {
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
+            }
             if let Some(handle) = self.diff_handle.take() {
                 handle.abort();
             }
@@ -97,12 +85,34 @@ mod imp {
     impl ThreadList {
         /// Set the room the threads of which are listed.
         fn set_room(&self, room: Room) {
-            self.room.get_or_init(|| room);
+            type L = super::ThreadList;
+
+            let room = self.room.get_or_init(|| room);
+
+            let core = self.core.get_or_init(|| room.core().thread_list()).clone();
+
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(core.subscribe_loading_state(), |obj: &L, state| {
+                    obj.imp().set_loading_state(state.into());
+                })
+                .follow(
+                    core.subscribe_has_reached_end(),
+                    |obj: &L, has_reached_end| {
+                        obj.imp().set_has_reached_end(has_reached_end);
+                    },
+                )
+                .spawn();
+            self.watch_handle.replace(Some(handle));
         }
 
         /// The room the threads of which are listed.
         fn room(&self) -> &Room {
             self.room.get().expect("room should be initialized")
+        }
+
+        /// The list, as the core loads it.
+        pub(super) fn core(&self) -> &CoreThreadList {
+            self.core.get().expect("core list should be initialized")
         }
 
         /// The list of threads.
@@ -143,42 +153,29 @@ mod imp {
 
         /// Whether more threads can be loaded.
         pub(super) fn can_load_more(&self) -> bool {
-            self.loading_state.get() != LoadingState::Loading && !self.has_reached_end.get()
+            self.core().can_load_more()
         }
 
-        /// Build the SDK service, if it is not built already.
-        ///
-        /// Returns the service if it could be built.
-        async fn ensure_service(&self) -> Option<Arc<ThreadListService>> {
-            if let Some(service) = self.service.borrow().clone() {
-                return Some(service);
-            }
-
-            let matrix_room = self.room().matrix_room().clone();
-            // The service spawns its live-update task at construction, which
-            // needs the Tokio runtime.
-            let handle = spawn_tokio!(async move { Arc::new(ThreadListService::new(matrix_room)) });
-            let service = handle.await.expect("task was not aborted");
-
-            if let Some(service) = self.service.borrow().clone() {
-                // Built twice concurrently; keep the first, whose items are
-                // already being watched.
-                return Some(service);
-            }
-
-            self.service.replace(Some(service.clone()));
-            self.watch_items(&service);
-
-            Some(service)
-        }
-
-        /// Watch the items of the given service.
+        /// Follow the core's items, if they are not followed already.
         ///
         /// The service appends pages as they are fetched and rewrites an item
         /// in place when a new thread event arrives from sync; both reach the
         /// `GListModel` through here.
-        fn watch_items(&self, service: &Arc<ThreadListService>) {
-            let (initial, stream) = service.subscribe_to_items_updates();
+        async fn ensure_watching_items(&self) {
+            if self.diff_handle.borrow().is_some() {
+                return;
+            }
+
+            let core = self.core().clone();
+            let (initial, stream) = spawn_tokio!(async move { core.subscribe_items().await })
+                .await
+                .expect("task was not aborted");
+
+            if self.diff_handle.borrow().is_some() {
+                // Subscribed twice concurrently; keep the first, whose items
+                // are already being watched.
+                return;
+            }
 
             if !initial.is_empty() {
                 self.apply_diff(VectorDiff::Append { values: initial });
@@ -202,9 +199,7 @@ mod imp {
             });
 
             let diff_handle = spawn_tokio!(fut);
-            if let Some(old_handle) = self.diff_handle.replace(Some(diff_handle.abort_handle())) {
-                old_handle.abort();
-            }
+            self.diff_handle.replace(Some(diff_handle.abort_handle()));
         }
 
         /// Apply the given diff to the list.
@@ -261,30 +256,13 @@ mod imp {
 
         /// Load the next page of threads.
         pub(super) async fn load(&self) {
-            self.set_loading_state(LoadingState::Loading);
+            self.ensure_watching_items().await;
 
-            let Some(service) = self.ensure_service().await else {
-                self.set_loading_state(LoadingState::Error);
-                return;
-            };
-
-            let service_clone = service.clone();
-            let handle = spawn_tokio!(async move { service_clone.paginate().await });
-
-            match handle.await.expect("task was not aborted") {
-                Ok(()) => {
-                    let end_reached = matches!(
-                        service.pagination_state(),
-                        ThreadListPaginationState::Idle { end_reached: true }
-                    );
-                    self.set_has_reached_end(end_reached);
-                    self.set_loading_state(LoadingState::Ready);
-                }
-                Err(error) => {
-                    error!("Could not load the threads of the room: {error}");
-                    self.set_loading_state(LoadingState::Error);
-                }
-            }
+            let core = self.core().clone();
+            // A failure is logged by the core, whose state says so.
+            let _ = spawn_tokio!(async move { core.load_more().await })
+                .await
+                .expect("task was not aborted");
         }
     }
 }
@@ -294,7 +272,8 @@ glib::wrapper! {
     ///
     /// It is loaded from the `/threads` endpoint page by page, most recent
     /// activity first, and the SDK keeps the reply count and latest event of
-    /// each listed thread current as new thread events arrive from sync.
+    /// each listed thread current as new thread events arrive from sync. The
+    /// list is the core's; this presents it.
     pub struct ThreadList(ObjectSubclass<imp::ThreadList>);
 }
 

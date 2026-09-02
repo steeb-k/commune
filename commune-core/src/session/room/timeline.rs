@@ -9,8 +9,9 @@
 //! receipts are the application's; and what the message toolbar sends
 //! through the timeline — messages, replies, edits, attachments, voice
 //! messages, locations, stickers — is sent from here, with the upload-size
-//! preflight the toolbar makes. A timeline focused on a single event
-//! follows with a caller for it.
+//! preflight the toolbar makes. Since Phase 4's module 8 the timeline
+//! focused on a single event is here too, with the forward pagination only
+//! it can do, and the application's `Timeline` is a view over this one.
 
 use std::{
     path::PathBuf,
@@ -23,14 +24,15 @@ use std::{
 
 use eyeball::{SharedObservable, Subscriber};
 use eyeball_im::{Vector, VectorDiff};
-use futures_util::Stream;
+use futures_util::{Stream, StreamExt};
 use matrix_sdk::{
     attachment::{AttachmentInfo, BaseAudioInfo, BaseFileInfo, BaseImageInfo, BaseVideoInfo},
     room::edit::EditedContent,
 };
 use matrix_sdk_ui::timeline::{
     AttachmentConfig, AttachmentSource, EventTimelineItem, RoomExt, Timeline as SdkTimeline,
-    TimelineEventItemId, TimelineFocus, TimelineItem as SdkTimelineItem, default_event_filter,
+    TimelineEventFocusThreadMode, TimelineEventItemId, TimelineFocus,
+    TimelineItem as SdkTimelineItem, default_event_filter,
 };
 use ruma::{
     EventId, OwnedEventId, UInt, UserId,
@@ -49,9 +51,9 @@ use ruma::{
 };
 use tracing::{error, warn};
 
-use super::WeakSession;
+use super::{RoomCategory, WeakSession};
 use crate::{
-    UserFacingError,
+    RUNTIME, UserFacingError,
     klipy::SelectedGif,
     matrix::{ext_traits::TimelineItemContentExt, media::MediaMessage},
     spawn_tokio,
@@ -196,6 +198,16 @@ pub enum TimelineFocusKind {
     },
     /// The room's pinned events.
     Pinned,
+    /// The given event and its surroundings.
+    ///
+    /// Such a timeline is centered on a single event — a search result or
+    /// a permalink — and can be paginated in both directions, but it never
+    /// receives new events from sync, so it cannot replace the live
+    /// timeline of the room.
+    Event {
+        /// The event the timeline is centered on.
+        target: ruma::OwnedEventId,
+    },
 }
 
 #[derive(Debug)]
@@ -208,12 +220,43 @@ struct TimelineInner {
     focus: TimelineFocusKind,
     /// The underlying SDK timeline.
     matrix_timeline: tokio::sync::OnceCell<Arc<SdkTimeline>>,
+    /// Whether this is the timeline of the server notices room.
+    ///
+    /// Read by the event filter, which runs off the runtime's main task,
+    /// so it cannot ask the room for its category; the room's category
+    /// keeps it current instead.
+    is_server_notice_room: Arc<AtomicBool>,
     /// The loading state of the timeline.
     state: SharedObservable<LoadingState>,
     /// Whether the start of the room's history has been reached.
     has_reached_start: SharedObservable<bool>,
+    /// Whether the end of the room's history has been reached.
+    ///
+    /// Always true once built, except for a timeline focused on an event,
+    /// which is the only one that can be paginated forwards.
+    has_reached_end: SharedObservable<bool>,
     /// Whether events are being loaded at the start of the timeline.
     is_loading_start: SharedObservable<bool>,
+    /// Whether events are being loaded at the end of the timeline.
+    is_loading_end: SharedObservable<bool>,
+}
+
+impl TimelineInner {
+    /// Forget what was known about the ends of the history.
+    ///
+    /// The SDK clears or resets its items when the timeline starts over —
+    /// after a gap it could not fill, or a focus it rebuilt — and what was
+    /// loaded before says nothing about what is loaded now. The pinned
+    /// events are still the whole of their timeline, and every timeline
+    /// but the one focused on an event is still at the end.
+    fn reset_reach(&self) {
+        if !matches!(self.focus, TimelineFocusKind::Pinned) {
+            self.has_reached_start.set_if_not_eq(false);
+        }
+        if matches!(self.focus, TimelineFocusKind::Event { .. }) {
+            self.has_reached_end.set_if_not_eq(false);
+        }
+    }
 }
 
 impl Timeline {
@@ -234,11 +277,48 @@ impl Timeline {
                 focus,
                 session,
                 matrix_timeline: tokio::sync::OnceCell::new(),
+                is_server_notice_room: Arc::new(AtomicBool::new(false)),
                 state: SharedObservable::new(LoadingState::Initial),
                 has_reached_start: SharedObservable::new(false),
+                has_reached_end: SharedObservable::new(false),
                 is_loading_start: SharedObservable::new(false),
+                is_loading_end: SharedObservable::new(false),
             }),
         }
+    }
+
+    /// Follow the category of the room, for the event filter.
+    ///
+    /// The filter hides `m.server_notice` messages outside the server
+    /// notices room; the room's tags at build time say whether this is
+    /// that room, and the category says so from then on, as the
+    /// application's filter followed the room's category.
+    pub(crate) fn watch_category(
+        &self,
+        current: RoomCategory,
+        mut categories: Subscriber<RoomCategory>,
+    ) {
+        self.inner
+            .is_server_notice_room
+            .store(current == RoomCategory::ServerNotice, Ordering::Relaxed);
+
+        let weak = Arc::downgrade(&self.inner);
+        RUNTIME.spawn(async move {
+            while let Some(category) = categories.next().await {
+                let Some(inner) = weak.upgrade() else {
+                    break;
+                };
+                inner
+                    .is_server_notice_room
+                    .store(category == RoomCategory::ServerNotice, Ordering::Relaxed);
+            }
+        });
+    }
+
+    /// What this timeline shows.
+    #[must_use]
+    pub fn focus(&self) -> &TimelineFocusKind {
+        &self.inner.focus
     }
 
     /// The loading state of the timeline.
@@ -256,6 +336,39 @@ impl Timeline {
     #[must_use]
     pub fn has_reached_start(&self) -> bool {
         self.inner.has_reached_start.get()
+    }
+
+    /// Subscribe to whether the start of the room's history has been
+    /// reached.
+    pub fn subscribe_has_reached_start(&self) -> Subscriber<bool> {
+        self.inner.has_reached_start.subscribe()
+    }
+
+    /// Whether the end of the room's history has been reached.
+    ///
+    /// This is always `true` for the live timeline, which is by definition
+    /// at the end of the room's history.
+    #[must_use]
+    pub fn has_reached_end(&self) -> bool {
+        self.inner.has_reached_end.get()
+    }
+
+    /// Subscribe to whether the end of the room's history has been
+    /// reached.
+    pub fn subscribe_has_reached_end(&self) -> Subscriber<bool> {
+        self.inner.has_reached_end.subscribe()
+    }
+
+    /// Whether events are being loaded at the end of the timeline.
+    #[must_use]
+    pub fn is_loading_end(&self) -> bool {
+        self.inner.is_loading_end.get()
+    }
+
+    /// Subscribe to whether events are being loaded at the end of the
+    /// timeline.
+    pub fn subscribe_is_loading_end(&self) -> Subscriber<bool> {
+        self.inner.is_loading_end.subscribe()
     }
 
     /// The media message of the item with the given unique ID, if it is
@@ -294,13 +407,24 @@ impl Timeline {
             .get_or_try_init(|| async {
                 inner.state.set_if_not_eq(LoadingState::Loading);
 
-                match build_sdk_timeline(inner.matrix_room.clone(), inner.focus.clone()).await {
+                match build_sdk_timeline(
+                    inner.matrix_room.clone(),
+                    inner.focus.clone(),
+                    inner.is_server_notice_room.clone(),
+                )
+                .await
+                {
                     Ok(timeline) => {
                         if matches!(inner.focus, TimelineFocusKind::Pinned) {
                             // The pinned events are the whole of this
                             // timeline. The SDK refuses to paginate it, so
                             // never ask.
                             inner.has_reached_start.set_if_not_eq(true);
+                        }
+                        if !matches!(inner.focus, TimelineFocusKind::Event { .. }) {
+                            // Every other timeline is at the end of the
+                            // room's history.
+                            inner.has_reached_end.set_if_not_eq(true);
                         }
                         inner.state.set_if_not_eq(LoadingState::Ready);
                         Ok(Arc::new(timeline))
@@ -330,8 +454,22 @@ impl Timeline {
 
         let timeline = matrix_timeline.clone();
         let handle = spawn_tokio!(async move { timeline.subscribe().await });
+        let (values, stream) = handle.await.expect("task was not aborted");
 
-        Some(handle.await.expect("task was not aborted"))
+        // A clear or a reset is the SDK starting over, and the ends of the
+        // history are unknown again.
+        let weak = Arc::downgrade(&self.inner);
+        let stream = stream.inspect(move |diffs| {
+            if diffs
+                .iter()
+                .any(|diff| matches!(diff, VectorDiff::Clear | VectorDiff::Reset { .. }))
+                && let Some(inner) = weak.upgrade()
+            {
+                inner.reset_reach();
+            }
+        });
+
+        Some((values, stream))
     }
 
     /// Whether events are being loaded at the start of the timeline.
@@ -362,10 +500,21 @@ impl Timeline {
     /// Load one batch of events at the start of the timeline, if the
     /// current state allows it.
     ///
-    /// The application loads batches until its caller says stop; one batch
-    /// is what one request for older history is. A failure puts the
-    /// timeline in the error state, which the state observable reports.
+    /// One batch is what one request for older history is; the
+    /// application loads batches until its caller says stop, which is
+    /// [`Self::paginate_backwards_while()`]. A failure puts the timeline in
+    /// the error state, which the state observable reports.
     pub async fn paginate_backwards(&self) {
+        self.paginate_backwards_while(|| false).await;
+    }
+
+    /// Load events at the start of the timeline, batch after batch, until
+    /// the given function says to stop or the start is reached.
+    ///
+    /// Nothing is loaded when the current state does not allow it. The
+    /// timeline is loading at its start for the whole of the walk, not
+    /// for each batch of it.
+    pub async fn paginate_backwards_while(&self, mut continue_fn: impl FnMut() -> bool) {
         if !self.can_paginate_backwards() {
             return;
         }
@@ -377,22 +526,90 @@ impl Timeline {
         inner.is_loading_start.set_if_not_eq(true);
         inner.state.set_if_not_eq(LoadingState::Loading);
 
-        let handle =
-            spawn_tokio!(async move { matrix_timeline.paginate_backwards(MAX_BATCH_SIZE).await });
+        loop {
+            let timeline = matrix_timeline.clone();
+            let handle =
+                spawn_tokio!(async move { timeline.paginate_backwards(MAX_BATCH_SIZE).await });
 
-        match handle.await.expect("task was not aborted") {
-            Ok(reached_start) => {
-                if reached_start {
-                    inner.has_reached_start.set_if_not_eq(true);
+            match handle.await.expect("task was not aborted") {
+                Ok(reached_start) => {
+                    if reached_start {
+                        inner.has_reached_start.set_if_not_eq(true);
+                        break;
+                    }
+                }
+                Err(paginate_error) => {
+                    error!("Could not load timeline: {paginate_error}");
+                    inner.state.set_if_not_eq(LoadingState::Error);
+                    break;
                 }
             }
-            Err(paginate_error) => {
-                error!("Could not load timeline: {paginate_error}");
-                inner.state.set_if_not_eq(LoadingState::Error);
+
+            if !continue_fn() {
+                break;
             }
         }
 
         inner.is_loading_start.set_if_not_eq(false);
+        if inner.state.get() != LoadingState::Error {
+            inner.state.set_if_not_eq(LoadingState::Ready);
+        }
+    }
+
+    /// Whether more events can be loaded at the end of the timeline with
+    /// the current state.
+    ///
+    /// Only a timeline focused on an event can load events forwards: every
+    /// other one is already at the end of the room's history.
+    #[must_use]
+    pub fn can_paginate_forwards(&self) -> bool {
+        matches!(self.inner.focus, TimelineFocusKind::Event { .. })
+            && self.state() != LoadingState::Initial
+            && !self.is_loading_end()
+            && !self.has_reached_end()
+    }
+
+    /// Load events at the end of the timeline, batch after batch, until
+    /// the given function says to stop or the end is reached.
+    ///
+    /// Nothing is loaded when the current state does not allow it.
+    pub async fn paginate_forwards_while(&self, mut continue_fn: impl FnMut() -> bool) {
+        if !self.can_paginate_forwards() {
+            return;
+        }
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return;
+        };
+
+        let inner = &self.inner;
+        inner.is_loading_end.set_if_not_eq(true);
+        inner.state.set_if_not_eq(LoadingState::Loading);
+
+        loop {
+            let timeline = matrix_timeline.clone();
+            let handle =
+                spawn_tokio!(async move { timeline.paginate_forwards(MAX_BATCH_SIZE).await });
+
+            match handle.await.expect("task was not aborted") {
+                Ok(reached_end) => {
+                    if reached_end {
+                        inner.has_reached_end.set_if_not_eq(true);
+                        break;
+                    }
+                }
+                Err(paginate_error) => {
+                    error!("Could not load timeline: {paginate_error}");
+                    inner.state.set_if_not_eq(LoadingState::Error);
+                    break;
+                }
+            }
+
+            if !continue_fn() {
+                break;
+            }
+        }
+
+        inner.is_loading_end.set_if_not_eq(false);
         if inner.state.get() != LoadingState::Error {
             inner.state.set_if_not_eq(LoadingState::Ready);
         }
@@ -405,7 +622,7 @@ impl Timeline {
     /// The SDK scopes the receipt to what the timeline shows: sent through
     /// a thread timeline, it is a receipt for that thread, not for the
     /// room.
-    pub(crate) async fn send_receipt_resolved(
+    pub async fn send_receipt_resolved(
         &self,
         receipt_type: ApiReceiptType,
         position: ReceiptPosition,
@@ -481,9 +698,7 @@ impl Timeline {
 
     /// A stream that fires when our own user's read receipt moves in this
     /// timeline.
-    pub(crate) async fn subscribe_own_read_receipts(
-        &self,
-    ) -> Option<impl Stream<Item = ()> + use<>> {
+    pub async fn subscribe_own_read_receipts(&self) -> Option<impl Stream<Item = ()> + use<>> {
         let matrix_timeline = self.matrix_timeline().await?;
 
         let handle = spawn_tokio!(async move {
@@ -957,13 +1172,13 @@ pub async fn check_upload_size(
 async fn build_sdk_timeline(
     matrix_room: matrix_sdk::room::Room,
     focus: TimelineFocusKind,
+    is_server_notice_room: Arc<AtomicBool>,
 ) -> Result<SdkTimeline, matrix_sdk_ui::timeline::Error> {
     let own_user_id = matrix_room.own_user_id().to_owned();
 
     // The category of the room might not have been loaded yet, and the
     // filter cannot wait for it, so ask the store directly. The
     // `m.server_notice` tag is what identifies the room.
-    let is_server_notice_room = Arc::new(AtomicBool::new(false));
     {
         let matrix_room = matrix_room.clone();
         let is_server_notice_room = is_server_notice_room.clone();
@@ -999,6 +1214,13 @@ async fn build_sdk_timeline(
             TimelineFocusKind::Pinned => TimelineFocus::PinnedEvents,
             TimelineFocusKind::Thread { root } => TimelineFocus::Thread {
                 root_event_id: root,
+            },
+            TimelineFocusKind::Event { target } => TimelineFocus::Event {
+                target,
+                num_context_events: MAX_BATCH_SIZE,
+                thread_mode: TimelineEventFocusThreadMode::Automatic {
+                    hide_threaded_events: true,
+                },
             },
         };
 

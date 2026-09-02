@@ -12,7 +12,7 @@ use ruma::events::{
     AnySyncMessageLikeEvent, SyncMessageLikeEvent, call::invite::CallInviteEventContent,
 };
 use ruma::{
-    MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId, UserId,
+    MatrixToUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId,
     events::{AnySyncTimelineEvent, StateEventType, TimelineEventType, receipt::Receipt},
     serde::Raw,
 };
@@ -934,16 +934,6 @@ impl Event {
     pub(crate) fn counts_as_unread(&self) -> bool {
         let item = self.item();
         item.is_remote_event() && item.content().counts_as_unread()
-    }
-
-    /// Whether this `Event` can count as activity in a room.
-    ///
-    /// This includes content that counts as unread, plus membership changes for
-    /// our own user towards joining a room, so that freshly joined rooms are at
-    /// the top of the list.
-    pub(crate) fn counts_as_activity(&self, own_user_id: &UserId) -> bool {
-        let item = self.item();
-        item.is_remote_event() && item.content().counts_as_activity(own_user_id)
     }
 
     /// The `matrix.to` URI representation for this event.

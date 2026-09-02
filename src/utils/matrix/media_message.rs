@@ -1,10 +1,10 @@
+pub(crate) use commune_core::matrix::media::MediaMessage;
 use gettextrs::gettext;
 use gtk::{gio, glib, prelude::*};
 use matrix_sdk::Client;
 use ruma::events::{
     room::message::{
-        AudioMessageEventContent, FileMessageEventContent, FormattedBody, ImageMessageEventContent,
-        MessageType, VideoMessageEventContent,
+        AudioMessageEventContent, ImageMessageEventContent, MessageType, VideoMessageEventContent,
     },
     sticker::StickerEventContent,
 };
@@ -48,33 +48,13 @@ macro_rules! filename {
     }};
 }
 
-/// A media message.
-#[derive(Debug, Clone)]
-pub(crate) enum MediaMessage {
-    /// An audio.
-    Audio(AudioMessageEventContent),
-    /// A file.
-    File(FileMessageEventContent),
-    /// An image.
-    Image(ImageMessageEventContent),
-    /// A video.
-    Video(VideoMessageEventContent),
-    /// A sticker.
-    Sticker(Box<StickerEventContent>),
-}
-
-impl MediaMessage {
-    /// Construct a `MediaMessage` from the given message.
-    pub(crate) fn from_message(msgtype: &MessageType) -> Option<Self> {
-        match msgtype {
-            MessageType::Audio(c) => Some(Self::Audio(c.clone())),
-            MessageType::File(c) => Some(Self::File(c.clone())),
-            MessageType::Image(c) => Some(Self::Image(c.clone())),
-            MessageType::Video(c) => Some(Self::Video(c.clone())),
-            _ => None,
-        }
-    }
-
+/// What this application says about a media message, and where it saves
+/// it.
+///
+/// The message itself is the core's [`MediaMessage`]: the variants, the
+/// caption and the fetch. This is every method that renders a name — they
+/// are sentences — and the save dialog, which is a widget.
+pub(crate) trait MediaMessageExt {
     /// The name of the media, as displayed in the interface.
     ///
     /// This is usually the filename in the message, except:
@@ -83,7 +63,37 @@ impl MediaMessage {
     ///   usually generated randomly.
     /// - For a sticker, this returns the description of the sticker, because
     ///   they do not have a filename.
-    pub(crate) fn display_name(&self) -> String {
+    fn display_name(&self) -> String;
+
+    /// The filename of the media, used when saving the file.
+    ///
+    /// This is usually the filename in the message, except:
+    ///
+    /// - For a voice message, it's a generated name that uses the timestamp of
+    ///   the message.
+    /// - For a sticker, this returns the description of the sticker, because
+    ///   they do not have a filename.
+    fn filename(&self, timestamp: &glib::DateTime) -> String;
+
+    /// Fetch the content of the media with the given client and write it to a
+    /// temporary file.
+    ///
+    /// Returns an error if something occurred while fetching the content.
+    async fn into_tmp_file(self, client: &Client) -> Result<File, MediaFileError>;
+
+    /// Save the content of the media to a file selected by the user.
+    ///
+    /// Shows a dialog to the user to select a file on the system.
+    async fn save_to_file(
+        self,
+        timestamp: &glib::DateTime,
+        client: &Client,
+        parent: &impl IsA<gtk::Widget>,
+    );
+}
+
+impl MediaMessageExt for MediaMessage {
+    fn display_name(&self) -> String {
         match self {
             Self::Audio(c) => {
                 if c.voice.is_some() {
@@ -99,15 +109,7 @@ impl MediaMessage {
         }
     }
 
-    /// The filename of the media, used when saving the file.
-    ///
-    /// This is usually the filename in the message, except:
-    ///
-    /// - For a voice message, it's a generated name that uses the timestamp of
-    ///   the message.
-    /// - For a sticker, this returns the description of the sticker, because
-    ///   they do not have a filename.
-    pub(crate) fn filename(&self, timestamp: &glib::DateTime) -> String {
+    fn filename(&self, timestamp: &glib::DateTime) -> String {
         match self {
             Self::Audio(c) => {
                 let mut filename = filename!(c, Some(mime::AUDIO));
@@ -139,77 +141,12 @@ impl MediaMessage {
         }
     }
 
-    /// The caption of the media, if any.
-    ///
-    /// Returns `Some((body, formatted_body))` if the media includes a caption.
-    pub(crate) fn caption(&self) -> Option<(String, Option<FormattedBody>)> {
-        let mut caption = match self {
-            Self::Audio(c) => c
-                .caption()
-                .map(|caption| (caption.to_owned(), c.formatted.clone())),
-            Self::File(c) => c
-                .caption()
-                .map(|caption| (caption.to_owned(), c.formatted.clone())),
-            Self::Image(c) => c
-                .caption()
-                .map(|caption| (caption.to_owned(), c.formatted.clone())),
-            Self::Video(c) => c
-                .caption()
-                .map(|caption| (caption.to_owned(), c.formatted.clone())),
-            Self::Sticker(_) => None,
-        };
-
-        caption.take_if(|(caption, formatted)| {
-            caption.clean_string();
-            formatted.clean_string();
-
-            caption.is_empty()
-        });
-
-        caption
-    }
-
-    /// Fetch the content of the media with the given client.
-    ///
-    /// Returns an error if something occurred while fetching the content.
-    pub(crate) async fn into_content(self, client: &Client) -> Result<Vec<u8>, matrix_sdk::Error> {
-        let media = client.media();
-
-        macro_rules! content {
-            ($event_content:expr) => {{
-                Ok(
-                    $crate::spawn_tokio!(
-                        async move { media.get_file(&$event_content, true).await }
-                    )
-                    .await
-                    .unwrap()?
-                    .expect("All media message types have a file"),
-                )
-            }};
-        }
-
-        match self {
-            Self::Audio(c) => content!(c),
-            Self::File(c) => content!(c),
-            Self::Image(c) => content!(c),
-            Self::Video(c) => content!(c),
-            Self::Sticker(c) => content!(*c),
-        }
-    }
-
-    /// Fetch the content of the media with the given client and write it to a
-    /// temporary file.
-    ///
-    /// Returns an error if something occurred while fetching the content.
-    pub(crate) async fn into_tmp_file(self, client: &Client) -> Result<File, MediaFileError> {
+    async fn into_tmp_file(self, client: &Client) -> Result<File, MediaFileError> {
         let data = self.into_content(client).await?;
         Ok(save_data_to_tmp_file(data).await?)
     }
 
-    /// Save the content of the media to a file selected by the user.
-    ///
-    /// Shows a dialog to the user to select a file on the system.
-    pub(crate) async fn save_to_file(
+    async fn save_to_file(
         self,
         timestamp: &glib::DateTime,
         client: &Client,
@@ -259,24 +196,6 @@ impl MediaMessage {
                 }
             }
         }
-    }
-}
-
-impl From<AudioMessageEventContent> for MediaMessage {
-    fn from(value: AudioMessageEventContent) -> Self {
-        Self::Audio(value)
-    }
-}
-
-impl From<FileMessageEventContent> for MediaMessage {
-    fn from(value: FileMessageEventContent) -> Self {
-        Self::File(value)
-    }
-}
-
-impl From<StickerEventContent> for MediaMessage {
-    fn from(value: StickerEventContent) -> Self {
-        Self::Sticker(value.into())
     }
 }
 

@@ -1695,7 +1695,7 @@ from `wc -l`, and the core column names what the module becomes a view of.
 | 5 | `ignored_users.rs`, `user_sessions_list/`, `security.rs`, `image_packs/` | 282 + 987 + 491 + 1,323 | `IgnoredUsers`, `UserSessions`, `SessionSecurity`, `ImagePacks` | **Done 2 Sep.** The session-level models Phase 3 already wrote, each a thin `GObject`; the core gains four subscribers. |
 | 6 | `global_account_data.rs`, `presence.rs` | 603 + 349 | `GlobalAccountData`, `PresenceList` (new) | **Done 2 Sep.** Both moved in (GTK is the authority), then the `GObject`s became views. This is where the Kotlin side gets recent emoji and presence; the FFI for both is owed. |
 | 7 | `remote/` | 2,031 | `session::remote::{RemoteRoom, SpaceChildren}`, `url_preview` | **Done 2 Sep.** `cache.rs` (with entries a page follows), `room_peek.rs`, `url_preview.rs` and `user.rs` moved in; the six objects are views. FFI for the cache, the peek, the preview and the profile owed. |
-| 8 | `room/timeline/`, `thread_list.rs`, `search.rs` | 1,893 + 433 + 767 | `session::Timeline`, `RoomSearch` | The timeline item models over the core's `Timeline`; `media_message.rs`'s data types are decided here (the Phase 2 question). |
+| 8 | `room/timeline/`, `thread_list.rs`, `search.rs` | 1,893 + 433 + 767 | `session::Timeline`, `RoomSearch` | **Done 2 Sep.** The timeline, thread list and search are views; the core's timeline gains the event focus, forward pagination and the category watch; `ThreadList` moves in; `MediaMessage` is the core's with `MediaMessageExt` for the sentences and the dialog (the Phase 2 question, answered). |
 | 9 | `notifications/` | 1,916 | `session::notifications` (170) | The core's is a fragment; the application's settings model and push handling move in, then the `GObject`s become views. |
 | 10 | `verification/` | 1,538 | `VerificationList`, `IdentityVerification` | Over Phase 3's state machine; the two-device check the ledger owes runs in this section. |
 | 11 | `calls/{mod,call,state,turn}.rs` | 3,033 | Phase 3's `Calls`, `Call` | The signalling half becomes a view; `pipeline.rs` and `ringtone.rs` stay, and give the core's `note_connected`, the rollback and the remote mute their first embedder. The member-left watcher gets its caller. |
@@ -2247,6 +2247,88 @@ pill for a user in no shared room, with their name and avatar arriving;
 a message with a link, its card, and a link on a homeserver without
 previews leaving no card.
 
+### Module 8 — the timeline, the thread list, the search and the media message
+
+**Done 2 September.** The four application files — 1,594 + 767 + 433 +
+515 lines — become 2,402: 692 in, 1,332 out across twelve files. The core
+gains 189 lines of `thread_list.rs`, 222 in `timeline.rs`, 72 in
+`matrix/media.rs`, and loses the two seams module 2 left.
+
+**The application's `Timeline` is a view, and keeps what a `GListModel`
+wants.** It asks the room's core for the timeline it presents — live,
+pinned, thread, or the one focused on an event, which the core did not
+have and gains as `TimelineFocusKind::Event` — awaits the SDK timeline
+through it, mirrors five observables (state, loading at either end,
+reached at either end), and takes the items and diffs from the core's
+`subscribe_items`. What stays is everything the `GListModel` is: the
+four-part flatten model, the filter, the diff minimizer, the headers, the
+event map, the typing row and the trace logging. What leaves: the SDK
+timeline builder, `show_in_timeline` and the server-notice atomic, the
+per-batch pagination loops, `watch_read_receipts`, `has_unread_messages`,
+the read-change trigger and `update_latest_activity`.
+
+**Three things the core learns from the application on the way.** The
+application's filter followed the room's category so that a room tagged
+as the server notices room after the timeline was built still showed
+its notices; the core read the tag once at build time. `Timeline` now
+holds the atomic and a `watch_category` the room installs on every
+timeline it makes. The application loaded batches until its caller said
+stop with the spinner up for the whole walk; the core loaded one batch
+per call and would have flickered the spinner between them, so it gains
+`paginate_backwards_while` and `paginate_forwards_while`, and the
+one-batch `paginate_backwards` the FFI uses is the walk with a caller
+that says stop at once. And the application forgot what it knew about
+the ends of the history on a `Clear` or a `Reset` diff, since the SDK
+starting over says nothing about what is loaded now; the core's
+`subscribe_items` inspects the stream it hands out and does the same.
+
+**The read-state seams retire.** Module 2 had the application's timeline
+report `is_read` and the latest activity into the core with
+`note_is_read` and `note_latest_activity`, because the walk that decides
+them ran over the application's items. The application's live timeline
+is now the core's live timeline, whose read-state watcher walks the same
+SDK items with the same rules — remote, and `counts_as_unread` — so both
+seams are deleted, along with `handle_read_change_trigger`,
+`update_latest_activity` and `Event::counts_as_activity`. The
+notification-count approximation for a room never opened stays, and
+stands aside from the watcher's first answer.
+
+**`ThreadList` moves in.** The SDK service built on first use, the items
+and diffs passed through as the timeline's are, `load_more` with the
+end-reached and loading states as observables. The application's keeps
+the `gio::ListStore`, the entries over the SDK's items, and
+`content_preview`, whose three sentences are translated.
+
+**`RoomSearch` was Phase 3's, and its view follows it now.** The
+generation counter, the pending pages of the local index and the
+server's `next_batch` were already the core's; the application's object
+mirrors the loading state, hands the core the term and the page
+requests, and keeps the rows. `reindex` restarts through the core by
+clearing and restoring the term, which is what the core's restart is.
+
+**The media message is the core's, and the Phase 2 question is
+answered.** `MediaMessage` in `matrix/media.rs` was the portable half —
+the variants, the source, the fetch into a file. The application's enum
+of the same five variants is deleted; `caption()`, which is data, and
+`into_content()`, the fetch as bytes, move in; the two `From` impls the
+application had join the one the core had. What the application keeps
+is `MediaMessageExt`, in the prelude: `display_name` and `filename`,
+which are sentences, and `into_tmp_file` and `save_to_file`, which are
+a temporary file and a dialog. `VisualMediaMessage` and its thumbnail
+loader stay, being the desktop's media stack.
+
+**Owed to the FFI:** the focused timeline, forward pagination, the
+thread list, and `paginate_backwards_while`.
+
+**Eyeball owed:** a room opened and scrolled to its start with the
+spinner; a permalink opened into a focused timeline and paginated both
+ways; the pinned events; a thread opened, replied to and its receipt
+sent; the read badge of a room clearing as it is read and the sidebar
+order following the latest activity, both from the core now; the
+threads list paging; a search in a plain room and in an encrypted one,
+and a reindex; a voice message's name and a file saved from the media
+viewer; the server notices room showing its notices.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -2343,6 +2425,11 @@ recorded here as it is found, with the phase that closes it.
 | 2 Sep 2026 | `session/room/timeline.rs`, `toggle_reaction` | **The core dropped the SDK's `was_added`, so a reaction added from Kotlin never reached the recent emoji.** The ledger row of 1 Sep on `toggle_reaction` closes here: the timeline holds a weak session and records the emoji when the reaction was added. | Closed 2 Sep, module 6 |
 | 2 Sep 2026 | `session/remote/cache.rs`, `RemoteRoomEntry::load` | **The application dropped the answer to a request its object no longer wanted; the core keeps the answer.** The application's `RemoteRoom` cancelled its request through `AbortableHandle` when the object was dropped. The core's entry outlives any one object — it is the cache's — so the request runs to its end and the entry keeps what it learnt for the next object. Nothing is shown that was not asked for; the difference is one finished request. | Accepted 2 Sep, module 7 |
 | 2 Sep 2026 | `session/remote/url_preview.rs`, `UrlPreviewError` | **Five failures the application folded into one loading state are named in the core.** The application's card only needed to know that there was nothing to draw; an embedder that wants to say why — a homeserver without the endpoint, a page with nothing on it — now can. The application still folds them. | Accepted 2 Sep, module 7 |
+| 2 Sep 2026 | `session/room/timeline.rs`, `build_sdk_timeline` | **The core read the server-notice tag once; the application followed the category.** A room tagged as the server notices room after its timeline was built kept hiding its notices in the core, where the application's filter saw the category change. **Closed 2 Sep**: `Timeline::watch_category`, installed by the room on every timeline it makes. | Closed 2 Sep, module 8 |
+| 2 Sep 2026 | `session/room/timeline.rs`, `paginate_backwards` | **The core loaded one batch per call where the application walks until its caller says stop, and would have flickered the loading state between batches.** **Closed 2 Sep**: `paginate_backwards_while` and `paginate_forwards_while` hold the loading flag for the whole walk; the one-batch call is the walk with a caller that stops at once. | Closed 2 Sep, module 8 |
+| 2 Sep 2026 | `session/room/timeline.rs`, `subscribe_items` | **The core kept "reached the start" through an SDK reset.** The application forgets both ends of the history on a `Clear` or a `Reset` diff, because the SDK starting over says nothing about what is loaded now; the core's flags outlived the reset and refused to paginate. **Closed 2 Sep**: the stream `subscribe_items` hands out is inspected for both. | Closed 2 Sep, module 8 |
+| 2 Sep 2026 | `session/room/mod.rs`, `is_read` after module 2 | **The read-state seams module 2 added are gone.** `note_is_read` and `note_latest_activity` existed because the walk ran over the application's items; the application's live timeline is the core's now, and the core's watcher walks the same items with the same rules. The row of 1 September on module 1's approximation closes with them: the approximation stands aside from the watcher's first answer, for a room never opened. | Closed 2 Sep, module 8 |
+| 2 Sep 2026 | `session/room/search.rs`, `reindex` | **The core's `reindex` does not restart the search; the application's did.** The core says the caller loads the first page again; the application's view restarts by clearing and restoring the term, which is the core's own restart, then loads. Recorded because an embedder that calls `reindex` and waits will wait forever. | Accepted 2 Sep, module 8; FFI note owed |
 
 ## Gates
 
