@@ -1696,7 +1696,7 @@ from `wc -l`, and the core column names what the module becomes a view of.
 | 6 | `global_account_data.rs`, `presence.rs` | 603 + 349 | `GlobalAccountData`, `PresenceList` (new) | **Done 2 Sep.** Both moved in (GTK is the authority), then the `GObject`s became views. This is where the Kotlin side gets recent emoji and presence; the FFI for both is owed. |
 | 7 | `remote/` | 2,031 | `session::remote::{RemoteRoom, SpaceChildren}`, `url_preview` | **Done 2 Sep.** `cache.rs` (with entries a page follows), `room_peek.rs`, `url_preview.rs` and `user.rs` moved in; the six objects are views. FFI for the cache, the peek, the preview and the profile owed. |
 | 8 | `room/timeline/`, `thread_list.rs`, `search.rs` | 1,893 + 433 + 767 | `session::Timeline`, `RoomSearch` | **Done 2 Sep.** The timeline, thread list and search are views; the core's timeline gains the event focus, forward pagination and the category watch; `ThreadList` moves in; `MediaMessage` is the core's with `MediaMessageExt` for the sentences and the dialog (the Phase 2 question, answered). |
-| 9 | `notifications/` | 1,916 | `session::notifications` (170) | The core's is a fragment; the application's settings model and push handling move in, then the `GObject`s become views. |
+| 9 | `notifications/` | 1,916 | `session::notifications` (170) | **Done 2 Sep.** The settings model moved in as `notifications/settings.rs` and the core room gained its setting; the `GObject` is a view. The push handling was the core's already; the notification bodies and back ends stay, being sentences and platforms. |
 | 10 | `verification/` | 1,538 | `VerificationList`, `IdentityVerification` | Over Phase 3's state machine; the two-device check the ledger owes runs in this section. |
 | 11 | `calls/{mod,call,state,turn}.rs` | 3,033 | Phase 3's `Calls`, `Call` | The signalling half becomes a view; `pipeline.rs` and `ringtone.rs` stay, and give the core's `note_connected`, the rollback and the remote mute their first embedder. The member-left watcher gets its caller. |
 | 12 | `sidebar_data/` | 1,241 | `session::sidebar`, `room::category` | The category rules and section filters over the core's. |
@@ -2329,6 +2329,57 @@ threads list paging; a search in a plain room and in an encrypted one,
 and a reindex; a voice message's name and a file saved from the media
 viewer; the server notices room showing its notices.
 
+### Module 9 — the notifications settings move in
+
+**Done 2 September.** The core's notifications module was the push
+registration and nothing else; it becomes a directory, and gains
+`settings.rs`: 708 lines, the application's 762-line
+`NotificationsSettings` with the `GObject` removed, which then becomes a
+view of 472. Across the seven files touched, 229 lines in and 641 out.
+
+**What moves in is everything the push rules say.** The account-level
+switch, read from `.m.rule.master` and inverted; the global setting made
+of the two default room modes, group and one-to-one; the keywords; the
+four special rules — user mention, room mention, invite, call — under the
+kinds and IDs the specification gives them; and the per-room settings,
+read from the rooms with user-defined rules. Each is an observable, read
+once the session is ready, since the push rules need the client, and
+read again whenever the SDK says they changed. The setters change the
+rule and set the observable, as the application did, and return a
+`NotificationsError` where the application returned the SDK's error;
+its pages only ever asked whether it failed.
+
+**A room's own setting is the core room's.** The application's settings
+told every room its setting after each read, because it could not tell
+which room had changed; the core does the same, over its own room list,
+and the core `Room` gains `notifications_setting` as an observable the
+application's room mirrors like its other properties. The `set` half of
+that property is gone: the room details page changes a setting through
+the settings object, and the room hears about it from the core.
+
+**What stays with the application.** The per-session switch is a
+`GSettings` key bound to a property, and clearing the shown
+notifications when it goes off is the notification system's; both stay.
+The `GtkStringList` of keywords is spliced from the core's list from the
+first keyword that differs. The `Notifications` object itself — the
+bodies, which are sentences; the suppression of a notification for the
+room on screen; the platform back ends — does not move; it was never
+the settings.
+
+**A dependency leaves the application.** `tokio-stream` was there for
+the broadcast stream of the SDK's changes, which the core follows now.
+
+**Owed to the FFI:** the settings object. The facade's own calls read
+and write the push rules directly, one request per call and nothing
+watched; they should become the core's observables, and an embedder that
+wants a room's setting should read it off the core room.
+
+**Eyeball owed:** the notifications settings page — the account switch,
+the three global settings, a keyword added and removed, the four rule
+switches, each surviving a reopen and a change made from another
+client; a room's notification setting from its details page, and the
+sidebar's muted state following it.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -2430,6 +2481,8 @@ recorded here as it is found, with the phase that closes it.
 | 2 Sep 2026 | `session/room/timeline.rs`, `subscribe_items` | **The core kept "reached the start" through an SDK reset.** The application forgets both ends of the history on a `Clear` or a `Reset` diff, because the SDK starting over says nothing about what is loaded now; the core's flags outlived the reset and refused to paginate. **Closed 2 Sep**: the stream `subscribe_items` hands out is inspected for both. | Closed 2 Sep, module 8 |
 | 2 Sep 2026 | `session/room/mod.rs`, `is_read` after module 2 | **The read-state seams module 2 added are gone.** `note_is_read` and `note_latest_activity` existed because the walk ran over the application's items; the application's live timeline is the core's now, and the core's watcher walks the same items with the same rules. The row of 1 September on module 1's approximation closes with them: the approximation stands aside from the watcher's first answer, for a room never opened. | Closed 2 Sep, module 8 |
 | 2 Sep 2026 | `session/room/search.rs`, `reindex` | **The core's `reindex` does not restart the search; the application's did.** The core says the caller loads the first page again; the application's view restarts by clearing and restoring the term, which is the core's own restart, then loads. Recorded because an embedder that calls `reindex` and waits will wait forever. | Accepted 2 Sep, module 8; FFI note owed |
+| 2 Sep 2026 | `session/notifications/settings.rs`, `set_*` | **The application returned the SDK's `NotificationSettingsError`; the core returns its own, with `NotLoaded` for a change asked before the rules were read.** The application logged that case and returned `UnableToUpdatePushRule`, which is a different sentence for the same thing. Its pages only ask `is_err()`. | Accepted 2 Sep, module 9 |
+| 2 Sep 2026 | `facade.rs`, `room_notification_mode` and the keyword calls | **The facade reads and writes the push rules on its own, per call, watching nothing.** The core's `NotificationsSettings` follows the rules and tells every room its setting; the facade should hand its callers those observables and read a room's setting off the core room. | FFI owed, module 9 |
 
 ## Gates
 

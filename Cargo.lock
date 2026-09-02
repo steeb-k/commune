@@ -888,7 +888,6 @@ dependencies = [
  "thiserror 2.0.20",
  "tld",
  "tokio",
- "tokio-stream",
  "tracing",
  "tracing-subscriber",
  "url",

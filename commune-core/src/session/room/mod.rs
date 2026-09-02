@@ -97,6 +97,7 @@ pub use self::{
     },
     upgrade::{UpgradeInfo, cmp_room_versions},
 };
+use super::NotificationsRoomSetting;
 use crate::{
     RUNTIME, UserFacingError,
     session::{Session, WeakSession, room_list::RoomMetainfo},
@@ -360,6 +361,9 @@ struct RoomInner {
     notification_count: SharedObservable<u64>,
     /// Whether this room has unread notifications.
     has_notifications: SharedObservable<bool>,
+    /// The notification setting of this room, as the account's
+    /// notifications settings say.
+    notifications_setting: SharedObservable<NotificationsRoomSetting>,
     /// The highlight state of the room.
     highlight: SharedObservable<RoomHighlight>,
     /// Whether this room is encrypted.
@@ -471,6 +475,7 @@ impl Room {
             is_read: SharedObservable::new(true),
             notification_count: SharedObservable::new(0),
             has_notifications: SharedObservable::new(false),
+            notifications_setting: SharedObservable::new(NotificationsRoomSetting::default()),
             highlight: SharedObservable::new(RoomHighlight::default()),
             is_encrypted: SharedObservable::new(false),
             guests_allowed: SharedObservable::new(false),
@@ -705,6 +710,25 @@ impl Room {
     #[must_use]
     pub fn notification_count(&self) -> u64 {
         self.inner.notification_count.get()
+    }
+
+    /// The notification setting of this room.
+    ///
+    /// Kept current by the account's [`NotificationsSettings`], which reads
+    /// the per-room push rules and tells every room.
+    #[must_use]
+    pub fn notifications_setting(&self) -> NotificationsRoomSetting {
+        self.inner.notifications_setting.get()
+    }
+
+    /// Subscribe to the notification setting of this room.
+    pub fn subscribe_notifications_setting(&self) -> Subscriber<NotificationsRoomSetting> {
+        self.inner.notifications_setting.subscribe()
+    }
+
+    /// Set the notification setting of this room.
+    pub(crate) fn set_notifications_setting(&self, setting: NotificationsRoomSetting) {
+        self.inner.notifications_setting.set_if_not_eq(setting);
     }
 
     /// Subscribe to the number of unread notifications of this room.
