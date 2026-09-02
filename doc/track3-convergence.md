@@ -1777,6 +1777,108 @@ session (login, restore, offline banner, log out) and the sidebar (every
 section fills, join by alias, knock, forget, the tombstone successor),
 which the user runs.
 
+### Module 1 — the session and its room list, written
+
+**Done 1 September, the same day as the plan, and the plan held.** The diff
+is 476 lines in and 768 out across twelve files; `src/session/mod.rs` alone
+loses 626 lines of engine and keeps its `GObject`. What the read said would
+happen happened, with four things the writing added.
+
+**`Session` is the `GObject` over the core's.** `Session::new` hands the
+stored session and the settings to the core's `Session::new` — on the
+runtime, because the client's store wants it — and keeps the core in a
+`OnceCell`; `client()` forwards; `prepare()` awaits the core's `prepare()`
+on the runtime and then does only what the application does: the global
+account data, the image packs, the room list's seed, the verification
+list, the calls, the security page, and the four subscribers. Everything
+listed in the plan as deleted is deleted: the sync loop, the response
+handler with its missed-sync ladder, the session-change watch, the profile
+cache, the token store, the reachability setter, the offline setter, the
+three constants and the `Client` field. `state`, `is_offline`,
+`is_homeserver_reachable` and the own user's name and avatar are mirrors
+fed by the bridge, read from the core once after subscribing so that
+nothing between the two is lost. The readiness hook — the notification
+handler and the Android pusher — moved from the response handler into the
+state mirror's setter, which is the only place that now sees `Ready`.
+`clean_up()` and the success path of `log_out()` set the mirror to
+`LoggedOut` themselves rather than wait for the core's change to arrive,
+because whoever awaited them reads the state next.
+
+**The reachability instrument stays the desktop's.** `NetworkMonitor`
+answers, as it always did, and the answer goes to the core through the
+`report_homeserver_reachable()` the ledger row asked for; the core drops
+its pending re-probe and restarts or stops the sync loop. The core's own
+dial runs once, from its `prepare()`, and never again on the desktop
+because nothing there calls `network_changed()`. One instrument per
+platform, and the row is closed.
+
+**`RoomList` presents the core's list.** The `IndexMap` stayed and became
+the wrapper cache; `load()` seeds it from `subscribe_entries()`'s snapshot
+in one `items_changed` and then follows the diffs through
+`ObjectWatcher`. Wrapping happens before the map is borrowed, because a
+room's constructor may look the list up. `metainfo.rs` is gone whole, its
+`RoomMetainfo` re-exported from the core; `handle_room_updates` is gone;
+`join_by_id_or_alias` and `knock` forward and keep their two `gettext_f`
+sentences; `is_joining_room` reads the core's set and
+`joining-rooms-changed` fires from its subscriber; `get_wait` stayed as
+it was, a main-context wait on this list's own `items_changed`, because
+the core's `get_wait` runs a tokio timer and returns a room this list may
+not have wrapped yet. The tombstone-successor rule stayed too, over the
+wrappers, since the application's `Room` still computes its own
+successor.
+
+**`Room::new` takes a core room, and `forget()` goes through it.** The
+constructor reads the `MatrixRoom` and the restored activity and read
+state from the core room — seeded only when the core has an activity,
+because a room the store never saw used to start from nothing and still
+does. The first addition the writing made: the application's `forget()`
+called the SDK directly and emitted a signal its own list used to hear.
+With the core owning the list, that route would have left the row in the
+sidebar forever; `forget()` now calls the core room's, whose `forgotten`
+observable is what the core's list removes on. The signal stays,
+unconnected. Same shape as the ambiguity row: a route that bypasses the
+owner.
+
+**The bridge, both halves, as the plan drew them.**
+`core_bridge/observe.rs` is `ObjectWatcher`: a builder that takes any
+`Send` stream and a closure over the object, boxes each item into a
+closure, `select_all`s them, and drains the lot in one tokio task that
+hands every closure to the main context with a `SendWeakRef`. Its first
+consumers are the session's four observables, the room list's diff and
+joining-rooms streams, and the room's ambiguity broadcast.
+`core_bridge/list_model.rs` is `apply_diff`: a `VectorDiff` of already
+keyed and wrapped values applied to an `IndexMap`, returning the
+`items_changed` triples in order, moving a wrapper rather than replacing
+it when its key is already there; eleven variants, five tests. The plan's
+`bridge_properties!` macro became this builder — a macro would only have
+hidden it.
+
+**The core gained what the application needed and nothing else.**
+`LogoutError` in place of the English `String`; `report_homeserver_reachable`;
+the `ambiguous_members` broadcast on `Room`, fed by `handle_room_updates`
+from the `left` and `joined` loops as the application's list does, with a
+`subscribe_ambiguous_members` the application's room follows into its
+own member refresh; `add_tombstoned_room` made public; `VectorDiff`
+re-exported, so the application names the core's type without a
+dependency of its own on `eyeball-im`. The bindings are byte-identical:
+`logout`'s signature did not move, and the FFI's `From` grew one arm.
+
+**Three methods died of the move and were deleted**, because Linux clippy
+counts dead code: the application's `StoredSession::delete` and
+`SessionSettings::delete`, both only ever called from the application's
+`clean_up`, which the core's now does on the same objects; and
+`Room::connect_room_forgotten`, whose one connector was the room list.
+
+**What this commit knowingly leaves.** The application's `Room` still
+runs its own `room_info` subscription, its own category computation and
+its own timeline beside the core room's — two subscriptions per room
+until module 2 replaces the first with mirrors. `SessionState` is still a
+`glib::Enum` with a `From` for the core's. The eyeball sections for the
+session — login, restore, the offline banner, log out — and for the
+sidebar — every section fills, join by alias, knock, forget, the
+tombstone successor — are owed, and only a person at the desktop can run
+them; the sessions compiled it, linted it, and ran the core's tests.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -1855,9 +1957,10 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `send_call_negotiate`, `on_negotiate` | **Renegotiation had no rules.** The application ignores one for a call not established, an answer to no offer of ours, a stale one; the caller's crossed offer stands and the callee's rolls back; an offer is refused while one is pending, with a thirty-second timeout. **Closed 1 Sep**: `Call::handle_negotiate`, `send_negotiate`, `NEGOTIATE_LIFETIME`. The rollback has no listener call. | Done, FFI call owed |
 | 1 Sep 2026 | `facade.rs`, `turn_servers`, `first_stream_id`, outcomes | **TURN asked for on every call and unsorted; the stream ID read from one of the two SDP forms; a hundred outcomes kept, not 256.** **Closed 1 Sep**: `session/calls/turn.rs` with its cache and its six tests, `first_stream_id` with its seven, `MAX_REMEMBERED_OUTCOMES`. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_call_listener` (connected) | **The FFI has no way to say a call connected.** The application's pipeline reports media flowing; on Kotlin a call never reaches `Connected`, and the mute the application re-announces on connecting never goes. `Call::note_connected` waits for a binding. | FFI method owed |
-| 1 Sep 2026 | `session/room_list.rs`, `handle_room_updates` | **The core drops every `AmbiguityChange` a sync carries.** The application hands them to the room, which refreshes the members named so that two "Alice"s are told apart the moment the second joins; the core's loop says they "wait for the member model" and discards them, so the Kotlin member list never disambiguates. Found reading the two room lists side by side for Phase 4. | Phase 4, module 1 (forwarded), module 3 (consumed) |
-| 1 Sep 2026 | `session/mod.rs`, `log_out` | **`Result<(), String>` with an English sentence in it** — the leaf-1 rule broken inside the core, where every other module of Phase 3 got an error enum. `LogoutError` carrying the SDK error; the application keeps its `gettext`. | Phase 4, module 1 |
-| 1 Sep 2026 | `session/mod.rs`, `probe_homeserver` | **The core dials the homeserver's port where the application asks `gio::NetworkMonitor::can_reach`.** The monitor knows about captive portals, metered links and proxies the dial does not. Once the core owns the sync loop the desktop's answer has to reach it: `network_changed()` triggers the core's probe today; a `report_homeserver_reachable(bool)` for an embedder with a better instrument is the likely shape. | Phase 4, module 1 |
+| 1 Sep 2026 | `session/room_list.rs`, `handle_room_updates` | **The core drops every `AmbiguityChange` a sync carries.** The application hands them to the room, which refreshes the members named so that two "Alice"s are told apart the moment the second joins; the core's loop says they "wait for the member model" and discards them, so the Kotlin member list never disambiguates. Found reading the two room lists side by side for Phase 4. **Forwarded 1 Sep** (module 1): `Room::subscribe_ambiguous_members`, fed from the `left` and `joined` loops; the application's room follows it into its own member refresh. The core's member list consumes it in module 3. | Forwarded; module 3 consumes |
+| 1 Sep 2026 | `session/mod.rs`, `log_out` | **`Result<(), String>` with an English sentence in it** — the leaf-1 rule broken inside the core, where every other module of Phase 3 got an error enum. `LogoutError` carrying the SDK error; the application keeps its `gettext`. **Closed 1 Sep**, module 1. | Done |
+| 1 Sep 2026 | `session/mod.rs`, `probe_homeserver` | **The core dials the homeserver's port where the application asks `gio::NetworkMonitor::can_reach`.** The monitor knows about captive portals, metered links and proxies the dial does not. Once the core owns the sync loop the desktop's answer has to reach it: `network_changed()` triggers the core's probe today; a `report_homeserver_reachable(bool)` for an embedder with a better instrument is the likely shape. **Closed 1 Sep**, module 1: that method, and the desktop's `NetworkMonitor` reports through it; the core dials once at `prepare()` and never again where nothing calls `network_changed()`. | Done |
+| 1 Sep 2026 | `src/session/room/mod.rs`, `forget` | **The application forgot a room past whoever owned the list.** `Room::forget()` called the SDK directly and emitted `room-forgotten`, which its own `RoomList` heard; once the list is the core's, the row would have stayed in the sidebar forever. Found writing module 1. **Closed 1 Sep**: `forget()` goes through the core room, whose `forgotten` observable the core's list removes on. | Done |
 
 ## Gates
 

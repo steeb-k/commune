@@ -27,7 +27,7 @@ mod media_message;
 /// `gettext` reaches and the core cannot.
 pub(crate) use commune_core::matrix::{
     AT_ROOM, AnySyncOrStrippedTimelineEvent, ClientSetupError, MatrixEventIdUri, MatrixIdUri,
-    MatrixRoomIdUri, MessageCacheKey, client_with_stored_session, fetch_mutual_rooms, find_at_room,
+    MatrixRoomIdUri, MessageCacheKey, fetch_mutual_rooms, find_at_room,
     original_message_event_from_raw, previewable_url, raw_eq, validate_password,
 };
 

@@ -147,11 +147,6 @@ impl SessionSettings {
         self.inner().apply_version_1_migration();
     }
 
-    /// Delete the settings from the application settings.
-    pub(crate) fn delete(&self) {
-        self.inner().delete();
-    }
-
     /// Custom servers to explore.
     pub(crate) fn explore_custom_servers(&self) -> IndexSet<OwnedServerName> {
         self.inner().explore_custom_servers()

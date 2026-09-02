@@ -52,14 +52,6 @@ impl StoredSession {
             .map(Self)
     }
 
-    /// Delete this session from the system.
-    ///
-    /// Forwarded rather than reached through `Deref`, because it consumes the
-    /// session.
-    pub(crate) async fn delete(self) {
-        self.0.delete().await;
-    }
-
     /// The core's session inside this wrapper.
     ///
     /// Needed where the core takes one by value and `Deref` cannot help.
