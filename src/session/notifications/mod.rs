@@ -709,7 +709,10 @@ impl Notifications {
 
         let session_id = session.session_id();
         let id = Self::call_notification_id(session_id, call);
-        let call_id = call.call_id().as_str().to_owned();
+        let call_id = call
+            .call_id()
+            .map(|id| id.as_str().to_owned())
+            .unwrap_or_default();
         let intent = |kind| {
             SessionIntent::CallAction(CallAction {
                 call_id: call_id.clone(),
@@ -759,7 +762,10 @@ impl Notifications {
     /// withdrawn from the call, which knows the one and not the other.
     #[cfg(not(target_os = "android"))]
     fn call_notification_id(session_id: &str, call: &Call) -> String {
-        format!("{session_id}//call//{}", call.call_id())
+        format!(
+            "{session_id}//call//{}",
+            call.call_id().map(|id| id.to_string()).unwrap_or_default()
+        )
     }
 
     /// Show a notification for the room that is on screen.

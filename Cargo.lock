@@ -876,7 +876,6 @@ dependencies = [
  "pulldown-cmark",
  "qrcode",
  "quick_cache",
- "rand 0.10.2",
  "regex",
  "ruma",
  "rusqlite",

@@ -23,11 +23,6 @@ impl CallState {
     pub(crate) fn is_ended(self) -> bool {
         self == Self::Ended
     }
-
-    /// Whether the call has not been answered yet, in either direction.
-    pub(crate) fn is_pending(self) -> bool {
-        matches!(self, Self::Ringing | Self::Dialing)
-    }
 }
 
 /// What became of a call, as far as the room can tell.
@@ -74,4 +69,47 @@ pub enum CallEndReason {
     MediaFailed,
     /// Something else went wrong.
     Failed,
+}
+
+impl From<commune_core::session::CallState> for CallState {
+    fn from(value: commune_core::session::CallState) -> Self {
+        use commune_core::session::CallState as Core;
+
+        match value {
+            Core::Ringing => Self::Ringing,
+            Core::Dialing => Self::Dialing,
+            Core::Connecting => Self::Connecting,
+            Core::Connected => Self::Connected,
+            Core::Ended => Self::Ended,
+        }
+    }
+}
+
+impl From<commune_core::session::CallOutcome> for CallOutcome {
+    fn from(value: commune_core::session::CallOutcome) -> Self {
+        use commune_core::session::CallOutcome as Core;
+
+        match value {
+            Core::Ringing => Self::Ringing,
+            Core::Answered => Self::Answered,
+            Core::Declined => Self::Declined,
+            Core::Missed => Self::Missed,
+        }
+    }
+}
+
+impl From<commune_core::session::CallEndReason> for CallEndReason {
+    fn from(value: commune_core::session::CallEndReason) -> Self {
+        use commune_core::session::CallEndReason as Core;
+
+        match value {
+            Core::HungUp => Self::HungUp,
+            Core::Declined => Self::Declined,
+            Core::NotAnswered => Self::NotAnswered,
+            Core::AnsweredElsewhere => Self::AnsweredElsewhere,
+            Core::NoConnection => Self::NoConnection,
+            Core::MediaFailed => Self::MediaFailed,
+            Core::Failed => Self::Failed,
+        }
+    }
 }

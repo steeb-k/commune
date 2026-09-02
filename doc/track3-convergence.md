@@ -1698,7 +1698,7 @@ from `wc -l`, and the core column names what the module becomes a view of.
 | 8 | `room/timeline/`, `thread_list.rs`, `search.rs` | 1,893 + 433 + 767 | `session::Timeline`, `RoomSearch` | **Done 2 Sep.** The timeline, thread list and search are views; the core's timeline gains the event focus, forward pagination and the category watch; `ThreadList` moves in; `MediaMessage` is the core's with `MediaMessageExt` for the sentences and the dialog (the Phase 2 question, answered). |
 | 9 | `notifications/` | 1,916 | `session::notifications` (170) | **Done 2 Sep.** The settings model moved in as `notifications/settings.rs` and the core room gained its setting; the `GObject` is a view. The push handling was the core's already; the notification bodies and back ends stay, being sentences and platforms. |
 | 10 | `verification/` | 1,538 | `VerificationList`, `IdentityVerification` | **Done 2 Sep.** Views over Phase 3's state machine; the application's copy of the machine is deleted. The two-device check the ledger owes is an eyeball item. |
-| 11 | `calls/{mod,call,state,turn}.rs` | 3,033 | Phase 3's `Calls`, `Call` | The signalling half becomes a view; `pipeline.rs` and `ringtone.rs` stay, and give the core's `note_connected`, the rollback and the remote mute their first embedder. The member-left watcher gets its caller. |
+| 11 | `calls/{mod,call,state,turn}.rs` | 3,033 | Phase 3's `Calls`, `Call` | **Done 2 Sep.** `Call` drives the pipeline from the core's `CallEvent`s and hands the core what the pipeline produces; `Calls` presents the core's active call and outcomes; `turn.rs` and the room's member watch are gone. The call harness is owed. |
 | 12 | `sidebar_data/` | 1,241 | `session::sidebar`, `room::category` | The category rules and section filters over the core's. |
 | 13 | `session_list/` | 786 | `SessionList` | The list Phase 2 could not touch; closes the spine. `secret/`'s `StoredSession` newtype is reviewed here. |
 
@@ -2425,6 +2425,69 @@ minutes; a QR code shown and scanned both ways; an in-room verification
 of another user, with the room left mid-way; the notification for each
 kind of request, and its withdrawal.
 
+### Module 11 — the calls drive the pipeline from the core's signalling
+
+**Done 2 September.** Phase 3 wrote the call signalling headless — the
+states, the party rule, the lifetimes, the batching, the glare, every
+handler — and the application kept its own copy interleaved with the
+`webrtcbin` pipeline. This deletes the copy: `src/session/calls/` goes
+from 3,033 lines to 1,479, with 634 in and 2,194 out across twelve
+files, and the core gains 38 lines. The pipeline, the ringtone and the
+notification stay, being the desktop's.
+
+**`Call` is the pipeline's side of a conversation with the core.** What
+the other end sends arrives as the core's `CallEvent`s — an answer to
+apply, candidates to add, a renegotiation to answer or apply, a rollback
+— carried to the main thread from the core's broadcast; what the
+pipeline produces goes back as calls on the core: the offer that places
+the call, the answer that accepts it, the renegotiation offer or answer,
+each candidate, the end of gathering, and the moment media flows. The
+object keeps every property the call window binds to and mirrors seven
+of them from the core; the mutes stay its own, since the pipeline acts
+on them, and are told to the core so that the other party hears. What
+leaves: the party-ID rule, the invite lifetime, the candidate batching
+and its two timers, the renegotiation timeout, the stream metadata in
+both directions, `first_stream_id`, the eight handlers for what the
+other end sends, and the glare. What stays of the machine: the
+fifteen-second grace ICE is given to recover, which is a statement
+about libnice, and the choice to hang up a call that had media at once.
+
+**A call we place exists before the core has it.** The application
+built the pipeline, asked it for an offer, and sent the invite when the
+offer arrived; the core places a call with an offer in hand. So the
+object is made first, at `Dialing`, with the pipeline running and the
+other member's name on the window, and attaches to the core's call when
+the offer has come back and the core has placed it. Candidates the
+pipeline gathers in between are held and handed over on attach; a
+hang-up in between ends the object without a word sent, which is what
+the application did before its invite too, and the core's call is hung
+up if it arrives afterwards. A call the core receives, or takes over
+in a glare, is presented from the core's; the glare's winner says it
+wants answering at once, and is answered.
+
+**`Calls` presents the core's active call and its outcomes.** It
+follows the active call and wraps the one it does not present yet;
+relays the outcome changes into the signal the timeline rows wait for;
+asks the core for the TURN servers, whose shape and conversion moved
+in with Phase 3 and whose application copy, `turn.rs`, is deleted with
+its tests; and keeps `update_ringing` — the ringtone, the notification,
+and the rule that a call from an account in this same window does not
+ring. `handle_member_left` is gone with the room's last SDK member
+watch: the core's room hears the other party leave.
+
+**A dependency leaves.** `rand` made the call and party IDs; the core
+makes them.
+
+**Owed:** the call harness. The `call-harness-procedure` memory says
+calls are verified against the local Synapse with the two-device
+procedure and not by reading; this module was compiled and linted
+only. The FFI already has the core's calls.
+
+**Eyeball owed, with the harness:** a call placed and answered both
+ways, video added midway, mute both ways, the other party leaving, a
+call declined, one unanswered for ninety seconds, glare between two
+accounts, and a call from another account in this window not ringing.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -2530,6 +2593,9 @@ recorded here as it is found, with the phase that closes it.
 | 2 Sep 2026 | `facade.rs`, `room_notification_mode` and the keyword calls | **The facade reads and writes the push rules on its own, per call, watching nothing.** The core's `NotificationsSettings` follows the rules and tells every room its setting; the facade should hand its callers those observables and read a room's setting off the core room. | FFI owed, module 9 |
 | 2 Sep 2026 | `session/verification/verification_list.rs`, `dismiss` | **The application emitted `dismiss` and `remove-from-list` synchronously from `dismiss()`; the view emits them when the core's `dismissed` observable says so, a main-loop turn later.** Every listener closes a view or drops a row, none reads state in between. Recorded with module 5's `changed` row as the same shape. | Accepted 2 Sep, module 10 |
 | 2 Sep 2026 | `session/verification/verification_list.rs`, `sync` | **A request that arrives while its member is being fetched is presented after the fetch, not before.** The application did the same, one request at a time; the view does it per sync and asks the core again for a request that was dropped meanwhile. | Accepted 2 Sep, module 10 |
+| 2 Sep 2026 | `session/calls/call.rs`, `Call::place` | **The application's call had its ID from the start; the view's has none until the core places it.** The window shows the call at once, as before; a notification or a timeline row asking for the ID of a call being placed gets none for the moment between the pipeline's offer and the core's invite, where the application had one it had not sent yet. No page asks in that moment: the row is for a call the room saw, the notification for one that rang. | Accepted 2 Sep, module 11 |
+| 2 Sep 2026 | `session/calls/call.rs`, `subscribe_events` | **The core's events reach the pipeline over a broadcast of thirty-two; a receiver that falls behind skips what it missed.** The application handed each event to its pipeline synchronously. A batch of candidates lost this way is not sent again, so a call in that state may fail to connect; a warning names the count. The buffer is sized for a call and a main loop that keeps up. | Accepted 2 Sep, module 11 |
+| 2 Sep 2026 | `session/calls/call.rs`, `hangup` | **A call hung up before its offer came back ends without a word; the application never had that moment.** The application's invite was sent from inside the offer's callback and a hang-up before it also sent nothing. Same behaviour, now with a name. | Accepted 2 Sep, module 11 |
 
 ## Gates
 

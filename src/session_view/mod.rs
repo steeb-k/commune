@@ -725,7 +725,10 @@ mod imp {
                 return;
             };
 
-            if call.call_id().as_str() != action.call_id {
+            if call
+                .call_id()
+                .is_none_or(|id| id.as_str() != action.call_id)
+            {
                 return;
             }
 
