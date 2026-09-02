@@ -292,8 +292,10 @@ mod imp {
                         .take_if(|session| session.session_id() == core.session_id());
 
                     match pending {
+                        // The login flow prepared this one itself.
                         Some(session) => session.upcast(),
-                        None => Session::from_core(core).upcast(),
+                        // The core restored and prepared this one.
+                        None => Session::from_prepared_core(core).upcast(),
                     }
                 }
             }
