@@ -1,10 +1,10 @@
-use std::{
-    cell::Cell,
-    collections::{HashMap, HashSet},
-    rc::Rc,
-    time::Duration,
-};
+use std::{cell::Cell, collections::HashMap, rc::Rc, time::Duration};
 
+pub use commune_core::session::RoomMetainfo;
+use commune_core::{
+    VectorDiff,
+    session::{Room as CoreRoom, RoomList as CoreRoomList},
+};
 use gtk::{
     gio, glib,
     glib::{clone, closure_local},
@@ -12,16 +12,15 @@ use gtk::{
     subclass::prelude::*,
 };
 use indexmap::IndexMap;
-use matrix_sdk::sync::RoomUpdates;
 use ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId, UserId};
-use tracing::{error, warn};
+use tokio::task::AbortHandle;
+use tracing::error;
 
-mod metainfo;
 mod room_info;
 
-use self::metainfo::RoomListMetainfo;
-pub use self::{metainfo::RoomMetainfo, room_info::RoomListRoomInfo};
+pub use self::room_info::RoomListRoomInfo;
 use crate::{
+    core_bridge::{ObjectWatcher, list_model::apply_diff},
     gettext_f,
     prelude::*,
     session::{Room, Session},
@@ -29,7 +28,7 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::RefCell, sync::LazyLock};
+    use std::{cell::RefCell, collections::HashSet, sync::LazyLock};
 
     use glib::subclass::Signal;
 
@@ -38,19 +37,20 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::RoomList)]
     pub struct RoomList {
-        /// The list of rooms.
+        /// The rooms, in the core's order.
+        ///
+        /// Also the wrapper cache: the same `Room` for the same room ID
+        /// across every diff, so that identity survives for the sidebar's
+        /// filter and sort stacks and every binding.
         pub(super) list: RefCell<IndexMap<OwnedRoomId, Room>>,
-        /// The list of rooms we are currently joining.
-        pub(super) joining_rooms: RefCell<HashSet<OwnedRoomOrAliasId>>,
         /// The list of rooms that were upgraded and for which we have not
         /// joined the successor yet.
         tombstoned_rooms: RefCell<HashSet<OwnedRoomId>>,
         /// The current session.
         #[property(get, construct_only)]
         session: glib::WeakRef<Session>,
-        /// The rooms metainfo that allow to restore this `RoomList` from its
-        /// previous state.
-        metainfo: RoomListMetainfo,
+        /// The task following the core's list.
+        watch_handle: RefCell<Option<AbortHandle>>,
         pub(super) get_wait_source: RefCell<Option<glib::SourceId>>,
     }
 
@@ -69,14 +69,13 @@ mod imp {
             SIGNALS.as_ref()
         }
 
-        fn constructed(&self) {
-            self.parent_constructed();
-            self.metainfo.set_room_list(&self.obj());
-        }
-
         fn dispose(&self) {
             if let Some(source) = self.get_wait_source.take() {
                 source.remove();
+            }
+
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
             }
         }
     }
@@ -100,197 +99,128 @@ mod imp {
     }
 
     impl RoomList {
+        /// The core's room list, if the session is still around.
+        pub(super) fn core(&self) -> Option<CoreRoomList> {
+            self.session
+                .upgrade()
+                .map(|session| session.core().room_list().clone())
+        }
+
         /// Get the room with the given room ID, if any.
         pub(super) fn get(&self, room_id: &RoomId) -> Option<Room> {
             self.list.borrow().get(room_id).cloned()
         }
 
-        /// Whether this list contains the room with the given ID.
-        fn contains(&self, room_id: &RoomId) -> bool {
-            self.list.borrow().contains_key(room_id)
-        }
-
-        /// Remove the given room identifier from the rooms we are currently
-        /// joining.
-        fn remove_joining_room(&self, identifier: &RoomOrAliasId) {
-            let removed = self.joining_rooms.borrow_mut().remove(identifier);
-
-            if removed {
-                self.obj().emit_by_name::<()>("joining-rooms-changed", &[]);
-            }
-        }
-
-        /// Add the given room identified to the rooms we are currently joining.
-        fn add_joining_room(&self, identifier: OwnedRoomOrAliasId) {
-            let inserted = self.joining_rooms.borrow_mut().insert(identifier);
-
-            if inserted {
-                self.obj().emit_by_name::<()>("joining-rooms-changed", &[]);
-            }
-        }
-
-        /// Remove the given room identifier from the rooms we are currently
-        /// joining and replace it with the given room ID if the room is
-        /// not in the list yet.
-        fn remove_or_replace_joining_room(&self, identifier: &RoomOrAliasId, room_id: &RoomId) {
-            {
-                let mut joining_rooms = self.joining_rooms.borrow_mut();
-                joining_rooms.remove(identifier);
-
-                if !self.contains(room_id) {
-                    joining_rooms.insert(room_id.to_owned().into());
-                }
-            }
-            self.obj().emit_by_name::<()>("joining-rooms-changed", &[]);
-        }
-
         /// Add a room that was tombstoned but for which we have not joined the
         /// successor yet.
         pub(super) fn add_tombstoned_room(&self, room_id: OwnedRoomId) {
+            if let Some(core) = self.core() {
+                core.add_tombstoned_room(room_id.clone());
+            }
+
             self.tombstoned_rooms.borrow_mut().insert(room_id);
         }
 
-        /// Handle when items were added to the list.
-        fn items_added(&self, added: usize) {
-            let position = {
-                let list = self.list.borrow();
-
-                let position = list.len().saturating_sub(added);
-
-                let mut tombstoned_rooms_to_remove = Vec::new();
-                for (_room_id, room) in list.iter().skip(position) {
-                    room.connect_room_forgotten(clone!(
-                        #[weak(rename_to = imp)]
-                        self,
-                        move |room| {
-                            imp.remove(room.room_id());
-                        }
-                    ));
-
-                    // Check if the new room is the successor to a tombstoned room.
-                    if let Some(predecessor_id) = room.predecessor_id()
-                        && self.tombstoned_rooms.borrow().contains(predecessor_id)
-                        && let Some(room) = self.get(predecessor_id)
-                    {
-                        room.update_successor();
-                        tombstoned_rooms_to_remove.push(predecessor_id.clone());
-                    }
-                }
-
-                if !tombstoned_rooms_to_remove.is_empty() {
-                    let mut tombstoned_rooms = self.tombstoned_rooms.borrow_mut();
-                    for room_id in tombstoned_rooms_to_remove {
-                        tombstoned_rooms.remove(&room_id);
-                    }
-                }
-
-                position
-            };
-
-            self.obj().items_changed(position as u32, 0, added as u32);
-        }
-
-        /// Remove the room with the given ID.
-        fn remove(&self, room_id: &RoomId) {
-            let removed = self.list.borrow_mut().shift_remove_full(room_id);
-            self.tombstoned_rooms.borrow_mut().remove(room_id);
-
-            if let Some((position, ..)) = removed {
-                self.obj().items_changed(position as u32, 1, 0);
-            }
-        }
-
-        /// Load the list of rooms from the `Store`.
-        pub(super) async fn load(&self) {
-            let rooms = self.metainfo.load_rooms().await;
-            let added = rooms.len();
-            self.list.borrow_mut().extend(rooms);
-
-            self.items_added(added);
-        }
-
-        /// Handle room updates received via sync.
-        pub(super) fn handle_room_updates(&self, rooms: RoomUpdates) {
-            let Some(session) = self.session.upgrade() else {
+        /// Follow the core's list.
+        pub(super) fn load(&self) {
+            let Some(core) = self.core() else {
                 return;
             };
-            let client = session.client();
 
-            let mut new_rooms = HashMap::new();
+            let (rooms, stream) = core.subscribe_entries();
 
-            for (room_id, left_room) in rooms.left {
-                let room = if let Some(room) = self.get(&room_id) {
-                    room
-                } else if let Some(matrix_room) = client.get_room(&room_id) {
-                    new_rooms
-                        .entry(room_id.clone())
-                        .or_insert_with(|| Room::new(&session, matrix_room, None))
-                        .clone()
-                } else {
-                    warn!("Could not find left room {room_id}");
-                    continue;
-                };
+            // The core's list is complete before the sync starts, so this
+            // is every room the store knew, in one change.
+            let wrapped = rooms
+                .into_iter()
+                .map(|room| self.wrap(room))
+                .collect::<Vec<_>>();
+            let added = wrapped.len();
+            self.list
+                .borrow_mut()
+                .extend(wrapped.iter().map(|(id, room)| (id.clone(), room.clone())));
+            self.rooms_added(wrapped.into_iter().map(|(_, room)| room));
+            self.obj().items_changed(0, 0, added as u32);
 
-                self.remove_joining_room((*room_id).into());
-                room.handle_ambiguity_changes(left_room.ambiguity_changes.values());
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(stream, |obj: &super::RoomList, diff| {
+                    obj.imp().apply_diff(diff);
+                })
+                .follow(
+                    core.subscribe_joining_rooms(),
+                    |obj: &super::RoomList, _| {
+                        obj.emit_by_name::<()>("joining-rooms-changed", &[]);
+                    },
+                )
+                .spawn();
+            self.watch_handle.replace(Some(handle));
+        }
+
+        /// The wrapper for the given core room: the one this list has, or a
+        /// new one.
+        fn wrap(&self, room: CoreRoom) -> (OwnedRoomId, Room) {
+            let room_id = room.room_id().to_owned();
+
+            if let Some(existing) = self.get(&room_id) {
+                return (room_id, existing);
             }
 
-            for (room_id, joined_room) in rooms.joined {
-                let room = if let Some(room) = self.get(&room_id) {
-                    room
-                } else if let Some(matrix_room) = client.get_room(&room_id) {
-                    new_rooms
-                        .entry(room_id.clone())
-                        .or_insert_with(|| Room::new(&session, matrix_room, None))
-                        .clone()
-                } else {
-                    warn!("Could not find joined room {room_id}");
-                    continue;
-                };
+            let session = self
+                .session
+                .upgrade()
+                .expect("a room list outlives no session");
+            (room_id, Room::new(&session, room))
+        }
 
-                self.remove_joining_room((*room_id).into());
-                self.metainfo.watch_room(&room);
-                room.handle_ambiguity_changes(joined_room.ambiguity_changes.values());
+        /// Apply one change from the core's list.
+        fn apply_diff(&self, diff: VectorDiff<CoreRoom>) {
+            // Wrap first, outside the borrow: a room's constructor may look
+            // the list up.
+            let diff = diff.map(|room| self.wrap(room));
+
+            let changes = apply_diff(&mut self.list.borrow_mut(), diff);
+
+            let obj = self.obj();
+            for change in &changes {
+                obj.items_changed(change.position, change.removed, change.added);
             }
 
-            for (room_id, _invited_room) in rooms.invited {
-                let room = if let Some(room) = self.get(&room_id) {
-                    room
-                } else if let Some(matrix_room) = client.get_room(&room_id) {
-                    new_rooms
-                        .entry(room_id.clone())
-                        .or_insert_with(|| Room::new(&session, matrix_room, None))
-                        .clone()
-                } else {
-                    warn!("Could not find invited room {room_id}");
-                    continue;
-                };
-
-                self.remove_joining_room((*room_id).into());
-                self.metainfo.watch_room(&room);
-            }
-
-            for (room_id, _knocked_room) in rooms.knocked {
-                let room = if let Some(room) = self.get(&room_id) {
-                    room
-                } else if let Some(matrix_room) = client.get_room(&room_id) {
-                    new_rooms
-                        .entry(room_id.clone())
-                        .or_insert_with(|| Room::new(&session, matrix_room, None))
-                        .clone()
-                } else {
-                    warn!("Could not find knocked room {room_id}");
-                    continue;
-                };
-
-                self.remove_joining_room((*room_id).into());
-                self.metainfo.watch_room(&room);
-            }
-
+            let new_rooms = {
+                let list = self.list.borrow();
+                changes
+                    .iter()
+                    .filter(|change| change.added > 0)
+                    .flat_map(|change| change.position..change.position + change.added)
+                    .filter_map(|index| list.get_index(index as usize))
+                    .map(|(_, room)| room.clone())
+                    .collect::<Vec<_>>()
+            };
             if !new_rooms.is_empty() {
-                let added = new_rooms.len();
-                self.list.borrow_mut().extend(new_rooms);
-                self.items_added(added);
+                self.rooms_added(new_rooms.into_iter());
+            }
+        }
+
+        /// Handle rooms that were added to the list.
+        ///
+        /// A new room may be the successor of a tombstoned one.
+        fn rooms_added(&self, rooms: impl Iterator<Item = Room>) {
+            let mut tombstoned_rooms_to_remove = Vec::new();
+
+            for room in rooms {
+                if let Some(predecessor_id) = room.predecessor_id()
+                    && self.tombstoned_rooms.borrow().contains(predecessor_id)
+                    && let Some(predecessor) = self.get(predecessor_id)
+                {
+                    predecessor.update_successor();
+                    tombstoned_rooms_to_remove.push(predecessor_id.clone());
+                }
+            }
+
+            if !tombstoned_rooms_to_remove.is_empty() {
+                let mut tombstoned_rooms = self.tombstoned_rooms.borrow_mut();
+                for room_id in tombstoned_rooms_to_remove {
+                    tombstoned_rooms.remove(&room_id);
+                }
             }
         }
 
@@ -300,27 +230,17 @@ mod imp {
             identifier: OwnedRoomOrAliasId,
             via: Vec<OwnedServerName>,
         ) -> Result<OwnedRoomId, String> {
-            let Some(session) = self.session.upgrade() else {
+            let Some(core) = self.core() else {
                 return Err("Could not upgrade Session".to_owned());
             };
-            let client = session.client();
+
             let identifier_clone = identifier.clone();
-
-            self.add_joining_room(identifier.clone());
-
-            let handle = spawn_tokio!(async move {
-                client
-                    .join_room_by_id_or_alias(&identifier_clone, &via)
-                    .await
-            });
+            let handle =
+                spawn_tokio!(async move { core.join_by_id_or_alias(identifier_clone, via).await });
 
             match handle.await.expect("task was not aborted") {
-                Ok(matrix_room) => {
-                    self.remove_or_replace_joining_room(&identifier, matrix_room.room_id());
-                    Ok(matrix_room.room_id().to_owned())
-                }
+                Ok(room_id) => Ok(room_id),
                 Err(error) => {
-                    self.remove_joining_room(&identifier);
                     error!("Joining room {identifier} failed: {error}");
 
                     let error = gettext_f(
@@ -341,17 +261,15 @@ mod imp {
             identifier: OwnedRoomOrAliasId,
             via: Vec<OwnedServerName>,
         ) -> Result<OwnedRoomId, String> {
-            let Some(session) = self.session.upgrade() else {
+            let Some(core) = self.core() else {
                 return Err("Could not upgrade Session".to_owned());
             };
-            let client = session.client();
 
             let identifier_clone = identifier.clone();
-            let handle =
-                spawn_tokio!(async move { client.knock(identifier_clone, None, via).await });
+            let handle = spawn_tokio!(async move { core.knock(identifier_clone, via).await });
 
             match handle.await.expect("task was not aborted") {
-                Ok(matrix_room) => Ok(matrix_room.room_id().to_owned()),
+                Ok(room_id) => Ok(room_id),
                 Err(error) => {
                     error!("Invite request for room {identifier} failed: {error}");
 
@@ -378,6 +296,9 @@ glib::wrapper! {
     /// The `RoomList` also takes care of, so called *pending rooms*, i.e.
     /// rooms the user requested to join, but received no response from the
     /// server yet.
+    ///
+    /// The list itself is the core's; this presents it, one `Room` per core
+    /// room, in the core's order.
     pub struct RoomList(ObjectSubclass<imp::RoomList>)
         @implements gio::ListModel;
 }
@@ -387,9 +308,9 @@ impl RoomList {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// Load the list of rooms from the `Store`.
-    pub(crate) async fn load(&self) {
-        self.imp().load().await;
+    /// Follow the core's list of rooms.
+    pub(crate) fn load(&self) {
+        self.imp().load();
     }
 
     /// Get a snapshot of the rooms list.
@@ -399,7 +320,9 @@ impl RoomList {
 
     /// Whether we are currently joining the room with the given identifier.
     pub(crate) fn is_joining_room(&self, identifier: &RoomOrAliasId) -> bool {
-        self.imp().joining_rooms.borrow().contains(identifier)
+        self.imp()
+            .core()
+            .is_some_and(|core| core.is_joining_room(identifier))
     }
 
     /// Get the room with the given room ID, if any.
@@ -532,11 +455,6 @@ impl RoomList {
     /// successor yet.
     pub(crate) fn add_tombstoned_room(&self, room_id: OwnedRoomId) {
         self.imp().add_tombstoned_room(room_id);
-    }
-
-    /// Handle room updates received via sync.
-    pub(crate) fn handle_room_updates(&self, rooms: RoomUpdates) {
-        self.imp().handle_room_updates(rooms);
     }
 
     /// Join the room with the given identifier.

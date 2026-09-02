@@ -354,7 +354,7 @@ impl RoomList {
 
     /// Add a room that was tombstoned but for which we haven't joined the
     /// successor yet.
-    pub(crate) fn add_tombstoned_room(&self, room_id: OwnedRoomId) {
+    pub fn add_tombstoned_room(&self, room_id: OwnedRoomId) {
         self.inner
             .tombstoned_rooms
             .lock()
@@ -385,8 +385,7 @@ impl RoomList {
             };
 
             self.remove_joining_room((*room_id).into());
-            // Ambiguity changes wait for the member model.
-            let _ = (room, left_room);
+            room.note_ambiguity_changes(left_room.ambiguity_changes.values());
         }
 
         for (room_id, joined_room) in rooms.joined {
@@ -404,6 +403,7 @@ impl RoomList {
 
             self.remove_joining_room((*room_id).into());
             self.inner.metainfo.watch_room(&room);
+            room.note_ambiguity_changes(joined_room.ambiguity_changes.values());
             room.handle_sync_timeline_events(
                 joined_room
                     .timeline

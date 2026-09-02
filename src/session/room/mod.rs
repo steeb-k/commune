@@ -1,5 +1,6 @@
-use std::{cell::RefCell, collections::HashSet};
+use std::cell::RefCell;
 
+use commune_core::session::Room as CoreRoom;
 use futures_util::StreamExt;
 use gettextrs::gettext;
 use gtk::{
@@ -10,10 +11,8 @@ use gtk::{
 };
 use matrix_sdk::{
     Result as MatrixResult, RoomDisplayName, RoomInfo, RoomMemberships, RoomState,
-    deserialized_responses::{AmbiguityChange, RawSyncOrStrippedState},
-    event_handler::EventHandlerDropGuard,
-    room::Room as MatrixRoom,
-    send_queue::RoomSendQueueUpdate,
+    deserialized_responses::RawSyncOrStrippedState, event_handler::EventHandlerDropGuard,
+    room::Room as MatrixRoom, send_queue::RoomSendQueueUpdate,
 };
 use ruma::{
     EventId, MatrixToUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
@@ -35,6 +34,7 @@ use ruma::{
     room_version_rules::RoomVersionRules,
 };
 use serde::Deserialize;
+use tokio::task::AbortHandle;
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
@@ -71,6 +71,7 @@ use super::{
 };
 use crate::{
     components::{AtRoom, AvatarImage, AvatarUriSource, PillSource},
+    core_bridge::ObjectWatcher,
     gettext_f,
     prelude::*,
     spawn, spawn_tokio,
@@ -118,6 +119,10 @@ mod imp {
     pub struct Room {
         /// The room API of the SDK.
         matrix_room: OnceCell<MatrixRoom>,
+        /// The core's room, which this presents.
+        core: OnceCell<CoreRoom>,
+        /// The task following the core's room.
+        core_watch_handle: RefCell<Option<AbortHandle>>,
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
         session: glib::WeakRef<Session>,
@@ -318,6 +323,12 @@ mod imp {
             self.tag_order.set(NO_TAG_ORDER);
         }
 
+        fn dispose(&self) {
+            if let Some(handle) = self.core_watch_handle.take() {
+                handle.abort();
+            }
+        }
+
         fn signals() -> &'static [Signal] {
             static SIGNALS: LazyLock<Vec<Signal>> = LazyLock::new(|| {
                 vec![
@@ -412,6 +423,28 @@ mod imp {
         /// The room API of the SDK.
         pub(super) fn matrix_room(&self) -> &MatrixRoom {
             self.matrix_room.get().expect("matrix room was initialized")
+        }
+
+        /// Set the core's room, and follow what it forwards.
+        pub(super) fn set_core(&self, core: CoreRoom) {
+            let ambiguous_members = BroadcastStream::new(core.subscribe_ambiguous_members());
+            self.core.set(core).expect("core room was uninitialized");
+
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(ambiguous_members, |obj: &super::Room, batch| {
+                    // A lagging receiver only loses batches; the names are
+                    // re-read from the store either way.
+                    if let Ok(user_ids) = batch {
+                        obj.imp().handle_ambiguous_members(user_ids);
+                    }
+                })
+                .spawn();
+            self.core_watch_handle.replace(Some(handle));
+        }
+
+        /// The core's room.
+        pub(super) fn core(&self) -> &CoreRoom {
+            self.core.get().expect("core room was initialized")
         }
 
         /// Set the current session
@@ -1824,24 +1857,15 @@ mod imp {
         }
 
         /// Handle changes in the ambiguity of members display names.
-        pub(super) fn handle_ambiguity_changes<'a>(
-            &self,
-            changes: impl Iterator<Item = &'a AmbiguityChange>,
-        ) {
-            // Use a set to make sure we update members only once.
-            let user_ids = changes
-                .flat_map(AmbiguityChange::user_ids)
-                .collect::<HashSet<_>>();
-
+        pub(super) fn handle_ambiguous_members(&self, user_ids: Vec<OwnedUserId>) {
             if let Some(members) = self.members.upgrade() {
                 for user_id in user_ids {
-                    members.update_member(user_id.to_owned());
+                    members.update_member(user_id);
                 }
             } else {
                 let own_member = self.own_member();
-                let own_user_id = own_member.user_id();
 
-                if user_ids.contains(&**own_user_id) {
+                if user_ids.contains(own_member.user_id()) {
                     own_member.update();
                 }
             }
@@ -2027,12 +2051,23 @@ glib::wrapper! {
 }
 
 impl Room {
-    /// Create a new `Room` for the given session, with the given room API.
-    pub fn new(session: &Session, matrix_room: MatrixRoom, metainfo: Option<RoomMetainfo>) -> Self {
+    /// Create a new `Room` for the given session, presenting the given core
+    /// room.
+    pub fn new(session: &Session, core: CoreRoom) -> Self {
         let this = glib::Object::builder::<Self>()
             .property("session", session)
             .build();
 
+        // The core restored the room's activity and read state from the
+        // store this used to read itself; a room the store did not know
+        // starts from nothing, as it always did.
+        let metainfo = (core.latest_activity() != 0).then(|| RoomMetainfo {
+            latest_activity: core.latest_activity(),
+            is_read: core.is_read(),
+        });
+        let matrix_room = core.matrix_room().clone();
+
+        this.imp().set_core(core);
         this.imp().init(matrix_room, metainfo);
         this
     }
@@ -2040,6 +2075,11 @@ impl Room {
     /// The room API of the SDK.
     pub(crate) fn matrix_room(&self) -> &MatrixRoom {
         self.imp().matrix_room()
+    }
+
+    /// The core's room, which this presents.
+    pub(crate) fn core(&self) -> &CoreRoom {
+        self.imp().core()
     }
 
     /// The ID of this room.
@@ -2577,8 +2617,10 @@ impl Room {
             return Ok(());
         }
 
-        let matrix_room = self.matrix_room().clone();
-        let handle = spawn_tokio!(async move { matrix_room.forget().await });
+        // Through the core, whose list is the one the sidebar presents: it
+        // drops the room when the room says it is forgotten.
+        let core = self.core().clone();
+        let handle = spawn_tokio!(async move { core.forget().await });
 
         match handle.await.expect("task was not aborted") {
             Ok(()) => {
@@ -2590,14 +2632,6 @@ impl Room {
                 Err(error)
             }
         }
-    }
-
-    /// Handle room member name ambiguity changes.
-    pub(crate) fn handle_ambiguity_changes<'a>(
-        &self,
-        changes: impl Iterator<Item = &'a AmbiguityChange>,
-    ) {
-        self.imp().handle_ambiguity_changes(changes);
     }
 
     /// Update the latest activity of the room with the given events.
@@ -2668,19 +2702,6 @@ impl Room {
     ) -> glib::SignalHandlerId {
         self.connect_closure(
             "pinned-events-changed",
-            true,
-            closure_local!(move |obj: Self| {
-                f(&obj);
-            }),
-        )
-    }
-
-    pub(crate) fn connect_room_forgotten<F: Fn(&Self) + 'static>(
-        &self,
-        f: F,
-    ) -> glib::SignalHandlerId {
-        self.connect_closure(
-            "room-forgotten",
             true,
             closure_local!(move |obj: Self| {
                 f(&obj);

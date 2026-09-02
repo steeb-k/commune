@@ -182,6 +182,25 @@ impl crate::UserFacingError for AccountError {
     }
 }
 
+/// What can go wrong while logging out.
+#[derive(Debug, thiserror::Error)]
+pub enum LogoutError {
+    /// The homeserver would not end the session.
+    ///
+    /// Boxed because `matrix_sdk::Error` is large enough that carrying it
+    /// by value makes every `Result` here expensive.
+    #[error("could not log the session out")]
+    Server(#[from] Box<matrix_sdk::Error>),
+}
+
+impl crate::UserFacingError for LogoutError {
+    fn to_user_facing(&self) -> String {
+        // The application renders this with `gettext`; this is the Kotlin
+        // side's fallback.
+        "Could not log the session out".to_owned()
+    }
+}
+
 /// A Matrix user session.
 ///
 /// Cheap to clone; every clone shares the same state.
@@ -702,8 +721,31 @@ impl Session {
         }
     }
 
+    /// Tell the session whether the homeserver can be reached, from an
+    /// instrument better than the session's own probe.
+    ///
+    /// The session dials the homeserver's port when the network changes;
+    /// an embedder with `gio::NetworkMonitor` knows about captive portals,
+    /// metered links and proxies the dial does not, and reports here
+    /// instead. A pending re-probe is dropped, and the sync loop restarts
+    /// or stops as the answer says.
+    pub fn report_homeserver_reachable(&self, is_reachable: bool) {
+        let inner = &self.inner;
+
+        if let Some(handle) = inner
+            .reachability_retry_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .take()
+        {
+            handle.abort();
+        }
+
+        SessionInner::set_is_homeserver_reachable(inner, is_reachable);
+    }
+
     /// Log out of this session.
-    pub async fn log_out(&self) -> Result<(), String> {
+    pub async fn log_out(&self) -> Result<(), LogoutError> {
         debug!(
             session = self.session_id(),
             "The session is about to be logged out"
@@ -725,7 +767,7 @@ impl Session {
                     session = self.session_id(),
                     "Could not log the session out: {logout_error}"
                 );
-                Err("Could not log the session out".to_owned())
+                Err(Box::new(logout_error).into())
             }
         }
     }

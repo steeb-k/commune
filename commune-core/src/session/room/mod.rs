@@ -29,16 +29,20 @@ mod server_acl;
 mod timeline;
 mod upgrade;
 
-use std::sync::{
-    Arc, Mutex, Weak,
-    atomic::{AtomicBool, Ordering},
+use std::{
+    collections::HashSet,
+    sync::{
+        Arc, Mutex, Weak,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 use eyeball::{SharedObservable, Subscriber};
 use futures_util::StreamExt;
 use matrix_sdk::{
     Result as MatrixResult, RoomDisplayName as SdkRoomDisplayName, RoomInfo, RoomState,
-    deserialized_responses::RawSyncOrStrippedState, room::Room as MatrixRoom,
+    deserialized_responses::{AmbiguityChange, RawSyncOrStrippedState},
+    room::Room as MatrixRoom,
 };
 use ruma::{
     MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedMxcUri, OwnedRoomId, OwnedUserId, RoomId, UInt,
@@ -61,7 +65,7 @@ use ruma::{
     serde::Raw,
 };
 use serde::Deserialize;
-use tokio::task::AbortHandle;
+use tokio::{sync::broadcast, task::AbortHandle};
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
@@ -95,6 +99,9 @@ use crate::{
 /// The specification keeps real orders in `[0, 1]` and asks that ordered
 /// rooms come first, so anything past 1 sorts a room after all of them.
 const NO_TAG_ORDER: f64 = 2.0;
+
+/// How many batches of ambiguous members a slow subscriber may fall behind.
+const AMBIGUITY_CHANNEL_CAPACITY: usize = 16;
 
 /// The display name of a room, as something the UI still has words to add
 /// to.
@@ -343,6 +350,12 @@ struct RoomInner {
     history_visibility: SharedObservable<HistoryVisibilityValue>,
     /// Whether this room was forgotten.
     forgotten: SharedObservable<bool>,
+    /// The members each sync marked ambiguous, for whoever shows names.
+    ///
+    /// The application refreshes the members named so that two "Alice"s
+    /// are told apart the moment the second joins. Until the core's member
+    /// list consumes this itself, the embedder's does.
+    ambiguous_members: broadcast::Sender<Vec<OwnedUserId>>,
     /// Whether the room info is initialized.
     ///
     /// Used to silence logs during initialization.
@@ -411,6 +424,7 @@ impl Room {
             is_encrypted: SharedObservable::new(false),
             history_visibility: SharedObservable::new(HistoryVisibilityValue::default()),
             forgotten: SharedObservable::new(false),
+            ambiguous_members: broadcast::channel(AMBIGUITY_CHANNEL_CAPACITY).0,
             is_room_info_initialized: SharedObservable::new(false),
             attempted_auto_join: AtomicBool::new(false),
             room_info_handle: Mutex::new(None),
@@ -659,6 +673,39 @@ impl Room {
     /// Whether this room was forgotten.
     pub(crate) fn subscribe_forgotten(&self) -> Subscriber<bool> {
         self.inner.forgotten.subscribe()
+    }
+
+    /// Subscribe to the members each sync marks ambiguous.
+    ///
+    /// Every item is the set of users whose display name stopped or
+    /// started being unique in this room; whoever shows names refreshes
+    /// those members. A slow subscriber loses the oldest batches, which
+    /// is fine: the names are re-read from the store either way.
+    #[must_use]
+    pub fn subscribe_ambiguous_members(&self) -> broadcast::Receiver<Vec<OwnedUserId>> {
+        self.inner.ambiguous_members.subscribe()
+    }
+
+    /// Note the members a sync marked ambiguous.
+    pub(crate) fn note_ambiguity_changes<'a>(
+        &self,
+        changes: impl Iterator<Item = &'a AmbiguityChange>,
+    ) {
+        // Use a set to make sure we update members only once.
+        let user_ids = changes
+            .flat_map(AmbiguityChange::user_ids)
+            .map(ToOwned::to_owned)
+            .collect::<HashSet<_>>();
+
+        if user_ids.is_empty() {
+            return;
+        }
+
+        // A send only fails when nobody listens, which is fine.
+        let _ = self
+            .inner
+            .ambiguous_members
+            .send(user_ids.into_iter().collect());
     }
 
     /// The live timeline of this room, created on first use.

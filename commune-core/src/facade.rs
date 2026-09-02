@@ -335,6 +335,14 @@ impl From<crate::session::PermissionsError> for CoreError {
     }
 }
 
+impl From<crate::session::LogoutError> for CoreError {
+    fn from(error: crate::session::LogoutError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 impl From<crate::session::CallError> for CoreError {
     fn from(error: crate::session::CallError) -> Self {
         Self::Failed {
@@ -2739,12 +2747,7 @@ impl CoreApp {
 
         let session_id = session.session_id().to_owned();
         RUNTIME
-            .spawn(async move {
-                session
-                    .log_out()
-                    .await
-                    .map_err(|logout_error| CoreError::Failed { msg: logout_error })
-            })
+            .spawn(async move { session.log_out().await.map_err(CoreError::from) })
             .await
             .expect("task was not aborted")?;
 

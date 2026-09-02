@@ -1,22 +1,12 @@
-use std::time::Duration;
-
-use futures_util::{StreamExt, lock::Mutex};
+use commune_core::session::{
+    Session as CoreSession, SessionProfile, SessionState as CoreSessionState,
+};
+use futures_util::lock::Mutex;
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::{
-    Client, SessionChange, config::SyncSettings, media::MediaRetentionPolicy, sync::SyncResponse,
-};
-use ruma::{
-    api::client::{
-        filter::{FilterDefinition, RoomFilter},
-        profile::{AvatarUrl, DisplayName},
-        search::search_events::v3::UserProfile,
-    },
-    assign,
-};
-use tokio::{task::AbortHandle, time::sleep};
-use tokio_stream::wrappers::BroadcastStream;
-use tracing::{debug, error, info};
+use matrix_sdk::Client;
+use tokio::task::AbortHandle;
+use tracing::{debug, error};
 
 // Calls are WebRTC over GStreamer, which is not cross-built for Android; see
 // `doc/android.md`.
@@ -48,27 +38,13 @@ pub(crate) use self::{
 use crate::{
     Application,
     components::AvatarData,
+    core_bridge::ObjectWatcher,
     prelude::*,
     secret::StoredSession,
     session_list::{SessionInfo, SessionInfoImpl},
     spawn, spawn_tokio,
-    utils::{
-        TokioDrop,
-        matrix::{self, ClientSetupError},
-    },
+    utils::matrix::ClientSetupError,
 };
-
-/// The database key for persisting the session's profile.
-const SESSION_PROFILE_KEY: &str = "session_profile";
-/// The number of consecutive missed synchronizations before the session is
-/// marked as offline.
-///
-/// Note that this is set to `2`, but the count begins at `0` so this would
-/// match the third missed synchronization.
-const MISSED_SYNC_OFFLINE_COUNT: usize = 2;
-/// The delays in seconds to wait for when a sync fails, depending on the number
-/// of missed attempts.
-const MISSED_SYNC_DELAYS: &[u64] = &[1, 5, 10, 20, 30];
 
 /// The state of the session.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, glib::Enum)]
@@ -82,6 +58,17 @@ pub enum SessionState {
     Ready = 2,
 }
 
+impl From<CoreSessionState> for SessionState {
+    fn from(state: CoreSessionState) -> Self {
+        match state {
+            CoreSessionState::LoggedOut => Self::LoggedOut,
+            CoreSessionState::Init => Self::Init,
+            CoreSessionState::InitialSync => Self::InitialSync,
+            CoreSessionState::Ready => Self::Ready,
+        }
+    }
+}
+
 mod imp {
     use std::cell::{Cell, OnceCell, RefCell};
 
@@ -90,8 +77,8 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::Session)]
     pub struct Session {
-        /// The Matrix client for this session.
-        client: OnceCell<TokioDrop<Client>>,
+        /// The core's session, which owns the client and the sync loop.
+        core: OnceCell<CoreSession>,
         /// The list model of the sidebar.
         #[property(get = Self::sidebar_list_model)]
         sidebar_list_model: OnceCell<SidebarListModel>,
@@ -139,15 +126,11 @@ mod imp {
         remote_cache: OnceCell<RemoteCache>,
         /// The identity server of this session, once something asked for it.
         identity_server: OnceCell<IdentityServer>,
-        session_changes_handle: RefCell<Option<AbortHandle>>,
-        sync_handle: RefCell<Option<AbortHandle>>,
+        /// The task following the core's observables.
+        watch_handle: RefCell<Option<AbortHandle>>,
         network_monitor_handler_id: RefCell<Option<glib::SignalHandlerId>>,
         homeserver_reachable_lock: Mutex<()>,
         homeserver_reachable_source: RefCell<Option<glib::SourceId>>,
-        /// The number of missed synchronizations in a row.
-        ///
-        /// Capped at `MISSED_SYNC_DELAYS.len() - 1`.
-        missed_sync_count: Cell<usize>,
     }
 
     #[glib::object_subclass]
@@ -169,11 +152,7 @@ mod imp {
                 source.remove();
             }
 
-            if let Some(handle) = self.session_changes_handle.take() {
-                handle.abort();
-            }
-
-            if let Some(handle) = self.sync_handle.take() {
+            if let Some(handle) = self.watch_handle.take() {
                 handle.abort();
             }
         }
@@ -186,11 +165,11 @@ mod imp {
     }
 
     impl Session {
-        /// Set the Matrix client for this session.
-        pub(super) fn set_client(&self, client: Client) {
-            self.client
-                .set(TokioDrop::new(client))
-                .expect("client should be uninitialized");
+        /// Set the core's session.
+        pub(super) fn set_core(&self, core: CoreSession) {
+            self.core
+                .set(core)
+                .expect("core session should be uninitialized");
 
             let obj = self.obj();
 
@@ -212,9 +191,14 @@ mod imp {
             self.network_monitor_handler_id.replace(Some(handler_id));
         }
 
+        /// The core's session.
+        pub(super) fn core(&self) -> &CoreSession {
+            self.core.get().expect("core session should be initialized")
+        }
+
         /// The Matrix client for this session.
-        pub(super) fn client(&self) -> &Client {
-            self.client.get().expect("client should be initialized")
+        pub(super) fn client(&self) -> Client {
+            self.core().client()
         }
 
         /// The list model of the sidebar.
@@ -250,7 +234,7 @@ mod imp {
         }
 
         /// Set the current state of the session.
-        fn set_state(&self, state: SessionState) {
+        pub(super) fn set_state(&self, state: SessionState) {
             let old_state = self.state.get();
 
             if old_state == SessionState::LoggedOut || old_state == state {
@@ -260,7 +244,52 @@ mod imp {
             }
 
             self.state.set(state);
+
+            if state == SessionState::Ready {
+                self.init_notifications();
+
+                // Make sure the UnifiedPush endpoint, when there is one, is
+                // registered with this session's homeserver. Once per run,
+                // at readiness, so a registration a previous run left
+                // half-done heals here.
+                #[cfg(target_os = "android")]
+                {
+                    let client = self.client();
+                    spawn_tokio!(async move {
+                        crate::utils::android_push::ensure_pusher(client).await;
+                    });
+                }
+            }
+
             self.obj().notify_state();
+        }
+
+        /// Set whether the homeserver is reachable, from the core.
+        fn set_is_homeserver_reachable(&self, is_reachable: bool) {
+            if self.is_homeserver_reachable.get() == is_reachable {
+                return;
+            }
+
+            self.is_homeserver_reachable.set(is_reachable);
+            self.obj().notify_is_homeserver_reachable();
+        }
+
+        /// Set whether this session is synchronized with the homeserver, from
+        /// the core.
+        fn set_is_offline(&self, is_offline: bool) {
+            if self.is_offline.get() == is_offline {
+                return;
+            }
+
+            self.is_offline.set(is_offline);
+            self.obj().notify_is_offline();
+        }
+
+        /// Set the profile of this session's user, from the core.
+        fn set_profile(&self, profile: SessionProfile) {
+            let user = self.user();
+            user.set_name(profile.display_name);
+            user.set_avatar_url(profile.avatar_url);
         }
 
         /// The homeserver URL as a `GNetworkAddress`.
@@ -309,7 +338,11 @@ mod imp {
                 false
             };
 
-            self.set_is_homeserver_reachable(is_homeserver_reachable);
+            // The monitor knows about captive portals, metered links and
+            // proxies the core's own dial does not; the core takes the
+            // answer and restarts or stops the sync loop.
+            self.core()
+                .report_homeserver_reachable(is_homeserver_reachable);
 
             if is_network_available && !is_homeserver_reachable {
                 // Check again later if the homeserver is reachable.
@@ -331,49 +364,6 @@ mod imp {
             }
         }
 
-        /// Set whether the homeserver is reachable.
-        fn set_is_homeserver_reachable(&self, is_reachable: bool) {
-            if self.is_homeserver_reachable.get() == is_reachable {
-                return;
-            }
-            let obj = self.obj();
-
-            self.is_homeserver_reachable.set(is_reachable);
-
-            if let Some(handle) = self.sync_handle.take() {
-                handle.abort();
-            }
-
-            if is_reachable {
-                info!(session = obj.session_id(), "Homeserver is reachable");
-
-                // Restart the sync loop.
-                self.sync();
-            } else {
-                self.set_offline(true);
-            }
-
-            obj.notify_is_homeserver_reachable();
-        }
-
-        /// Set whether this session is synchronized with the homeserver.
-        pub(super) fn set_offline(&self, is_offline: bool) {
-            if self.is_offline.get() == is_offline {
-                return;
-            }
-
-            if !is_offline {
-                // Restart the send queues, in case they were stopped.
-                let client = self.client().clone();
-                spawn_tokio!(async move {
-                    client.send_queue().set_enabled(true).await;
-                });
-            }
-
-            self.is_offline.set(is_offline);
-            self.obj().notify_is_offline();
-        }
-
         /// Drop any stale offline claim and find out fresh.
         ///
         /// On Android, backgrounding cuts the process off the network and then
@@ -387,38 +377,7 @@ mod imp {
         /// checks this kicks off will say so within a few seconds.
         #[cfg(target_os = "android")]
         pub(super) fn recheck_connectivity(&self) {
-            if self.state.get() < SessionState::InitialSync {
-                return;
-            }
-
-            let was_struggling = self.is_offline.get() || self.missed_sync_count.get() > 0;
-            self.missed_sync_count.set(0);
-            self.set_offline(false);
-
-            if !was_struggling {
-                // The sync loop is healthy — its running long-poll is already
-                // the fresh check.
-                return;
-            }
-
-            if self.is_homeserver_reachable.get() {
-                // Restart the sync loop rather than let it sleep out a backoff
-                // delay measured against a network that no longer exists.
-                if let Some(handle) = self.sync_handle.take() {
-                    handle.abort();
-                }
-                self.sync();
-            } else {
-                // The reachability check restarts the sync loop itself when it
-                // succeeds.
-                spawn!(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.update_homeserver_reachable().await;
-                    }
-                ));
-            }
+            self.core().recheck_connectivity();
         }
 
         /// The settings stored in the global account data for this session.
@@ -469,41 +428,25 @@ mod imp {
 
         /// Finish initialization of this session.
         pub(super) async fn prepare(&self) {
-            spawn!(
-                glib::Priority::LOW,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        // First, load the profile from the cache, it will be quicker.
-                        imp.init_user_profile().await;
-                        // Then, check if the profile changed.
-                        imp.update_user_profile().await;
-                    }
-                )
-            );
+            let core = self.core().clone();
+
+            // The core loads the room list, watches the session's changes,
+            // probes the homeserver, attaches verification, security and
+            // calls on its side, and starts the one sync loop. Its store and
+            // its probe want the runtime.
+            spawn_tokio!(async move { core.prepare().await })
+                .await
+                .expect("task was not aborted");
 
             self.global_account_data();
             self.image_packs();
-            self.watch_session_changes();
-            self.update_homeserver_reachable().await;
-
-            self.room_list().load().await;
+            self.room_list().load();
             self.verification_list().init();
             #[cfg(not(target_os = "android"))]
             self.calls().init();
             self.security.set_session(Some(&*self.obj()));
 
-            let client = self.client().clone();
-            spawn_tokio!(async move {
-                client
-                    .send_queue()
-                    .respawn_tasks_for_rooms_with_unsent_requests()
-                    .await;
-            });
-
-            self.set_state(SessionState::InitialSync);
-            self.sync();
+            self.watch_core();
 
             debug!(
                 session = self.obj().session_id(),
@@ -511,272 +454,39 @@ mod imp {
             );
         }
 
-        /// Watch the changes of the session, like being logged out or the
-        /// tokens being refreshed.
-        fn watch_session_changes(&self) {
-            let receiver = self.client().subscribe_to_session_changes();
-            let stream = BroadcastStream::new(receiver);
-
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let fut = stream.for_each(move |change| {
-                let obj_weak = obj_weak.clone();
-                async move {
-                    let Ok(change) = change else {
-                        return;
-                    };
-
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        spawn!(async move {
-                            if let Some(obj) = obj_weak.upgrade() {
-                                match change {
-                                    SessionChange::UnknownToken { .. } => {
-                                        info!(
-                                            session = obj.session_id(),
-                                            "The access token is invalid, cleaning up the session…"
-                                        );
-                                        obj.imp().clean_up().await;
-                                    }
-                                    SessionChange::TokensRefreshed => {
-                                        obj.imp().store_tokens().await;
-                                    }
-                                }
-                            }
-                        });
-                    });
-                }
-            });
-
-            let handle = spawn_tokio!(fut).abort_handle();
-            self.session_changes_handle.replace(Some(handle));
-        }
-
-        /// Start syncing the Matrix client.
-        fn sync(&self) {
-            if self.state.get() < SessionState::InitialSync || !self.is_homeserver_reachable.get() {
-                return;
-            }
-
-            let client = self.client().clone();
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-
-            let handle = spawn_tokio!(async move {
-                // Make sure that the event cache is subscribed to sync responses to benefit
-                // from it.
-                if let Err(error) = client.event_cache().subscribe() {
-                    error!("Could not subscribe event cache to sync responses: {error}");
-                }
-
-                // TODO: only create the filter once and reuse it in the future
-                let filter = assign!(FilterDefinition::default(), {
-                    room: assign!(RoomFilter::with_lazy_loading(), {
-                        include_leave: true,
-                    }),
-                });
-
-                let sync_settings = SyncSettings::new()
-                    .timeout(Duration::from_secs(30))
-                    .ignore_timeout_on_first_sync(true)
-                    .filter(filter.into());
-
-                let mut sync_stream = Box::pin(client.sync_stream(sync_settings).await);
-                while let Some(response) = sync_stream.next().await {
-                    let obj_weak = obj_weak.clone();
-                    let ctx = glib::MainContext::default();
-                    let delay = ctx
-                        .spawn(async move {
-                            spawn!(async move {
-                                if let Some(obj) = obj_weak.upgrade() {
-                                    obj.imp().handle_sync_response(response)
-                                } else {
-                                    None
-                                }
-                            })
-                            .await
-                            .expect("task was not aborted")
-                        })
-                        .await
-                        .expect("task was not aborted");
-
-                    if let Some(delay) = delay {
-                        sleep(delay).await;
-                    }
-                }
-            })
-            .abort_handle();
-
-            self.sync_handle.replace(Some(handle));
-        }
-
-        /// Handle the response received via sync.
-        ///
-        /// Returns the delay to wait for before making the next sync, if
-        /// necessary.
-        fn handle_sync_response(
-            &self,
-            response: Result<SyncResponse, matrix_sdk::Error>,
-        ) -> Option<Duration> {
+        /// Follow the core's observables into this object's properties.
+        fn watch_core(&self) {
             let obj = self.obj();
-            let session_id = obj.session_id();
-            debug!(session = session_id, "Received sync response");
+            let core = self.core();
 
-            match response {
-                Ok(response) => {
-                    self.room_list().handle_room_updates(response.rooms);
+            let handle = ObjectWatcher::new(&*obj)
+                .follow(core.subscribe_state(), |obj: &super::Session, state| {
+                    obj.imp().set_state(state.into());
+                })
+                .follow(
+                    core.subscribe_is_offline(),
+                    |obj: &super::Session, is_offline| {
+                        obj.imp().set_is_offline(is_offline);
+                    },
+                )
+                .follow(
+                    core.subscribe_is_homeserver_reachable(),
+                    |obj: &super::Session, is_reachable| {
+                        obj.imp().set_is_homeserver_reachable(is_reachable);
+                    },
+                )
+                .follow(core.subscribe_profile(), |obj: &super::Session, profile| {
+                    obj.imp().set_profile(profile);
+                })
+                .spawn();
+            self.watch_handle.replace(Some(handle));
 
-                    if self.state.get() < SessionState::Ready {
-                        self.set_state(SessionState::Ready);
-                        self.init_notifications();
-
-                        // Make sure the UnifiedPush endpoint, when there is
-                        // one, is registered with this session's homeserver.
-                        // Once per run, at readiness, so a registration a
-                        // previous run left half-done heals here.
-                        #[cfg(target_os = "android")]
-                        {
-                            let client = self.client().clone();
-                            crate::spawn_tokio!(async move {
-                                crate::utils::android_push::ensure_pusher(client).await;
-                            });
-                        }
-                    }
-
-                    self.set_offline(false);
-                    self.missed_sync_count.set(0);
-
-                    None
-                }
-                Err(error) => {
-                    let missed_sync_count = self.missed_sync_count.get();
-
-                    // If there are too many failed attempts, mark the session as offline.
-                    if missed_sync_count == MISSED_SYNC_OFFLINE_COUNT {
-                        self.set_offline(true);
-                    }
-
-                    // Increase the count of missed syncs, if we have not reached the maximum value.
-                    if missed_sync_count < 4 {
-                        self.missed_sync_count.set(missed_sync_count + 1);
-                    }
-
-                    error!(session = session_id, "Could not perform sync: {error}");
-
-                    // Sleep a little between attempts.
-                    let delay = MISSED_SYNC_DELAYS[missed_sync_count];
-                    Some(Duration::from_secs(delay))
-                }
-            }
-        }
-
-        /// Load the cached profile of the user of this session.
-        async fn init_user_profile(&self) {
-            let client = self.client().clone();
-            let handle = spawn_tokio!(async move {
-                client
-                    .state_store()
-                    .get_custom_value(SESSION_PROFILE_KEY.as_bytes())
-                    .await
-            });
-
-            let profile = match handle.await.expect("task was not aborted") {
-                Ok(Some(bytes)) => match serde_json::from_slice::<UserProfile>(&bytes) {
-                    Ok(profile) => profile,
-                    Err(error) => {
-                        error!(
-                            session = self.obj().session_id(),
-                            "Could not deserialize session profile: {error}"
-                        );
-                        return;
-                    }
-                },
-                Ok(None) => return,
-                Err(error) => {
-                    error!(
-                        session = self.obj().session_id(),
-                        "Could not load cached session profile: {error}"
-                    );
-                    return;
-                }
-            };
-
-            let user = self.user();
-            user.set_name(profile.displayname);
-            user.set_avatar_url(profile.avatar_url);
-        }
-
-        /// Update the profile of this session’s user.
-        ///
-        /// Fetches the updated profile and updates the local data.
-        async fn update_user_profile(&self) {
-            let client = self.client().clone();
-            let client_clone = client.clone();
-            let handle =
-                spawn_tokio!(async move { client_clone.account().fetch_user_profile().await });
-
-            let profile = match handle
-                .await
-                .expect("task was not aborted")
-                .and_then(|response| {
-                    let mut profile = UserProfile::new();
-                    profile.displayname = response.get_static::<DisplayName>()?;
-                    profile.avatar_url = response.get_static::<AvatarUrl>()?;
-
-                    Ok(profile)
-                }) {
-                Ok(profile) => profile,
-                Err(error) => {
-                    error!(
-                        session = self.obj().session_id(),
-                        "Could not fetch session profile: {error}"
-                    );
-                    return;
-                }
-            };
-
-            let user = self.user();
-
-            if Some(user.display_name()) == profile.displayname
-                && user
-                    .avatar_data()
-                    .image()
-                    .is_some_and(|i| i.uri() == profile.avatar_url)
-            {
-                // Nothing to update.
-                return;
-            }
-
-            // Serialize first for caching to avoid a clone.
-            let value = serde_json::to_vec(&profile);
-
-            // Update the profile for the UI.
-            user.set_name(profile.displayname);
-            user.set_avatar_url(profile.avatar_url);
-
-            // Update the cache.
-            let value = match value {
-                Ok(value) => value,
-                Err(error) => {
-                    error!(
-                        session = self.obj().session_id(),
-                        "Could not serialize session profile: {error}"
-                    );
-                    return;
-                }
-            };
-
-            let handle = spawn_tokio!(async move {
-                client
-                    .state_store()
-                    .set_custom_value(SESSION_PROFILE_KEY.as_bytes(), value)
-                    .await
-            });
-
-            if let Err(error) = handle.await.expect("task was not aborted") {
-                error!(
-                    session = self.obj().session_id(),
-                    "Could not cache session profile: {error}"
-                );
-            }
+            // The values the core already has, after subscribing so that
+            // nothing between the two is lost.
+            self.set_state(core.state().into());
+            self.set_is_offline(core.is_offline());
+            self.set_is_homeserver_reachable(core.is_homeserver_reachable());
+            self.set_profile(core.profile());
         }
 
         /// Start listening to notifications.
@@ -803,37 +513,21 @@ mod imp {
             });
         }
 
-        /// Update the stored session tokens.
-        async fn store_tokens(&self) {
-            let Some(session_tokens) = self.client().session_tokens() else {
-                return;
-            };
-
-            debug!(
-                session = self.obj().session_id(),
-                "Storing updated session tokens…"
-            );
-            self.obj().info().store_tokens(session_tokens).await;
-        }
-
         /// Clean up this session after it was logged out.
         ///
         /// This should only be called if the session has been logged out
         /// without calling `Session::log_out`.
         pub(super) async fn clean_up(&self) {
             let obj = self.obj();
+
+            let core = self.core().clone();
+            spawn_tokio!(async move { core.clean_up().await })
+                .await
+                .expect("task was not aborted");
+
+            // Now rather than when the core's change arrives: whoever
+            // awaited this expects the state to say so.
             self.set_state(SessionState::LoggedOut);
-
-            if let Some(handle) = self.sync_handle.take() {
-                handle.abort();
-            }
-
-            if let Some(settings) = self.settings.get() {
-                settings.delete();
-            }
-
-            obj.info().clone().delete().await;
-
             self.notifications.clear();
 
             debug!(
@@ -856,38 +550,17 @@ impl Session {
         stored_session: StoredSession,
         settings: SessionSettings,
     ) -> Result<Self, ClientSetupError> {
-        let tokens = stored_session
-            .load_tokens()
+        let core_info = stored_session.clone().into_inner();
+        let core_settings = settings.inner().clone();
+        let core = spawn_tokio!(async move { CoreSession::new(core_info, core_settings).await })
             .await
-            .ok_or(ClientSetupError::NoSessionTokens)?;
-
-        let stored_session_clone = stored_session.clone();
-        let client = spawn_tokio!(async move {
-            let client =
-                matrix::client_with_stored_session(stored_session_clone.into_inner(), tokens)
-                    .await?;
-
-            // Make sure that we use the proper retention policy.
-            let media = client.media();
-            let used_media_retention_policy = media.media_retention_policy().await?;
-            let wanted_media_retention_policy = MediaRetentionPolicy::default();
-
-            if used_media_retention_policy != wanted_media_retention_policy {
-                media
-                    .set_media_retention_policy(wanted_media_retention_policy)
-                    .await?;
-            }
-
-            Ok::<_, ClientSetupError>(client)
-        })
-        .await
-        .expect("task was not aborted")?;
+            .expect("task was not aborted")?;
 
         let obj = glib::Object::builder::<Self>()
             .property("info", stored_session)
             .property("settings", settings)
             .build();
-        obj.imp().set_client(client);
+        obj.imp().set_core(core);
 
         Ok(obj)
     }
@@ -922,7 +595,12 @@ impl Session {
 
     /// The Matrix client.
     pub(crate) fn client(&self) -> Client {
-        self.imp().client().clone()
+        self.imp().client()
+    }
+
+    /// The core's session, which this presents.
+    pub(crate) fn core(&self) -> &CoreSession {
+        self.imp().core()
     }
 
     /// The cache for remote data.
@@ -966,12 +644,14 @@ impl Session {
             handle.await.expect("task was not aborted");
         }
 
-        let client = self.client();
-        let handle = spawn_tokio!(async move { client.logout().await });
+        let core = self.core().clone();
+        let handle = spawn_tokio!(async move { core.log_out().await });
 
         match handle.await.expect("task was not aborted") {
             Ok(()) => {
-                self.imp().clean_up().await;
+                // The core cleaned itself up; the rest is the application's.
+                self.imp().set_state(SessionState::LoggedOut);
+                self.notifications().clear();
                 Ok(())
             }
             Err(error) => {

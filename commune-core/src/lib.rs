@@ -30,6 +30,10 @@ pub mod settings;
 pub mod tls;
 pub mod utils;
 
+/// The shape of a change to one of the core's lists, for whoever presents
+/// them.
+pub use eyeball_im::VectorDiff;
+
 #[cfg(feature = "ffi")]
 uniffi::setup_scaffolding!();
 
