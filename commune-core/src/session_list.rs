@@ -13,18 +13,43 @@ use std::{cmp::Ordering, ffi::OsString, sync::Arc};
 use eyeball::{SharedObservable, Subscriber};
 use eyeball_im::{ObservableVector, Vector, VectorDiff};
 use futures_util::Stream;
+use thiserror::Error;
 use tracing::{error, info};
 
 use crate::{
     RUNTIME, UserFacingError,
     matrix::ClientSetupError,
     paths::DataType,
-    secret::{Secret, SecretExt, StoredSession},
+    secret::{Secret, SecretError, SecretExt, StoredSession},
     session::{Session, SessionState},
     settings::SessionListSettings,
     spawn_tokio,
     utils::LoadingState,
 };
+
+/// Why the stored sessions could not be restored.
+#[derive(Debug, Clone, Error)]
+pub enum SessionListError {
+    /// The secret store could not be read.
+    #[error("Could not restore previous sessions: {0}")]
+    Restore(Arc<SecretError>),
+    /// The data directory could not be read.
+    #[error("Could not restore previous sessions: could not access the data directory")]
+    DataDirectory,
+}
+
+impl UserFacingError for SessionListError {
+    fn to_user_facing(&self) -> String {
+        let detail = match self {
+            Self::Restore(error) => error.to_user_facing(),
+            Self::DataDirectory => {
+                "An unexpected error happened while accessing the data directory".to_owned()
+            }
+        };
+
+        format!("Could not restore previous sessions\n\n{detail}")
+    }
+}
 
 /// A session in the list, at whatever stage of restoration it has reached.
 #[derive(Debug, Clone)]
@@ -82,8 +107,8 @@ struct SessionListInner {
     entries: std::sync::Mutex<ObservableVector<SessionEntry>>,
     /// The loading state of the list.
     state: SharedObservable<LoadingState>,
-    /// The error message, if state is set to `LoadingState::Error`.
-    error: std::sync::Mutex<Option<String>>,
+    /// The error, if state is set to `LoadingState::Error`.
+    error: std::sync::Mutex<Option<SessionListError>>,
     /// The settings of the sessions.
     settings: SessionListSettings,
     /// The session everything session-scoped resolves to, when many
@@ -129,9 +154,11 @@ impl SessionList {
         self.inner.state.subscribe()
     }
 
-    /// The error message, if the state is [`LoadingState::Error`].
+    /// The error, if the state is [`LoadingState::Error`].
+    ///
+    /// A value, not a sentence: the embedder renders it in its language.
     #[must_use]
-    pub fn error(&self) -> Option<String> {
+    pub fn error(&self) -> Option<SessionListError> {
         self.inner
             .error
             .lock()
@@ -280,9 +307,9 @@ impl SessionList {
         });
     }
 
-    /// Set the error message and put the list in the error state.
-    fn set_error(&self, message: String) {
-        *self.inner.error.lock().expect("mutex is not poisoned") = Some(message);
+    /// Set the error and put the list in the error state.
+    fn set_error(&self, error: SessionListError) {
+        *self.inner.error.lock().expect("mutex is not poisoned") = Some(error);
         self.inner.state.set(LoadingState::Error);
     }
 
@@ -297,10 +324,7 @@ impl SessionList {
         let mut sessions = match Secret::restore_sessions().await {
             Ok(sessions) => sessions,
             Err(restore_error) => {
-                self.set_error(format!(
-                    "Could not restore previous sessions\n\n{}",
-                    restore_error.to_user_facing(),
-                ));
+                self.set_error(SessionListError::Restore(Arc::new(restore_error)));
                 return;
             }
         };
@@ -330,11 +354,7 @@ impl SessionList {
             Ok(directories) => directories,
             Err(dir_error) => {
                 error!("Could not access data directory: {dir_error}");
-                self.set_error(
-                    "Could not restore previous sessions\n\nAn unexpected error happened while \
-                     accessing the data directory"
-                        .to_owned(),
-                );
+                self.set_error(SessionListError::DataDirectory);
                 return;
             }
         };
