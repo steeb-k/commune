@@ -287,57 +287,6 @@ impl User {
         obj
     }
 
-    /// Get the cryptographic identity (aka cross-signing identity) of this
-    /// user.
-    ///
-    /// First, we try to get the local crypto identity if we are sure that it is
-    /// up-to-date. If we do not have the crypto identity locally, we request it
-    /// from the homeserver.
-    pub(crate) async fn ensure_crypto_identity(&self) -> Option<UserIdentity> {
-        let session = self.session();
-        let encryption = session.client().encryption();
-        let user_id = self.user_id();
-
-        // First, see if we should have an updated crypto identity for the user locally.
-        // When we get the remote crypto identity of a user manually, it is cached
-        // locally but it is not kept up-to-date unless the user is tracked. That's why
-        // it's important to only use the local crypto identity if the user is tracked.
-        let should_have_local = if user_id == session.user_id() {
-            true
-        } else {
-            // We should have the updated user identity locally for tracked users.
-            let encryption_clone = encryption.clone();
-            let handle = spawn_tokio!(async move { encryption_clone.tracked_users().await });
-
-            match handle.await.expect("task was not aborted") {
-                Ok(tracked_users) => tracked_users.contains(user_id),
-                Err(error) => {
-                    error!("Could not get tracked users: {error}");
-                    // We are not sure, but let us try to get the local user identity first.
-                    true
-                }
-            }
-        };
-
-        // Try to get the local crypto identity.
-        if should_have_local && let Some(identity) = self.imp().local_crypto_identity().await {
-            return Some(identity);
-        }
-
-        // Now, try to request the crypto identity from the homeserver.
-        let user_id_clone = user_id.clone();
-        let handle =
-            spawn_tokio!(async move { encryption.request_user_identity(&user_id_clone).await });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(identity) => identity,
-            Err(error) => {
-                error!("Could not request remote crypto identity: {error}");
-                None
-            }
-        }
-    }
-
     /// Start a verification of the identity of this user.
     pub(crate) async fn verify_identity(&self) -> Result<IdentityVerification, ()> {
         self.session()

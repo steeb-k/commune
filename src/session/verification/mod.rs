@@ -1,5 +1,5 @@
+use commune_core::session::VerificationKey as CoreVerificationKey;
 use gtk::{glib, prelude::*};
-use matrix_sdk::encryption::verification::VerificationRequest;
 use ruma::{OwnedUserId, UserId, events::key::verification::VerificationMethod};
 
 mod identity_verification;
@@ -14,6 +14,9 @@ pub(crate) use self::{
 use crate::{components::Camera, prelude::*};
 
 /// A unique key to identify an identity verification.
+///
+/// The core's [`VerificationKey`](CoreVerificationKey) with the `GVariant`
+/// conversions an intent needs.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub(crate) struct VerificationKey {
     /// The ID of the user being verified.
@@ -22,18 +25,18 @@ pub(crate) struct VerificationKey {
     pub(crate) flow_id: String,
 }
 
-impl VerificationKey {
-    /// Create a new `VerificationKey` with the given user ID and flow ID.
-    pub(crate) fn new(user_id: OwnedUserId, flow_id: String) -> Self {
-        Self { user_id, flow_id }
+impl From<CoreVerificationKey> for VerificationKey {
+    fn from(value: CoreVerificationKey) -> Self {
+        Self {
+            user_id: value.user_id,
+            flow_id: value.flow_id,
+        }
     }
+}
 
-    /// Create a new `VerificationKey` from the given [`VerificationRequest`].
-    pub(crate) fn from_request(request: &VerificationRequest) -> Self {
-        Self::new(
-            request.other_user_id().to_owned(),
-            request.flow_id().to_owned(),
-        )
+impl From<VerificationKey> for CoreVerificationKey {
+    fn from(value: VerificationKey) -> Self {
+        Self::new(value.user_id, value.flow_id)
     }
 }
 
@@ -58,6 +61,9 @@ impl FromVariant for VerificationKey {
 }
 
 /// Load the supported verification methods on this system.
+///
+/// The core's default is the methods that need no camera; whether there is
+/// one is this application's to find out.
 async fn load_supported_verification_methods() -> Vec<VerificationMethod> {
     let mut methods = vec![
         VerificationMethod::SasV1,
