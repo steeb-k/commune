@@ -3,7 +3,6 @@ use std::cell::RefCell;
 use commune_core::session::{
     Room as CoreRoom, RoomDisplayName as CoreRoomDisplayName, ServerNotice,
 };
-use futures_util::StreamExt;
 use gettextrs::gettext;
 use gtk::{
     glib,
@@ -12,7 +11,7 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::{
-    Result as MatrixResult, RoomInfo, RoomState, deserialized_responses::RawSyncOrStrippedState,
+    Result as MatrixResult, RoomState, deserialized_responses::RawSyncOrStrippedState,
     event_handler::EventHandlerDropGuard, room::Room as MatrixRoom,
 };
 use ruma::{
@@ -336,20 +335,6 @@ mod imp {
             #[cfg(not(target_os = "android"))]
             self.watch_members();
             self.join_rule.init(&obj);
-
-            // The aliases and the join rule still read the SDK's room info
-            // themselves, until their module makes them views too.
-            spawn!(
-                glib::Priority::DEFAULT_IDLE,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.update_with_room_info(&imp.matrix_room().clone_info());
-                        imp.watch_room_info();
-                    }
-                )
-            );
 
             spawn!(
                 glib::Priority::DEFAULT_IDLE,
@@ -1365,35 +1350,6 @@ mod imp {
             }
 
             self.obj().notify_verification();
-        }
-
-        /// Watch the SDK's room info for changes to the room state.
-        fn watch_room_info(&self) {
-            let matrix_room = self.matrix_room();
-            let subscriber = matrix_room.subscribe_info();
-
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let fut = subscriber.for_each(move |room_info| {
-                let obj_weak = obj_weak.clone();
-                async move {
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        spawn!(async move {
-                            if let Some(obj) = obj_weak.upgrade() {
-                                obj.imp().update_with_room_info(&room_info);
-                            }
-                        });
-                    });
-                }
-            });
-            spawn_tokio!(fut);
-        }
-
-        /// Update the parts of this room that still read the SDK's room info
-        /// themselves.
-        fn update_with_room_info(&self, room_info: &RoomInfo) {
-            self.aliases.update();
-            self.join_rule.update(room_info.join_rule());
         }
 
         /// Change the category of this room.
