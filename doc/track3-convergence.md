@@ -292,9 +292,13 @@ against the core: the session itself goes first, not the room list, because
 nothing below it can be a view until the application's `Session` holds the
 core's. The order and the reasons are in "Phase 4 in detail" below._
 
-**Phase 5 — strings**, the 156 `gettext` sites in the model layer, moved per
-module as it migrates and never in one pass, updating `po/POTFILES.in` each
-time so translations survive.
+**Phase 5 — strings.** Written on 29 August as "the 156 `gettext` sites in
+the model layer, moved per module as it migrates"; rewritten on 2 September,
+once Phases 2 to 4 had settled that a value crosses into the core and a
+sentence does not. The sites are not moved: they are audited, each one
+confirmed to be a sentence rendered from a core value, and any computation
+found next to one moved. The audit is "Phase 5 — the strings, audited"
+below.
 
 **Phase 6 — the ledgers.** Roughly 55 documents describe the GObject shape.
 They are updated with the commit that invalidates them, and from Phase 2 on
@@ -2566,8 +2570,79 @@ Linux, linted with clippy at `-D warnings`, the core's tests run and the
 FFI bindings checked identical. What none of them has had is a person at
 the desktop: **every module's eyeball section is owed**, and module 11's
 call harness with it. By the rule at the head of this section, no module
-is done until then; the sessions have done the part they can. Phases 5
-and 6, the strings and the ledgers, follow.
+is done until then; the sessions have done the part they can. Phase 5,
+the strings, is audited below; Phase 6, the ledgers, runs with every
+commit.
+
+## Phase 5 — the strings, audited
+
+**Done 2 September.** The rule the audit checks is the one every module
+of Phase 4 followed: the core decides what is the case and hands it over
+as a value; the application puts the value into words through `gettext`,
+because it is the application that has the translations, and the core
+keeps an English rendering of the same value for an embedder without
+them. So a `gettext` call in the model layer is right when what it wraps
+is a sentence chosen by a core value, and wrong when the choosing — the
+parsing, the matching, the arithmetic — happens next to it.
+
+**The count.** The plan said 156 sites; 108 lines under `src/session/`,
+`src/session_list/` and `src/secret.rs` mention `gettext` today, and 81
+of them are calls — the rest are imports, translator comments and
+`xgettext` markers. The other 75 went with the lines Phases 2 to 4
+deleted. Every one of the 81 was read.
+
+| File | Calls | What they put into words | Verdict |
+|---|---|---|---|
+| `secret.rs` | 16 | the fifteen `KeyringError` cases and the credential label | Sentences from a value; stays. Phase 2's seam, unchanged. |
+| `session_list/mod.rs` | 2 | `SessionListError` | Sentences from a value; stays. Module 13 made it one. |
+| `session/mod.rs` | 1 | the core's logout failure | One sentence for one error; stays. |
+| `room/mod.rs` | 3 | `RoomDisplayName::{EmptyWas, Empty, Unknown}` | Sentences from a value; stays. Module 2. |
+| `room/join_rule.rs` | 6 | `JoinRuleValue`, `can_knock`, the membership room | Sentences from three values; stays. Module 4. |
+| `room/permissions.rs` | 6 | `MemberRole`'s `Display` | Sentences from a value; stays. |
+| `room_list/mod.rs` | 2 | `JoinError::{Join, Knock}` | Sentences from a value; stays. |
+| `sidebar_data/section/name.rs`, `icon_item.rs` | 11 | the section and icon names | Sentences from the core's kinds; stays. Module 12. |
+| `user_sessions_list/user_session.rs` | 10 | "Last seen" with a time | Stays, with a reason below. |
+| `room/thread_list.rs` | 4 | a thread row's one-line preview | **Was a computation.** Moved: the core's `ContentPreview`. |
+| `notifications/mod.rs` | 20 | the call, verification and login-request notifications; the message, invite and call bodies | Eight from values, stay. **Twelve were a computation.** Moved: the core's `NotificationBody`. |
+
+**The two moves.** `content_preview` in the thread list matched the
+SDK's `TimelineItemContent` — a message keeps its body, a sticker its
+body, a redaction, an undecryptable message and anything else each their
+sentence — and the matching is the fact, not the wording. It is
+`ContentPreview::of` in the core's `thread_list.rs` now, with the four
+sentences left in the application's function of the same name. The
+notifications did more: `message_notification_body` deserialized the
+event, sanitized the message, stripped the reply fallback and matched its
+type; `own_invite_notification_body` walked the member event, sync or
+stripped, for an invite whose state key is our user; `incoming_call_
+notification_body` read the RTC notification's intent; and
+`is_call_invite` told the calls module's event from the rest. All four
+are `NotificationBody` in the core's `notifications/body.rs`, with five
+tests over the event JSON, and the application's `notification_body`
+turns the value into the same twelve sentences, `show_sender` and
+`is_direct` still the application's, since one is Android's notification
+shape and the other is the room's. The core gains 361 lines, 321 of them
+the new file with its tests; the application loses 228 and keeps 74. No
+ledger rows: the sentences are
+the same sentences, so nothing a person sees changes, and
+`po/POTFILES.in` is unchanged, since no file gained or lost its
+translatable strings.
+
+**Why "Last seen" stays.** `UserSession::last_seen` turns the core's
+`last_seen_ts` into "Last seen yesterday at 23:04": it computes the day
+difference against local midnight and picks one of ten formats by that
+and by the desktop's 12- or 24-hour setting. That is a computation, but
+one over the local clock and the toolkit's clock settings, with
+`GDateTime` doing the formatting; it is date formatting, of a piece with
+`timestamp_to_date`, and the Kotlin application formats the same
+timestamp with Android's `DateUtils`. The value that crossed is the
+timestamp. It is recorded here so the next reader does not reopen it.
+
+**Eyeball owed:** a thread row for a removed message and for one that
+could not be decrypted; a push notification for a text, an image and an
+emote, in a direct room and a group; an invite's notification; a call's
+notification from another client; and a device's "Last seen" for today,
+yesterday, this week and last year.
 
 ## What never enters the core
 

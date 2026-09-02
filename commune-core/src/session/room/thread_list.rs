@@ -5,19 +5,54 @@
 //! built on first use, its pages loaded one at a time, and its items —
 //! the SDK's own, passed through with the diffs that follow them, as the
 //! timeline's are. What stayed in the application is the `gio::ListStore`
-//! of rows and the sentences a row shows for a message it cannot draw.
+//! of rows and the sentences a row shows for a message it cannot draw;
+//! which sentence is [`ContentPreview`]'s to say.
 
 use std::sync::Arc;
 
 use eyeball::{SharedObservable, Subscriber};
 use eyeball_im::{Vector, VectorDiff};
 use futures_util::Stream;
-use matrix_sdk_ui::timeline::thread_list_service::{
-    ThreadListItem, ThreadListPaginationState, ThreadListService,
+use matrix_sdk_ui::timeline::{
+    MsgLikeKind, TimelineItemContent,
+    thread_list_service::{ThreadListItem, ThreadListPaginationState, ThreadListService},
 };
 use tracing::error;
 
 use crate::{UserFacingError, spawn_tokio, utils::LoadingState};
+
+/// What a thread row shows of an event, in one line.
+///
+/// The row has no room for the real widgets, so a message keeps its body
+/// and everything else says what it is; the saying is the embedder's.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ContentPreview {
+    /// A message or a sticker, with its body.
+    Body(String),
+    /// A message that was removed.
+    Redacted,
+    /// A message that could not be decrypted.
+    UnableToDecrypt,
+    /// Anything else.
+    Unsupported,
+}
+
+impl ContentPreview {
+    /// The preview of the given content.
+    #[must_use]
+    pub fn of(content: Option<&TimelineItemContent>) -> Self {
+        match content {
+            Some(TimelineItemContent::MsgLike(msg_like)) => match &msg_like.kind {
+                MsgLikeKind::Message(message) => Self::Body(message.msgtype().body().to_owned()),
+                MsgLikeKind::Sticker(sticker) => Self::Body(sticker.content().body.clone()),
+                MsgLikeKind::Redacted => Self::Redacted,
+                MsgLikeKind::UnableToDecrypt(_) => Self::UnableToDecrypt,
+                _ => Self::Unsupported,
+            },
+            _ => Self::Unsupported,
+        }
+    }
+}
 
 /// What can go wrong while listing the threads of a room.
 #[derive(Debug, thiserror::Error)]

@@ -90,7 +90,7 @@ pub use self::{
     },
     search::{RoomSearch, SearchError, SearchResult},
     server_acl::{AclProblem, ServerAclError, acls_are_equal, check_acl, unrestricted_acl},
-    thread_list::{ThreadList, ThreadListError},
+    thread_list::{ContentPreview, ThreadList, ThreadListError},
     timeline::{
         MAX_BATCH_SIZE, ReceiptPosition, Timeline, TimelineError, TimelineFocusKind,
         check_upload_size,

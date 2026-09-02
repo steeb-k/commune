@@ -1,11 +1,11 @@
-use commune_core::session::ThreadList as CoreThreadList;
+use commune_core::session::{ContentPreview, ThreadList as CoreThreadList};
 use futures_util::StreamExt;
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk_ui::{
     eyeball_im::VectorDiff,
     timeline::{
-        MsgLikeKind, TimelineItemContent,
+        TimelineItemContent,
         thread_list_service::{ThreadListItem, ThreadListItemEvent},
     },
 };
@@ -19,20 +19,13 @@ use crate::{
     utils::{LoadingState, matrix::timestamp_to_date},
 };
 
-/// A one-line preview of the given content, for a thread list row.
-///
-/// The list has no room for the real widgets, so everything becomes a
-/// sentence: a message keeps its body, everything else says what it is.
+/// The sentence for the given content, for a thread list row.
 fn content_preview(content: Option<&TimelineItemContent>) -> String {
-    match content {
-        Some(TimelineItemContent::MsgLike(msg_like)) => match &msg_like.kind {
-            MsgLikeKind::Message(message) => message.msgtype().body().to_owned(),
-            MsgLikeKind::Sticker(sticker) => sticker.content().body.clone(),
-            MsgLikeKind::Redacted => gettext("This message was removed."),
-            MsgLikeKind::UnableToDecrypt(_) => gettext("Could not decrypt this message"),
-            _ => gettext("Unsupported event"),
-        },
-        _ => gettext("Unsupported event"),
+    match ContentPreview::of(content) {
+        ContentPreview::Body(body) => body,
+        ContentPreview::Redacted => gettext("This message was removed."),
+        ContentPreview::UnableToDecrypt => gettext("Could not decrypt this message"),
+        ContentPreview::Unsupported => gettext("Unsupported event"),
     }
 }
 
