@@ -1,17 +1,17 @@
-use std::{
-    cell::{Cell, RefCell},
-    fmt,
-    rc::Rc,
-};
+use std::{cell::RefCell, fmt, rc::Rc};
 
 use quick_cache::unsync::Cache;
-use ruma::{OwnedRoomOrAliasId, OwnedUserId, RoomId};
+use ruma::{OwnedRoomOrAliasId, OwnedUserId};
 use url::Url;
 
-use super::{RemoteRoom, RemoteUrlPreview, RemoteUser, UrlPreviewSupport};
+use super::{RemoteRoom, RemoteUrlPreview, RemoteUser};
 use crate::{session::Session, utils::matrix::MatrixRoomIdUri};
 
 /// The data of the [`RemoteCache`].
+///
+/// One object per entry the core keeps, under the same key and with the
+/// same capacity, so that a page asking twice gets the same object and the
+/// two caches forget together.
 struct RemoteCacheData {
     /// Remote rooms.
     rooms: RefCell<Cache<OwnedRoomOrAliasId, RemoteRoom>>,
@@ -19,11 +19,13 @@ struct RemoteCacheData {
     users: RefCell<Cache<OwnedUserId, RemoteUser>>,
     /// Previews of URLs, keyed by the URL they are a preview of.
     url_previews: RefCell<Cache<String, RemoteUrlPreview>>,
-    /// Whether the homeserver can answer a URL preview request.
-    url_previews_support: UrlPreviewSupport,
 }
 
 /// An API to query remote data and cache it.
+///
+/// The data, the staleness and the requests are the core's
+/// ([`commune_core::session::RemoteCache`]); this hands out the objects that
+/// present its entries.
 #[derive(Clone)]
 pub(crate) struct RemoteCache {
     session: Session,
@@ -38,76 +40,43 @@ impl RemoteCache {
             data: RemoteCacheData {
                 rooms: Cache::new(30).into(),
                 users: Cache::new(30).into(),
-                // A screenful of the timeline holds far fewer links than this,
-                // so scrolling back over one never asks for it twice.
                 url_previews: Cache::new(100).into(),
-                url_previews_support: Cell::new(None).into(),
             }
             .into(),
         }
     }
 
     /// Get the remote room for the given URI.
+    ///
+    /// The core decides which room this is — a room asked for by alias and
+    /// now by ID is the same room — and whether to ask the homeserver again.
     pub(crate) fn room(&self, uri: MatrixRoomIdUri) -> RemoteRoom {
+        let entry = self.session.core().remote_cache().room(uri);
+        let key = entry.uri().id.clone();
+
         let mut rooms = self.data.rooms.borrow_mut();
 
-        // Check if the room is in the cache.
-        if let Some(room) = rooms.get(&uri.id) {
-            room.load_data_if_stale();
+        if let Some(room) = rooms.get(&key) {
             return room.clone();
         }
 
-        // Check if the alias or ID matches a room in the cache, in case the URI uses
-        // another ID than the one we used as a key for the cache.
-        let mut found_id = None;
-        let id_or_alias = <&RoomId>::try_from(&*uri.id);
-
-        for (id, room) in rooms.iter() {
-            match id_or_alias {
-                Ok(room_id) => {
-                    if room.room_id().is_some_and(|id| id == room_id) {
-                        found_id = Some(id.clone());
-                        break;
-                    }
-                }
-                Err(room_alias) => {
-                    if room
-                        .canonical_alias()
-                        .is_some_and(|alias| alias == room_alias)
-                    {
-                        found_id = Some(id.clone());
-                        break;
-                    }
-                }
-            }
-        }
-
-        if let Some(id) = found_id {
-            let room = rooms.get(&id).expect("room should be in cache");
-            room.load_data_if_stale();
-            return room.clone();
-        }
-
-        // We did not find it, create the room.
-        let id = uri.id.clone();
-        let room = RemoteRoom::new(&self.session, uri);
-        rooms.insert(id, room.clone());
+        let room = RemoteRoom::new(&self.session, &entry);
+        rooms.insert(key, room.clone());
 
         room
     }
 
     /// Get the remote user for the given ID.
     pub(crate) fn user(&self, user_id: OwnedUserId) -> RemoteUser {
+        let entry = self.session.core().remote_cache().user(user_id.clone());
+
         let mut users = self.data.users.borrow_mut();
 
-        // Check if the user is in the cache.
         if let Some(user) = users.get(&user_id) {
-            user.load_profile_if_stale();
             return user.clone();
         }
 
-        // We did not find it, create the user.
-        let user = RemoteUser::new(&self.session, user_id.clone());
+        let user = RemoteUser::new(&self.session, &entry);
         users.insert(user_id, user.clone());
 
         user
@@ -115,19 +84,16 @@ impl RemoteCache {
 
     /// Get the preview for the given URL.
     pub(crate) fn url_preview(&self, url: Url) -> RemoteUrlPreview {
-        let mut url_previews = self.data.url_previews.borrow_mut();
         let key = url.to_string();
+        let entry = self.session.core().remote_cache().url_preview(url);
 
-        // Check if the preview is in the cache.
+        let mut url_previews = self.data.url_previews.borrow_mut();
+
         if let Some(preview) = url_previews.get(&key) {
             return preview.clone();
         }
 
-        // We did not find it, request it. Unlike rooms and users, a preview is
-        // never reloaded: a page changing under a message that linked to it
-        // does not change what the message said.
-        let preview =
-            RemoteUrlPreview::new(&self.session, url, self.data.url_previews_support.clone());
+        let preview = RemoteUrlPreview::new(&entry);
         url_previews.insert(key, preview.clone());
 
         preview

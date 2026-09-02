@@ -94,7 +94,13 @@ pub use self::{
     },
     notifications::PushError,
     presence::{Presence, PresenceError, PresenceList, UserPresence},
-    remote::{RemoteRoom, RemoteRoomError, SpaceChild, SpaceChildren, SpaceChildrenError},
+    remote::{
+        PROFILE_VALIDITY_DURATION, PeekedMessage, ROOM_DATA_VALIDITY_DURATION, RemoteCache,
+        RemoteRoom, RemoteRoomEntry, RemoteRoomError, RemoteRoomState, RemoteUserEntry,
+        RemoteUserError, RemoteUserProfile, RemoteUserState, RoomPeekError, SpaceChild,
+        SpaceChildren, SpaceChildrenError, UrlPreview, UrlPreviewEntry, UrlPreviewError,
+        UrlPreviewImage, UrlPreviewState, UrlPreviewSupport, url_host,
+    },
     room::{
         AclProblem, AliasError, AliasesState, ComposerChunk, HistoryVisibilityValue, JoinRule,
         JoinRuleState, JoinRuleValue, MAX_BATCH_SIZE, MediaHistoryError, MediaHistoryEvent,
@@ -271,6 +277,9 @@ struct SessionInner {
     global_account_data: std::sync::OnceLock<GlobalAccountData>,
     /// What the homeserver said about who is around, built on first use.
     presence_list: std::sync::OnceLock<PresenceList>,
+    /// Remote rooms, users and URL previews, asked for once and kept for a
+    /// while; built on first use.
+    remote_cache: std::sync::OnceLock<RemoteCache>,
     /// The image packs available to this account, built on first use.
     image_packs: std::sync::OnceLock<ImagePacks>,
     /// The account's other sessions.
@@ -352,6 +361,7 @@ impl Session {
             ignored_users: std::sync::OnceLock::new(),
             global_account_data: std::sync::OnceLock::new(),
             presence_list: std::sync::OnceLock::new(),
+            remote_cache: std::sync::OnceLock::new(),
             image_packs: std::sync::OnceLock::new(),
             user_sessions: std::sync::OnceLock::new(),
             security: std::sync::OnceLock::new(),
@@ -615,6 +625,15 @@ impl Session {
         self.inner
             .presence_list
             .get_or_init(|| PresenceList::new(self.downgrade()))
+    }
+
+    /// Remote rooms, users and URL previews, asked for once and kept for a
+    /// while.
+    #[must_use]
+    pub fn remote_cache(&self) -> &RemoteCache {
+        self.inner
+            .remote_cache
+            .get_or_init(|| RemoteCache::new(self.downgrade()))
     }
 
     /// The image packs available to this account.

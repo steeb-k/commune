@@ -17,7 +17,6 @@ use futures_util::future::BoxFuture;
 use gtk::{gio, glib};
 use regex::Regex;
 use tempfile::NamedTempFile;
-use tokio::task::{AbortHandle, JoinHandle};
 use tracing::error;
 
 #[cfg(target_os = "android")]
@@ -931,47 +930,6 @@ impl ChildPropertyExt for gtk::ListItem {
 pub(crate) trait IsABin: IsA<adw::Bin> {}
 
 impl IsABin for adw::Bin {}
-
-/// A wrapper around [`JoinHandle`] that aborts the future if it is dropped
-/// before the task ends.
-///
-/// The main API for this type is [`AbortableHandle::await_task()`].
-#[derive(Debug, Default)]
-pub(crate) struct AbortableHandle {
-    abort_handle: RefCell<Option<AbortHandle>>,
-}
-
-impl AbortableHandle {
-    /// Await the task of the given `JoinHandle`.
-    ///
-    /// Aborts the previous task that was running, if any.
-    ///
-    /// Returns `None` if the task was aborted before completion.
-    pub(crate) async fn await_task<T>(&self, join_handle: JoinHandle<T>) -> Option<T> {
-        self.abort();
-
-        self.abort_handle.replace(Some(join_handle.abort_handle()));
-
-        let result = join_handle.await.ok();
-
-        self.abort_handle.take();
-
-        result
-    }
-
-    /// Abort the current task, if possible.
-    pub(crate) fn abort(&self) {
-        if let Some(abort_handle) = self.abort_handle.take() {
-            abort_handle.abort();
-        }
-    }
-}
-
-impl Drop for AbortableHandle {
-    fn drop(&mut self) {
-        self.abort();
-    }
-}
 
 /// Resample the given slice to the given length, using linear interpolation.
 ///

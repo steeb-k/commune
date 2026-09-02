@@ -918,6 +918,7 @@ dependencies = [
  "mime",
  "oo7",
  "paranoid-android",
+ "quick_cache",
  "rand 0.10.2",
  "rmp-serde",
  "ruma",

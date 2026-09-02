@@ -1,39 +1,16 @@
+use commune_core::session::PeekedMessage as CorePeekedMessage;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use ruma::{
-    OwnedRoomId, OwnedUserId, RoomId,
-    api::client::{
-        filter::{LazyLoadOptions, RoomEventFilter},
-        message::get_message_events,
-    },
-    assign,
-    events::{
-        AnyStateEvent, AnySyncTimelineEvent, MessageLikeEventType,
-        room::message::OriginalSyncRoomMessageEvent,
-    },
-};
+use ruma::OwnedRoomId;
 use tokio::task::AbortHandle;
-use tracing::debug;
 
 use crate::{
     session::Session,
     spawn, spawn_tokio,
-    utils::{
-        LoadingState,
-        matrix::{original_message_event_from_raw, timestamp_to_date},
-    },
+    utils::{LoadingState, matrix::timestamp_to_date},
 };
 
-/// How many messages to show.
-///
-/// This is a taste of the room, not its history: there is no scrollback, so
-/// the number is whatever fills a dialog and stops.
-const PEEK_LIMIT: u32 = 20;
-
 mod imp {
-    use std::{
-        cell::{Cell, OnceCell, RefCell},
-        collections::HashMap,
-    };
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use super::*;
 
@@ -137,23 +114,9 @@ mod imp {
             self.list().remove_all();
             self.set_loading_state(LoadingState::Loading);
 
-            // Only messages, and only the member events of the people who sent
-            // them: a preview has no room for state changes, and lazy-loading
-            // is the only way to learn a sender's name without being able to
-            // ask for the member list of a room we are not in.
-            let filter = assign!(RoomEventFilter::default(), {
-                types: Some(vec![MessageLikeEventType::RoomMessage.to_string()]),
-                lazy_load_options: LazyLoadOptions::Enabled {
-                    include_redundant_members: false,
-                },
-            });
-            let request = assign!(get_message_events::v3::Request::backward(room_id.clone()), {
-                limit: PEEK_LIMIT.into(),
-                filter,
-            });
-
-            let client = session.client();
-            let handle = spawn_tokio!(async move { client.send(request).await });
+            let core = session.core().clone();
+            let room_id_clone = room_id.clone();
+            let handle = spawn_tokio!(async move { core.peek_room(&room_id_clone).await });
             self.abort_handle.replace(Some(handle.abort_handle()));
 
             let Ok(result) = handle.await else {
@@ -169,82 +132,19 @@ mod imp {
             }
 
             match result {
-                Ok(response) => self.add_messages(&room_id, &response),
-                Err(error) => {
-                    // A room that is not `world_readable`, or that this
-                    // homeserver does not have, answers with an error here.
-                    // This is the expected outcome for most rooms.
-                    debug!("Could not read the messages of room `{room_id}`: {error}");
-                    self.set_loading_state(LoadingState::Error);
+                Ok(messages) => {
+                    let messages = messages
+                        .into_iter()
+                        .map(super::PeekedMessage::new)
+                        .collect::<Vec<_>>();
+                    self.list().extend_from_slice(&messages);
+                    self.set_loading_state(LoadingState::Ready);
                 }
+                // Already logged by the core, at the level it deserves: this
+                // is the expected outcome for most rooms.
+                Err(_) => self.set_loading_state(LoadingState::Error),
             }
         }
-
-        /// Add the messages from the given response to the list.
-        fn add_messages(&self, room_id: &RoomId, response: &get_message_events::v3::Response) {
-            let names = sender_names(&response.state);
-
-            // The request walks backwards from the end of the room, so the
-            // response is newest first and the list wants the opposite.
-            let messages = response
-                .chunk
-                .iter()
-                .rev()
-                .filter_map(|raw| {
-                    // The JSON of a timeline event is the JSON of a sync
-                    // timeline event plus a `room_id`, so it deserializes as
-                    // one. There is no `JsonCastable` for the pair.
-                    let event = original_message_event_from_raw(
-                        raw.cast_ref_unchecked::<AnySyncTimelineEvent>(),
-                    )?;
-                    let sender_name = names.get(&event.sender).cloned();
-
-                    Some(super::PeekedMessage::new(event, sender_name))
-                })
-                .collect::<Vec<_>>();
-
-            if messages.is_empty() {
-                debug!("Nothing readable in the last messages of room `{room_id}`");
-            }
-
-            self.list().extend_from_slice(&messages);
-            self.set_loading_state(LoadingState::Ready);
-        }
-    }
-
-    /// The display name to use for each sender named by the given member
-    /// events.
-    ///
-    /// A name shared by two people is not used for either of them, as the spec
-    /// requires: in a room we cannot see the member list of, the user ID is the
-    /// only thing left that tells them apart.
-    fn sender_names(state: &[ruma::serde::Raw<AnyStateEvent>]) -> HashMap<OwnedUserId, String> {
-        let mut names = HashMap::new();
-        let mut counts: HashMap<String, usize> = HashMap::new();
-
-        for raw_event in state {
-            let Ok(AnyStateEvent::RoomMember(event)) = raw_event.deserialize() else {
-                continue;
-            };
-            let Some(event) = event.as_original() else {
-                continue;
-            };
-            let Some(name) = event
-                .content
-                .displayname
-                .as_deref()
-                .map(str::trim)
-                .filter(|name| !name.is_empty())
-            else {
-                continue;
-            };
-
-            *counts.entry(name.to_owned()).or_default() += 1;
-            names.insert(event.state_key.clone(), name.to_owned());
-        }
-
-        names.retain(|_, name| counts.get(name).copied().unwrap_or_default() == 1);
-        names
     }
 }
 
@@ -254,7 +154,8 @@ glib::wrapper! {
     /// This is a peek, in the sense of the Matrix specification: the room's
     /// `m.room.history_visibility` is `world_readable`, so `/messages` answers
     /// for somebody who is not a member. Nothing here syncs, nothing here
-    /// paginates, and nothing here can be replied to.
+    /// paginates, and nothing here can be replied to. The read is the core's;
+    /// this presents it.
     pub struct RoomPeek(ObjectSubclass<imp::RoomPeek>);
 }
 
@@ -288,10 +189,8 @@ mod message_imp {
 
     #[derive(Debug, Default)]
     pub struct PeekedMessage {
-        /// The Matrix event.
-        matrix_event: OnceCell<OriginalSyncRoomMessageEvent>,
-        /// The display name of the sender, if it is known and unambiguous.
-        sender_name: OnceCell<Option<String>>,
+        /// The message, as the core read it.
+        core: OnceCell<CorePeekedMessage>,
     }
 
     #[glib::object_subclass]
@@ -304,32 +203,15 @@ mod message_imp {
 
     impl PeekedMessage {
         /// Set the message this presents.
-        pub(super) fn set_message(
-            &self,
-            matrix_event: OriginalSyncRoomMessageEvent,
-            sender_name: Option<String>,
-        ) {
-            self.matrix_event
-                .set(matrix_event)
-                .expect("Matrix event should be uninitialized");
-            self.sender_name
-                .set(sender_name)
-                .expect("sender name should be uninitialized");
+        pub(super) fn set_message(&self, message: CorePeekedMessage) {
+            self.core
+                .set(message)
+                .expect("message should be uninitialized");
         }
 
-        /// The Matrix event.
-        pub(super) fn matrix_event(&self) -> &OriginalSyncRoomMessageEvent {
-            self.matrix_event
-                .get()
-                .expect("Matrix event should be initialized")
-        }
-
-        /// The display name of the sender, if it is known and unambiguous.
-        pub(super) fn sender_name(&self) -> Option<&str> {
-            self.sender_name
-                .get()
-                .expect("sender name should be initialized")
-                .as_deref()
+        /// The message, as the core read it.
+        pub(super) fn core(&self) -> &CorePeekedMessage {
+            self.core.get().expect("message should be initialized")
         }
     }
 }
@@ -340,10 +222,10 @@ glib::wrapper! {
 }
 
 impl PeekedMessage {
-    /// Construct a new `PeekedMessage` for the given event.
-    fn new(matrix_event: OriginalSyncRoomMessageEvent, sender_name: Option<String>) -> Self {
+    /// Construct a new `PeekedMessage` for the given message of the core.
+    fn new(message: CorePeekedMessage) -> Self {
         let obj = glib::Object::new::<Self>();
-        obj.imp().set_message(matrix_event, sender_name);
+        obj.imp().set_message(message);
         obj
     }
 
@@ -352,19 +234,16 @@ impl PeekedMessage {
     /// Falls back to the user ID, which is what a room whose member list we
     /// cannot read leaves us with.
     pub(crate) fn sender_name(&self) -> String {
-        let imp = self.imp();
-
-        imp.sender_name()
-            .map_or_else(|| imp.matrix_event().sender.to_string(), ToOwned::to_owned)
+        self.imp().core().sender_name()
     }
 
     /// The timestamp of this message, as a `GDateTime`.
     pub(crate) fn timestamp(&self) -> glib::DateTime {
-        timestamp_to_date(self.imp().matrix_event().origin_server_ts)
+        timestamp_to_date(self.imp().core().timestamp())
     }
 
     /// The textual content of this message.
     pub(crate) fn body(&self) -> String {
-        self.imp().matrix_event().content.msgtype.body().to_owned()
+        self.imp().core().body().to_owned()
     }
 }
