@@ -120,7 +120,7 @@ pub use self::{
         BootstrapError, CryptoIdentityState, RecoveryError, RecoveryOutcome, RecoveryState,
         RoomKeysError, SessionSecurity, SessionVerificationState,
     },
-    sidebar::SidebarSectionName,
+    sidebar::{SIDEBAR_ITEMS, SidebarIconItemKind, SidebarItemKind, SidebarSectionName},
     user_sessions::{Device, DeviceError, UserSessions},
     verification::{
         DEFAULT_SUPPORTED_METHODS, IdentityVerification, VerificationError, VerificationKey,

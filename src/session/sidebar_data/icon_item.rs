@@ -1,5 +1,6 @@
 use std::fmt;
 
+use commune_core::session::SidebarIconItemKind;
 use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
@@ -13,6 +14,24 @@ pub enum SidebarIconItemType {
     Explore,
     /// An action to forget a room.
     Forget,
+}
+
+impl From<SidebarIconItemKind> for SidebarIconItemType {
+    fn from(value: SidebarIconItemKind) -> Self {
+        match value {
+            SidebarIconItemKind::Explore => Self::Explore,
+            SidebarIconItemKind::Forget => Self::Forget,
+        }
+    }
+}
+
+impl From<SidebarIconItemType> for SidebarIconItemKind {
+    fn from(value: SidebarIconItemType) -> Self {
+        match value {
+            SidebarIconItemType::Explore => Self::Explore,
+            SidebarIconItemType::Forget => Self::Forget,
+        }
+    }
 }
 
 impl SidebarIconItemType {
@@ -92,9 +111,6 @@ impl SidebarIconItem {
     /// Whether this item should be shown for the drag-n-drop of a room with the
     /// given category.
     pub(crate) fn visible_for_room_category(&self, source_category: Option<RoomCategory>) -> bool {
-        match self.item_type() {
-            SidebarIconItemType::Explore => true,
-            SidebarIconItemType::Forget => source_category == Some(RoomCategory::Left),
-        }
+        SidebarIconItemKind::from(self.item_type()).is_visible(source_category.map(Into::into))
     }
 }
