@@ -16,12 +16,16 @@
 use ruma::api::client::push::{Pusher, PusherIds, PusherInit, PusherKind, get_pushers, set_pusher};
 use tracing::{debug, info};
 
+mod body;
 mod settings;
 
 pub(crate) use self::settings::spawn_load;
-pub use self::settings::{
-    NotificationsError, NotificationsGlobalSetting, NotificationsRoomSetting,
-    NotificationsSettings, NotificationsSpecialRule,
+pub use self::{
+    body::NotificationBody,
+    settings::{
+        NotificationsError, NotificationsGlobalSetting, NotificationsRoomSetting,
+        NotificationsSettings, NotificationsSpecialRule,
+    },
 };
 use crate::{UserFacingError, config, spawn_tokio};
 

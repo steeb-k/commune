@@ -7,28 +7,21 @@ use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{Room as MatrixRoom, sync::Notification};
 #[cfg(target_os = "android")]
 use matrix_sdk_ui::notification_client::{NotificationEvent, NotificationItem};
-use ruma::{
-    OwnedRoomId, RoomId, UserId,
-    api::client::device::get_device,
-    events::{
-        AnyMessageLikeEventContent, AnyStrippedStateEvent, AnySyncStateEvent, AnySyncTimelineEvent,
-        SyncStateEvent,
-        room::{member::MembershipState, message::MessageType},
-        rtc::notification::CallIntent,
-    },
-    html::{HtmlSanitizerMode, RemoveReplyFallback},
-};
+#[cfg(target_os = "android")]
+use ruma::events::AnyStrippedStateEvent;
+use ruma::{OwnedRoomId, RoomId, api::client::device::get_device};
 use tracing::{debug, warn};
 
 mod notifications_settings;
+
+#[cfg(not(target_os = "android"))]
+use commune_core::session::NotificationBody;
 
 pub(crate) use self::notifications_settings::{
     NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
     NotificationsSpecialRule,
 };
-#[cfg(not(target_os = "android"))]
-use super::{Call, CallState};
-use super::{IdentityVerification, Session, VerificationKey};
+use super::{Call, CallState, IdentityVerification, Session, VerificationKey};
 #[cfg(not(target_os = "android"))]
 use crate::intent::{CallAction, CallActionKind};
 #[cfg(target_os = "android")]
@@ -353,11 +346,9 @@ impl Notifications {
             }
         };
 
-        if is_call_invite(&event) {
-            // The push rule `.m.rule.call` fires for these, and the calls
-            // module has already rung, notified, and armed the withdrawal for
-            // when the ringing stops. Notifying again here would be a second
-            // notification for one call, and one that nothing ever takes away.
+        if NotificationBody::is_call_invite(&event) {
+            // The calls module has already rung, notified, and armed the
+            // withdrawal for when the ringing stops.
             return;
         }
 
@@ -395,25 +386,12 @@ impl Notifications {
         #[cfg(not(target_os = "android"))]
         let show_sender = !is_direct;
 
-        let (body, is_invite) =
-            // These are ordered by the likelihood of an event being of the type to reduce checking
-            // in the common case.
-            if let Some(body) =
-                message_notification_body(&event, &sender_name, show_sender)
-            {
-                (body, false)
-            } else if let Some(body) =
-                incoming_call_notification_body(&event, &sender_name, is_direct)
-            {
-                (body, false)
-            } else if let Some(body) =
-                own_invite_notification_body(&event, &sender_name, session.user_id())
-            {
-                (body, true)
-            } else {
-                debug!("Received notification for event of unexpected type {event:?}",);
-                return;
-            };
+        let Some(kind) = NotificationBody::of(&event, session.user_id()) else {
+            debug!("Received notification for event of unexpected type {event:?}",);
+            return;
+        };
+        let is_invite = kind == NotificationBody::Invite;
+        let body = notification_body(kind, &sender_name, show_sender, is_direct);
 
         let room_id = room.room_id().to_owned();
         let event_id = event.event_id();
@@ -562,7 +540,7 @@ impl Notifications {
             )),
         };
 
-        if is_call_invite(&event) {
+        if NotificationBody::is_call_invite(&event) {
             // Same reasoning as in `show_push()`: the calls module is the one
             // that rings, notifies and withdraws.
             return;
@@ -578,21 +556,12 @@ impl Notifications {
 
         // As in `show_push()`: the sender travels as the message's `Person`,
         // so the body must not name them a second time.
-        let (body, is_invite) = if let Some(body) =
-            message_notification_body(&event, &sender_name, false)
-        {
-            (body, false)
-        } else if let Some(body) = incoming_call_notification_body(&event, &sender_name, is_direct)
-        {
-            (body, false)
-        } else if let Some(body) =
-            own_invite_notification_body(&event, &sender_name, session.user_id())
-        {
-            (body, true)
-        } else {
+        let Some(kind) = NotificationBody::of(&event, session.user_id()) else {
             debug!("Received push for event of unexpected type {event:?}");
             return;
         };
+        let is_invite = kind == NotificationBody::Invite;
+        let body = notification_body(kind, &sender_name, false, is_direct);
 
         let event_id = event.event_id();
 
@@ -980,181 +949,65 @@ fn truncate_body(body: &str) -> Cow<'_, str> {
     }
 }
 
-/// Generate the notification body for the given event, if it is a message-like
-/// event.
+/// The sentence for what a notification says.
 ///
-/// If it's a media message, this will return a localized body.
-///
-/// Returns `None` if it is not a message-like event or if the message type is
-/// not supported.
-pub(crate) fn message_notification_body(
-    event: &AnySyncOrStrippedTimelineEvent,
+/// `show_sender` names the sender in a text, for a room where the
+/// notification does not; `is_direct` leaves the caller unnamed in a
+/// one-to-one room.
+fn notification_body(
+    kind: NotificationBody,
     sender_name: &str,
     show_sender: bool,
-) -> Option<String> {
-    let AnySyncOrStrippedTimelineEvent::Sync(sync_event) = event else {
-        return None;
-    };
-    let AnySyncTimelineEvent::MessageLike(message_event) = &**sync_event else {
-        return None;
-    };
-
-    match message_event.original_content()? {
-        AnyMessageLikeEventContent::RoomMessage(mut message) => {
-            message.sanitize(HtmlSanitizerMode::Compat, RemoveReplyFallback::Yes);
-
-            let body = match message.msgtype {
-                MessageType::Audio(_) => {
-                    gettext_f("{user} sent an audio file.", &[("user", sender_name)])
-                }
-                MessageType::Emote(content) => format!("{sender_name} {}", content.body),
-                MessageType::File(_) => gettext_f("{user} sent a file.", &[("user", sender_name)]),
-                MessageType::Image(_) => {
-                    gettext_f("{user} sent an image.", &[("user", sender_name)])
-                }
-                MessageType::Location(_) => {
-                    gettext_f("{user} sent their location.", &[("user", sender_name)])
-                }
-                MessageType::Notice(content) => {
-                    text_event_body(content.body, sender_name, show_sender)
-                }
-                MessageType::ServerNotice(content) => {
-                    text_event_body(content.body, sender_name, show_sender)
-                }
-                MessageType::Text(content) => {
-                    text_event_body(content.body, sender_name, show_sender)
-                }
-                MessageType::Video(_) => {
-                    gettext_f("{user} sent a video.", &[("user", sender_name)])
-                }
-                _ => return None,
-            };
-            Some(body)
-        }
-        AnyMessageLikeEventContent::Sticker(_) => Some(gettext_f(
-            "{user} sent a sticker.",
-            &[("user", sender_name)],
-        )),
-        _ => None,
-    }
-}
-
-fn text_event_body(message: String, sender_name: &str, show_sender: bool) -> String {
-    if show_sender {
-        gettext_f(
-            "{user}: {message}",
-            &[("user", sender_name), ("message", &message)],
-        )
-    } else {
-        message
-    }
-}
-
-/// Generate the notification body for the given event, if it is an invite for
-/// our own user.
-///
-/// This will return a localized body.
-///
-/// Returns `None` if it is not an invite for our own user.
-pub(crate) fn own_invite_notification_body(
-    event: &AnySyncOrStrippedTimelineEvent,
-    sender_name: &str,
-    own_user_id: &UserId,
-) -> Option<String> {
-    let (membership, state_key) = match event {
-        AnySyncOrStrippedTimelineEvent::Sync(sync_event) => {
-            if let AnySyncTimelineEvent::State(AnySyncStateEvent::RoomMember(member_event)) =
-                &**sync_event
-            {
-                match member_event {
-                    SyncStateEvent::Original(original_event) => (
-                        &original_event.content.membership,
-                        &original_event.state_key,
-                    ),
-                    SyncStateEvent::Redacted(redacted_event) => (
-                        &redacted_event.content.membership,
-                        &redacted_event.state_key,
-                    ),
-                }
+    is_direct: bool,
+) -> String {
+    match kind {
+        NotificationBody::Text(message) => {
+            if show_sender {
+                gettext_f(
+                    "{user}: {message}",
+                    &[("user", sender_name), ("message", &message)],
+                )
             } else {
-                return None;
+                message
             }
         }
-        AnySyncOrStrippedTimelineEvent::Stripped(stripped_event) => {
-            if let AnyStrippedStateEvent::RoomMember(member_event) = &**stripped_event {
-                (&member_event.content.membership, &member_event.state_key)
-            } else {
-                return None;
-            }
+        NotificationBody::Emote(body) => format!("{sender_name} {body}"),
+        NotificationBody::Audio => {
+            gettext_f("{user} sent an audio file.", &[("user", sender_name)])
         }
-    };
-
-    if *membership == MembershipState::Invite && state_key == own_user_id {
+        NotificationBody::File => gettext_f("{user} sent a file.", &[("user", sender_name)]),
+        NotificationBody::Image => gettext_f("{user} sent an image.", &[("user", sender_name)]),
+        NotificationBody::Location => {
+            gettext_f("{user} sent their location.", &[("user", sender_name)])
+        }
+        NotificationBody::Video => gettext_f("{user} sent a video.", &[("user", sender_name)]),
+        NotificationBody::Sticker => gettext_f("{user} sent a sticker.", &[("user", sender_name)]),
         // Translators: Do NOT translate the content between '{' and '}', this is a
         // variable name.
-        Some(gettext_f("{user} invited you", &[("user", sender_name)]))
-    } else {
-        None
-    }
-}
-
-/// Whether the given event is an invite to a one-to-one call.
-fn is_call_invite(event: &AnySyncOrStrippedTimelineEvent) -> bool {
-    let AnySyncOrStrippedTimelineEvent::Sync(sync_event) = event else {
-        return false;
-    };
-    let AnySyncTimelineEvent::MessageLike(message_event) = &**sync_event else {
-        return false;
-    };
-
-    matches!(
-        message_event.original_content(),
-        Some(AnyMessageLikeEventContent::CallInvite(_))
-    )
-}
-
-/// Generate the notification body for a call, if it is an invite for
-/// the current user.
-///
-/// This will return a localized body.
-///
-/// Returns `None` if it is not an invite for the current user.
-pub(crate) fn incoming_call_notification_body(
-    event: &AnySyncOrStrippedTimelineEvent,
-    sender_name: &str,
-    from_dm_room: bool,
-) -> Option<String> {
-    let AnySyncOrStrippedTimelineEvent::Sync(sync_event) = event else {
-        return None;
-    };
-    let AnySyncTimelineEvent::MessageLike(message_event) = &**sync_event else {
-        return None;
-    };
-
-    match message_event.original_content()? {
-        AnyMessageLikeEventContent::RtcNotification(content) => {
-            let body = match (content.call_intent, from_dm_room) {
-                (Some(CallIntent::Video), true) => {
-                    gettext("Incoming video call. Use another client to answer.")
-                }
-                (Some(CallIntent::Video), false) => {
-                    // Translators: Do NOT translate the content between '{' and '}', this
-                    // is a variable name.
-                    gettext_f(
-                        "Incoming video call from {user}. Use another client to answer.",
-                        &[("user", sender_name)],
-                    )
-                }
-                (_, true) => gettext("Incoming call. Use another client to answer."),
+        NotificationBody::Invite => gettext_f("{user} invited you", &[("user", sender_name)]),
+        NotificationBody::IncomingCall { video: true } => {
+            if is_direct {
+                gettext("Incoming video call. Use another client to answer.")
+            } else {
                 // Translators: Do NOT translate the content between '{' and '}', this
                 // is a variable name.
-                (_, false) => gettext_f(
+                gettext_f(
+                    "Incoming video call from {user}. Use another client to answer.",
+                    &[("user", sender_name)],
+                )
+            }
+        }
+        NotificationBody::IncomingCall { video: false } => {
+            if is_direct {
+                gettext("Incoming call. Use another client to answer.")
+            } else {
+                // Translators: Do NOT translate the content between '{' and '}', this
+                // is a variable name.
+                gettext_f(
                     "Incoming call from {user}. Use another client to answer.",
                     &[("user", sender_name)],
-                ),
-            };
-            Some(body)
+                )
+            }
         }
-        _ => None,
     }
 }
