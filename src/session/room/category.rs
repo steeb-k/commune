@@ -206,6 +206,36 @@ impl From<commune_core::session::RoomCategory> for RoomCategory {
     }
 }
 
+impl From<RoomCategory> for commune_core::session::RoomCategory {
+    fn from(category: RoomCategory) -> Self {
+        match category {
+            RoomCategory::Knocked => Self::Knocked,
+            RoomCategory::Invited => Self::Invited,
+            RoomCategory::ServerNotice => Self::ServerNotice,
+            RoomCategory::Favorite => Self::Favorite,
+            RoomCategory::Normal => Self::Normal,
+            RoomCategory::LowPriority => Self::LowPriority,
+            RoomCategory::Left => Self::Left,
+            RoomCategory::Outdated => Self::Outdated,
+            RoomCategory::Space => Self::Space,
+            RoomCategory::Ignored => Self::Ignored,
+        }
+    }
+}
+
+impl From<commune_core::session::TargetRoomCategory> for TargetRoomCategory {
+    fn from(category: commune_core::session::TargetRoomCategory) -> Self {
+        use commune_core::session::TargetRoomCategory as Core;
+
+        match category {
+            Core::Favorite => Self::Favorite,
+            Core::Normal => Self::Normal,
+            Core::LowPriority => Self::LowPriority,
+            Core::Left => Self::Left,
+        }
+    }
+}
+
 impl From<TargetRoomCategory> for commune_core::session::TargetRoomCategory {
     fn from(category: TargetRoomCategory) -> Self {
         match category {

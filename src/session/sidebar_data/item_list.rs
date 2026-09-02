@@ -1,14 +1,13 @@
 use std::cell::Cell;
 
+use commune_core::session::{SIDEBAR_ITEMS, SidebarItemKind, SidebarSectionName as CoreName};
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use super::{
-    SidebarIconItem, SidebarIconItemType, SidebarItem, SidebarSection, SidebarSectionName,
-};
+use super::{SidebarIconItem, SidebarItem, SidebarSection};
 use crate::session::{RoomCategory, RoomList, VerificationList};
 
 /// The number of top-level items in the sidebar.
-const TOP_LEVEL_ITEMS_COUNT: usize = 11;
+const TOP_LEVEL_ITEMS_COUNT: usize = SIDEBAR_ITEMS.len();
 
 mod imp {
     use std::cell::OnceCell;
@@ -50,35 +49,23 @@ mod imp {
             let room_list = obj.room_list();
             let verification_list = obj.verification_list();
 
+            // The rows, in the core's order: the verification section lists
+            // the verifications, every other section the rooms.
             let list = self.list.get_or_init(|| {
-                [
-                    SidebarItem::new(SidebarIconItem::new(SidebarIconItemType::Explore)),
-                    SidebarItem::new(SidebarSection::new(
-                        SidebarSectionName::VerificationRequest,
-                        &verification_list,
-                    )),
-                    SidebarItem::new(SidebarSection::new(
-                        SidebarSectionName::InviteRequest,
-                        &room_list,
-                    )),
-                    SidebarItem::new(SidebarSection::new(SidebarSectionName::Invited, &room_list)),
-                    SidebarItem::new(SidebarSection::new(
-                        SidebarSectionName::ServerNotice,
-                        &room_list,
-                    )),
-                    SidebarItem::new(SidebarSection::new(SidebarSectionName::Space, &room_list)),
-                    SidebarItem::new(SidebarSection::new(
-                        SidebarSectionName::Favorite,
-                        &room_list,
-                    )),
-                    SidebarItem::new(SidebarSection::new(SidebarSectionName::Normal, &room_list)),
-                    SidebarItem::new(SidebarSection::new(
-                        SidebarSectionName::LowPriority,
-                        &room_list,
-                    )),
-                    SidebarItem::new(SidebarSection::new(SidebarSectionName::Left, &room_list)),
-                    SidebarItem::new(SidebarIconItem::new(SidebarIconItemType::Forget)),
-                ]
+                SIDEBAR_ITEMS.map(|kind| match kind {
+                    SidebarItemKind::Icon(kind) => {
+                        SidebarItem::new(SidebarIconItem::new(kind.into()))
+                    }
+                    SidebarItemKind::Section(CoreName::VerificationRequest) => {
+                        SidebarItem::new(SidebarSection::new(
+                            CoreName::VerificationRequest.into(),
+                            &verification_list,
+                        ))
+                    }
+                    SidebarItemKind::Section(name) => {
+                        SidebarItem::new(SidebarSection::new(name.into(), &room_list))
+                    }
+                })
             });
 
             for item in list {
@@ -186,19 +173,10 @@ impl SidebarItemList {
         &self,
         category: RoomCategory,
     ) -> Option<SidebarSection> {
-        const FIRST_ROOM_SECTION_INDEX: usize = 2;
-
-        let index = match category {
-            RoomCategory::Knocked => FIRST_ROOM_SECTION_INDEX,
-            RoomCategory::Invited => FIRST_ROOM_SECTION_INDEX + 1,
-            RoomCategory::ServerNotice => FIRST_ROOM_SECTION_INDEX + 2,
-            RoomCategory::Space => FIRST_ROOM_SECTION_INDEX + 3,
-            RoomCategory::Favorite => FIRST_ROOM_SECTION_INDEX + 4,
-            RoomCategory::Normal => FIRST_ROOM_SECTION_INDEX + 5,
-            RoomCategory::LowPriority => FIRST_ROOM_SECTION_INDEX + 6,
-            RoomCategory::Left => FIRST_ROOM_SECTION_INDEX + 7,
-            _ => return None,
-        };
+        let name = CoreName::from_room_category(category.into())?;
+        let index = SIDEBAR_ITEMS
+            .iter()
+            .position(|kind| *kind == SidebarItemKind::Section(name))?;
 
         self.imp()
             .list()

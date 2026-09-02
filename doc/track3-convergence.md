@@ -1699,7 +1699,7 @@ from `wc -l`, and the core column names what the module becomes a view of.
 | 9 | `notifications/` | 1,916 | `session::notifications` (170) | **Done 2 Sep.** The settings model moved in as `notifications/settings.rs` and the core room gained its setting; the `GObject` is a view. The push handling was the core's already; the notification bodies and back ends stay, being sentences and platforms. |
 | 10 | `verification/` | 1,538 | `VerificationList`, `IdentityVerification` | **Done 2 Sep.** Views over Phase 3's state machine; the application's copy of the machine is deleted. The two-device check the ledger owes is an eyeball item. |
 | 11 | `calls/{mod,call,state,turn}.rs` | 3,033 | Phase 3's `Calls`, `Call` | **Done 2 Sep.** `Call` drives the pipeline from the core's `CallEvent`s and hands the core what the pipeline produces; `Calls` presents the core's active call and outcomes; `turn.rs` and the room's member watch are gone. The call harness is owed. |
-| 12 | `sidebar_data/` | 1,241 | `session::sidebar`, `room::category` | The category rules and section filters over the core's. |
+| 12 | `sidebar_data/` | 1,241 | `session::sidebar`, `room::category` | **Done 2 Sep.** The rows, the drop targets and the visibility rules are the core's `SIDEBAR_ITEMS` and kinds; the glib enums convert both ways. |
 | 13 | `session_list/` | 786 | `SessionList` | The list Phase 2 could not touch; closes the spine. `secret/`'s `StoredSession` newtype is reviewed here. |
 
 Rooms' `spaces.rs` (219) rides with module 7; `room/timeline/`'s virtual
@@ -2487,6 +2487,32 @@ only. The FFI already has the core's calls.
 ways, video added midway, mute both ways, the other party leaving, a
 call declined, one unanswered for ninety seconds, glare between two
 accounts, and a call from another account in this window not ringing.
+
+### Module 12 — the sidebar's rows are the core's list
+
+**Done 2 September.** The smallest module, and the one Phase 2 nearly
+finished: `session::sidebar` already had the section names, the
+category order and the target-category rules, and the application's
+`sidebar_data/` still kept its own copies of the two questions the
+sidebar asks of every row — which sections may a room of this category
+be dragged into, and which rows show while that drag is on — and its
+own list of the rows, written out twice, once as an enum's order and
+once as a constructor's. The core gains 132 lines, `SidebarSectionName::
+ALL`, `is_drop_target_for`, `is_visible`, `SidebarIconItemKind`,
+`SidebarItemKind` and `SIDEBAR_ITEMS`, the eleven rows in their order,
+with three tests; the application loses 108 lines and keeps 102, its
+`SectionName` and `IconItem` glib enums converting both ways and asking
+the core's kinds, and `ItemList` building its rows by mapping the core's
+list, so that a row added to the core is a row added to the sidebar.
+`section_from_room_category` finds its section by position in the same
+list, where it used to count on the enum's order matching the
+constructor's. `RoomCategory` and `TargetRoomCategory` gain the second
+direction of their conversions. No `ObjectWatcher`: nothing here
+changes at run time.
+
+**Eyeball owed:** every section in order, then a room dragged from each
+category with the sections that appear, the Forget row appearing for a
+left room and the Explore row for none.
 
 ## What never enters the core
 
