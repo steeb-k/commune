@@ -1694,7 +1694,7 @@ from `wc -l`, and the core column names what the module becomes a view of.
 | 4 | `room/{permissions,join_rule,aliases}.rs` | 733 + 442 + 544 | Phase 3's `Permissions`, `JoinRule`, `RoomAliases` | View-models over what Phase 3 already wrote; the application's own copies of the same rules are deleted. |
 | 5 | `ignored_users.rs`, `user_sessions_list/`, `security.rs`, `image_packs/` | 282 + 987 + 491 + 1,323 | `IgnoredUsers`, `UserSessions`, `SessionSecurity`, `ImagePacks` | **Done 2 Sep.** The session-level models Phase 3 already wrote, each a thin `GObject`; the core gains four subscribers. |
 | 6 | `global_account_data.rs`, `presence.rs` | 603 + 349 | `GlobalAccountData`, `PresenceList` (new) | **Done 2 Sep.** Both moved in (GTK is the authority), then the `GObject`s became views. This is where the Kotlin side gets recent emoji and presence; the FFI for both is owed. |
-| 7 | `remote/` | 2,031 | `session::remote::{RemoteRoom, SpaceChildren}`, `url_preview` | `room.rs`, `space_children.rs` and `url_preview.rs` over the core's; `room_peek.rs`, `user.rs` and `cache.rs` move in first. |
+| 7 | `remote/` | 2,031 | `session::remote::{RemoteRoom, SpaceChildren}`, `url_preview` | **Done 2 Sep.** `cache.rs` (with entries a page follows), `room_peek.rs`, `url_preview.rs` and `user.rs` moved in; the six objects are views. FFI for the cache, the peek, the preview and the profile owed. |
 | 8 | `room/timeline/`, `thread_list.rs`, `search.rs` | 1,893 + 433 + 767 | `session::Timeline`, `RoomSearch` | The timeline item models over the core's `Timeline`; `media_message.rs`'s data types are decided here (the Phase 2 question). |
 | 9 | `notifications/` | 1,916 | `session::notifications` (170) | The core's is a fragment; the application's settings model and push handling move in, then the `GObject`s become views. |
 | 10 | `verification/` | 1,538 | `VerificationList`, `IdentityVerification` | Over Phase 3's state machine; the two-device check the ledger owes runs in this section. |
@@ -2179,6 +2179,74 @@ reaction, and a reaction with a word for a key leaving them alone; a
 member's presence badge and status message with a homeserver that has
 presence, and the share-presence switch in general settings, off and on.
 
+### Module 7 — the remote cache moves in, and six objects become views
+
+**Done 2 September.** The core had the two values — `RemoteRoom` and the
+walked `SpaceChildren` — and none of the asking. It gains four files
+under `session/remote/`, 1,181 lines: `cache.rs` (548), `url_preview.rs`
+(342, with four tests on the `OpenGraph` reading), `room_peek.rs` (198)
+and `user.rs` (93). The six application files go from 2,031 lines to
+1,363 — 347 in, 980 out.
+
+**The cache is the core's, and what it hands out is an entry.** The
+application's `RemoteCache` kept `GObject`s in three `quick_cache` LRUs
+and asked again when they were stale; a page followed the object. The
+core's keeps entries under the same keys and capacities — 30 rooms, 30
+users, 100 previews — and an entry is an observable of the value and how
+far the request for it has got: `RemoteRoomEntry`, `RemoteUserEntry`,
+`UrlPreviewEntry`, with `RemoteRoomState`, `RemoteUserState`,
+`UrlPreviewState`. The lookup of a room by another of its identifiers,
+the day a room's data is trusted for, the hour a profile is, the
+request time set before the request so that two do not race, and its
+reset on failure so that the next look asks again, all move in. The
+application's `RemoteCache` keeps an LRU of the same shape holding one
+object per entry, so that a page asking twice gets the same object and
+the two caches forget together; that is the one thing it still holds.
+
+**Three requests move in whole.** `Session::remote_user_profile`,
+reading the two fields one at a time so that a mangled one costs only
+itself; `Session::url_preview`, with the Matrix 1.11 version check, the
+refusal remembered for the whole session in a shared
+`UrlPreviewSupport`, and the reading of the properties — `mxc:` only
+for the image, numbers or strings for its size — as `preview_from_data`,
+which is what the tests pin; `Session::peek_room`, with the filter that
+asks only for messages and the members who sent them, the reversal to
+oldest-first, and `sender_names`' rule that a name two people share is
+used for neither. `UrlPreviewError` names what the application only
+turned into `LoadingState::Error`: unsupported, unknown support, the
+homeserver's refusal, nothing to show, unreadable.
+
+**The six views.** `RemoteRoom` keeps its fourteen properties and
+mirrors a `RemoteRoomState`; the linkified topic stays its own, being
+markup, and so does `RoomListRoomInfo`, which is the room list's.
+`with_data` from the public directory and `from_core` from a hierarchy
+build the same object without an entry. `RemoteUser` mirrors a profile
+onto the `User` it extends. `RemoteUrlPreview` mirrors a preview; the
+host it shows until the homeserver answers is the core's `url_host`.
+`RoomPeek` and `SpaceChildren` keep their `gio::ListStore`s and their
+abort handles — the dialog moving on before the answer arrives is the
+interface's business — and hand the core the request; `PeekedMessage`
+and `SpaceChild` wrap the core's values, and a `SpaceChild`'s children
+come from the core's `SpaceChild::children`, which carries the
+self-containing-space rule. Gone from the interface: `load_data`,
+`load_data_from_summary`, `load_data_from_space_hierarchy`,
+`load_profile_if_stale`, `load_data_if_stale`, `is_supported`,
+`set_data` from JSON, `sender_names`, `space_edges`, `remember`,
+`load_batch` and both `AbortableHandle` uses.
+
+**Kotlin gets a cache, a peek and a URL preview for the first time.**
+The FFI for the three is owed, and so is the FFI for a remote user's
+profile.
+
+**Eyeball owed:** a room preview opened from a `matrix.to` link by alias
+and then by ID, showing the same room without a second request; the
+preview of a `world_readable` room with its last messages and their
+sender names, and of a room that refuses the peek; a space's hierarchy
+with a subspace that opens and a space that contains itself; a member
+pill for a user in no shared room, with their name and avatar arriving;
+a message with a link, its card, and a link on a homeserver without
+previews leaving no card.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -2273,6 +2341,8 @@ recorded here as it is found, with the phase that closes it.
 | 2 Sep 2026 | `session/presence.rs`, `changed` | **The application's presence signal carried a user ID over a channel that could lose one; the core keeps an observable per user.** Recorded because it is the one place module 6 did not transcribe the application's shape: the signal-and-re-read had the `User` compare its ID against every change of anyone's, and a bounded channel of IDs, which is what a signal becomes across the runtime boundary, drops the oldest under a burst. Same information, lossless, per user. | Accepted 2 Sep, module 6 |
 | 2 Sep 2026 | `session/global_account_data.rs`, `apply_migrations` | **The migration wrote the legacy values before the account data had been read.** The application ran `init_media_previews_settings`, `init_recent_emoji` and then the migration in one task, so the order held; with the read in the core, the view now awaits `ensure_loaded` first. Without it, the equality check that skips a write compared against the default and wrote the legacy value over what the account already said. | Closed 2 Sep, module 6 |
 | 2 Sep 2026 | `session/room/timeline.rs`, `toggle_reaction` | **The core dropped the SDK's `was_added`, so a reaction added from Kotlin never reached the recent emoji.** The ledger row of 1 Sep on `toggle_reaction` closes here: the timeline holds a weak session and records the emoji when the reaction was added. | Closed 2 Sep, module 6 |
+| 2 Sep 2026 | `session/remote/cache.rs`, `RemoteRoomEntry::load` | **The application dropped the answer to a request its object no longer wanted; the core keeps the answer.** The application's `RemoteRoom` cancelled its request through `AbortableHandle` when the object was dropped. The core's entry outlives any one object — it is the cache's — so the request runs to its end and the entry keeps what it learnt for the next object. Nothing is shown that was not asked for; the difference is one finished request. | Accepted 2 Sep, module 7 |
+| 2 Sep 2026 | `session/remote/url_preview.rs`, `UrlPreviewError` | **Five failures the application folded into one loading state are named in the core.** The application's card only needed to know that there was nothing to draw; an embedder that wants to say why — a homeserver without the endpoint, a page with nothing on it — now can. The application still folds them. | Accepted 2 Sep, module 7 |
 
 ## Gates
 

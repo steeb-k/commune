@@ -1,34 +1,20 @@
-use std::{cell::RefCell, time::Duration};
+use std::cell::RefCell;
 
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::reqwest::StatusCode;
-use ruma::{
-    OwnedRoomAliasId, OwnedRoomId,
-    api::client::{room::get_summary, space::get_hierarchy},
-    assign,
-    room::{JoinRuleSummary, RoomSummary, RoomType},
-    uint,
-};
-use tracing::{debug, warn};
+use commune_core::session::{RemoteRoom as CoreRemoteRoom, RemoteRoomEntry, RemoteRoomState};
+use gtk::{glib, prelude::*, subclass::prelude::*};
+use ruma::{OwnedRoomAliasId, OwnedRoomId, room::RoomSummary};
+use tokio::task::AbortHandle;
 
 use crate::{
     components::{AvatarImage, AvatarUriSource, PillSource},
+    core_bridge::ObjectWatcher,
     prelude::*,
     session::{RoomListRoomInfo, Session},
-    spawn, spawn_tokio,
-    utils::{AbortableHandle, LoadingState, matrix::MatrixRoomIdUri, string::linkify},
+    utils::{LoadingState, matrix::MatrixRoomIdUri, string::linkify},
 };
 
-/// The time after which the data of a room is assumed to be stale.
-///
-/// This matches 1 day.
-const DATA_VALIDITY_DURATION: Duration = Duration::from_hours(24);
-
 mod imp {
-    use std::{
-        cell::{Cell, OnceCell},
-        time::Instant,
-    };
+    use std::cell::{Cell, OnceCell};
 
     use super::*;
 
@@ -87,9 +73,8 @@ mod imp {
         /// The loading state.
         #[property(get, builder(LoadingState::default()))]
         loading_state: Cell<LoadingState>,
-        /// The time of the last request.
-        last_request_time: Cell<Option<Instant>>,
-        request_abort_handle: AbortableHandle,
+        /// The task following the core's entry for this room, if it has one.
+        watch_handle: RefCell<Option<AbortHandle>>,
     }
 
     #[glib::object_subclass]
@@ -100,7 +85,13 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for RemoteRoom {}
+    impl ObjectImpl for RemoteRoom {
+        fn dispose(&self) {
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
+            }
+        }
+    }
 
     impl PillSourceImpl for RemoteRoom {
         fn identifier(&self) -> String {
@@ -140,6 +131,29 @@ mod imp {
         /// The Matrix URI of this room.
         pub(super) fn uri(&self) -> &MatrixRoomIdUri {
             self.uri.get().expect("Matrix URI should be initialized")
+        }
+
+        /// Follow the core's entry for this room.
+        pub(super) fn watch(&self, entry: &RemoteRoomEntry) {
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(entry.subscribe(), |obj: &super::RemoteRoom, state| {
+                    obj.imp().update_state(&state);
+                })
+                .spawn();
+            self.watch_handle.replace(Some(handle));
+
+            // What the core already knows, after subscribing so that
+            // nothing between the two is lost.
+            self.update_state(&entry.state());
+        }
+
+        /// Mirror what the core knows about this room.
+        fn update_state(&self, state: &RemoteRoomState) {
+            if let Some(data) = &state.data {
+                self.set_data(data);
+            }
+
+            self.set_loading_state(state.loading_state.into());
         }
 
         /// Set the ID of this room.
@@ -221,10 +235,10 @@ mod imp {
         }
 
         /// Set the topic of this room.
+        ///
+        /// The core already left out a topic that is nothing but whitespace;
+        /// the markup is this object's.
         fn set_topic(&self, topic: Option<String>) {
-            let topic =
-                topic.filter(|s| !s.is_empty() && s.find(|c: char| !c.is_whitespace()).is_some());
-
             if *self.topic.borrow() == topic {
                 return;
             }
@@ -255,13 +269,8 @@ mod imp {
             self.obj().notify_joined_members_count();
         }
 
-        /// Set the join rule of the room.
-        fn set_join_rule(&self, join_rule: &JoinRuleSummary) {
-            let can_knock = matches!(
-                join_rule,
-                JoinRuleSummary::Knock | JoinRuleSummary::KnockRestricted(_)
-            );
-
+        /// Set whether we can knock on the room.
+        fn set_can_knock(&self, can_knock: bool) {
             if self.can_knock.get() == can_knock {
                 return;
             }
@@ -301,181 +310,45 @@ mod imp {
         }
 
         /// Set the loading state.
-        pub(super) fn set_loading_state(&self, loading_state: LoadingState) {
+        fn set_loading_state(&self, loading_state: LoadingState) {
             if self.loading_state.get() == loading_state {
                 return;
             }
 
             self.loading_state.set(loading_state);
-
-            if loading_state == LoadingState::Error {
-                // Reset the request time so we try it again the next time.
-                self.last_request_time.take();
-            }
-
             self.obj().notify_loading_state();
         }
 
-        /// Set the room data.
-        pub(super) fn set_data(&self, data: RoomSummary) {
-            self.set_room_id(data.room_id);
-            self.set_canonical_alias(data.canonical_alias);
-            self.set_name(data.name.into_clean_string());
-            self.set_topic(data.topic.into_clean_string());
-            self.set_joined_members_count(data.num_joined_members.try_into().unwrap_or(u32::MAX));
-            self.set_join_rule(&data.join_rule);
-            self.set_is_space(matches!(data.room_type, Some(RoomType::Space)));
-            self.set_is_world_readable(data.world_readable);
-            self.set_is_encrypted(data.encryption.is_some());
+        /// Set the room data, as the core describes it.
+        pub(super) fn set_data(&self, data: &CoreRemoteRoom) {
+            self.set_room_id(data.room_id.clone());
+            self.set_canonical_alias(data.canonical_alias.clone());
+            self.set_name(data.name.clone());
+            self.set_topic(data.topic.clone());
+            self.set_joined_members_count(data.joined_members_count);
+            self.set_can_knock(data.can_knock);
+            self.set_is_space(data.is_space);
+            self.set_is_world_readable(data.is_world_readable);
+            self.set_is_encrypted(data.is_encrypted);
+
+            if data.is_suggested {
+                self.obj().set_is_suggested(true);
+            }
 
             if let Some(image) = self.obj().avatar_data().image() {
-                image.set_uri_and_info(data.avatar_url, None);
+                image.set_uri_and_info(data.avatar_url.clone(), None);
             }
 
             self.update_identifiers();
             self.set_loading_state(LoadingState::Ready);
-        }
-
-        /// Whether the data of the room is considered to be stale.
-        pub(super) fn is_data_stale(&self) -> bool {
-            self.last_request_time
-                .get()
-                .is_none_or(|last_time| last_time.elapsed() > DATA_VALIDITY_DURATION)
-        }
-
-        /// Update the last request time to now.
-        pub(super) fn update_last_request_time(&self) {
-            self.last_request_time.set(Some(Instant::now()));
-        }
-
-        /// Request the data of this room.
-        pub(super) async fn load_data(&self) {
-            let Some(session) = self.session.upgrade() else {
-                self.last_request_time.take();
-                return;
-            };
-
-            self.set_loading_state(LoadingState::Loading);
-
-            // Try to load data from the summary endpoint first, and if it is not supported
-            // try the space hierarchy endpoint.
-            if !self.load_data_from_summary(&session).await {
-                self.load_data_from_space_hierarchy(&session).await;
-            }
-        }
-
-        /// Load the data of this room using the room summary endpoint.
-        ///
-        /// At the time of writing this code, MSC3266 has been accepted but the
-        /// endpoint is not part of a Matrix spec release.
-        ///
-        /// Returns `false` if the endpoint is not supported by the homeserver.
-        async fn load_data_from_summary(&self, session: &Session) -> bool {
-            let uri = self.uri();
-            let client = session.client();
-
-            let request = get_summary::v1::Request::new(uri.id.clone(), uri.via.clone());
-            let handle = spawn_tokio!(async move { client.send(request).await });
-
-            let Some(result) = self.request_abort_handle.await_task(handle).await else {
-                // The task was aborted, which means that the object was dropped.
-                return true;
-            };
-
-            match result {
-                Ok(response) => {
-                    self.set_data(response.summary);
-                    true
-                }
-                Err(error) => {
-                    if error
-                        .as_client_api_error()
-                        .is_some_and(|error| error.status_code == StatusCode::NOT_FOUND)
-                    {
-                        return false;
-                    }
-
-                    warn!(
-                        "Could not get room details from summary endpoint for room `{}`: {error}",
-                        uri.id
-                    );
-                    self.set_loading_state(LoadingState::Error);
-                    true
-                }
-            }
-        }
-
-        /// Load the data of this room using the space hierarchy endpoint.
-        ///
-        /// This endpoint should work for any room already known by the
-        /// homeserver.
-        async fn load_data_from_space_hierarchy(&self, session: &Session) {
-            let uri = self.uri();
-            let client = session.client();
-
-            // The endpoint only works with a room ID.
-            let room_id = match OwnedRoomId::try_from(uri.id.clone()) {
-                Ok(room_id) => room_id,
-                Err(alias) => {
-                    let client_clone = client.clone();
-                    let handle =
-                        spawn_tokio!(async move { client_clone.resolve_room_alias(&alias).await });
-
-                    let Some(result) = self.request_abort_handle.await_task(handle).await else {
-                        // The task was aborted, which means that the object was dropped.
-                        return;
-                    };
-
-                    match result {
-                        Ok(response) => response.room_id,
-                        Err(error) => {
-                            warn!("Could not resolve room alias `{}`: {error}", uri.id);
-                            self.set_loading_state(LoadingState::Error);
-                            return;
-                        }
-                    }
-                }
-            };
-
-            let request = assign!(get_hierarchy::v1::Request::new(room_id.clone()), {
-                // We are only interested in the single room.
-                limit: Some(uint!(1))
-            });
-            let handle = spawn_tokio!(async move { client.send(request).await });
-
-            let Some(result) = self.request_abort_handle.await_task(handle).await else {
-                // The task was aborted, which means that the object was dropped.
-                return;
-            };
-
-            match result {
-                Ok(response) => {
-                    if let Some(chunk) = response
-                        .rooms
-                        .into_iter()
-                        .next()
-                        .filter(|c| c.summary.room_id == room_id)
-                    {
-                        self.set_data(chunk.summary);
-                    } else {
-                        debug!("Space hierarchy endpoint did not return requested room");
-                        self.set_loading_state(LoadingState::Error);
-                    }
-                }
-                Err(error) => {
-                    warn!(
-                        "Could not get room details from space hierarchy endpoint for room `{}`: {error}",
-                        uri.id
-                    );
-                    self.set_loading_state(LoadingState::Error);
-                }
-            }
         }
     }
 }
 
 glib::wrapper! {
     /// A Room that can only be updated by making remote calls, i.e. it won't be updated via sync.
+    ///
+    /// The data, and the asking for it, are the core's; this presents them.
     pub struct RemoteRoom(ObjectSubclass<imp::RemoteRoom>)
         @extends PillSource;
 }
@@ -490,12 +363,11 @@ impl RemoteRoom {
         obj
     }
 
-    /// Construct a new `RemoteRoom` for the given URI.
-    ///
-    /// This method automatically makes a request to load the room's data.
-    pub(super) fn new(session: &Session, uri: MatrixRoomIdUri) -> Self {
-        let obj = Self::without_data(session, uri);
-        obj.load_data_if_stale();
+    /// Construct a new `RemoteRoom` presenting the given entry of the core's
+    /// cache, which asks for the data and asks again when it is stale.
+    pub(super) fn new(session: &Session, entry: &RemoteRoomEntry) -> Self {
+        let obj = Self::without_data(session, entry.uri().clone());
+        obj.imp().watch(entry);
         obj
     }
 
@@ -505,9 +377,13 @@ impl RemoteRoom {
         uri: MatrixRoomIdUri,
         data: impl Into<RoomSummary>,
     ) -> Self {
-        let obj = Self::without_data(session, uri);
-        obj.imp().set_data(data.into());
+        Self::from_core(session, &CoreRemoteRoom::with_data(uri, data))
+    }
 
+    /// Construct a new `RemoteRoom` for the given room of the core.
+    pub(crate) fn from_core(session: &Session, data: &CoreRemoteRoom) -> Self {
+        let obj = Self::without_data(session, data.uri.clone());
+        obj.imp().set_data(data);
         obj
     }
 
@@ -524,27 +400,5 @@ impl RemoteRoom {
     /// The canonical alias of this room.
     pub(crate) fn canonical_alias(&self) -> Option<OwnedRoomAliasId> {
         self.imp().canonical_alias()
-    }
-
-    /// Load the data of this room if it is considered to be stale.
-    pub(super) fn load_data_if_stale(&self) {
-        let imp = self.imp();
-
-        if !imp.is_data_stale() {
-            // The data is still valid, nothing to do.
-            return;
-        }
-
-        // Set the request time right away, to prevent several requests at the same
-        // time.
-        imp.update_last_request_time();
-
-        spawn!(clone!(
-            #[weak]
-            imp,
-            async move {
-                imp.load_data().await;
-            }
-        ));
     }
 }

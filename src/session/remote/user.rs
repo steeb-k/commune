@@ -1,23 +1,17 @@
-use std::time::{Duration, Instant};
-
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::ruma::OwnedUserId;
+use commune_core::session::{RemoteUserEntry, RemoteUserState};
+use gtk::{glib, prelude::*, subclass::prelude::*};
+use tokio::task::AbortHandle;
 
 use crate::{
     components::PillSource,
+    core_bridge::ObjectWatcher,
     prelude::*,
     session::{Session, User},
-    spawn,
     utils::LoadingState,
 };
 
-/// The time after which the profile of a user is assumed to be stale.
-///
-/// This matches 1 hour.
-const PROFILE_VALIDITY_DURATION: Duration = Duration::from_hours(1);
-
 mod imp {
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
 
     use super::*;
 
@@ -27,8 +21,8 @@ mod imp {
         // The loading state of the profile.
         #[property(get, builder(LoadingState::default()))]
         loading_state: Cell<LoadingState>,
-        // The time of the last request.
-        last_request_time: Cell<Option<Instant>>,
+        /// The task following the core's entry for this user.
+        watch_handle: RefCell<Option<AbortHandle>>,
     }
 
     #[glib::object_subclass]
@@ -39,7 +33,13 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for RemoteUser {}
+    impl ObjectImpl for RemoteUser {
+        fn dispose(&self) {
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
+            }
+        }
+    }
 
     impl PillSourceImpl for RemoteUser {
         fn identifier(&self) -> String {
@@ -48,80 +48,64 @@ mod imp {
     }
 
     impl RemoteUser {
+        /// Follow the core's entry for this user.
+        pub(super) fn watch(&self, entry: &RemoteUserEntry) {
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(entry.subscribe(), |obj: &super::RemoteUser, state| {
+                    obj.imp().update_state(&state);
+                })
+                .spawn();
+            self.watch_handle.replace(Some(handle));
+
+            // What the core already knows, after subscribing so that
+            // nothing between the two is lost.
+            self.update_state(&entry.state());
+        }
+
+        /// Mirror what the core knows about this user.
+        fn update_state(&self, state: &RemoteUserState) {
+            if let Some(profile) = &state.profile {
+                let obj = self.obj();
+                let user = obj.upcast_ref::<User>();
+                user.set_name(profile.display_name.clone());
+                user.set_avatar_url(profile.avatar_url.clone());
+            }
+
+            self.set_loading_state(state.loading_state.into());
+        }
+
         /// Set the loading state.
-        pub(super) fn set_loading_state(&self, loading_state: LoadingState) {
+        fn set_loading_state(&self, loading_state: LoadingState) {
             if self.loading_state.get() == loading_state {
                 return;
             }
 
             self.loading_state.set(loading_state);
-
-            if loading_state == LoadingState::Error {
-                // Reset the request time so we try it again the next time.
-                self.last_request_time.take();
-            }
-
             self.obj().notify_loading_state();
-        }
-
-        /// Whether the profile of the user is considered to be stale.
-        pub(super) fn is_profile_stale(&self) -> bool {
-            self.last_request_time
-                .get()
-                .is_none_or(|last_time| last_time.elapsed() > PROFILE_VALIDITY_DURATION)
-        }
-
-        /// Update the last request time to now.
-        pub(super) fn update_last_request_time(&self) {
-            self.last_request_time.set(Some(Instant::now()));
         }
     }
 }
 
 glib::wrapper! {
     /// A User that can only be updated by making remote calls, i.e. it won't be updated via sync.
+    ///
+    /// The profile, and the asking for it, are the core's; this presents them.
     pub struct RemoteUser(ObjectSubclass<imp::RemoteUser>) @extends PillSource, User;
 }
 
 impl RemoteUser {
-    pub(super) fn new(session: &Session, user_id: OwnedUserId) -> Self {
+    /// Construct a new `RemoteUser` presenting the given entry of the core's
+    /// cache, which asks for the profile and asks again when it is stale.
+    pub(super) fn new(session: &Session, entry: &RemoteUserEntry) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("session", session)
             .build();
 
-        obj.upcast_ref::<User>().imp().set_user_id(user_id);
-        obj.load_profile_if_stale();
+        obj.upcast_ref::<User>()
+            .imp()
+            .set_user_id(entry.user_id().to_owned());
+        obj.imp().watch(entry);
 
         obj
-    }
-
-    /// Request this user's profile from the homeserver if it is considered to
-    /// be stale.
-    pub(super) fn load_profile_if_stale(&self) {
-        let imp = self.imp();
-
-        if !imp.is_profile_stale() {
-            // The data is still valid, nothing to do.
-            return;
-        }
-
-        // Set the request time right away, to prevent several requests at the same
-        // time.
-        imp.update_last_request_time();
-
-        spawn!(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            async move {
-                let imp = obj.imp();
-                imp.set_loading_state(LoadingState::Loading);
-
-                let loading_state = match obj.load_profile().await {
-                    Ok(()) => LoadingState::Ready,
-                    Err(()) => LoadingState::Error,
-                };
-                imp.set_loading_state(loading_state);
-            }
-        ));
     }
 }

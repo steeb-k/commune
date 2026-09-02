@@ -70,6 +70,7 @@ tokio = { version = "1", features = ["fs", "macros", "net", "rt", "rt-multi-thre
 tokio-stream = { version = "0.1", features = ["sync"] }
 tracing = "0.1"
 url = "2"
+quick_cache = "0.7"
 zeroize = "1"
 
 # The same uniffi revision the pinned matrix-rust-sdk workspace uses, so the
