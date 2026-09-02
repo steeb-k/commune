@@ -372,7 +372,7 @@ are named in the notes below and are not in the count.
 | 9 | Verification and security | 14 | 621 | `session/verification.rs`, `session/security.rs` | `session/verification/` (1,538), `session/security.rs` (491), `components/crypto/` (the setup views' requests), `account_settings/encryption_page/import_export_keys_subpage.rs` | `VerificationError`, `BootstrapError`, `RecoveryError`, `RoomKeysError` |
 | 10 | Timeline and messaging | 22 | 862 | `session/room/timeline.rs`, `session/room/composer.rs`, `session/room/mod.rs` | `session/room/timeline/` (3,033), `room_history/message_toolbar/` (the toolbar and `composer_parser.rs`), `room/mod.rs` (redact, report, invite, permalink), `room_details/edit_details_subpage.rs`, `room_history/event_actions/group.rs` | `TimelineError`, `RoomDetailsError` |
 | 11 | Room settings — avatar, join rule, history, addresses | 8 (+ `set_room_details`, taken by group 10) | 559 | `session/room/join_rule.rs`, `session/room/aliases.rs`, `session/room/mod.rs` | `session/room/join_rule.rs` (442), `aliases.rs` (544), `room_details/join_rule_subpage.rs`, `history_visibility_subpage.rs`, `addresses_subpage/`, `edit_details_subpage.rs`, `general_page.rs` (publish) | `RoomSettingsError`, `AliasError` |
-| 12 | Permissions, ACL, upgrade, moderation | 10 | 553 | `session/room/permissions.rs`, `server_acl.rs`, `upgrade.rs` | `session/room/permissions.rs` (733), `room_details/permissions/` (2,491), `upgrade_dialog/` (642) | `PermissionsError` |
+| 12 | Permissions, ACL, upgrade, moderation | 10 | 553 | `session/room/permissions.rs`, `server_acl.rs`, `upgrade.rs` | `session/room/permissions.rs` (733), `room_details/permissions/permissions_subpage.rs`, `server_acl_subpage.rs`, `upgrade_dialog/`, `general_page.rs` (upgrade info) | `PermissionsError`, `ServerAclError`, `AclProblem` |
 | 13 | Calls | 9 | 671 | `session/calls/` | `session/calls/call.rs` (1,607), `mod.rs` (989), `turn.rs` (360) | `CallError` |
 
 Group 3 also carries `session_settings` and its three setters, already
@@ -1332,7 +1332,7 @@ two toasts do.
   `SendHandle::unwedge`; the FFI's `retry_sends` restarts the queues.
 * **`@room` is not gated on the permission.** The application's completion
   offers it only where `can_notify_room`; the core has no permissions
-  object until group 12.
+  object until group 12. _Closed by commit 12._
 * **No preload.** The application loads a batch when a live timeline opens
   with fewer than twenty items; the FFI's listener never asks.
 
@@ -1430,6 +1430,76 @@ back byte-identical. The clippy count falls from 13 to 8: three
 `map_unwrap_or` and one `too_many_lines` sat in the methods this group
 rewrote.
 
+### Commit 12 — permissions, the ACL and the upgrade, and the object every page was waiting for
+
+**Six of the ten move; four stay passthroughs by the standing ruling.**
+`session/room/permissions.rs` is the application's `Permissions` object
+headless: the room's power levels, loaded from the store and followed
+through the `m.room.power_levels` event, and the fourteen questions the
+interface asks of them as one observable `PermissionsState`, with
+`is_allowed_to`, `can_do_to_user`, `can_set_user_power_level_to`,
+`set_user_power_level` and `set_power_levels`. The permissions subpage's
+rows are `PowerLevelsMatrix` — the page reads the power levels into rows
+and collects the rows back by rules that are the page's, not the widget's,
+and both directions are here with four tests. `session/room/server_acl.rs`
+is `Room::server_acl`/`set_server_acl` with the subpage's `check_acl`,
+`acls_are_equal` and `unrestricted_acl`, its nine tests moved.
+`session/room/upgrade.rs` is the upgrade dialog's `UpgradeInfo` with
+`with_room_versions` and `with_privileged_creators`, and `Room::upgrade_info`
+as the general page computes it; `cmp_room_versions` is the application's
+digit-sequence-aware comparison, its test moved. `kick_user`, `ban_user`,
+`set_member_power_level` and `upgrade_room` stay one request each.
+
+**Every `can_change` in the file asked the store; the pages ask the
+permissions object.** `can_send_state` read the power levels from the SDK
+on every call and never asked whether our member is joined; the
+application's `is_allowed_to` answers `false` for a member that is not.
+The helper is the object now, after `ensure_loaded`, and the groups before
+this one — join rule, history visibility, addresses — go through it. So
+does the group-10 gap: `@room` in the Kotlin composer is now offered only
+where the application's completion would offer the pill, our member
+allowed to notify the room and the room not a direct chat.
+
+**An ACL that allows no server could be sent.** The subpage refuses it —
+it shuts every homeserver out of the room, and nothing is left to send the
+repair — and confirms one that shuts our own server out. The facade sent
+both, and the Kotlin screen has no guard of its own, so a Pixel could brick
+a room. `check_acl` is the core's, and the FFI refuses both problems: it has
+no dialog to confirm the second with, so it says what the list would do
+and declines. The page also sends only a change; so does the FFI.
+
+**The permissions matrix read `redact` raw.** The page shows redacting
+others as at least redacting one's own, since the latter is what the former
+is measured against; the facade showed the stored value, so a room where
+`m.room.redaction` needs more than `redact` showed two rows the page would
+never show. The read rules and the write rules are one type now, and the
+FFI saves only a change, compared as the page reads it.
+
+**The version order was a simplification.** The facade's
+`cmp_room_versions` ordered whole numbers numerically and everything else
+lexicographically, "without changing the order of the versions that
+exist"; the application's compares digit sequences wherever they fall, so
+`org.matrix.msc3757.10` sorts before `org.matrix.msc3757.11`. The
+application's is the core's, with its forty assertions.
+
+**The upgrade's `can_upgrade` asked the SDK for `is_direct` and the
+successor.** The general page asks the room — `is_direct`, `is_tombstoned`
+— and the permissions; `Room::can_upgrade` does the same.
+
+**Two gaps found and not filled**, by the standing ruling:
+
+* **The FFI cannot confirm shutting its own server out.** The page asks;
+  the FFI refuses. A `confirmed` flag on `set_room_server_acl` would change
+  the bindings.
+* **The power levels are loaded on first use, not with the room.** The
+  application loads them when the room is built; the core loads them when
+  something asks, which is what the FFI does, and the GTK view-model will
+  ask at construction.
+
+The FFI surface is unchanged for the twelfth time and the bindings came
+back byte-identical. The clippy count falls from 8 to 5: two redundant
+closures and one `too_many_lines` sat in the methods this group rewrote.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -1497,6 +1567,10 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `set_room_join_rule`, `set_room_history_visibility` | **Sent whatever the room's version, and whether or not it changed.** The page hides what the version cannot take and saves only a change; the facade sent `knock_restricted` to any room and re-sent the current rule. **Closed 1 Sep**: the FFI refuses what `Room::rules()` says the version lacks and sends nothing for no change; `compute_join_rule` and its tests are `session/room/join_rule.rs`. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_room_address` | **No-op edits were sent; the refusals were folded.** `RoomAliases` refuses to set a canonical alias that already is, remove one that is not, remove an alt alias not listed, or add one already listed, and tells not-registered (404) from another-room from already-registered (409). The facade sent the events and gave one sentence. **Closed 1 Sep**: `session/room/aliases.rs`, `AliasError`. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_room_avatar`, `remove_room_avatar` | **The avatar was changed in a room not joined.** The edit-details page refuses both. **Closed 1 Sep**: `Room::set_avatar`, `Room::remove_avatar`. The facade's upload-size preflight before the upload is an FFI extra the application does not make; kept and recorded. | Done |
+| 1 Sep 2026 | `facade.rs`, `set_room_server_acl` | **An ACL that allows no server could be sent, and one shutting our own server out was sent unconfirmed.** The subpage refuses the first — it shuts every homeserver out and nothing can send the repair — and confirms the second; the facade sent both, and the Kotlin screen has no guard. **Closed 1 Sep**: `check_acl` in `session/room/server_acl.rs`, nine tests; the FFI refuses both problems, having no dialog for the second. | Done, confirmation owed |
+| 1 Sep 2026 | `facade.rs`, `can_send_state` | **Every `can_change` asked the store and never asked whether our member is joined.** The application's `Permissions::is_allowed_to` is false for a member not joined, and follows the power-levels event. **Closed 1 Sep**: `session/room/permissions.rs`, `PermissionsState`; the helper goes through the object. The group-10 `@room` gap closes with it. | Done |
+| 1 Sep 2026 | `facade.rs`, `room_permissions_matrix` | **`redact_others` was the stored `redact`, not the page's `max(redact_own, redact)`.** The page shows redacting others as at least redacting one's own. **Closed 1 Sep**: `PowerLevelsMatrix::from_power_levels` and `apply_to`, four tests. | Done |
+| 1 Sep 2026 | `facade.rs`, `cmp_room_versions` | **The version order was a simplification of the application's.** Whole numbers numerically, the rest lexicographically, where the application compares every digit sequence. **Closed 1 Sep**: `session/room/upgrade.rs`, the application's comparison and its test. | Done |
 
 ## Gates
 

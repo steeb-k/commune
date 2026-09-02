@@ -23,8 +23,11 @@ mod composer;
 mod join_rule;
 mod media_history;
 mod member;
+mod permissions;
 mod search;
+mod server_acl;
 mod timeline;
+mod upgrade;
 
 use std::sync::{
     Arc, Mutex, Weak,
@@ -69,11 +72,16 @@ pub use self::{
     join_rule::{JoinRule, JoinRuleState, JoinRuleValue, compute_join_rule},
     media_history::{MediaHistoryError, MediaHistoryEvent, MediaHistoryKind, MediaHistoryPage},
     member::{Member, MemberList, MemberRole, Membership},
+    permissions::{
+        POWER_LEVEL_MAX, Permissions, PermissionsError, PermissionsState, PowerLevelsMatrix,
+    },
     search::{RoomSearch, SearchError, SearchResult},
+    server_acl::{AclProblem, ServerAclError, acls_are_equal, check_acl, unrestricted_acl},
     timeline::{
         MAX_BATCH_SIZE, ReceiptPosition, Timeline, TimelineError, TimelineFocusKind,
         check_upload_size,
     },
+    upgrade::{UpgradeInfo, cmp_room_versions},
 };
 use crate::{
     RUNTIME, UserFacingError,
@@ -329,6 +337,8 @@ struct RoomInner {
     aliases: RoomAliases,
     /// The join rule of this room.
     join_rule: JoinRule,
+    /// The permissions of our own user in this room.
+    permissions: Permissions,
     /// Who can read the history of this room.
     history_visibility: SharedObservable<HistoryVisibilityValue>,
     /// Whether this room was forgotten.
@@ -373,6 +383,7 @@ impl Room {
         let inner = Arc::new(RoomInner {
             aliases: RoomAliases::new(matrix_room.clone()),
             join_rule: JoinRule::new(matrix_room.clone(), session.downgrade()),
+            permissions: Permissions::new(matrix_room.clone()),
             matrix_room,
             session: session.downgrade(),
             name: SharedObservable::new(None),
@@ -950,6 +961,15 @@ impl Room {
     #[must_use]
     pub fn join_rule(&self) -> &JoinRule {
         &self.inner.join_rule
+    }
+
+    /// The permissions of our own user in this room.
+    ///
+    /// Loaded on first use: a reader that wants a current answer calls
+    /// `ensure_loaded` first.
+    #[must_use]
+    pub fn permissions(&self) -> &Permissions {
+        &self.inner.permissions
     }
 
     /// Who can read the history of this room.
@@ -1996,6 +2016,7 @@ impl RoomInner {
         self.update_highlight();
         self.aliases.update();
         self.join_rule.update(room_info.join_rule());
+        self.permissions.update_is_joined();
         self.update_history_visibility();
         // The server notice, pinned events and guest access updates attach
         // here with their groups.
