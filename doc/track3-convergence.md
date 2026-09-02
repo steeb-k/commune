@@ -368,7 +368,7 @@ are named in the notes below and are not in the count.
 | 5 | Media fetch, search, members | 12 | 456 | `matrix/media.rs`, `session/room/search.rs`, `session/room/media_history.rs`, `session/room/member.rs` | `session/room/search.rs` (767), `member_list.rs` (387), `typing_list.rs` (102), `room_details/history_viewer/timeline.rs` (260) and `event.rs` (149), `utils/matrix/media_message.rs` (515) | `SearchError`, `MediaHistoryError` |
 | 6 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/room.rs`, `session/remote/space_children.rs`, `session/create_room.rs` | `session_view/explore/` (1,287), `session/remote/room.rs` (550), `session/remote/space_children.rs` (521), `session/room_list/` (730), `components/dialogs/room_preview.rs` (630), `session/user.rs` (547), `session_view/create_room_dialog.rs` (342) | `JoinError`, `DirectChatError`, `RemoteRoomError`, `SpaceChildrenError`, `DirectoryError`, `CreateRoomError` |
 | 7 | Login and registration | 9 | 354 | `login.rs`, `config.rs` (`OAuthClientConfig`, `app_name`, `device_display_name`) | `login/` (3,290 over ten files), `components/dialogs/auth/mod.rs` (the stage selection, 755) | `LoginError`, `RegisterError`, `ResetPasswordError` |
-| 8 | Image packs, stickers, GIFs | 13 | 525 | `session/image_packs/` | `session/image_packs/` (1,323) | `PackError` |
+| 8 | Image packs, stickers, GIFs | 13 | 525 | `session/image_packs.rs`, `session/room/timeline.rs` (`send_sticker`, `send_gif`), `config.rs` (the packs room's name and topic) | `session/image_packs/` (1,323), `room_history/message_toolbar/mod.rs` (`send_sticker`, `send_gif`, `upload_gif`), `components/image_pack_editor/mod.rs` (522), `account_settings/image_packs_page/mod.rs` (565) | `ImagePacksError`, `SendGifError` |
 | 9 | Verification and security | 14 | 621 | `session/verification.rs`, `session/security.rs` | `session/verification/` (1,538), `session/security.rs` (491) | `VerificationError`, `SecurityError` |
 | 10 | Timeline and messaging | 22 | 862 | `session/room/timeline.rs`, `session/room/mod.rs` | `session/room/timeline/` (3,033), `room_history/message_toolbar/` | `TimelineError` |
 | 11 | Room settings — details, join rule, history, addresses | 9 | 559 | `session/room/join_rule.rs`, `session/room/aliases.rs` | `session/room/join_rule.rs` (442), `aliases.rs` (544), the `room_details/` subpages | `RoomSettingsError` |
@@ -1017,6 +1017,110 @@ back byte-identical. **The clippy count is 13, from 15**: the two
 `too_many_lines` on the old login methods left with them, which is the
 rule working as written.
 
+### Commit 8 — image packs, and the room whose name was English forever
+
+**Eleven of the thirteen move; the two GIF passthroughs stay, and the
+plan's instruction for them is declined.** `search_gifs` and
+`fetch_gif_preview` were already one-line calls into `klipy` and `http`,
+which are core. The plan wanted them turned into `#[uniffi::export]` free
+functions beside `gif_search_available`, and that is exactly the kind of
+change this phase's own rule forbids: a method that becomes a free function
+is a different Kotlin binding. They stay methods, and the table's
+`PackError` was never going to exist — the pack module's error is
+`ImagePacksError`, and sending a GIF has the application's own
+`SendGifError`.
+
+**The event types were the core's since Phase 2; the object was not.**
+`events/image_packs.rs` holds `PackContent`, the two names of every event
+and the shortcode grammar, and the application's `ImagePacks` built on
+them. The facade did not: it parsed the pack events into `serde_json::Value`
+by hand, nine free functions and four hundred lines, and every one of the
+divergences below is something the typed model already did that the
+hand-rolled JSON did not. `commune-core/src/session/image_packs.rs` is the
+application's object headless — the enabled packs under both names,
+watched by the SDK's handlers under both names; the packs of a room, read
+under both names and written back under the one they came from; the packs
+room; the rule that a pack with no images is a deleted one.
+
+**The packs room's name and topic close the ledger row that was worse
+than an error message.** They are written into `m.room.name` and
+`m.room.topic` the one time the room is created and never translated
+again, so they arrive through `CoreConfig::packs_room_name` and
+`packs_room_topic` as `credential_label` does: the GTK application passes
+its two `gettext` calls, the FFI passes `None` and gets the English.
+
+**`set_pack_enabled` wrote only the stable event, so a pack enabled under
+the unstable one could not be disabled.** The application keeps the two
+account-data events apart precisely so that disabling can remove a pack
+from whichever holds it — a pack another client enabled under
+`im.ponies.emote_rooms` would otherwise come back on the next load. The
+facade merged both on read and wrote only `m.image_pack.rooms`, so from the
+Kotlin side that pack was un-disableable. The core's `set_pack_enabled`
+writes the unstable event when that is where the pack is.
+
+**A pack created from Kotlin was enabled nowhere, and numbered wrong.**
+The application's editor enables a new pack everywhere on its first save,
+with the reason written out: a pack is only usable in the room it lives in,
+and a pack that was just created lives in a room that exists for that, so
+it would be usable nowhere the user meant. The facade never enabled one —
+which is why it also listed the packs room's packs explicitly, since
+nothing else would have shown them. And it numbered packs from `pack-2`
+where the application takes the empty state key first, because the clients
+in the wild use it for the pack of a room. Both follow the application now.
+
+**Stickers and GIFs were sent past the timeline.** The application sends
+both through the SDK timeline, which is what gives them a local echo and
+the send queue's retry; the facade called `Room::send` directly, so a
+sticker sent from a phone in a tunnel was lost rather than queued.
+`Timeline::send_sticker` and `Timeline::send_gif` are the application's
+paths, `upload_gif` and its 16 MiB bound included; the facade's own 20 MiB
+bound and its upload-size check for GIFs — which the application does not
+make, leaving the homeserver to refuse — go with it.
+
+**The facade read a personal pack the specification dropped.** MSC2545's
+`im.ponies.user_emotes` was not carried into the stable specification,
+which expects a personal pack to be a room pack enabled globally instead,
+and `events/image_packs.rs` says so in its module comment: not supported
+here either. The facade read it anyway, under the name "My Stickers". It
+does not now, which is the authority's decision and is recorded as one.
+
+**An invalid shortcode was accepted.** The application refuses a shortcode
+outside the grammar before it saves; the facade wrote whatever came.
+`save_pack` refuses with `ImagePacksError::InvalidShortcode`.
+
+**Three things the FFI keeps that the application does not have, all
+recorded on the methods:**
+
+* **A named pack with no images is presented, not treated as deleted.**
+  The Kotlin flow creates a pack and adds its images afterwards; the
+  application's editor refuses to save one without an image. The core's
+  `room_state_packs` applies the application's rule, and a crate-internal
+  `room_state_packs_including_empty` is what the FFI's two-step flow reads.
+* **The packs room stands in for the open room.** `packs_for_room` lists
+  the packs enabled everywhere and then the room's own; `sticker_packs`
+  and `emoticon_packs` name no room, so the packs room — the one room the
+  Kotlin application writes into, and where a pack it created before this
+  commit lives unenabled — takes that place.
+* **An added image has no width or height.** The editor decodes the file
+  to record them; this side has no decoder, so the `info` carries the size
+  and MIME type it knows.
+
+**One thing the facade did that the authority does not, dropped with it and
+worth a second look by whoever adds it properly:** the facade honoured a
+per-image `usage` list, which the specification allows an image to carry
+to override its pack's. The application's `PackImage` keeps it among the
+unknown properties and never reads it. The core follows the application.
+
+The FFI surface is unchanged for the eighth time and the bindings came
+back byte-identical. The clippy count holds at 13. **One gate caught what
+the others could not**: the crate-internal reader above is only read by
+the facade, and the Windows check runs with the `ffi` feature on, so its
+re-export was fine there and an unused import under `-D warnings` in the
+Linux application clippy, which builds the core without the feature. It
+is gated on the feature now, and the Windows side of every commit should
+run `cargo check -p commune-core --all-targets` without `--features ffi`
+as well as with.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -1046,7 +1150,7 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs` login flows | **The OAuth and SSO redirect is Android's, hardcoded.** `ANDROID_REDIRECT_URI` is `io.github.steeb-k.commune:/oauth2redirect`, and `oauth_client_registration_data()` builds a fixed native-application registration around it. The desktop application does not use a custom scheme at all: `src/login/local_server.rs` runs a loopback HTTP server and registers _its_ address, because a desktop browser has nowhere to send an app scheme. A GTK login through this core would open an authorization URL the browser could never come back from. The redirect and the registration are embedder facts, like `credential_label` and `klipy_api_key` before them, and belong in `CoreConfig`. **Closed 1 Sep**: `CoreConfig::oauth_client` carries each embedder's client URI and redirect URIs — the GTK application's loopback pair, `init_core`'s Android scheme — and every login step that needs the redirect for one login takes it as an argument. The Android constants live in `facade.rs`, which is the Android embedder's Rust half; the core no longer knows them. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **The pusher describes an Android device, in English, whatever the embedder is.** `app_display_name` is `"Commune"` and `device_display_name` is `"Commune on Android"`, both literals; the `LEGACY_APP_ID` deletion that runs first cleans up after a specific Android debug build. The device name is what a user sees in another client's session list when they audit what is pushing to them, so a desktop session announcing itself as Android is wrong in the one place the string is read. Embedder values, `CoreConfig` again — and the legacy cleanup is Android's alone and should say so. Commit 4 moved the pusher and left these as they were. **Closed 1 Sep** with the login redirect: `CoreConfig::app_name` names the application on the pusher, on a new device and on the OAuth client, and `CoreConfig::device_display_name` is the Android embedder's to set — the desktop passes none, since it never registers a pusher. The legacy cleanup still runs unconditionally, keyed on this device's pushkey, which is harmless where there is nothing to delete. | Done |
 | 1 Sep 2026 | `facade.rs`, `check_upload_size` | **The upload-size refusal is a rendered English sentence, with a private byte formatter.** The core builds `"This file is too large, the homeserver takes up to {size}"` and formats the number with its own `format_size`. The application says the same thing at `src/session_view/room_history/message_toolbar/mod.rs:1310` as a `gettext_f` over `glib::format_size`. It is the most commonly hit error in the file — every oversized attachment, avatar and pack image goes through it — and it is a sentence, so it must not cross: the core owes a value (`UploadTooLarge { max_bytes }`) and the two embedders own the wording. The two formatters agree on decimal units, so the rendered text is identical today; only the translation is lost. | Phase 3, group 10 |
-| 1 Sep 2026 | `facade.rs`, `ensure_packs_room` | **The packs room is created with an English name and topic.** `"Sticker Packs"` and `"The sticker and emoticon packs that you created. Invite someone here to share them."` are literals; `src/session/image_packs/mod.rs:627` wraps both in `gettext`. This one is worse than a lost error message, because a room name is not an error: it is written into `m.room.name` on the server, it shows in the sidebar next to the conversations, and it is _permanent_ — a user whose packs room was created by the Kotlin build keeps the English name after they translate their client, because nothing re-creates the room. Embedder-supplied strings, and the room the core makes should carry whichever the embedder passed. | Phase 3, group 8 |
+| 1 Sep 2026 | `facade.rs`, `ensure_packs_room` | **The packs room is created with an English name and topic.** `"Sticker Packs"` and `"The sticker and emoticon packs that you created. Invite someone here to share them."` are literals; `src/session/image_packs/mod.rs:627` wraps both in `gettext`. This one is worse than a lost error message, because a room name is not an error: it is written into `m.room.name` on the server, it shows in the sidebar next to the conversations, and it is _permanent_ — a user whose packs room was created by the Kotlin build keeps the English name after they translate their client, because nothing re-creates the room. Embedder-supplied strings, and the room the core makes should carry whichever the embedder passed. **Closed 1 Sep**: `CoreConfig::packs_room_name` and `packs_room_topic`, the GTK application passing its `gettext` calls and the FFI passing `None` for the English, as `credential_label` before them. | Done |
 | 1 Sep 2026 | `facade.rs` ignored users | **The core never followed the list, and never refused a redundant request.** `src/session/ignored_users.rs` subscribes to the SDK's ignore-list changes and re-reads `m.ignored_user_list` whenever one arrives; the facade read the account data once per call and had no subscription at all, so ignoring somebody from the desktop never reached a phone with the Ignored Users screen open — it would sit on a stale list until it was closed and reopened. The application also guards both directions: adding a user already on the list, or removing one that is not, is a warning and a no-op rather than a round trip the server will ignore. Neither guard existed in the core. **Closed 1 Sep** with Phase 3's first commit, which also found the thing the move would have broken: `SessionList::active_session()` returns a session before `prepare()` has run, so a cache-only read would answer "nobody" during startup where the old fetch answered correctly — `ensure_loaded()` keeps that guarantee. | Done |
 | 1 Sep 2026 | `facade.rs`, `list_devices` | **Four divergences in one method, and the worst is what it does when something is wrong.** `src/session/user_sessions_list/` merges `/devices` with the crypto store, so a device known to one source and not the other is still listed; the facade walked `/devices` alone. The application lists what it has when one source fails and errors only when both do; **the facade returned an error the moment `/devices` failed, which is exactly the case a person opens the sessions screen in.** The application follows `devices_stream()` — taking an _empty_ update, because that is how a disconnection arrives without saying whose — and the facade fetched once per call. And the application breaks a sort tie on device ID where the facade had none, so devices the server never dated came back in a different order on every read. **Closed 1 Sep** in `session/user_sessions.rs`, with four tests over the ordering. | Done |
 | 1 Sep 2026 | `facade.rs`, `sign_out_device` | **The core could not tell "wrong password" from "this homeserver wants something else".** Signing a device out goes through user-interactive authentication, which the application answers with an `AuthDialog` that speaks several stages; the facade retried once with a password whatever the homeserver had asked for, and reported the resulting failure as an ordinary error. On a homeserver whose sign-out stage is not `m.login.password` — an OAuth 2.0 one, for instance — that is a request that can never succeed and a message that never says so. **Closed 1 Sep**: the first attempt reads the offered flows, and `DeviceError` separates `NeedsPassword` from `UnsupportedAuth`. The GTK application hands the first to its dialog when the account settings migrate; until then no embedder is worse off, and the Kotlin one stops showing a sentence that is not true. | Done |
@@ -1064,6 +1168,11 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `discover_login` | **Every failure of the authorization server's discovery read as "no OAuth".** `login/homeserver_page.rs` tells `is_not_supported()` — fall through to the Matrix native flows — from any other error, which aborts with "Could not set up login". The facade asked `.is_ok()`, so a homeserver whose authorization server was briefly unreachable was presented as a password-login homeserver, and a password typed into it was refused by an endpoint that no longer serves that account. **Closed 1 Sep** in `LoginFlow::discover`. | Done |
 | 1 Sep 2026 | `session_list.rs`, `login_with_password` | **A second client, built by URL, logged in while the discovered one sat unused.** The facade's password login called `SessionList::login_with_password`, which built its own client from the typed URL — without `.well-known`, so `matrix.org` went to `matrix.org` and not where its `.well-known` points — and ignored the client discovery had just built; the application's method page logs in with the client its homeserver page built. The same method returned two rendered English sentences in a `String`, and `adopt_logged_in_client` a third. **Closed 1 Sep**: the method is deleted, the facade logs in with the pending flow's client, and `adopt_logged_in_client` returns `ClientSetupError`. | Done |
 | 1 Sep 2026 | `facade.rs`, `register_user` and the reset flow | **Three refusals the application names, shown as SDK error text.** `M_FORBIDDEN` on registration means the homeserver does not allow creating an account (the register page says so explicitly, because the catch-all reads "Invalid credentials"); `M_THREEPID_NOT_FOUND` on the reset email means no account uses the address, and `M_THREEPID_DENIED` that the homeserver cannot send email at all — `reset_password_page.rs` has a sentence for each. The facade formatted the SDK error for all three. **Closed 1 Sep** as `RegisterError::Forbidden`, `ResetPasswordError::EmailNotFound` and `EmailDenied`, values with the sentences as the Kotlin fallback. | Done |
+| 1 Sep 2026 | `facade.rs`, `set_pack_enabled_inner` | **A pack enabled under the unstable event could not be disabled from Kotlin.** `session/image_packs/mod.rs` keeps `m.image_pack.rooms` and `im.ponies.emote_rooms` apart so that disabling removes a pack from whichever holds it; the facade merged both on read and wrote only the stable one, so a pack another client enabled under the unstable name came back on every load. The same method wrote enabled packs as bare JSON, dropping the unknown properties the specification requires clients to preserve. **Closed 1 Sep**: the core's `set_pack_enabled`, over the typed `EnabledPacks`. | Done |
+| 1 Sep 2026 | `facade.rs`, `create_image_pack` | **A new pack was enabled nowhere and numbered from `pack-2`.** The application's editor enables a pack everywhere on its first save — a pack lives in a room that exists only to hold it, so unenabled it is usable nowhere the user meant — and takes the empty state key first, since the clients in the wild use it for the pack of a room. The facade did neither, and so listed the packs room's packs explicitly because nothing else would have shown them. **Closed 1 Sep**: `packs_room`, `unused_state_key`, `save_pack` and `set_pack_enabled` are the core's; the packs room still stands in for the open room on the FFI, which has no room to name. | Done |
+| 1 Sep 2026 | `facade.rs`, `send_sticker` and `send_gif` | **Sent past the timeline.** The application sends both through the SDK timeline, which is what gives them a local echo and the send queue's retry; the facade called `Room::send`, so a sticker sent without connectivity was lost rather than queued. The GIF path also checked the upload size, which the application does not — it bounds the download at 16 MiB and lets the homeserver refuse — and bounded the download at 20. **Closed 1 Sep** as `Timeline::send_sticker` and `Timeline::send_gif`. | Done |
+| 1 Sep 2026 | `facade.rs`, `collect_image_packs` | **Read `im.ponies.user_emotes`, a personal pack the specification dropped.** `events/image_packs.rs` records that the stable specification expects a personal pack to be a room pack enabled globally, and that the unstable personal pack is not supported here; the facade read it under the name "My Stickers". It also honoured a per-image `usage` list, which the application keeps among an image's unknown properties and never reads. **Closed 1 Sep** by following the application on both; the per-image usage is a specification feature the authority does not implement, noted for whoever adds it. | Done, per-image usage noted |
+| 1 Sep 2026 | `facade.rs`, `add_pack_image` | **Any shortcode was accepted.** The application refuses one outside the grammar — ASCII alphanumerics, dashes and underscores, up to a hundred bytes — before it saves; the facade wrote whatever came, and a shortcode with a colon in it breaks the `:shortcode:` completion that reads it back. **Closed 1 Sep**: `save_pack` refuses with `ImagePacksError::InvalidShortcode`. | Done |
 
 ## Gates
 

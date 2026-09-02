@@ -95,6 +95,19 @@ pub struct CoreConfig {
     /// [`crate::klipy::is_available()`] is `false` and the feature is inert,
     /// which is what a build by anyone without a key of their own gets.
     pub klipy_api_key: Option<String>,
+    /// The name of the room this client creates image packs in, and its
+    /// topic.
+    ///
+    /// Written into `m.room.name` and `m.room.topic` on the server the one
+    /// time the room is created, and shown in the sidebar beside the
+    /// conversations from then on — a user whose room was created in one
+    /// language keeps that name after they change it, because nothing
+    /// re-creates the room. So the embedder hands them over translated, as
+    /// with `credential_label`; `None` uses the English below, which is
+    /// what the untranslated Kotlin application wants today.
+    pub packs_room_name: Option<String>,
+    /// See `packs_room_name`.
+    pub packs_room_topic: Option<String>,
 }
 
 impl fmt::Debug for CoreConfig {
@@ -111,6 +124,8 @@ impl fmt::Debug for CoreConfig {
             .field("credential_label", &self.credential_label)
             // Never the value: it is a credential, and this type is Debug.
             .field("klipy_api_key", &self.klipy_api_key.is_some())
+            .field("packs_room_name", &self.packs_room_name)
+            .field("packs_room_topic", &self.packs_room_topic)
             .finish()
     }
 }
@@ -145,7 +160,20 @@ pub(crate) struct ResolvedConfig {
     pub(crate) credential_label: String,
     /// The KLIPY API key, empty when the embedder provided none.
     pub(crate) klipy_api_key: String,
+    /// The name of the room image packs are created in.
+    pub(crate) packs_room_name: String,
+    /// The topic of the room image packs are created in.
+    pub(crate) packs_room_topic: String,
 }
+
+/// The English name of the packs room, used when the embedder provides none
+/// of its own.
+const DEFAULT_PACKS_ROOM_NAME: &str = "Sticker Packs";
+
+/// The English topic of the packs room, used when the embedder provides none
+/// of its own.
+const DEFAULT_PACKS_ROOM_TOPIC: &str =
+    "The sticker and emoticon packs that you created. Invite someone here to share them.";
 
 /// The English label for a stored session, used when the embedder provides
 /// none of its own.
@@ -171,6 +199,8 @@ pub fn init(config: CoreConfig) {
         settings_store,
         credential_label,
         klipy_api_key,
+        packs_room_name,
+        packs_room_topic,
     } = config;
 
     let settings_store =
@@ -178,6 +208,8 @@ pub fn init(config: CoreConfig) {
     let device_display_name = device_display_name.unwrap_or_else(|| app_name.clone());
     let credential_label = credential_label.unwrap_or_else(|| DEFAULT_CREDENTIAL_LABEL.to_owned());
     let klipy_api_key = klipy_api_key.unwrap_or_default();
+    let packs_room_name = packs_room_name.unwrap_or_else(|| DEFAULT_PACKS_ROOM_NAME.to_owned());
+    let packs_room_topic = packs_room_topic.unwrap_or_else(|| DEFAULT_PACKS_ROOM_TOPIC.to_owned());
 
     let _ = CONFIG.set(ResolvedConfig {
         app_id,
@@ -190,6 +222,8 @@ pub fn init(config: CoreConfig) {
         settings_store,
         credential_label,
         klipy_api_key,
+        packs_room_name,
+        packs_room_topic,
     });
 }
 
@@ -253,6 +287,16 @@ pub(crate) fn klipy_api_key() -> &'static str {
     &get().klipy_api_key
 }
 
+/// The name of the room image packs are created in.
+pub(crate) fn packs_room_name() -> &'static str {
+    &get().packs_room_name
+}
+
+/// The topic of the room image packs are created in.
+pub(crate) fn packs_room_topic() -> &'static str {
+    &get().packs_room_topic
+}
+
 /// Initialize the configuration for this crate's tests.
 ///
 /// The config is process-global and set once, so every test that needs it
@@ -273,5 +317,7 @@ pub(crate) fn init_test_config() {
         settings_store: None,
         credential_label: None,
         klipy_api_key: None,
+        packs_room_name: None,
+        packs_room_topic: None,
     });
 }
