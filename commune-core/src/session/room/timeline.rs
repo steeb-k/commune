@@ -49,6 +49,7 @@ use ruma::{
 };
 use tracing::{error, warn};
 
+use super::WeakSession;
 use crate::{
     UserFacingError,
     klipy::SelectedGif,
@@ -201,6 +202,8 @@ pub enum TimelineFocusKind {
 struct TimelineInner {
     /// The room API of the SDK.
     matrix_room: matrix_sdk::room::Room,
+    /// The session the room belongs to, for what a reaction records.
+    session: WeakSession,
     /// What this timeline shows.
     focus: TimelineFocusKind,
     /// The underlying SDK timeline.
@@ -215,19 +218,21 @@ struct TimelineInner {
 
 impl Timeline {
     /// Create the live timeline of the given room.
-    pub(crate) fn new(matrix_room: matrix_sdk::room::Room) -> Self {
-        Self::with_focus(matrix_room, TimelineFocusKind::Live)
+    pub(crate) fn new(matrix_room: matrix_sdk::room::Room, session: WeakSession) -> Self {
+        Self::with_focus(matrix_room, TimelineFocusKind::Live, session)
     }
 
     /// Create a timeline of the given room with the given focus.
     pub(crate) fn with_focus(
         matrix_room: matrix_sdk::room::Room,
         focus: TimelineFocusKind,
+        session: WeakSession,
     ) -> Self {
         Self {
             inner: Arc::new(TimelineInner {
                 matrix_room,
                 focus,
+                session,
                 matrix_timeline: tokio::sync::OnceCell::new(),
                 state: SharedObservable::new(LoadingState::Initial),
                 has_reached_start: SharedObservable::new(false),
@@ -611,21 +616,27 @@ impl Timeline {
             .await
             .ok_or(TimelineError::NoTimeline)?;
 
-        let key = key.to_owned();
+        let key_clone = key.to_owned();
         let handle = spawn_tokio!(async move {
             matrix_timeline
-                .toggle_reaction(&TimelineEventItemId::EventId(event_id), &key)
+                .toggle_reaction(&TimelineEventItemId::EventId(event_id), &key_clone)
                 .await
         });
 
-        handle
+        let was_added = handle
             .await
             .expect("task was not aborted")
-            .map(|_was_added| ())
             .map_err(|toggle_error| {
                 error!("Could not toggle reaction: {toggle_error}");
                 TimelineError::from(toggle_error)
-            })
+            })?;
+
+        // Adding a reaction is a use of the emoji; taking one back is not.
+        if was_added && let Some(session) = self.inner.session.upgrade() {
+            session.global_account_data().record_emoji_use(key).await;
+        }
+
+        Ok(())
     }
 
     /// Send the file at the given path as an attachment.

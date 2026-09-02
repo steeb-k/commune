@@ -29,9 +29,11 @@
 mod calls;
 mod create_room;
 mod directory;
+mod global_account_data;
 mod ignored_users;
 mod image_packs;
 mod notifications;
+mod presence;
 mod remote;
 mod room;
 mod room_list;
@@ -81,12 +83,17 @@ pub use self::{
     },
     create_room::{CreateRoomError, CreateRoomOptions, CreateRoomVisibility},
     directory::{DirectoryError, PublicRoomsPage, PublicRoomsQuery},
+    global_account_data::{
+        AccountDataError, DEFAULT_INVITE_AVATARS_ENABLED, DEFAULT_MEDIA_PREVIEWS,
+        GlobalAccountData, QUICK_REACTIONS_LEN,
+    },
     ignored_users::{IgnoredUsers, IgnoredUsersError},
     image_packs::{
         ImagePack, ImagePackSource, ImagePacks, ImagePacksError, RoomPackKind, UnavailablePack,
         room_state_packs, sticker_content,
     },
     notifications::PushError,
+    presence::{Presence, PresenceError, PresenceList, UserPresence},
     remote::{RemoteRoom, RemoteRoomError, SpaceChild, SpaceChildren, SpaceChildrenError},
     room::{
         AclProblem, AliasError, AliasesState, ComposerChunk, HistoryVisibilityValue, JoinRule,
@@ -260,6 +267,10 @@ struct SessionInner {
     room_list: std::sync::OnceLock<RoomList>,
     /// The users this account ignores.
     ignored_users: std::sync::OnceLock<IgnoredUsers>,
+    /// The settings in the global account data, built on first use.
+    global_account_data: std::sync::OnceLock<GlobalAccountData>,
+    /// What the homeserver said about who is around, built on first use.
+    presence_list: std::sync::OnceLock<PresenceList>,
     /// The image packs available to this account, built on first use.
     image_packs: std::sync::OnceLock<ImagePacks>,
     /// The account's other sessions.
@@ -339,6 +350,8 @@ impl Session {
             room_updates_rx: Mutex::new(Some(room_updates_rx)),
             room_list: std::sync::OnceLock::new(),
             ignored_users: std::sync::OnceLock::new(),
+            global_account_data: std::sync::OnceLock::new(),
+            presence_list: std::sync::OnceLock::new(),
             image_packs: std::sync::OnceLock::new(),
             user_sessions: std::sync::OnceLock::new(),
             security: std::sync::OnceLock::new(),
@@ -383,9 +396,11 @@ impl Session {
         self.consume_room_updates();
         self.ignored_users().load().await;
 
-        // Verification, security and calls attach here, as the
-        // application's session does when it is ready.
+        // Verification, security, calls, the account data and presence
+        // attach here, as the application's session does when it is ready.
         let _ = self.verification_list();
+        let _ = self.global_account_data();
+        self.presence_list().watch();
         let _ = self.security();
         self.calls().init();
 
@@ -577,6 +592,29 @@ impl Session {
         self.inner
             .ignored_users
             .get_or_init(|| IgnoredUsers::new(self.downgrade()))
+    }
+
+    /// The settings in the global account data of this account.
+    ///
+    /// Built on first use, and from `prepare()`; reading the account data
+    /// starts then, and the SDK's streams keep it fresh.
+    #[must_use]
+    pub fn global_account_data(&self) -> &GlobalAccountData {
+        self.inner.global_account_data.get_or_init(|| {
+            let account_data = GlobalAccountData::new(self.downgrade());
+            global_account_data::spawn_load(&account_data);
+            account_data
+        })
+    }
+
+    /// What the homeserver has said about who is around.
+    ///
+    /// Built on first use, and watching sync from `prepare()`.
+    #[must_use]
+    pub fn presence_list(&self) -> &PresenceList {
+        self.inner
+            .presence_list
+            .get_or_init(|| PresenceList::new(self.downgrade()))
     }
 
     /// The image packs available to this account.

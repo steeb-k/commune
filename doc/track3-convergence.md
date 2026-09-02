@@ -1693,7 +1693,7 @@ from `wc -l`, and the core column names what the module becomes a view of.
 | 3 | `room/member.rs`, `member_list.rs` | 338 + 387 | `session::{Member, MemberList}` | Members over the core's; the ambiguity changes move into the core here, closing module 1's ledger row. |
 | 4 | `room/{permissions,join_rule,aliases}.rs` | 733 + 442 + 544 | Phase 3's `Permissions`, `JoinRule`, `RoomAliases` | View-models over what Phase 3 already wrote; the application's own copies of the same rules are deleted. |
 | 5 | `ignored_users.rs`, `user_sessions_list/`, `security.rs`, `image_packs/` | 282 + 987 + 491 + 1,323 | `IgnoredUsers`, `UserSessions`, `SessionSecurity`, `ImagePacks` | **Done 2 Sep.** The session-level models Phase 3 already wrote, each a thin `GObject`; the core gains four subscribers. |
-| 6 | `global_account_data.rs`, `presence.rs` | 603 + 349 | **none yet** | The core has neither; both move in first (GTK is the authority), then the `GObject`s become views. This is where the Kotlin side gets recent emoji and presence. |
+| 6 | `global_account_data.rs`, `presence.rs` | 603 + 349 | `GlobalAccountData`, `PresenceList` (new) | **Done 2 Sep.** Both moved in (GTK is the authority), then the `GObject`s became views. This is where the Kotlin side gets recent emoji and presence; the FFI for both is owed. |
 | 7 | `remote/` | 2,031 | `session::remote::{RemoteRoom, SpaceChildren}`, `url_preview` | `room.rs`, `space_children.rs` and `url_preview.rs` over the core's; `room_peek.rs`, `user.rs` and `cache.rs` move in first. |
 | 8 | `room/timeline/`, `thread_list.rs`, `search.rs` | 1,893 + 433 + 767 | `session::Timeline`, `RoomSearch` | The timeline item models over the core's `Timeline`; `media_message.rs`'s data types are decided here (the Phase 2 question). |
 | 9 | `notifications/` | 1,916 | `session::notifications` (170) | The core's is a fragment; the application's settings model and push handling move in, then the `GObject`s become views. |
@@ -2125,6 +2125,60 @@ room with a room pack and a pack enabled everywhere; the packs settings
 page — create, edit, delete, enable and disable, and a pack whose room
 was left showing as unavailable; the room details' packs subpage.
 
+### Module 6 — the account data and presence move in, then become views
+
+**Done 2 September.** The first module where the core had nothing: it
+gains `session/global_account_data.rs` (597 lines, the application's
+603 with the `GObject` removed and its eight tests moved) and
+`session/presence.rs` (325, from 349), and the two application files
+become views — 252 lines in, 630 out, across the two and `user.rs`.
+
+**`GlobalAccountData`** in the core reads the media-preview settings
+through the SDK's observe-and-stream, the recent emoji through the
+account data and an `io.element.recent_emoji` event handler, and keeps
+three observables: which rooms show media previews, whether invites show
+avatars, and the emoji list. `should_room_show_media_previews` asks the
+core room's join rule; `quick_reactions` sorts by use and fills with the
+defaults, with the two-spellings rule and the letters-are-not-emoji rule
+and every test that pins them. The application's object keeps its two
+signals and its one property, emitted from the three streams, and
+forwards the setters, the queries and `record_emoji_use`. What stays
+here is `apply_migrations`: the legacy values live in this application's
+`GSettings`, so the migration is its own, and it now awaits the core's
+first read before it writes, so that a value the account already has is
+not written again.
+
+**`PresenceList`** in the core keeps the presence events sync carries
+and reads the store for a user nothing is known about, exactly as the
+application did. One thing changed shape on the way in, on purpose: the
+application announced a change with a signal carrying the user's ID and
+had the `User` read the list again; the core keeps one observable per
+user, `None` until sync or the store said something. A subscriber to an
+observable always sees the latest value, where a channel of IDs could
+fall behind a burst of presence on first sync and lose one, and the
+`None` is what lets the store read know it is still needed. The `User`
+follows its own user's observable through the watcher and no longer
+compares IDs on every change of anyone's. The setting for whether we
+tell the homeserver we are here is a `GSettings` key, so the
+application's object keeps watching it and hands the core the answer;
+the core sends it at once, as before, and the refusal a homeserver
+without the Presence module gives stays a `debug` line.
+
+**A reaction added records its emoji in the core too.** The ledger owed
+`toggle_reaction` this since Phase 3: the core's timeline took the SDK's
+`was_added` and threw it away. The timeline now carries a weak session,
+which every room hands it, and records the emoji when the reaction was
+added, as the application's `Room::toggle_reaction` does through its own
+timeline until module 8 retires that path. Kotlin gets recent emoji and
+presence for the first time here; the FFI for both is owed.
+
+**Eyeball owed:** the safety page's media-preview and invite-avatar
+switches, both ways, and a change made from another client arriving; an
+avatar in an invite with avatars off; the quick reactions after a
+reaction, and a reaction with a word for a key leaving them alone; a
+member's presence badge and status message with a homeserver that has
+presence, and the share-presence switch in general settings, off and on.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -2187,7 +2241,7 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `event_permalink`, `event_source` | **The permalink failed where the application falls back to the unrouted link; the event source was fetched where the application reads the loaded item.** **Closed 1 Sep**: `Room::matrix_to_event_uri`, `Timeline::event_source`. | Done |
 | 1 Sep 2026 | `facade.rs`, `paginate_backwards` | **No guard on loading.** The application refuses a load while one runs, before the timeline is ready, and once the start was reached, which a pinned timeline is from the start. The facade asked the SDK every time. **Closed 1 Sep**: `Timeline::can_paginate_backwards`, `is_loading_start`, `MAX_BATCH_SIZE`. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_room_details` | **Untrimmed, and sent to a room not joined.** The details page trims, removes on an emptied field, refuses when not joined, and has a toast per field. **Closed 1 Sep**: `Room::set_name`, `Room::set_topic`, `RoomDetailsError`. | Done |
-| 1 Sep 2026 | `facade.rs`, `toggle_reaction` | **An added reaction is not recorded among the recent emoji.** The application's `Room::toggle_reaction` records it in `io.element.recent_emoji`; the core has no global account data object to record it in. Open. | Later phase |
+| 1 Sep 2026 | `facade.rs`, `toggle_reaction` | **An added reaction is not recorded among the recent emoji.** The application's `Room::toggle_reaction` records it in `io.element.recent_emoji`; the core has no global account data object to record it in. Open. | Closed 2 Sep, module 6: `Timeline::toggle_reaction` records the emoji through the session's `GlobalAccountData` when the SDK says the reaction was added. |
 | 1 Sep 2026 | `facade.rs`, `room_join_rule`, `room_history_visibility` | **A rule the page cannot edit was reported as changeable.** The page's `can_change` is `value.can_be_edited()` and the power level; the facade checked the power level alone, and mapped an unsupported history visibility to `Joined`, editable. **Closed 1 Sep**: `JoinRuleValue::can_be_edited`, `HistoryVisibilityValue::Unsupported`; the FFI's history enum has no unsupported variant, so that value shows as `Joined` with `can_change` false. | Done, FFI variant owed |
 | 1 Sep 2026 | `facade.rs`, `set_room_join_rule`, `set_room_history_visibility` | **Sent whatever the room's version, and whether or not it changed.** The page hides what the version cannot take and saves only a change; the facade sent `knock_restricted` to any room and re-sent the current rule. **Closed 1 Sep**: the FFI refuses what `Room::rules()` says the version lacks and sends nothing for no change; `compute_join_rule` and its tests are `session/room/join_rule.rs`. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_room_address` | **No-op edits were sent; the refusals were folded.** `RoomAliases` refuses to set a canonical alias that already is, remove one that is not, remove an alt alias not listed, or add one already listed, and tells not-registered (404) from another-room from already-registered (409). The facade sent the events and gave one sentence. **Closed 1 Sep**: `session/room/aliases.rs`, `AliasError`. | Done |
@@ -2216,6 +2270,9 @@ recorded here as it is found, with the phase that closes it.
 | 2 Sep 2026 | `session/image_packs/mod.rs`, `changed` | **The application emitted `changed` before `set_pack_enabled` and `save_pack` returned; the core's counter reaches the signal a main-loop turn later.** Every listener reloads on the signal and none reads state in between, so nothing is lost, but a page that awaited a write and then read the list read it once for itself and once for the signal. Recorded so that a duplicate reload is not mistaken for a bug. | Accepted 2 Sep, module 5 |
 | 2 Sep 2026 | `session/image_packs/mod.rs`, `packs_room` | **Two waits for one room.** The core waits for the packs room to reach its list; the interface's list follows that one through a diff, so the `GObject` waits again on its own `get_wait`. Module 1's transitional shape, as in `Room::new`. | Module 13, when the list models share one wait |
 | 2 Sep 2026 | `session/user_sessions_list/mod.rs`, `init` | **The list for a user who is not the account was accepted and never filled.** The application's `init` took any user ID and only loaded the account's devices; it now warns and returns for another user. No page ever asked for another user's sessions. | Closed 2 Sep, module 5 |
+| 2 Sep 2026 | `session/presence.rs`, `changed` | **The application's presence signal carried a user ID over a channel that could lose one; the core keeps an observable per user.** Recorded because it is the one place module 6 did not transcribe the application's shape: the signal-and-re-read had the `User` compare its ID against every change of anyone's, and a bounded channel of IDs, which is what a signal becomes across the runtime boundary, drops the oldest under a burst. Same information, lossless, per user. | Accepted 2 Sep, module 6 |
+| 2 Sep 2026 | `session/global_account_data.rs`, `apply_migrations` | **The migration wrote the legacy values before the account data had been read.** The application ran `init_media_previews_settings`, `init_recent_emoji` and then the migration in one task, so the order held; with the read in the core, the view now awaits `ensure_loaded` first. Without it, the equality check that skips a write compared against the default and wrote the legacy value over what the account already said. | Closed 2 Sep, module 6 |
+| 2 Sep 2026 | `session/room/timeline.rs`, `toggle_reaction` | **The core dropped the SDK's `was_added`, so a reaction added from Kotlin never reached the recent emoji.** The ledger row of 1 Sep on `toggle_reaction` closes here: the timeline holds a weak session and records the emoji when the reaction was added. | Closed 2 Sep, module 6 |
 
 ## Gates
 
