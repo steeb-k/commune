@@ -482,7 +482,7 @@ mod imp {
             let successor_id = self
                 .timeline
                 .upgrade()
-                .and_then(|timeline| timeline.room().successor_id().cloned());
+                .and_then(|timeline| timeline.room().successor_id());
             self.successor_room_list_info
                 .set_identifiers(successor_id.into_iter().map(Into::into).collect());
         }
@@ -1678,7 +1678,7 @@ mod imp {
                 };
 
                 window.session_view().select_room(successor);
-            } else if let Some(successor_id) = room.successor_id().cloned() {
+            } else if let Some(successor_id) = room.successor_id() {
                 // Route the successor room ID via the server of the sender of the tombstone
                 // event, which is likely to know the room.
                 let matrix_room = room.matrix_room().clone();

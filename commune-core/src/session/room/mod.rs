@@ -35,6 +35,7 @@ use std::{
         Arc, Mutex, Weak,
         atomic::{AtomicBool, Ordering},
     },
+    time::{Duration, SystemTime},
 };
 
 use eyeball::{SharedObservable, Subscriber};
@@ -43,20 +44,27 @@ use matrix_sdk::{
     Result as MatrixResult, RoomDisplayName as SdkRoomDisplayName, RoomInfo, RoomState,
     deserialized_responses::{AmbiguityChange, RawSyncOrStrippedState},
     room::Room as MatrixRoom,
+    send_queue::RoomSendQueueUpdate,
 };
 use ruma::{
-    MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedMxcUri, OwnedRoomId, OwnedUserId, RoomId, UInt,
-    api::client::{
-        directory::{get_room_visibility, set_room_visibility},
-        receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
-        room::Visibility,
+    EventId, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedMxcUri, OwnedRoomId, OwnedUserId,
+    RoomId, UInt,
+    api::{
+        client::{
+            directory::{get_room_visibility, set_room_visibility},
+            receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
+            room::Visibility,
+        },
+        error::{ErrorKind, LimitExceededErrorData, RetryAfter},
     },
     events::{
-        AnySyncTimelineEvent,
+        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
         room::{
             avatar::ImageInfo as AvatarImageInfo,
+            guest_access::GuestAccess,
             history_visibility::{HistoryVisibility, RoomHistoryVisibilityEventContent},
             member::{MembershipState, RoomMemberEventContent},
+            message::MessageType,
         },
         tag::TagName,
     },
@@ -65,7 +73,7 @@ use ruma::{
     serde::Raw,
 };
 use serde::Deserialize;
-use tokio::{sync::broadcast, task::AbortHandle};
+use tokio::{sync::broadcast, task::AbortHandle, time::sleep};
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
@@ -103,6 +111,10 @@ const NO_TAG_ORDER: f64 = 2.0;
 /// How many batches of ambiguous members a slow subscriber may fall behind.
 const AMBIGUITY_CHANNEL_CAPACITY: usize = 16;
 
+/// The default duration in seconds that we wait for before retrying failed
+/// sending requests.
+const DEFAULT_RETRY_AFTER: u64 = 30;
+
 /// The display name of a room, as something the UI still has words to add
 /// to.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -131,6 +143,19 @@ impl RoomDisplayName {
             SdkRoomDisplayName::Empty => Self::Empty,
         }
     }
+}
+
+/// A server notice that is still active.
+///
+/// The homeserver pins the notice it wants shown in the server notices
+/// room; this is the most recent one.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ServerNotice {
+    /// The body of the notice.
+    pub body: String,
+    /// The contact method for the administrator of the homeserver, if the
+    /// notice gives one.
+    pub admin_contact: Option<String>,
 }
 
 /// An error encountered while changing the details of a room.
@@ -313,7 +338,7 @@ struct RoomInner {
     /// The ID of the room that was upgraded and that this one replaces.
     predecessor_id: std::sync::OnceLock<OwnedRoomId>,
     /// The ID of the successor of this Room, if this room was upgraded.
-    successor_id: std::sync::OnceLock<OwnedRoomId>,
+    successor_id: SharedObservable<Option<OwnedRoomId>>,
     /// The successor of this Room, if this room was upgraded and the
     /// successor was joined.
     successor: Mutex<Option<Weak<RoomInner>>>,
@@ -340,6 +365,33 @@ struct RoomInner {
     highlight: SharedObservable<RoomHighlight>,
     /// Whether this room is encrypted.
     is_encrypted: SharedObservable<bool>,
+    /// Whether guests are allowed.
+    guests_allowed: SharedObservable<bool>,
+    /// The user who invited us, while this room is an invitation.
+    inviter_user_id: SharedObservable<Option<OwnedUserId>>,
+    /// The event IDs pinned in this room, oldest first.
+    ///
+    /// Empty in the server notices room: there the pinned events are the
+    /// active notices, and the spec asks for them to be shown "through a
+    /// special UI, and not the normal pinned events interface".
+    pinned_event_ids: SharedObservable<Vec<OwnedEventId>>,
+    /// The active server notice of this room, if any.
+    ///
+    /// A notice is active while it is pinned in the server notices room.
+    /// This is always `None` outside of that room.
+    active_server_notice: SharedObservable<Option<ServerNotice>>,
+    /// The pinned event IDs that `active_server_notice` was computed from.
+    server_notice_pinned_ids: Mutex<Vec<OwnedEventId>>,
+    /// Whether an embedder reports the read state from a timeline of its
+    /// own.
+    ///
+    /// While one does, the notification-count approximation stays out of
+    /// its way.
+    read_state_reported: AtomicBool,
+    /// The task watching the send queue for recoverable errors.
+    send_queue_handle: Mutex<Option<AbortHandle>>,
+    /// The task re-reading the category when the ignored users change.
+    ignored_users_handle: Mutex<Option<AbortHandle>>,
     /// The aliases of this room.
     aliases: RoomAliases,
     /// The join rule of this room.
@@ -383,6 +435,12 @@ impl Drop for RoomInner {
         if let Ok(Some(handle)) = self.typing_handle.get_mut().map(Option::take) {
             handle.abort();
         }
+        if let Ok(Some(handle)) = self.send_queue_handle.get_mut().map(Option::take) {
+            handle.abort();
+        }
+        if let Ok(Some(handle)) = self.ignored_users_handle.get_mut().map(Option::take) {
+            handle.abort();
+        }
     }
 }
 
@@ -411,7 +469,7 @@ impl Room {
             direct_member_display_name: SharedObservable::new(None),
             is_tombstoned: SharedObservable::new(false),
             predecessor_id: std::sync::OnceLock::new(),
-            successor_id: std::sync::OnceLock::new(),
+            successor_id: SharedObservable::new(None),
             successor: Mutex::new(None),
             joined_members_count: SharedObservable::new(0),
             is_invite: SharedObservable::new(false),
@@ -422,6 +480,14 @@ impl Room {
             has_notifications: SharedObservable::new(false),
             highlight: SharedObservable::new(RoomHighlight::default()),
             is_encrypted: SharedObservable::new(false),
+            guests_allowed: SharedObservable::new(false),
+            inviter_user_id: SharedObservable::new(None),
+            pinned_event_ids: SharedObservable::new(Vec::new()),
+            active_server_notice: SharedObservable::new(None),
+            server_notice_pinned_ids: Mutex::new(Vec::new()),
+            read_state_reported: AtomicBool::new(false),
+            send_queue_handle: Mutex::new(None),
+            ignored_users_handle: Mutex::new(None),
             history_visibility: SharedObservable::new(HistoryVisibilityValue::default()),
             forgotten: SharedObservable::new(false),
             ambiguous_members: broadcast::channel(AMBIGUITY_CHANNEL_CAPACITY).0,
@@ -458,8 +524,8 @@ impl Room {
 
         RoomInner::set_up_typing(inner);
 
-        // The timeline preload, member watch, join rule, permissions and
-        // send-queue watch attach here with their chunks.
+        RoomInner::watch_send_queue(inner);
+        RoomInner::watch_ignored_users(inner);
 
         {
             let weak = Arc::downgrade(inner);
@@ -596,8 +662,13 @@ impl Room {
 
     /// The ID of the successor of this Room, if this room was upgraded.
     #[must_use]
-    pub fn successor_id(&self) -> Option<&OwnedRoomId> {
+    pub fn successor_id(&self) -> Option<OwnedRoomId> {
         self.inner.successor_id.get()
+    }
+
+    /// Subscribe to the ID of the successor of this room.
+    pub fn subscribe_successor_id(&self) -> Subscriber<Option<OwnedRoomId>> {
+        self.inner.successor_id.subscribe()
     }
 
     /// The number of joined members in the room, according to the
@@ -668,6 +739,174 @@ impl Room {
     #[must_use]
     pub fn is_encrypted(&self) -> bool {
         self.inner.is_encrypted.get()
+    }
+
+    /// Subscribe to whether this room is encrypted.
+    pub fn subscribe_is_encrypted(&self) -> Subscriber<bool> {
+        self.inner.is_encrypted.subscribe()
+    }
+
+    /// Subscribe to the name that is set for this room.
+    pub fn subscribe_name(&self) -> Subscriber<Option<String>> {
+        self.inner.name.subscribe()
+    }
+
+    /// Subscribe to whether this room has an avatar explicitly set.
+    pub fn subscribe_has_avatar(&self) -> Subscriber<bool> {
+        self.inner.has_avatar.subscribe()
+    }
+
+    /// Subscribe to the topic of this room.
+    pub fn subscribe_topic(&self) -> Subscriber<Option<String>> {
+        self.inner.topic.subscribe()
+    }
+
+    /// Subscribe to the order of this room inside its tag.
+    pub fn subscribe_tag_order(&self) -> Subscriber<f64> {
+        self.inner.tag_order.subscribe()
+    }
+
+    /// Subscribe to whether this room is a direct chat.
+    pub fn subscribe_is_direct(&self) -> Subscriber<bool> {
+        self.inner.is_direct.subscribe()
+    }
+
+    /// Subscribe to the other user of this direct chat.
+    pub fn subscribe_direct_member_user_id(&self) -> Subscriber<Option<OwnedUserId>> {
+        self.inner.direct_member_user_id.subscribe()
+    }
+
+    /// Subscribe to whether this room has been upgraded.
+    pub fn subscribe_is_tombstoned(&self) -> Subscriber<bool> {
+        self.inner.is_tombstoned.subscribe()
+    }
+
+    /// Subscribe to the number of joined members in the room.
+    pub fn subscribe_joined_members_count(&self) -> Subscriber<u64> {
+        self.inner.joined_members_count.subscribe()
+    }
+
+    /// Subscribe to whether this room is a current invite or an invite
+    /// that was declined or retracted.
+    pub fn subscribe_is_invite(&self) -> Subscriber<bool> {
+        self.inner.is_invite.subscribe()
+    }
+
+    /// Whether this room is marked as unread.
+    #[must_use]
+    pub fn is_marked_unread(&self) -> bool {
+        self.inner.is_marked_unread.get()
+    }
+
+    /// Subscribe to whether this room is marked as unread.
+    pub fn subscribe_is_marked_unread(&self) -> Subscriber<bool> {
+        self.inner.is_marked_unread.subscribe()
+    }
+
+    /// Subscribe to whether this room has unread notifications.
+    pub fn subscribe_has_notifications(&self) -> Subscriber<bool> {
+        self.inner.has_notifications.subscribe()
+    }
+
+    /// Whether the room info is initialized.
+    #[must_use]
+    pub fn is_room_info_initialized(&self) -> bool {
+        self.inner.is_room_info_initialized.get()
+    }
+
+    /// Subscribe to whether the room info is initialized.
+    pub fn subscribe_is_room_info_initialized(&self) -> Subscriber<bool> {
+        self.inner.is_room_info_initialized.subscribe()
+    }
+
+    /// Whether we already attempted an auto-join.
+    #[must_use]
+    pub fn attempted_auto_join(&self) -> bool {
+        self.inner.attempted_auto_join.load(Ordering::Relaxed)
+    }
+
+    /// Whether guests are allowed.
+    #[must_use]
+    pub fn guests_allowed(&self) -> bool {
+        self.inner.guests_allowed.get()
+    }
+
+    /// Subscribe to whether guests are allowed.
+    pub fn subscribe_guests_allowed(&self) -> Subscriber<bool> {
+        self.inner.guests_allowed.subscribe()
+    }
+
+    /// The user who invited us, while this room is an invitation.
+    #[must_use]
+    pub fn inviter_user_id(&self) -> Option<OwnedUserId> {
+        self.inner.inviter_user_id.get()
+    }
+
+    /// Subscribe to the user who invited us.
+    pub fn subscribe_inviter_user_id(&self) -> Subscriber<Option<OwnedUserId>> {
+        self.inner.inviter_user_id.subscribe()
+    }
+
+    /// The event IDs pinned in this room, oldest first.
+    ///
+    /// Empty in the server notices room, whose pinned events are the
+    /// active notices.
+    #[must_use]
+    pub fn pinned_event_ids(&self) -> Vec<OwnedEventId> {
+        self.inner.pinned_event_ids.get()
+    }
+
+    /// Subscribe to the event IDs pinned in this room.
+    pub fn subscribe_pinned_event_ids(&self) -> Subscriber<Vec<OwnedEventId>> {
+        self.inner.pinned_event_ids.subscribe()
+    }
+
+    /// Whether the event with the given ID is pinned in this room.
+    #[must_use]
+    pub fn is_pinned(&self, event_id: &EventId) -> bool {
+        self.inner
+            .pinned_event_ids
+            .read()
+            .iter()
+            .any(|pinned| pinned == event_id)
+    }
+
+    /// The active server notice of this room, if any.
+    #[must_use]
+    pub fn active_server_notice(&self) -> Option<ServerNotice> {
+        self.inner.active_server_notice.get()
+    }
+
+    /// Subscribe to the active server notice of this room.
+    pub fn subscribe_active_server_notice(&self) -> Subscriber<Option<ServerNotice>> {
+        self.inner.active_server_notice.subscribe()
+    }
+
+    /// Take the read state an embedder computed from a timeline of its own.
+    ///
+    /// The application's timeline model walks the room's events the way
+    /// the specification asks (MSC2654) and knows whether anything is
+    /// unread; until that model is the core's, it reports here, and the
+    /// observable the metainfo persists is the one it set. From the first
+    /// report on, the core's notification-count approximation stands
+    /// aside.
+    pub fn note_is_read(&self, is_read: bool) {
+        self.inner
+            .read_state_reported
+            .store(true, Ordering::Relaxed);
+        self.inner.is_read.set_if_not_eq(is_read);
+        self.inner.update_highlight();
+    }
+
+    /// Take a latest-activity timestamp an embedder found in a timeline of
+    /// its own.
+    ///
+    /// Only ever moves the activity forward.
+    pub fn note_latest_activity(&self, timestamp: u64) {
+        let current = self.inner.latest_activity.get();
+        self.inner
+            .latest_activity
+            .set_if_not_eq(current.max(timestamp));
     }
 
     /// Whether this room was forgotten.
@@ -1411,6 +1650,7 @@ impl RoomInner {
         }
 
         self.update_is_invite().await;
+        self.update_inviter().await;
 
         let state = self.matrix_room.state();
 
@@ -1450,9 +1690,11 @@ impl RoomInner {
                     }
                 }
 
-                // The invites-from-ignored-users check attaches here with
-                // the ignored-users chunk.
-                RoomCategory::Invited
+                if self.is_inviter_ignored() {
+                    RoomCategory::Ignored
+                } else {
+                    RoomCategory::Invited
+                }
             }
             RoomState::Knocked => RoomCategory::Knocked,
             RoomState::Left | RoomState::Banned => RoomCategory::Left,
@@ -1629,7 +1871,7 @@ impl RoomInner {
             .tombstone_content()
             .and_then(|room_tombstone| room_tombstone.replacement_room)
         {
-            let _ = self.successor_id.set(successor_id);
+            self.successor_id.set_if_not_eq(Some(successor_id));
         }
 
         // Try to get the successor.
@@ -1666,7 +1908,7 @@ impl RoomInner {
         if let Some(successor) = self
             .successor_id
             .get()
-            .and_then(|successor_id| room_list.get(successor_id))
+            .and_then(|successor_id| room_list.get(&successor_id))
         {
             // The Matrix spec says that we should use the "predecessor" field of the
             // m.room.create event of the successor, not the "successor" field of the
@@ -2034,6 +2276,8 @@ impl RoomInner {
         self.update_avatar();
         self.update_topic();
         self.update_category().await;
+        self.update_active_server_notice().await;
+        self.update_pinned_events();
         self.update_is_direct().await;
         self.update_is_marked_unread().await;
         Self::update_tombstone(self);
@@ -2052,11 +2296,12 @@ impl RoomInner {
         // means unread. The application reaches the same states through
         // its preloaded timelines; the read-state watcher takes over here
         // the moment the room is opened.
-        if self
-            .matrix_room
-            .unread_notification_counts()
-            .notification_count
-            > 0
+        if !self.read_state_reported.load(Ordering::Relaxed)
+            && self
+                .matrix_room
+                .unread_notification_counts()
+                .notification_count
+                > 0
         {
             self.is_read.set_if_not_eq(false);
         }
@@ -2065,8 +2310,226 @@ impl RoomInner {
         self.join_rule.update(room_info.join_rule());
         self.permissions.update_is_joined();
         self.update_history_visibility();
-        // The server notice, pinned events and guest access updates attach
-        // here with their groups.
+        self.update_guests_allowed();
+    }
+
+    /// Update whether guests are allowed.
+    fn update_guests_allowed(&self) {
+        let guests_allowed = self.matrix_room.guest_access() == GuestAccess::CanJoin;
+        self.guests_allowed.set_if_not_eq(guests_allowed);
+    }
+
+    /// Update the user who invited us to this room.
+    ///
+    /// Only a current invite has one.
+    async fn update_inviter(&self) {
+        if self.matrix_room.state() != RoomState::Invited {
+            self.inviter_user_id.set_if_not_eq(None);
+            return;
+        }
+
+        let matrix_room = self.matrix_room.clone();
+        let handle = spawn_tokio!(async move { matrix_room.invite_details().await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(invite) => {
+                self.inviter_user_id
+                    .set_if_not_eq(invite.inviter.map(|member| member.user_id().to_owned()));
+            }
+            Err(invite_error) => {
+                error!("Could not get invite: {invite_error}");
+            }
+        }
+    }
+
+    /// Whether the user who invited us is one this account ignores.
+    ///
+    /// The specification says invites from ignored users are to be ignored.
+    fn is_inviter_ignored(&self) -> bool {
+        let Some(inviter) = self.inviter_user_id.get() else {
+            return false;
+        };
+
+        self.session
+            .upgrade()
+            .is_some_and(|session| session.ignored_users().contains(&inviter))
+    }
+
+    /// Re-read the category when the ignored users change, because an
+    /// invite from somebody just ignored stops being one.
+    fn watch_ignored_users(self: &Arc<Self>) {
+        let Some(session) = self.session.upgrade() else {
+            return;
+        };
+        let mut subscriber = session.ignored_users().subscribe();
+        let weak = Arc::downgrade(self);
+
+        let handle = RUNTIME
+            .spawn(async move {
+                while subscriber.next().await.is_some() {
+                    let Some(inner) = weak.upgrade() else {
+                        break;
+                    };
+
+                    if inner.matrix_room.state() == RoomState::Invited {
+                        inner.update_category().await;
+                    }
+                }
+            })
+            .abort_handle();
+
+        *self
+            .ignored_users_handle
+            .lock()
+            .expect("mutex is not poisoned") = Some(handle);
+    }
+
+    /// Update the active server notice of this room.
+    ///
+    /// The spec represents the notices that are still active as the pinned
+    /// events of the server notices room, and asks that they be shown
+    /// through a UI of their own rather than through the usual pinned
+    /// events interface. The most recent one is the notice.
+    async fn update_active_server_notice(&self) {
+        let pinned_ids = if self.category.get() == RoomCategory::ServerNotice {
+            self.matrix_room.pinned_event_ids().unwrap_or_default()
+        } else {
+            // Outside the server notices room, a pinned `m.server_notice`
+            // means nothing: the spec says such an event must be ignored.
+            Vec::new()
+        };
+
+        {
+            let mut computed_from = self
+                .server_notice_pinned_ids
+                .lock()
+                .expect("mutex is not poisoned");
+            if *computed_from == pinned_ids {
+                return;
+            }
+            computed_from.clone_from(&pinned_ids);
+        }
+
+        let matrix_room = self.matrix_room.clone();
+        let handle = spawn_tokio!(async move {
+            // The server pins the notice it wants shown; when several are
+            // pinned, the last one is the most recent.
+            for event_id in pinned_ids.iter().rev() {
+                let event = match matrix_room.load_or_fetch_event(event_id, None).await {
+                    Ok(event) => event,
+                    Err(load_error) => {
+                        warn!("Could not load pinned event {event_id}: {load_error}");
+                        continue;
+                    }
+                };
+
+                let Ok(AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::RoomMessage(
+                    SyncMessageLikeEvent::Original(event),
+                ))) = event.raw().deserialize()
+                else {
+                    continue;
+                };
+
+                if let MessageType::ServerNotice(content) = event.content.msgtype {
+                    return Some(ServerNotice {
+                        body: content.body,
+                        admin_contact: content.admin_contact,
+                    });
+                }
+            }
+
+            None
+        });
+
+        let notice = handle.await.expect("task was not aborted");
+        self.active_server_notice.set_if_not_eq(notice);
+    }
+
+    /// Update the events pinned in this room.
+    ///
+    /// The server notices room is excluded on purpose: there the pinned
+    /// events are the notices that are still active, which the spec asks
+    /// to be shown "through a special UI, and not the normal pinned
+    /// events interface". `update_active_server_notice` is that UI.
+    fn update_pinned_events(&self) {
+        let pinned_event_ids = if self.category.get() == RoomCategory::ServerNotice {
+            Vec::new()
+        } else {
+            self.matrix_room.pinned_event_ids().unwrap_or_default()
+        };
+
+        self.pinned_event_ids.set_if_not_eq(pinned_event_ids);
+    }
+
+    /// Watch errors in the send queue to try to handle them.
+    ///
+    /// A recoverable error stops the queue; it is started again after the
+    /// delay the homeserver asked for, or a default, unless the session is
+    /// offline — then coming back online restarts it.
+    fn watch_send_queue(self: &Arc<Self>) {
+        let matrix_room = self.matrix_room.clone();
+        let weak = Arc::downgrade(self);
+
+        let handle = RUNTIME
+            .spawn(async move {
+                let send_queue = matrix_room.send_queue();
+                let mut subscriber = match send_queue.subscribe().await {
+                    Ok((_, subscriber)) => BroadcastStream::new(subscriber),
+                    Err(subscribe_error) => {
+                        warn!("Failed to listen to room send queue: {subscribe_error}");
+                        return;
+                    }
+                };
+
+                while let Some(update) = subscriber.next().await {
+                    let Ok(RoomSendQueueUpdate::SendError {
+                        error,
+                        is_recoverable: true,
+                        ..
+                    }) = update
+                    else {
+                        continue;
+                    };
+                    let Some(inner) = weak.upgrade() else {
+                        break;
+                    };
+                    let Some(session) = inner.session.upgrade() else {
+                        break;
+                    };
+
+                    if session.is_offline() {
+                        // The queue will be restarted when the session is
+                        // back online.
+                        continue;
+                    }
+
+                    let duration = match error.client_api_error_kind() {
+                        Some(ErrorKind::LimitExceeded(LimitExceededErrorData {
+                            retry_after: Some(retry_after),
+                            ..
+                        })) => match retry_after {
+                            RetryAfter::Delay(duration) => Some(*duration),
+                            RetryAfter::DateTime(time) => {
+                                time.duration_since(SystemTime::now()).ok()
+                            }
+                        },
+                        _ => None,
+                    };
+                    let retry_after = duration.unwrap_or(Duration::from_secs(DEFAULT_RETRY_AFTER));
+
+                    let matrix_room = inner.matrix_room.clone();
+                    RUNTIME.spawn(async move {
+                        sleep(retry_after).await;
+                        matrix_room.send_queue().set_enabled(true);
+                    });
+                }
+            })
+            .abort_handle();
+
+        *self
+            .send_queue_handle
+            .lock()
+            .expect("mutex is not poisoned") = Some(handle);
     }
 
     /// Update the visibility of the history.

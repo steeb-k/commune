@@ -186,3 +186,33 @@ impl PartialEq<TargetRoomCategory> for RoomCategory {
         other.eq(self)
     }
 }
+
+impl From<commune_core::session::RoomCategory> for RoomCategory {
+    fn from(category: commune_core::session::RoomCategory) -> Self {
+        use commune_core::session::RoomCategory as Core;
+
+        match category {
+            Core::Knocked => Self::Knocked,
+            Core::Invited => Self::Invited,
+            Core::ServerNotice => Self::ServerNotice,
+            Core::Favorite => Self::Favorite,
+            Core::Normal => Self::Normal,
+            Core::LowPriority => Self::LowPriority,
+            Core::Left => Self::Left,
+            Core::Outdated => Self::Outdated,
+            Core::Space => Self::Space,
+            Core::Ignored => Self::Ignored,
+        }
+    }
+}
+
+impl From<TargetRoomCategory> for commune_core::session::TargetRoomCategory {
+    fn from(category: TargetRoomCategory) -> Self {
+        match category {
+            TargetRoomCategory::Favorite => Self::Favorite,
+            TargetRoomCategory::Normal => Self::Normal,
+            TargetRoomCategory::LowPriority => Self::LowPriority,
+            TargetRoomCategory::Left => Self::Left,
+        }
+    }
+}
