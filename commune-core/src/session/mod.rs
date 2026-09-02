@@ -34,8 +34,10 @@ mod notifications;
 mod remote;
 mod room;
 mod room_list;
+mod security;
 mod sidebar;
 mod user_sessions;
+mod verification;
 
 use std::{
     sync::{
@@ -87,8 +89,16 @@ pub use self::{
         TimelineFocusKind,
     },
     room_list::{DirectChatError, JoinError, RoomList, RoomMetainfo},
+    security::{
+        BootstrapError, CryptoIdentityState, RecoveryError, RecoveryOutcome, RecoveryState,
+        RoomKeysError, SessionSecurity, SessionVerificationState,
+    },
     sidebar::SidebarSectionName,
     user_sessions::{Device, DeviceError, UserSessions},
+    verification::{
+        DEFAULT_SUPPORTED_METHODS, IdentityVerification, VerificationError, VerificationKey,
+        VerificationList, VerificationState,
+    },
 };
 use crate::{
     RUNTIME,
@@ -224,6 +234,10 @@ struct SessionInner {
     image_packs: std::sync::OnceLock<ImagePacks>,
     /// The account's other sessions.
     user_sessions: std::sync::OnceLock<UserSessions>,
+    /// The security of this session, built on first use.
+    security: std::sync::OnceLock<SessionSecurity>,
+    /// The ongoing identity verifications, built on first use.
+    verification_list: std::sync::OnceLock<VerificationList>,
     /// The task feeding the room list from the sync loop.
     room_updates_handle: Mutex<Option<AbortHandle>>,
 }
@@ -295,6 +309,8 @@ impl Session {
             ignored_users: std::sync::OnceLock::new(),
             image_packs: std::sync::OnceLock::new(),
             user_sessions: std::sync::OnceLock::new(),
+            security: std::sync::OnceLock::new(),
+            verification_list: std::sync::OnceLock::new(),
             room_updates_handle: Mutex::new(None),
         });
 
@@ -334,8 +350,10 @@ impl Session {
         self.consume_room_updates();
         self.ignored_users().load().await;
 
-        // The verification, calls and security subsystems attach here once
-        // their chunks are extracted.
+        // Verification and security attach here, as the application's
+        // session does when it is ready; calls follow with their group.
+        let _ = self.verification_list();
+        let _ = self.security();
 
         let client = self.client();
         spawn_tokio!(async move {
@@ -538,6 +556,33 @@ impl Session {
             let packs = ImagePacks::new(self.downgrade());
             image_packs::spawn_load(&packs);
             packs
+        })
+    }
+
+    /// The security of this session: its crypto identity, its verification
+    /// and account recovery.
+    ///
+    /// Built on first use, and from `prepare()`; the SDK's streams keep it
+    /// current from then on.
+    #[must_use]
+    pub fn security(&self) -> &SessionSecurity {
+        self.inner.security.get_or_init(|| {
+            let security = SessionSecurity::new(self.downgrade());
+            security::spawn_load(&security);
+            security
+        })
+    }
+
+    /// The ongoing identity verifications, following incoming requests.
+    ///
+    /// Built on first use, and from `prepare()`, as the application
+    /// initializes its list when the session is ready.
+    #[must_use]
+    pub fn verification_list(&self) -> &VerificationList {
+        self.inner.verification_list.get_or_init(|| {
+            let list = VerificationList::new(self.downgrade());
+            verification::spawn_init(&list);
+            list
         })
     }
 

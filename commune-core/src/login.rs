@@ -309,6 +309,18 @@ impl AuthStage {
         })
     }
 
+    /// The authentication data for the password stage, for the given user
+    /// — the application's password page of the `AuthDialog`.
+    #[must_use]
+    pub fn password_data(&self, user_id: &ruma::UserId, password: &str) -> AuthData {
+        use ruma::api::client::uiaa::{Password, UserIdentifier};
+
+        AuthData::Password(assign!(
+            Password::new(UserIdentifier::Matrix(user_id.to_owned().into()), password.to_owned()),
+            { session: self.session.clone() }
+        ))
+    }
+
     /// The authentication data for this stage, when it needs nothing from a
     /// person.
     ///
