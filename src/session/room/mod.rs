@@ -29,7 +29,6 @@ use ruma::{
     room_version_rules::RoomVersionRules,
 };
 use tokio::task::AbortHandle;
-use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
 mod aliases;
@@ -334,6 +333,7 @@ mod imp {
 
             self.init_live_timeline();
             self.aliases.init(&obj);
+            #[cfg(not(target_os = "android"))]
             self.watch_members();
             self.join_rule.init(&obj);
 
@@ -393,8 +393,6 @@ mod imp {
 
             let obj = self.obj();
             let core = self.core();
-
-            let ambiguous_members = BroadcastStream::new(core.subscribe_ambiguous_members());
 
             let handle = ObjectWatcher::new(&*obj)
                 .follow(core.subscribe_name(), |obj: &R, name| {
@@ -490,13 +488,6 @@ mod imp {
                 })
                 .follow(core.subscribe_pinned_event_ids(), |obj: &R, event_ids| {
                     obj.imp().set_pinned_event_ids(&event_ids);
-                })
-                .follow(ambiguous_members, |obj: &R, batch| {
-                    // A lagging receiver only loses batches; the names are
-                    // re-read from the store either way.
-                    if let Ok(user_ids) = batch {
-                        obj.imp().handle_ambiguous_members(user_ids);
-                    }
                 })
                 .spawn();
             self.core_watch_handle.replace(Some(handle));
@@ -1007,7 +998,14 @@ mod imp {
             self.obj().notify_successor();
         }
 
-        /// Watch changes in the members list.
+        /// Watch the room's member events for the one thing the
+        /// application's calls still need from them.
+        ///
+        /// The core's room handles member events for the member list and
+        /// the direct member; the desktop's calls are the application's
+        /// own until their module, and a call has to hear that the other
+        /// party left. Goes with module 11.
+        #[cfg(not(target_os = "android"))]
         fn watch_members(&self) {
             let matrix_room = self.matrix_room();
 
@@ -1015,11 +1013,23 @@ mod imp {
             let handle = matrix_room.add_event_handler(move |event: SyncRoomMemberEvent| {
                 let obj_weak = obj_weak.clone();
                 async move {
+                    // "If the client sees the user it is in a call with leave
+                    // the room, the client should treat this as a hangup
+                    // event for any calls that are in progress."
+                    if !matches!(
+                        event.membership(),
+                        MembershipState::Leave | MembershipState::Ban
+                    ) {
+                        return;
+                    }
+
                     let ctx = glib::MainContext::default();
                     ctx.spawn(async move {
                         spawn!(async move {
-                            if let Some(obj) = obj_weak.upgrade() {
-                                obj.imp().handle_member_event(&event);
+                            if let Some(obj) = obj_weak.upgrade()
+                                && let Some(session) = obj.session()
+                            {
+                                session.calls().handle_member_left(&obj, event.state_key());
                             }
                         });
                     });
@@ -1027,47 +1037,9 @@ mod imp {
             });
 
             let drop_guard = matrix_room.client().event_handler_drop_guard(handle);
-            self.members_drop_guard.set(drop_guard).unwrap();
-        }
-
-        /// Handle a member event received via sync
-        fn handle_member_event(&self, event: &SyncRoomMemberEvent) {
-            let user_id = event.state_key();
-
-            // "If the client sees the user it is in a call with leave the
-            // room, the client should treat this as a hangup event for any
-            // calls that are in progress." They cannot send one from outside
-            // the room, so nothing else is coming.
-            #[cfg(not(target_os = "android"))]
-            if matches!(
-                event.membership(),
-                MembershipState::Leave | MembershipState::Ban
-            ) && let Some(session) = self.obj().session()
-            {
-                session.calls().handle_member_left(&self.obj(), user_id);
-            }
-
-            if let Some(members) = self.members.upgrade() {
-                members.update_member(user_id.clone());
-            } else if user_id == self.own_member().user_id() {
-                self.own_member().update();
-            } else if let Some(member) = self
-                .direct_member
-                .borrow()
-                .as_ref()
-                .filter(|member| member.user_id() == user_id)
-            {
-                member.update();
-            }
-
-            // It might change the direct member if the number of members changed.
-            spawn!(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                async move {
-                    imp.update_direct_member().await;
-                }
-            ));
+            self.members_drop_guard
+                .set(drop_guard)
+                .expect("members drop guard is uninitialized");
         }
 
         /// Set the number of joined members in the room, according to the
@@ -1422,21 +1394,6 @@ mod imp {
         fn update_with_room_info(&self, room_info: &RoomInfo) {
             self.aliases.update();
             self.join_rule.update(room_info.join_rule());
-        }
-
-        /// Handle changes in the ambiguity of members display names.
-        pub(super) fn handle_ambiguous_members(&self, user_ids: Vec<OwnedUserId>) {
-            if let Some(members) = self.members.upgrade() {
-                for user_id in user_ids {
-                    members.update_member(user_id);
-                }
-            } else {
-                let own_member = self.own_member();
-
-                if user_ids.contains(own_member.user_id()) {
-                    own_member.update();
-                }
-            }
         }
 
         /// Change the category of this room.

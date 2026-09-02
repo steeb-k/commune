@@ -1584,6 +1584,8 @@ embedder's, as the desktop's are the desktop's.
 * **The rollback and the remote mute have no listener call.**
 * **A member leaving mid-call is not noticed.** `Calls::handle_member_left`
   is there; nothing in the core watches memberships to call it yet.
+  _Closed by Phase 4 module 3: the core room's member-event handler
+  calls it._
 
 **The clippy gate is met.** The three lints left after this group's
 rewrite were the FFI's own shape — a record of four booleans, a closure
@@ -1965,6 +1967,67 @@ invite with its inviter, an invite from an ignored user, a tombstoned
 room and its successor, the server notice banner, the pinned count, the
 guest access and history visibility rows, the encryption badge.
 
+### Module 3 — the members are the core's list
+
+**Done 1 September, the same day as modules 1 and 2.** `member_list.rs`
+is rewritten as a `gio::ListModel` over the core's `MemberList`, the
+`IndexMap` again the wrapper cache and `apply_diff` again the way diffs
+land — batched this time, since the core's list hands out
+`Vec<VectorDiff>`. A `Set` diff is a member that changed, and the wrapper
+for it is brought up to date before the map is touched:
+`Member::update_from_snapshot` sets the name, its ambiguity, the avatar,
+the power level, the role and the membership from the core's value. The
+room's own member and its direct member stand in for their keys, as the
+old list seeded them. The loading state is a mirror. `reload()` forwards.
+The two-phase load, the store-then-server walk, `update_from_room_members`
+and `update_power_levels` are gone from the application; the walk that
+restores members' latest activity from the live timeline stays, because
+the timeline is still the application's.
+
+**`get_or_create` is the interesting method.** The application creates
+members the list has not loaded — the sender of an event, a typing user,
+an inviter — and hands them out at once, synchronously. A view cannot
+wait for a diff. So the core's list gained `ensure(user_id) -> usize`:
+it appends a placeholder, starts a read from the store, and answers with
+the index the member is at from now on — the list only ever appends, so
+the index is a promise. The application's `get_or_create` puts its
+wrapper at that index right away; when the `PushBack` arrives, `apply_diff`
+finds the key already where the diff puts it and does nothing — the
+one-line fast path added to `insert_at` for exactly this.
+
+**The core gained the member-event handler it never had.** The
+application's `Room` watched `SyncRoomMemberEvent` and did three things
+with each: refreshed the member named, refreshed the direct member, and
+told the calls that a party had left. The core did none of them — a
+member's name or power changing between room-info updates went
+unnoticed on Kotlin. `RoomInner::watch_members` does all three now, and
+the third is the caller `Calls::handle_member_left` had been waiting for
+since commit 13: that gap is closed. The ambiguity seam of module 1 is
+closed too: `note_ambiguity_changes` refreshes the members in the core's
+list itself, and the broadcast, its capacity constant and the
+application's subscriber are deleted. The direct member joins the core's
+list the moment it is known, as the application's did.
+
+**What stays, and why.** The application's `Room` keeps a member-event
+watch of its own, cut down to one purpose: the desktop's calls are still
+the application's `Calls` until module 11, and the core's handler tells
+the core's `Calls`, which has no call on the desktop. The role of a
+member the list does not carry — an inviter — is still computed by the
+application's `Permissions` from the power level, until module 4. And
+`latest_activity` stays on the application's `Member`, set by the
+application's timeline, until module 8.
+
+**Three lints from the move, all real.** `Calls::handle_member_left` and
+`Call::handle_remote_left` were reported dead the moment the room's
+handler went, which is how the calls seam above was found rather than
+assumed. `MemberRole`, `Membership` and `LoadingState` got their `From`
+impls from the core's enums.
+
+**Eyeball owed:** the member list of a room in every membership kind,
+a member whose name changes while the list is open, two members sharing
+a name, the inviter on an invite, and a call hung up by the other party
+leaving.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -2043,13 +2106,15 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `send_call_negotiate`, `on_negotiate` | **Renegotiation had no rules.** The application ignores one for a call not established, an answer to no offer of ours, a stale one; the caller's crossed offer stands and the callee's rolls back; an offer is refused while one is pending, with a thirty-second timeout. **Closed 1 Sep**: `Call::handle_negotiate`, `send_negotiate`, `NEGOTIATE_LIFETIME`. The rollback has no listener call. | Done, FFI call owed |
 | 1 Sep 2026 | `facade.rs`, `turn_servers`, `first_stream_id`, outcomes | **TURN asked for on every call and unsorted; the stream ID read from one of the two SDP forms; a hundred outcomes kept, not 256.** **Closed 1 Sep**: `session/calls/turn.rs` with its cache and its six tests, `first_stream_id` with its seven, `MAX_REMEMBERED_OUTCOMES`. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_call_listener` (connected) | **The FFI has no way to say a call connected.** The application's pipeline reports media flowing; on Kotlin a call never reaches `Connected`, and the mute the application re-announces on connecting never goes. `Call::note_connected` waits for a binding. | FFI method owed |
-| 1 Sep 2026 | `session/room_list.rs`, `handle_room_updates` | **The core drops every `AmbiguityChange` a sync carries.** The application hands them to the room, which refreshes the members named so that two "Alice"s are told apart the moment the second joins; the core's loop says they "wait for the member model" and discards them, so the Kotlin member list never disambiguates. Found reading the two room lists side by side for Phase 4. **Forwarded 1 Sep** (module 1): `Room::subscribe_ambiguous_members`, fed from the `left` and `joined` loops; the application's room follows it into its own member refresh. The core's member list consumes it in module 3. | Forwarded; module 3 consumes |
+| 1 Sep 2026 | `session/room_list.rs`, `handle_room_updates` | **The core drops every `AmbiguityChange` a sync carries.** The application hands them to the room, which refreshes the members named so that two "Alice"s are told apart the moment the second joins; the core's loop says they "wait for the member model" and discards them, so the Kotlin member list never disambiguates. Found reading the two room lists side by side for Phase 4. **Forwarded 1 Sep** (module 1) through a broadcast the application's room followed; **consumed 1 Sep** (module 3): `note_ambiguity_changes` refreshes the members in the core's list, and the broadcast is deleted. | Done |
 | 1 Sep 2026 | `session/mod.rs`, `log_out` | **`Result<(), String>` with an English sentence in it** — the leaf-1 rule broken inside the core, where every other module of Phase 3 got an error enum. `LogoutError` carrying the SDK error; the application keeps its `gettext`. **Closed 1 Sep**, module 1. | Done |
 | 1 Sep 2026 | `session/mod.rs`, `probe_homeserver` | **The core dials the homeserver's port where the application asks `gio::NetworkMonitor::can_reach`.** The monitor knows about captive portals, metered links and proxies the dial does not. Once the core owns the sync loop the desktop's answer has to reach it: `network_changed()` triggers the core's probe today; a `report_homeserver_reachable(bool)` for an embedder with a better instrument is the likely shape. **Closed 1 Sep**, module 1: that method, and the desktop's `NetworkMonitor` reports through it; the core dials once at `prepare()` and never again where nothing calls `network_changed()`. | Done |
 | 1 Sep 2026 | `src/session/room/mod.rs`, `forget` | **The application forgot a room past whoever owned the list.** `Room::forget()` called the SDK directly and emitted `room-forgotten`, which its own `RoomList` heard; once the list is the core's, the row would have stayed in the sidebar forever. Found writing module 1. **Closed 1 Sep**: `forget()` goes through the core room, whose `forgotten` observable the core's list removes on. | Done |
 | 1 Sep 2026 | `session/room/mod.rs`, `is_read` after module 1 | **Module 1 made the core persist an approximation.** The metainfo the sidebar restores from became the core's, whose `is_read` was "notifications pending means unread" until its own timeline existed — which the desktop never builds. For the hours between module 1 and module 2, the bold rooms after a restart were the guess, not the application's MSC2654 walk. **Closed 1 Sep**, module 2: the application's timeline reports through `Room::note_is_read` and `note_latest_activity`, and the approximation stands aside from the first report. Module 8 removes the report. | Done; module 8 retires the seam |
 | 1 Sep 2026 | `session/room/mod.rs`, `update_category` | **The core never read an invite from an ignored user as `Ignored`.** The application does, and re-reads when the inviter becomes ignored; the core left a comment where the check goes, so the Kotlin sidebar showed the invites the specification says to ignore. **Closed 1 Sep**, module 2: `inviter_user_id`, `is_inviter_ignored`, and a watcher on the ignored-user list. | Done |
 | 1 Sep 2026 | `session/room/mod.rs`, guest access, pinned events, server notice, inviter, send queue | **Five things the application's room computed and the core's did not**: `guests_allowed`, the pinned event IDs (excluded in the notices room), the active server notice with its admin contact, the inviter, and the send-queue watcher that re-enables sending after a rate limit. **Moved in 1 Sep**, module 2, as observables and a task. None of them is on the FFI: Kotlin shows no server notice banner, no pinned count, no inviter, and a rate-limited send queue there stays stopped until the session goes offline and back. | Core done; FFI owed |
+| 1 Sep 2026 | `session/room/mod.rs`, member events | **The core never watched `m.room.member` events.** The application refreshes the member named, the direct member, and hangs up a call whose other party left; the core did none of it, so on Kotlin a member's name or power level changed only when the room info happened to update, and a party leaving mid-call left the call ringing. **Closed 1 Sep**, module 3: `RoomInner::watch_members`, the three things the application did with each event. | Done |
+| 1 Sep 2026 | `session/room/member.rs`, `get_or_create` | **The core's member list could not hand out a member it had not loaded.** The application creates one for a sender, a typing user or an inviter and shows it while the store answers. **Closed 1 Sep**, module 3: `MemberList::ensure` appends a placeholder, reads the store, and promises the index. | Done |
 
 ## Gates
 

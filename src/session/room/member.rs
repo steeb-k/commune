@@ -1,3 +1,4 @@
+use commune_core::session::Member as CoreMember;
 use gtk::{
     glib,
     glib::{clone, closure_local},
@@ -56,9 +57,24 @@ impl From<MembershipState> for Membership {
     }
 }
 
+impl From<commune_core::session::Membership> for Membership {
+    fn from(membership: commune_core::session::Membership) -> Self {
+        use commune_core::session::Membership as Core;
+
+        match membership {
+            Core::Leave => Self::Leave,
+            Core::Join => Self::Join,
+            Core::Invite => Self::Invite,
+            Core::Ban => Self::Ban,
+            Core::Knock => Self::Knock,
+            Core::Unsupported => Self::Unsupported,
+        }
+    }
+}
+
 mod imp {
     use std::{
-        cell::{Cell, OnceCell, RefCell},
+        cell::{Cell, OnceCell},
         marker::PhantomData,
         sync::LazyLock,
     };
@@ -92,7 +108,6 @@ mod imp {
         /// The timestamp of the latest activity of this member.
         #[property(get, set = Self::set_latest_activity, explicit_notify)]
         latest_activity: Cell<u64>,
-        power_level_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
 
     impl Default for Member {
@@ -104,7 +119,6 @@ mod imp {
                 role: Default::default(),
                 membership: Default::default(),
                 latest_activity: Default::default(),
-                power_level_handlers: Default::default(),
             }
         }
     }
@@ -123,14 +137,6 @@ mod imp {
                 LazyLock::new(|| vec![Signal::builder("power-level-changed").build()]);
             SIGNALS.as_ref()
         }
-
-        fn dispose(&self) {
-            if let Some(room) = self.room.get() {
-                for handler in self.power_level_handlers.take() {
-                    room.permissions().disconnect(handler);
-                }
-            }
-        }
     }
 
     impl PillSourceImpl for Member {
@@ -142,26 +148,7 @@ mod imp {
     impl Member {
         /// Set the room of the member.
         fn set_room(&self, room: Room) {
-            let room = self.room.get_or_init(|| room);
-
-            let default_pl_handler = room
-                .permissions()
-                .connect_default_power_level_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_role();
-                    }
-                ));
-            let mute_pl_handler = room.permissions().connect_mute_power_level_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |_| {
-                    imp.update_role();
-                }
-            ));
-            self.power_level_handlers
-                .replace(vec![default_pl_handler, mute_pl_handler]);
+            self.room.get_or_init(|| room);
         }
 
         /// Set the power level of the member.
@@ -189,7 +176,10 @@ mod imp {
             }
         }
 
-        /// Update the role of the member.
+        /// Update the role of the member from the application's permissions.
+        ///
+        /// For a member the core's list does not carry; a listed member's
+        /// role comes with its snapshot.
         fn update_role(&self) {
             let role = self
                 .room
@@ -198,6 +188,11 @@ mod imp {
                 .permissions()
                 .role(self.power_level.get());
 
+            self.set_role(role);
+        }
+
+        /// Set the role of the member.
+        pub(super) fn set_role(&self, role: MemberRole) {
             if self.role.get() == role {
                 return;
             }
@@ -253,6 +248,24 @@ impl Member {
     /// Set the power level of the member.
     pub(super) fn set_power_level(&self, power_level: UserPowerLevel) {
         self.imp().set_power_level(power_level);
+    }
+
+    /// Update this member from the core's snapshot of it.
+    pub(crate) fn update_from_snapshot(&self, member: &CoreMember) {
+        if member.user_id != *self.user_id() {
+            error!("Tried Member update from a snapshot with the wrong user ID.");
+            return;
+        }
+
+        self.set_name(member.display_name.clone());
+        self.set_is_name_ambiguous(member.is_name_ambiguous);
+        self.avatar_data()
+            .image()
+            .expect("image is set")
+            .set_uri_and_info(member.avatar_url.clone(), None);
+        self.set_power_level(member.power_level);
+        self.imp().set_role(member.role.into());
+        self.imp().set_membership(member.membership.into());
     }
 
     /// Update this member with the data from the given SDK's member.

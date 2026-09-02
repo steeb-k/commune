@@ -111,6 +111,9 @@ fn insert_at<K, W>(
     let (key, wrapper) = value;
 
     let wrapper = match map.get_index_of(&key) {
+        // Already where the diff puts it: an embedder that adds a wrapper
+        // ahead of the diff, at the index the core promised.
+        Some(old_index) if old_index == index => return,
         Some(old_index) => {
             let (_, existing) = map
                 .shift_remove_index(old_index)
