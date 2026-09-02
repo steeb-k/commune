@@ -287,6 +287,11 @@ same five steps — read the GTK module, correct the core to it, re-verify the
 Kotlin application, rewrite the GTK module as a view-model, run its eyeball
 section.
 
+_Corrected 1 September, after Phase 3 closed and `src/session/` was read
+against the core: the session itself goes first, not the room list, because
+nothing below it can be a view until the application's `Session` holds the
+core's. The order and the reasons are in "Phase 4 in detail" below._
+
 **Phase 5 — strings**, the 156 `gettext` sites in the model layer, moved per
 module as it migrates and never in one pass, updating `po/POTFILES.in` each
 time so translations survive.
@@ -1590,6 +1595,188 @@ since the crate existed.
 The FFI surface is unchanged for the thirteenth time and the bindings
 came back byte-identical.
 
+## Phase 4 in detail — the spine
+
+Read on 1 September 2026, after Phase 3's last commit: `src/session/mod.rs`
+in full, `src/session/room_list/` in full, `src/session/room/mod.rs`'s
+constructor and property list, `src/session/sidebar_data/` in part, and the
+core's `session/mod.rs` and `session/room_list.rs` in full, side by side.
+The plan below is what that read says, and it is written the way the
+Phase 3 plan was — so that the sessions that follow it are mechanical and
+each one a revertible commit — with the one difference that Phase 4's
+commits touch `src/`, so every one of them takes the three HTML ledgers
+round the `doc-freshness` trip and every one of them has an eyeball section
+that only a person at the desktop can run. **The sessions can compile it,
+lint it and test the core; the eyeball is the user's.** A module is not done
+until its section has been run, and this document says so per module.
+
+### The finding that changes the order
+
+**The application's `Session` and the core's are twins, and each owns a
+`Client` and a sync loop.** `SessionInner` in `commune-core/src/session/mod.rs`
+is `imp::Session` headless, line for line: the same three constants, the
+same `handle_sync_response` with its missed-sync ladder, the same
+`watch_session_changes`, the same profile cache under `session_profile`, the
+same `clean_up`. Neither knows the other exists. The application constructs
+its `Client` in `Session::new`, syncs it from `Session::prepare`, and hands
+`response.rooms` to its own `RoomList`; the core does exactly the same,
+through an `mpsc` the core's `RoomList` drains.
+
+That is why the order this document gave — `room_list/` first, the
+session-level models later — cannot be followed as written. A `RoomList`
+that is a `gio::ListModel` over the core's `RoomList` needs a core
+`RoomList`, which hangs off a core `Session`, which the application's
+process does not contain. And two sessions over one store — the
+application's `Client` and a core `Client` on the same SQLite files, each
+with its own sync loop — is not a transition, it is a corruption. **So the
+session goes first**: the application's `Session` becomes the `GObject` over
+the core's, the core's `prepare()` runs the one sync loop, and the
+application's copy of all of it is deleted. The room list comes in the same
+commit, because a `Session` whose `room_list()` returned a list nobody fills
+would not compile past the sidebar.
+
+The read also settles what the two halves of the bridge look like, because
+this is the module that consumes both, and it turned up three divergences
+in the core's session that the ledger now carries: the core has **no
+ambiguity-change handling at all** (the application's `RoomList` hands each
+sync's `AmbiguityChange`s to the room, which refreshes the members named;
+the core's `handle_room_updates` drops them with a comment that they "wait
+for the member model"); the core's `log_out` returns `Result<(), String>`
+with an English sentence in it, which is the leaf-1 rule broken inside the
+core; and the core probes reachability with a TCP dial where the
+application asks `gio::NetworkMonitor::can_reach`, which is the embedder's
+instrument and the better one on a desktop.
+
+### The bridge, as the read forces it
+
+**The property half** is a task per object, not per property, as the plan
+said — and the read says how. An `eyeball::Subscriber<T>` is a `Stream`, so
+each of an object's subscribers is mapped to a stream of boxed closures
+`Box<dyn FnOnce(&Obj) + Send>` and the lot are `select_all`ed into one
+stream per object; one tokio task drains it and hands each closure to the
+main context with a `SendWeakRef` of the `GObject`, where it runs, sets the
+`Cell` and calls `notify_*()`. `Room` has 43 properties, of which the core
+exposes some 15 as observables today; a room list of 300 rooms is 300 tasks,
+which tokio does not notice, where 300 × 15 would be a number somebody
+would. The helper lives at `src/core_bridge/observe.rs` and its first
+consumer is `Session`'s four observables. The rule from leaf 4 still holds:
+**the bridge is owed only where something other than the `GObject` can
+change the value** — a setter that forwards to the core and notifies itself
+needs no subscriber.
+
+**The list half** is not a generic `gio::ListModel` subclass, because a
+`GObject` subclass cannot be generic; it is a helper that applies a
+`VectorDiff<C>` to an `IndexMap<K, W>` and returns the `(position,
+removed, added)` triple the owning model passes to `items_changed`. The
+`IndexMap` is the wrapper cache the plan asked for: keyed by the core
+value's identity (a room ID), it hands back the same `GObject` for the same
+room across diffs, which is what the sidebar's `FilterListModel` and
+`SortListModel` stacks and every `.blp` binding depend on. `subscribe_entries()`
+returns the current `Vector` and the stream of diffs after it, so the map is
+seeded from the snapshot and then follows the stream, forwarded to the main
+context the same way as the property half — `GObject`s are made on the main
+thread, and the core's values are `Send`, so they cross and the wrapper is
+built on arrival. The helper lives at `src/core_bridge/list_model.rs` and
+its first consumer is `RoomList`.
+
+### The module map
+
+Each row is one commit and one eyeball section. Line counts are today's,
+from `wc -l`, and the core column names what the module becomes a view of.
+
+| # | Module | GTK lines | Core | What the commit does |
+|---|--------|-----------|------|----------------------|
+| 1 | `session/mod.rs`, `room_list/` | 1,050 + 972 | `session::{Session, RoomList}` | `Session` holds a core `Session`; the sync, reachability, profile cache, token store and `clean_up` are deleted; `state`, `is_offline`, `is_homeserver_reachable` and the own `User`'s name and avatar are bridged; `RoomList` is a `ListModel` over `subscribe_entries()` with `Room::new(&session, core_room)`; the metainfo persistence is deleted; `join`/`knock` render `JoinError`. |
+| 2 | `room/mod.rs`, `category.rs`, `highlight_flags.rs`, `typing_list.rs` | 2,763 + 303 | `session::Room` | The room's identity, category, counts, activity, read state, typing, history visibility and successor become bridged properties; the application's own `room_info` subscription, category computation, `update_latest_activity` and `handle_sync_timeline_events` are deleted; the setters forward. Likely the largest diff of the phase; split 2a/2b if the read says so. |
+| 3 | `room/member.rs`, `member_list.rs` | 338 + 387 | `session::{Member, MemberList}` | Members over the core's; the ambiguity changes move into the core here, closing module 1's ledger row. |
+| 4 | `room/{permissions,join_rule,aliases}.rs` | 733 + 442 + 544 | Phase 3's `Permissions`, `JoinRule`, `RoomAliases` | View-models over what Phase 3 already wrote; the application's own copies of the same rules are deleted. |
+| 5 | `ignored_users.rs`, `user_sessions_list/`, `security.rs`, `image_packs/` | 282 + 987 + 491 + 1,323 | `IgnoredUsers`, `UserSessions`, `SessionSecurity`, `ImagePacks` | The session-level models Phase 3 already wrote, each a thin `GObject`. |
+| 6 | `global_account_data.rs`, `presence.rs` | 603 + 349 | **none yet** | The core has neither; both move in first (GTK is the authority), then the `GObject`s become views. This is where the Kotlin side gets recent emoji and presence. |
+| 7 | `remote/` | 2,031 | `session::remote::{RemoteRoom, SpaceChildren}`, `url_preview` | `room.rs`, `space_children.rs` and `url_preview.rs` over the core's; `room_peek.rs`, `user.rs` and `cache.rs` move in first. |
+| 8 | `room/timeline/`, `thread_list.rs`, `search.rs` | 1,893 + 433 + 767 | `session::Timeline`, `RoomSearch` | The timeline item models over the core's `Timeline`; `media_message.rs`'s data types are decided here (the Phase 2 question). |
+| 9 | `notifications/` | 1,916 | `session::notifications` (170) | The core's is a fragment; the application's settings model and push handling move in, then the `GObject`s become views. |
+| 10 | `verification/` | 1,538 | `VerificationList`, `IdentityVerification` | Over Phase 3's state machine; the two-device check the ledger owes runs in this section. |
+| 11 | `calls/{mod,call,state,turn}.rs` | 3,033 | Phase 3's `Calls`, `Call` | The signalling half becomes a view; `pipeline.rs` and `ringtone.rs` stay, and give the core's `note_connected`, the rollback and the remote mute their first embedder. The member-left watcher gets its caller. |
+| 12 | `sidebar_data/` | 1,241 | `session::sidebar`, `room::category` | The category rules and section filters over the core's. |
+| 13 | `session_list/` | 786 | `SessionList` | The list Phase 2 could not touch; closes the spine. `secret/`'s `StoredSession` newtype is reviewed here. |
+
+Rooms' `spaces.rs` (219) rides with module 7; `room/timeline/`'s virtual
+items with module 8. Nothing in this table is a leaf, and nothing in it is
+deleted before its section has been run.
+
+### Module 1, in the detail the first commit needs
+
+**`Session`.** `imp::Session` keeps the `GObject` and loses the engine. The
+fields that go: `client`, `session_changes_handle`, `sync_handle`,
+`homeserver_reachable_lock`, `homeserver_reachable_source`,
+`missed_sync_count`; the `state`, `is_homeserver_reachable` and `is_offline`
+`Cell`s become mirrors fed by the bridge. The field that arrives is
+`core: OnceCell<commune_core::session::Session>`, set in `Session::new`,
+which becomes a call to the core's `Session::new(stored_session.into_inner(),
+settings.inner().clone())` followed by the `GObject` build; `Session::create`
+likewise over the core's `create(client, list_settings)`. `client()` forwards.
+`prepare()` calls the core's `prepare()` — which loads the room list, watches
+session changes, probes reachability, inits verification, security and
+calls on the core side, and starts the sync — and then does what only the
+application does: `global_account_data()`, `image_packs()`,
+`verification_list().init()`, `calls().init()`, `security.set_session()`,
+and installs the subscribers. The state subscriber is where
+`init_notifications()` and the Android pusher registration attach, on the
+first `Ready`; the `is_offline` subscriber is a plain mirror. The
+`NetworkMonitor` handler stays and calls the core's `network_changed()`.
+`log_out()` calls the core's and keeps its `gettext`; `clean_up()` calls the
+core's and then `notifications.clear()`. `recheck_connectivity()` forwards.
+`init_user_profile`, `update_user_profile`, `store_tokens`, `sync`,
+`handle_sync_response`, `watch_session_changes`, `update_homeserver_reachable`,
+`homeserver_address`, `set_is_homeserver_reachable`, `set_offline` and the
+three constants are deleted. The own `User` is fed from
+`subscribe_profile()`: name and avatar URL, the two things the profile
+carries.
+
+**`RoomList`.** The `IndexMap<OwnedRoomId, Room>` stays and becomes the
+wrapper cache. `load()` becomes: seed from the core's `subscribe_entries()`
+snapshot, then follow the diffs. `handle_room_updates` is deleted — the
+core's runs — and with it `metainfo.rs` whole, because the persistence is
+the core's and `RoomMetainfo` is re-exported from it. `get`, `snapshot`,
+`get_by_identifier`, `direct_chat` read the map; `get_wait` waits on the
+core's and maps; `is_joining_room` reads the core's set and
+`joining-rooms-changed` is emitted from its subscriber; `join_by_id_or_alias`
+and `knock` forward and turn `JoinError` into the two `gettext_f` sentences
+that are there today; `add_tombstoned_room` forwards. `room_info.rs` does
+not change. What the core's `RoomList` must gain for this: the
+ambiguity-change forwarding described below, and nothing else.
+
+**`Room`, only its constructor.** `Room::new(&session, core_room)` replaces
+`Room::new(&session, matrix_room, metainfo)`: the `MatrixRoom` is
+`core_room.matrix_room().clone()`, and the metainfo seed is the core room's
+current `latest_activity()` and `is_read()`, which the core restored from
+the same store. The `GObject` keeps the core `Room` in a field for module 2
+to consume and otherwise does not change — it keeps its own `room_info`
+subscription and every one of its 2,700 lines, so module 1's eyeball
+section is the sidebar's and the session's, not the room's.
+
+**Ambiguity changes, the transitional seam.** The core's `Room` gains a
+`broadcast` of the user IDs each sync marked ambiguous, which its
+`RoomList::handle_room_updates` feeds from all three membership loops (the
+application feeds it from `left` and `joined`; `invited` and `knocked` carry
+none). The application's `Room` subscribes and calls its own
+`handle_ambiguity_changes` — the same method, from a stream instead of a
+loop. In module 3 the core's member list consumes the broadcast itself and
+the seam is closed.
+
+**What module 1 does not do.** It does not touch a single widget or `.blp`.
+It does not change the `Room` beyond its constructor. It does not move
+`global_account_data` or `presence`. It leaves `SessionState` a `glib::Enum`
+with a `From` for the core's, as `SidebarSectionName` was left in leaf 4.
+
+**Gates for module 1**, on top of the standing ones: the Linux
+whole-application check and clippy; the core tests; the Android ABIs and
+the byte-identical bindings, because the core's `Session` changes shape;
+the three HTML ledgers republished; and the eyeball sections for the
+session (login, restore, offline banner, log out) and the sidebar (every
+section fills, join by alias, knock, forget, the tombstone successor),
+which the user runs.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -1668,6 +1855,9 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `send_call_negotiate`, `on_negotiate` | **Renegotiation had no rules.** The application ignores one for a call not established, an answer to no offer of ours, a stale one; the caller's crossed offer stands and the callee's rolls back; an offer is refused while one is pending, with a thirty-second timeout. **Closed 1 Sep**: `Call::handle_negotiate`, `send_negotiate`, `NEGOTIATE_LIFETIME`. The rollback has no listener call. | Done, FFI call owed |
 | 1 Sep 2026 | `facade.rs`, `turn_servers`, `first_stream_id`, outcomes | **TURN asked for on every call and unsorted; the stream ID read from one of the two SDP forms; a hundred outcomes kept, not 256.** **Closed 1 Sep**: `session/calls/turn.rs` with its cache and its six tests, `first_stream_id` with its seven, `MAX_REMEMBERED_OUTCOMES`. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_call_listener` (connected) | **The FFI has no way to say a call connected.** The application's pipeline reports media flowing; on Kotlin a call never reaches `Connected`, and the mute the application re-announces on connecting never goes. `Call::note_connected` waits for a binding. | FFI method owed |
+| 1 Sep 2026 | `session/room_list.rs`, `handle_room_updates` | **The core drops every `AmbiguityChange` a sync carries.** The application hands them to the room, which refreshes the members named so that two "Alice"s are told apart the moment the second joins; the core's loop says they "wait for the member model" and discards them, so the Kotlin member list never disambiguates. Found reading the two room lists side by side for Phase 4. | Phase 4, module 1 (forwarded), module 3 (consumed) |
+| 1 Sep 2026 | `session/mod.rs`, `log_out` | **`Result<(), String>` with an English sentence in it** — the leaf-1 rule broken inside the core, where every other module of Phase 3 got an error enum. `LogoutError` carrying the SDK error; the application keeps its `gettext`. | Phase 4, module 1 |
+| 1 Sep 2026 | `session/mod.rs`, `probe_homeserver` | **The core dials the homeserver's port where the application asks `gio::NetworkMonitor::can_reach`.** The monitor knows about captive portals, metered links and proxies the dial does not. Once the core owns the sync loop the desktop's answer has to reach it: `network_changed()` triggers the core's probe today; a `report_homeserver_reachable(bool)` for an embedder with a better instrument is the likely shape. | Phase 4, module 1 |
 
 ## Gates
 
