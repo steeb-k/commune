@@ -51,7 +51,10 @@ use std::{
 };
 
 use eyeball::{SharedObservable, Subscriber};
-use futures_util::{StreamExt, future::BoxFuture};
+use futures_util::{
+    StreamExt,
+    future::{BoxFuture, select_ok},
+};
 use matrix_sdk::{
     Client, SessionChange,
     config::SyncSettings,
@@ -885,6 +888,13 @@ impl SessionInner {
     }
 
     /// Whether the homeserver answers a TCP dial.
+    ///
+    /// Every address the name resolves to is dialled at once and the first
+    /// to answer wins. A dial to one address at a time, the way
+    /// `TcpStream::connect` takes a name, spends the whole timeout on an
+    /// address that swallows the SYN before it tries the next — which is
+    /// what `localhost` does on Windows, where `::1` hangs and `127.0.0.1`
+    /// answers at once — and called a reachable homeserver unreachable.
     async fn probe_homeserver(&self) -> bool {
         let homeserver = &self.info.homeserver;
 
@@ -897,12 +907,18 @@ impl SessionInner {
         };
         let port = homeserver.port_or_known_default().unwrap_or(443);
 
-        match tokio::time::timeout(
-            REACHABILITY_TIMEOUT,
-            TcpStream::connect((host.to_owned(), port)),
-        )
-        .await
-        {
+        let probe = async {
+            let addrs = tokio::net::lookup_host((host, port)).await?;
+            let dials = addrs
+                .map(|addr| Box::pin(TcpStream::connect(addr)))
+                .collect::<Vec<_>>();
+            if dials.is_empty() {
+                return Err(std::io::Error::other("the name resolves to no address"));
+            }
+            select_ok(dials).await.map(|(stream, _)| stream)
+        };
+
+        match tokio::time::timeout(REACHABILITY_TIMEOUT, probe).await {
             Ok(Ok(_)) => true,
             Ok(Err(connect_error)) => {
                 error!(
@@ -1267,6 +1283,17 @@ impl SessionInner {
     async fn clean_up(&self) {
         self.set_state(SessionState::LoggedOut);
         self.abort_sync();
+        // A logged-out session has no homeserver left to reach; the retry
+        // would otherwise go on probing every ten seconds for as long as the
+        // process lives.
+        if let Some(handle) = self
+            .reachability_retry_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .take()
+        {
+            handle.abort();
+        }
         self.settings.delete();
         self.info.clone().delete().await;
 

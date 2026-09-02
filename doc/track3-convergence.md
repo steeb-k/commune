@@ -1906,6 +1906,27 @@ too, for a probe that failed at launch. With it, `recheck_connectivity`
 core kept — reaches the FFI and the Kotlin application calls it when its
 UI becomes visible; it had not, which the parity audit had not seen.
 
+**Corrected again 2 September, from the first Windows run of the sweep.**
+The sweep's own first check — a stored session, restored at launch —
+was run on this machine against the harness, with a session whose token
+the wiped homeserver no longer knew, and found three things in the core
+at once. The homeserver refused the token while the session was being
+prepared; the core logged it out, as it should, and then the list
+inserted it as ready and watched for a logout that had already
+happened, so the window sat on "Fetching Account Data" for good. The
+list now checks the state after subscribing, and takes out a session
+already logged out. Its clean-up left the reachability retry running,
+probing a homeserver it had no business with every ten seconds; the
+retry is aborted with the sync. And the probe itself, `TcpStream::
+connect` on the homeserver's name, dialled the addresses one at a time
+and spent its whole ten seconds on the first — `::1` on Windows, where
+`localhost` resolves there first and the connect hangs while
+`127.0.0.1` answers at once — so it called a reachable homeserver
+unreachable, every time, and the sync loop never started against the
+harness. The application's own probe was `gio`'s, which knows this; the
+core's now dials every address the name resolves to at once and takes
+the first that answers.
+
 ### Module 2 — the room's properties are mirrors
 
 **Done 1 September, the same day as module 1.** `src/session/room/mod.rs`
@@ -2800,6 +2821,9 @@ recorded here as it is found, with the phase that closes it.
 | 2 Sep 2026 | `session/mod.rs`, `from_prepared_core` | **A restored session's wrapper never attached to its prepared core, and the window waited forever.** Found on the first desktop run of the spine; module 13's `from_core` wired the info and settings and nothing that `prepare` did. Fixed the same day: `attach` is the half of `prepare` that is the application's, and the list calls it for a session the core restored. | Fixed 2 Sep, module 13 |
 | 2 Sep 2026 | `commune-core/src/session/mod.rs`, `update_homeserver_reachable` | **The reachability retry cancelled itself, so a session whose first probe failed stayed offline for good.** Found on the Pixel: the Kotlin application sent but never received, and the core logged nothing. The application's `glib` timeout had fired before its callback removed it; the core's tokio task was aborted from inside itself. Fixed the same day: the retry leaves the slot before it checks. The desktop has run this code since module 1. | Fixed 2 Sep, core |
 | 2 Sep 2026 | `commune-core/src/facade.rs`, `recheck_connectivity` | **The Kotlin application never told the core it had come to the foreground.** The GTK Android port called `recheck_connectivity` when its window became active, the core kept the method, and the FFI did not export it. Exported, and called from `uiVisible`. | Fixed 2 Sep, Kotlin |
+| 2 Sep 2026 | `commune-core/src/session_list.rs`, `insert` | **A session logged out while it was being prepared was listed as ready, for good.** The list watched for a logout after inserting, and the logout had already happened; the window sat on the loading page. Found on Windows with a token the wiped harness refused. The watch now reads the state after subscribing and takes the session out. | Fixed 2 Sep, core |
+| 2 Sep 2026 | `commune-core/src/session/mod.rs`, `clean_up` | **A logged-out session kept probing its homeserver every ten seconds.** Clean-up aborted the sync and left the reachability retry. Aborted with it. | Fixed 2 Sep, core |
+| 2 Sep 2026 | `commune-core/src/session/mod.rs`, `probe_homeserver` | **The reachability probe dialled one address and called a reachable homeserver unreachable.** `TcpStream::connect` on a name tries each address in turn, and `localhost` on Windows resolves to `::1` first, which swallows the SYN for the whole ten-second timeout. The application's `gio` probe never had this. Every address is now dialled at once and the first to answer wins. | Fixed 2 Sep, core |
 
 ## Gates
 

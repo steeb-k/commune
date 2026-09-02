@@ -120,7 +120,6 @@ src/login/reset_password_page.rs
 src/login/session_setup_view.blp
 src/macos_menu_bar.blp
 src/secret.rs
-src/session/image_packs/mod.rs
 src/session/mod.rs
 src/session/notifications/mod.rs
 src/session/room/join_rule.rs
