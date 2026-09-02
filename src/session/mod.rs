@@ -438,6 +438,23 @@ mod imp {
                 .await
                 .expect("task was not aborted");
 
+            self.attach();
+
+            debug!(
+                session = self.obj().session_id(),
+                "A new session was prepared"
+            );
+        }
+
+        /// Attach the application's side to the prepared core.
+        ///
+        /// The desktop's lists, packs, verification, calls and security
+        /// hang off the core once it runs, and the state, connectivity and
+        /// profile mirrors start here: `watch_core` reads the core's
+        /// current state after subscribing, so a core that is already
+        /// `Ready` — one the list restored on the runtime — is picked up
+        /// at once.
+        pub(super) fn attach(&self) {
             self.global_account_data();
             self.image_packs();
             self.room_list().load();
@@ -447,11 +464,6 @@ mod imp {
             self.security.set_session(Some(&*self.obj()));
 
             self.watch_core();
-
-            debug!(
-                session = self.obj().session_id(),
-                "A new session was prepared"
-            );
         }
 
         /// Follow the core's observables into this object's properties.
@@ -556,6 +568,16 @@ impl Session {
             .build();
         obj.imp().set_core(core);
 
+        obj
+    }
+
+    /// Present the given core session, which the core has already prepared.
+    ///
+    /// A session the list restored: the core prepared it on the runtime,
+    /// so the application's side attaches now instead of in `prepare`.
+    pub(crate) fn from_prepared_core(core: CoreSession) -> Self {
+        let obj = Self::from_core(core);
+        obj.imp().attach();
         obj
     }
 

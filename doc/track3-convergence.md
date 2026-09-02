@@ -2558,10 +2558,28 @@ without translations while the application renders its two `gettext`
 sentences from the value. `FailedSession` holds the core's
 `Arc<ClientSetupError>`.
 
+**Corrected 2 September, from the first desktop run.** A restored
+session hung on "loading accounts". The application's `Session` only
+subscribed to the core's state, and only attached its lists, packs,
+verification, calls and security, inside its own `prepare` — and the
+only caller of that was the login flow. On restore the core prepared
+itself on the runtime and the list wrapped the prepared core with
+`from_core`, which wired a few sub-objects and nothing else; the wrapper
+sat at `Init` and the window's ready watcher never fired. Login worked
+because the login flow's wrapper, reused through the list's pending
+slot, had gone through `prepare`. The fix splits `prepare` into the
+core's half and an `attach` half, and `from_prepared_core`, which the
+list calls for a session it did not get from the login flow, attaches
+at once; `watch_core` reads the core's current state after subscribing,
+so a core already `Ready` is picked up on the spot. The GTK Android
+build restores through the same list and is covered; the Kotlin
+application presents the core directly and was never affected.
+
 **Eyeball owed:** the sessions restored in settings order, a session
 whose data directory is gone not restored, a failed session's toast, a
 login landing on the new session, a logout removing its row, and a
-secret-store failure's dialog.
+secret-store failure's dialog. **Run once, 2 Sep:** a restored session
+hung; fixed above, to be run again.
 
 ### Where Phase 4 stands
 
@@ -2753,6 +2771,7 @@ recorded here as it is found, with the phase that closes it.
 | 2 Sep 2026 | `session/calls/call.rs`, `subscribe_events` | **The core's events reach the pipeline over a broadcast of thirty-two; a receiver that falls behind skips what it missed.** The application handed each event to its pipeline synchronously. A batch of candidates lost this way is not sent again, so a call in that state may fail to connect; a warning names the count. The buffer is sized for a call and a main loop that keeps up. | Accepted 2 Sep, module 11 |
 | 2 Sep 2026 | `session/calls/call.rs`, `hangup` | **A call hung up before its offer came back ends without a word; the application never had that moment.** The application's invite was sent from inside the offer's callback and a hang-up before it also sent nothing. Same behaviour, now with a name. | Accepted 2 Sep, module 11 |
 | 2 Sep 2026 | `session_list/mod.rs`, `insert` | **A session the login flow adds has its row a main-loop turn after the core has it.** The application inserted the row itself, synchronously, and selected it; the view hands the core the session and selects the row when the core's change has come back, so `Window::add_session` waits for it. Nothing looks for the row in between. | Accepted 2 Sep, module 13 |
+| 2 Sep 2026 | `session/mod.rs`, `from_prepared_core` | **A restored session's wrapper never attached to its prepared core, and the window waited forever.** Found on the first desktop run of the spine; module 13's `from_core` wired the info and settings and nothing that `prepare` did. Fixed the same day: `attach` is the half of `prepare` that is the application's, and the list calls it for a session the core restored. | Fixed 2 Sep, module 13 |
 
 ## Gates
 
