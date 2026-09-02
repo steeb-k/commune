@@ -27,9 +27,8 @@ use std::{fmt, ops::Deref};
 pub(crate) use commune_core::secret::{SESSION_ID_LENGTH, Secret, SecretError, SecretExt};
 use gettextrs::gettext;
 use gtk::glib;
-use matrix_sdk::Client;
 
-use crate::{prelude::*, utils::matrix::ClientSetupError};
+use crate::prelude::*;
 
 /// A session, as stored in the secret service.
 ///
@@ -41,17 +40,6 @@ use crate::{prelude::*, utils::matrix::ClientSetupError};
 pub struct StoredSession(commune_core::secret::StoredSession);
 
 impl StoredSession {
-    /// Construct a `StoredSession` from the session of the given Matrix
-    /// client.
-    ///
-    /// Returns an error if we failed to generate a unique session ID for the
-    /// new session.
-    pub(crate) async fn new(client: &Client) -> Result<Self, ClientSetupError> {
-        commune_core::secret::StoredSession::new(client)
-            .await
-            .map(Self)
-    }
-
     /// The core's session inside this wrapper.
     ///
     /// Needed where the core takes one by value and `Deref` cannot help.

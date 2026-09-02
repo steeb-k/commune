@@ -22,7 +22,7 @@ use crate::{
     session::{Session, SessionState},
     session_list::{FailedSession, SessionInfo},
     session_view::SessionView,
-    toast,
+    spawn, toast,
     utils::{FixedSelection, LoadingState, key_bindings},
 };
 
@@ -960,9 +960,15 @@ impl Window {
 
     /// Add the given session to the session list and select it.
     pub(crate) fn add_session(&self, session: Session) {
-        let index = Application::default().session_list().insert(session);
-        self.session_selection().set_selected(index as u32);
-        self.imp().show_session();
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                let index = Application::default().session_list().insert(session).await;
+                obj.session_selection().set_selected(index as u32);
+                obj.imp().show_session();
+            }
+        ));
     }
 
     /// The ID of the currently visible session, if any.

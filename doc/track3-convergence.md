@@ -1700,7 +1700,7 @@ from `wc -l`, and the core column names what the module becomes a view of.
 | 10 | `verification/` | 1,538 | `VerificationList`, `IdentityVerification` | **Done 2 Sep.** Views over Phase 3's state machine; the application's copy of the machine is deleted. The two-device check the ledger owes is an eyeball item. |
 | 11 | `calls/{mod,call,state,turn}.rs` | 3,033 | Phase 3's `Calls`, `Call` | **Done 2 Sep.** `Call` drives the pipeline from the core's `CallEvent`s and hands the core what the pipeline produces; `Calls` presents the core's active call and outcomes; `turn.rs` and the room's member watch are gone. The call harness is owed. |
 | 12 | `sidebar_data/` | 1,241 | `session::sidebar`, `room::category` | **Done 2 Sep.** The rows, the drop targets and the visibility rules are the core's `SIDEBAR_ITEMS` and kinds; the glib enums convert both ways. |
-| 13 | `session_list/` | 786 | `SessionList` | The list Phase 2 could not touch; closes the spine. `secret/`'s `StoredSession` newtype is reviewed here. |
+| 13 | `session_list/` | 786 | `SessionList` | **Done 2 Sep.** A `ListModel` over the core's entries, keyed by ID and stage; `Session::from_core` presents what the core restored; the newtype loses its constructor. The spine is closed. |
 
 Rooms' `spaces.rs` (219) rides with module 7; `room/timeline/`'s virtual
 items with module 8. Nothing in this table is a leaf, and nothing in it is
@@ -2514,6 +2514,61 @@ changes at run time.
 category with the sections that appear, the Forget row appearing for a
 left room and the Explore row for none.
 
+### Module 13 — the session list is the core's, and the spine closes
+
+**Done 2 September.** The list Phase 2 could not touch, because every
+row of it was a `Session` that owned a client: now every row presents
+a core entry. `SessionList` is a `ListModel` over the core's
+`subscribe_entries`, keyed by session ID and stage, so a stored session
+being restored, one that could not be, and one running are three rows
+of three classes — `NewSession`, `FailedSession`, `Session` — in the one
+place the core keeps them. The restoration itself, the settings order,
+the data-directory filter and the sealing are the core's; the
+application loses 236 lines and keeps 279, most of them the view.
+`Session::new` is gone with it: the core restores, and the application
+presents what it restored through `Session::from_core`; `Session::
+create` asks the core to create from the client, and the login flow
+still seals, prepares and hands the window the session when the setup
+is done, as before. `secret/`'s newtype is reviewed here and loses its
+constructor, the last thing on it the core did not already do; the
+boxed type, the `Deref` and the sentences stay, for the reasons its
+header gives.
+
+**The state and the entries arrive through one task.** The core inserts
+the sessions it is restoring, then says it is ready, and the window
+acts on ready by looking the rows up by ID. Two watchers would make no
+promise about which reaches the main loop first; one task polling the
+entries before the state does, so the rows are there when the state
+is.
+
+**A restored session is one change, not two.** The core sets the ready
+entry in the place of the loading one; the bridge's `apply_diff` would
+report a removal and an insertion, and `SingleSelection` would follow
+the removal to the neighbour. The list replaces the row in place and
+reports one change, which is what the application's `insert` did.
+
+**The error is a value.** The core's list held an English sentence for
+its error; it now holds `SessionListError`, the secret store's error or
+the data directory's, and renders the English itself for an embedder
+without translations while the application renders its two `gettext`
+sentences from the value. `FailedSession` holds the core's
+`Arc<ClientSetupError>`.
+
+**Eyeball owed:** the sessions restored in settings order, a session
+whose data directory is gone not restored, a failed session's toast, a
+login landing on the new session, a logout removing its row, and a
+secret-store failure's dialog.
+
+### Where Phase 4 stands
+
+All thirteen modules landed between 1 and 2 September, each compiled on
+Linux, linted with clippy at `-D warnings`, the core's tests run and the
+FFI bindings checked identical. What none of them has had is a person at
+the desktop: **every module's eyeball section is owed**, and module 11's
+call harness with it. By the rule at the head of this section, no module
+is done until then; the sessions have done the part they can. Phases 5
+and 6, the strings and the ledgers, follow.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -2622,6 +2677,7 @@ recorded here as it is found, with the phase that closes it.
 | 2 Sep 2026 | `session/calls/call.rs`, `Call::place` | **The application's call had its ID from the start; the view's has none until the core places it.** The window shows the call at once, as before; a notification or a timeline row asking for the ID of a call being placed gets none for the moment between the pipeline's offer and the core's invite, where the application had one it had not sent yet. No page asks in that moment: the row is for a call the room saw, the notification for one that rang. | Accepted 2 Sep, module 11 |
 | 2 Sep 2026 | `session/calls/call.rs`, `subscribe_events` | **The core's events reach the pipeline over a broadcast of thirty-two; a receiver that falls behind skips what it missed.** The application handed each event to its pipeline synchronously. A batch of candidates lost this way is not sent again, so a call in that state may fail to connect; a warning names the count. The buffer is sized for a call and a main loop that keeps up. | Accepted 2 Sep, module 11 |
 | 2 Sep 2026 | `session/calls/call.rs`, `hangup` | **A call hung up before its offer came back ends without a word; the application never had that moment.** The application's invite was sent from inside the offer's callback and a hang-up before it also sent nothing. Same behaviour, now with a name. | Accepted 2 Sep, module 11 |
+| 2 Sep 2026 | `session_list/mod.rs`, `insert` | **A session the login flow adds has its row a main-loop turn after the core has it.** The application inserted the row itself, synchronously, and selected it; the view hands the core the session and selects the row when the core's change has come back, so `Window::add_session` waits for it. Nothing looks for the row in between. | Accepted 2 Sep, module 13 |
 
 ## Gates
 

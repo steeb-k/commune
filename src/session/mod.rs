@@ -545,16 +545,10 @@ glib::wrapper! {
 }
 
 impl Session {
-    /// Construct an existing session.
-    pub(crate) async fn new(
-        stored_session: StoredSession,
-        settings: SessionSettings,
-    ) -> Result<Self, ClientSetupError> {
-        let core_info = stored_session.clone().into_inner();
-        let core_settings = settings.inner().clone();
-        let core = spawn_tokio!(async move { CoreSession::new(core_info, core_settings).await })
-            .await
-            .expect("task was not aborted")?;
+    /// Present the given core session.
+    pub(crate) fn from_core(core: CoreSession) -> Self {
+        let stored_session = StoredSession::from(core.info().clone());
+        let settings = SessionSettings::new(core.settings().clone());
 
         let obj = glib::Object::builder::<Self>()
             .property("info", stored_session)
@@ -562,20 +556,21 @@ impl Session {
             .build();
         obj.imp().set_core(core);
 
-        Ok(obj)
+        obj
     }
 
     /// Create a new session from the session of the given Matrix client.
+    ///
+    /// The session is not in the list yet: the login flow prepares it
+    /// and the window adds it when the setup is done.
     pub(crate) async fn create(client: &Client) -> Result<Self, ClientSetupError> {
-        let stored_session = StoredSession::new(client).await?;
-        let settings = SessionSettings::new(
-            Application::default()
-                .session_list()
-                .settings()
-                .get_or_create(&stored_session.id),
-        );
+        let client = client.clone();
+        let settings = Application::default().session_list().settings();
+        let core = spawn_tokio!(async move { CoreSession::create(&client, &settings).await })
+            .await
+            .expect("task was not aborted")?;
 
-        Self::new(stored_session, settings).await
+        Ok(Self::from_core(core))
     }
 
     /// Finish initialization of this session.

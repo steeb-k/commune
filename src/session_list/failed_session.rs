@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use gtk::{glib, subclass::prelude::*};
 
 use super::{SessionInfo, SessionInfoImpl};
@@ -13,7 +15,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct FailedSession {
         /// The error encountered when initializing the session.
-        error: OnceCell<ClientSetupError>,
+        error: OnceCell<Arc<ClientSetupError>>,
         /// The data for the avatar representation for this session.
         avatar_data: OnceCell<AvatarData>,
     }
@@ -41,7 +43,7 @@ mod imp {
 
     impl FailedSession {
         /// Set the error encountered when initializing the session.
-        pub(super) fn set_error(&self, error: ClientSetupError) {
+        pub(super) fn set_error(&self, error: Arc<ClientSetupError>) {
             self.error
                 .set(error)
                 .expect("error should not be initialized");
@@ -49,7 +51,10 @@ mod imp {
 
         /// The error encountered when initializing the session.
         pub(super) fn error(&self) -> &ClientSetupError {
-            self.error.get().expect("error should be initialized")
+            self.error
+                .get()
+                .map(Arc::as_ref)
+                .expect("error should be initialized")
         }
     }
 }
@@ -62,7 +67,7 @@ glib::wrapper! {
 
 impl FailedSession {
     /// Constructs a new `FailedSession` with the given info and error.
-    pub(crate) fn new(stored_session: &StoredSession, error: ClientSetupError) -> Self {
+    pub(crate) fn new(stored_session: &StoredSession, error: Arc<ClientSetupError>) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("info", stored_session)
             .build();
