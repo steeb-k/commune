@@ -4,10 +4,10 @@
 # Written by hooks/doc-freshness --fix and --published. The commit line
 # is how the hook tells a moving marker from a hash the prose cites on
 # purpose: it only ever rewrites the hash it last wrote.
-commit c6761ad5
-count 592
-sha256 d0e3eb4a9c40382e28d287e6035191f0d62adba51cbf01e15fb73754a76bc075 doc/client-comparison.html
-sha256 0156265c08e701037d6685c3a38653e151c50edde1e640ebabce58bf926aad9b doc/spec-gaps.html
-sha256 611bd4716d65dfa69c2a35450e3f11cd2dd9e333775b31942fc66fa25d7524ec doc/upstream-defects.html
+commit 204b67ab
+count 594
+sha256 9c8fb0e3d98e34ad2ea75f34976af6aa6d61e9a3aa125bfd13412d99d8624273 doc/client-comparison.html
+sha256 735cbd9a74a85c7b4811bad215b7a7b81d6792c24f629728f6dd122aaf672ea7 doc/spec-gaps.html
+sha256 7a8cd327f44c362320db91adb6d808e683cfbe77844c653dd1d5e9cbf7481d9d doc/upstream-defects.html
 sha256 8edd45f5059a38b3d09aa9659931e3ea5d4a57c54cfb1a489f00b4552e467632 doc/eyeball-run.html
 sha256 bac0abb8106bc265975290ee52b54fdc7659f15ab429a9bc91fe923b130fc169 doc/eyeball-android-run.html
