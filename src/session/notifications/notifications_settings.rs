@@ -1,27 +1,19 @@
-use std::collections::HashMap;
-
-use futures_util::StreamExt;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::{
-    NotificationSettingsError,
-    notification_settings::{
-        IsEncrypted, NotificationSettings as MatrixNotificationSettings, RoomNotificationMode,
-    },
+pub(crate) use commune_core::session::NotificationsSpecialRule;
+use commune_core::session::{
+    NotificationsGlobalSetting as CoreGlobalSetting, NotificationsRoomSetting as CoreRoomSetting,
+    NotificationsSettings as CoreNotificationsSettings,
 };
-use ruma::{
-    OwnedRoomId, RoomId,
-    push::{PredefinedOverrideRuleId, PredefinedUnderrideRuleId, RuleKind},
-};
+use gtk::{glib, prelude::*, subclass::prelude::*};
+use ruma::OwnedRoomId;
 use tokio::task::AbortHandle;
-use tokio_stream::wrappers::BroadcastStream;
 use tracing::error;
 
-use crate::{
-    session::{Room, Session, SessionState},
-    spawn, spawn_tokio,
-};
+use crate::{core_bridge::ObjectWatcher, session::Session, spawn_tokio};
 
 /// The possible values for the global notifications setting.
+///
+/// The core's [`NotificationsGlobalSetting`](CoreGlobalSetting) as a
+/// `glib` enum, for the properties that carry it.
 #[derive(Debug, Default, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[enum_type(name = "NotificationsGlobalSetting")]
 pub enum NotificationsGlobalSetting {
@@ -37,71 +29,43 @@ pub enum NotificationsGlobalSetting {
 impl NotificationsGlobalSetting {
     /// Get the string representation of this value.
     pub(crate) fn as_str(self) -> &'static str {
-        match self {
-            Self::All => "all",
-            Self::DirectAndMentions => "direct-and-mentions",
-            Self::MentionsOnly => "mentions-only",
-        }
+        CoreGlobalSetting::from(self).as_str()
     }
 
     /// Construct a `NotificationsGlobalSetting` from its string representation.
     ///
     /// Panics if the string does not match a variant of this enum.
     pub(crate) fn from_str(s: &str) -> Self {
-        match s {
-            "all" => Self::All,
-            "direct-and-mentions" => Self::DirectAndMentions,
-            "mentions-only" => Self::MentionsOnly,
-            _ => panic!("Unknown NotificationsGlobalSetting: {s}"),
+        s.parse::<CoreGlobalSetting>()
+            .unwrap_or_else(|()| panic!("Unknown NotificationsGlobalSetting: {s}"))
+            .into()
+    }
+}
+
+impl From<CoreGlobalSetting> for NotificationsGlobalSetting {
+    fn from(value: CoreGlobalSetting) -> Self {
+        match value {
+            CoreGlobalSetting::All => Self::All,
+            CoreGlobalSetting::DirectAndMentions => Self::DirectAndMentions,
+            CoreGlobalSetting::MentionsOnly => Self::MentionsOnly,
         }
     }
 }
 
-/// The predefined push rules that apply across all rooms and can be toggled
-/// on their own.
-///
-/// Each maps to a well-known rule of the push module. The user-mention and
-/// room-mention rules are set through the SDK, which keeps the deprecated
-/// rules they replaced (`.m.rule.contains_display_name`,
-/// `.m.rule.contains_user_name` and `.m.rule.roomnotif`) in step for older
-/// clients.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NotificationsSpecialRule {
-    /// Mentions of the user, `.m.rule.is_user_mention`.
-    UserMention,
-    /// Mentions of the whole room, `.m.rule.is_room_mention`.
-    RoomMention,
-    /// Invites to a room, `.m.rule.invite_for_me`.
-    Invite,
-    /// Incoming calls, `.m.rule.call`.
-    Call,
-}
-
-impl NotificationsSpecialRule {
-    /// The kind and ID of the push rule.
-    fn kind_and_id(self) -> (RuleKind, String) {
-        match self {
-            Self::UserMention => (
-                RuleKind::Override,
-                PredefinedOverrideRuleId::IsUserMention.to_string(),
-            ),
-            Self::RoomMention => (
-                RuleKind::Override,
-                PredefinedOverrideRuleId::IsRoomMention.to_string(),
-            ),
-            Self::Invite => (
-                RuleKind::Override,
-                PredefinedOverrideRuleId::InviteForMe.to_string(),
-            ),
-            Self::Call => (
-                RuleKind::Underride,
-                PredefinedUnderrideRuleId::Call.to_string(),
-            ),
+impl From<NotificationsGlobalSetting> for CoreGlobalSetting {
+    fn from(value: NotificationsGlobalSetting) -> Self {
+        match value {
+            NotificationsGlobalSetting::All => Self::All,
+            NotificationsGlobalSetting::DirectAndMentions => Self::DirectAndMentions,
+            NotificationsGlobalSetting::MentionsOnly => Self::MentionsOnly,
         }
     }
 }
 
 /// The possible values for a room notifications setting.
+///
+/// The core's [`NotificationsRoomSetting`](CoreRoomSetting) as a `glib`
+/// enum, for the properties that carry it.
 #[derive(Debug, Default, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[enum_type(name = "NotificationsRoomSetting")]
 pub enum NotificationsRoomSetting {
@@ -116,24 +80,24 @@ pub enum NotificationsRoomSetting {
     Mute,
 }
 
-impl NotificationsRoomSetting {
-    /// Convert to a [`RoomNotificationMode`].
-    fn to_notification_mode(self) -> Option<RoomNotificationMode> {
-        match self {
-            Self::Global => None,
-            Self::All => Some(RoomNotificationMode::AllMessages),
-            Self::MentionsOnly => Some(RoomNotificationMode::MentionsAndKeywordsOnly),
-            Self::Mute => Some(RoomNotificationMode::Mute),
+impl From<CoreRoomSetting> for NotificationsRoomSetting {
+    fn from(value: CoreRoomSetting) -> Self {
+        match value {
+            CoreRoomSetting::Global => Self::Global,
+            CoreRoomSetting::All => Self::All,
+            CoreRoomSetting::MentionsOnly => Self::MentionsOnly,
+            CoreRoomSetting::Mute => Self::Mute,
         }
     }
 }
 
-impl From<RoomNotificationMode> for NotificationsRoomSetting {
-    fn from(value: RoomNotificationMode) -> Self {
+impl From<NotificationsRoomSetting> for CoreRoomSetting {
+    fn from(value: NotificationsRoomSetting) -> Self {
         match value {
-            RoomNotificationMode::AllMessages => Self::All,
-            RoomNotificationMode::MentionsAndKeywordsOnly => Self::MentionsOnly,
-            RoomNotificationMode::Mute => Self::Mute,
+            NotificationsRoomSetting::Global => Self::Global,
+            NotificationsRoomSetting::All => Self::All,
+            NotificationsRoomSetting::MentionsOnly => Self::MentionsOnly,
+            NotificationsRoomSetting::Mute => Self::Mute,
         }
     }
 }
@@ -149,8 +113,6 @@ mod imp {
         /// The parent `Session`.
         #[property(get, set = Self::set_session, explicit_notify, nullable)]
         session: glib::WeakRef<Session>,
-        /// The SDK notification settings API.
-        api: RefCell<Option<MatrixNotificationSettings>>,
         /// Whether notifications are enabled for this Matrix account.
         #[property(get)]
         account_enabled: Cell<bool>,
@@ -175,11 +137,8 @@ mod imp {
         /// Whether incoming calls trigger notifications.
         #[property(get)]
         call_rule_enabled: Cell<bool>,
-        /// The map of room ID to per-room notification setting.
-        ///
-        /// Any room not in this map uses the global setting.
-        per_room_settings: RefCell<HashMap<OwnedRoomId, NotificationsRoomSetting>>,
-        abort_handle: RefCell<Option<AbortHandle>>,
+        /// The task following the core's settings.
+        watch_handle: RefCell<Option<AbortHandle>>,
     }
 
     #[glib::object_subclass]
@@ -191,7 +150,7 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for NotificationsSettings {
         fn dispose(&self) {
-            if let Some(handle) = self.abort_handle.take() {
+            if let Some(handle) = self.watch_handle.take() {
                 handle.abort();
             }
         }
@@ -218,13 +177,7 @@ mod imp {
             self.session.set(session);
             obj.notify_session();
 
-            spawn!(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                async move {
-                    imp.init_api().await;
-                }
-            ));
+            self.watch_core();
         }
 
         /// Set whether notifications are enabled for this session.
@@ -241,142 +194,85 @@ mod imp {
             self.obj().notify_session_enabled();
         }
 
-        /// The SDK notification settings API.
-        pub(super) fn api(&self) -> Option<MatrixNotificationSettings> {
-            self.api.borrow().clone()
+        /// The core's settings, while the session is there.
+        pub(super) fn core(&self) -> Option<CoreNotificationsSettings> {
+            self.session
+                .upgrade()
+                .map(|session| session.core().notifications_settings().clone())
         }
 
-        /// Initialize the SDK notification settings API.
-        async fn init_api(&self) {
-            let Some(session) = self.session.upgrade() else {
-                self.api.take();
+        /// Follow the core's settings.
+        ///
+        /// The core reads them once the session is ready, which is when the
+        /// application read them too.
+        fn watch_core(&self) {
+            type S = super::NotificationsSettings;
+
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
+            }
+
+            let Some(core) = self.core() else {
                 return;
             };
 
-            // If the session is not ready, there is no client so let's wait to initialize
-            // the API.
-            if session.state() != SessionState::Ready {
-                self.api.take();
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(core.subscribe_account_enabled(), |obj: &S, enabled| {
+                    obj.imp().set_account_enabled(enabled);
+                })
+                .follow(core.subscribe_global_setting(), |obj: &S, setting| {
+                    obj.imp().set_global_setting(setting.into());
+                })
+                .follow(core.subscribe_keywords(), |obj: &S, keywords| {
+                    obj.imp().update_keywords_list(&keywords);
+                })
+                .follow(
+                    core.subscribe_special_rule_enabled(NotificationsSpecialRule::UserMention),
+                    |obj: &S, enabled| {
+                        obj.imp().set_special_rule_enabled(
+                            NotificationsSpecialRule::UserMention,
+                            enabled,
+                        );
+                    },
+                )
+                .follow(
+                    core.subscribe_special_rule_enabled(NotificationsSpecialRule::RoomMention),
+                    |obj: &S, enabled| {
+                        obj.imp().set_special_rule_enabled(
+                            NotificationsSpecialRule::RoomMention,
+                            enabled,
+                        );
+                    },
+                )
+                .follow(
+                    core.subscribe_special_rule_enabled(NotificationsSpecialRule::Invite),
+                    |obj: &S, enabled| {
+                        obj.imp()
+                            .set_special_rule_enabled(NotificationsSpecialRule::Invite, enabled);
+                    },
+                )
+                .follow(
+                    core.subscribe_special_rule_enabled(NotificationsSpecialRule::Call),
+                    |obj: &S, enabled| {
+                        obj.imp()
+                            .set_special_rule_enabled(NotificationsSpecialRule::Call, enabled);
+                    },
+                )
+                .spawn();
+            self.watch_handle.replace(Some(handle));
 
-                session.connect_ready(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        spawn!(async move {
-                            imp.init_api().await;
-                        });
-                    }
-                ));
-
-                return;
-            }
-
-            let client = session.client();
-            let api = spawn_tokio!(async move { client.notification_settings().await })
-                .await
-                .expect("task was not aborted");
-            let stream = BroadcastStream::new(api.subscribe_to_changes());
-
-            self.api.replace(Some(api.clone()));
-
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let fut = stream.for_each(move |res| {
-                let obj_weak = obj_weak.clone();
-                async move {
-                    if res.is_err() {
-                        return;
-                    }
-
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        spawn!(async move {
-                            if let Some(obj) = obj_weak.upgrade() {
-                                obj.imp().update().await;
-                            }
-                        });
-                    });
-                }
-            });
-
-            self.abort_handle
-                .replace(Some(spawn_tokio!(fut).abort_handle()));
-
-            spawn!(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                async move {
-                    imp.update().await;
-                }
-            ));
-        }
-
-        /// Update the notification settings from the SDK API.
-        async fn update(&self) {
-            let Some(api) = self.api() else {
-                return;
-            };
-
-            let api_clone = api.clone();
-            let handle = spawn_tokio!(async move {
-                api_clone
-                    .is_push_rule_enabled(RuleKind::Override, PredefinedOverrideRuleId::Master)
-                    .await
-            });
-
-            let account_enabled = match handle.await.expect("task was not aborted") {
-                // The rule disables notifications, so we need to invert the boolean.
-                Ok(enabled) => !enabled,
-                Err(error) => {
-                    error!("Could not get account notifications setting: {error}");
-                    true
-                }
-            };
-            self.set_account_enabled(account_enabled);
-
-            if default_rooms_notifications_is_all(api.clone(), false).await {
-                self.set_global_setting(NotificationsGlobalSetting::All);
-            } else if default_rooms_notifications_is_all(api, true).await {
-                self.set_global_setting(NotificationsGlobalSetting::DirectAndMentions);
-            } else {
-                self.set_global_setting(NotificationsGlobalSetting::MentionsOnly);
-            }
-
-            self.update_keywords_list().await;
-            self.update_special_rules().await;
-            self.update_per_room_settings().await;
-        }
-
-        /// Update the state of the special push rules from the SDK API.
-        async fn update_special_rules(&self) {
-            for rule in [
-                NotificationsSpecialRule::UserMention,
-                NotificationsSpecialRule::RoomMention,
-                NotificationsSpecialRule::Invite,
-                NotificationsSpecialRule::Call,
-            ] {
-                let Some(api) = self.api() else {
-                    return;
-                };
-
-                let (kind, rule_id) = rule.kind_and_id();
-                let handle =
-                    spawn_tokio!(async move { api.is_push_rule_enabled(kind, rule_id).await });
-
-                match handle.await.expect("task was not aborted") {
-                    Ok(enabled) => self.set_special_rule_enabled(rule, enabled),
-                    Err(error) => {
-                        error!("Could not get the state of the {rule:?} push rule: {error}");
-                    }
-                }
+            // What the core already knows, after subscribing so that
+            // nothing between the two is lost.
+            self.set_account_enabled(core.account_enabled());
+            self.set_global_setting(core.global_setting().into());
+            self.update_keywords_list(&core.keywords());
+            for rule in NotificationsSpecialRule::ALL {
+                self.set_special_rule_enabled(rule, core.special_rule_enabled(rule));
             }
         }
 
-        /// Set whether the given special push rule is enabled.
-        pub(super) fn set_special_rule_enabled(
-            &self,
-            rule: NotificationsSpecialRule,
-            enabled: bool,
-        ) {
+        /// Mirror whether the given special push rule is enabled.
+        fn set_special_rule_enabled(&self, rule: NotificationsSpecialRule, enabled: bool) {
             let cell = match rule {
                 NotificationsSpecialRule::UserMention => &self.mention_rule_enabled,
                 NotificationsSpecialRule::RoomMention => &self.room_mention_rule_enabled,
@@ -398,8 +294,8 @@ mod imp {
             }
         }
 
-        /// Set whether notifications are enabled for this session.
-        pub(super) fn set_account_enabled(&self, enabled: bool) {
+        /// Mirror whether notifications are enabled for this Matrix account.
+        fn set_account_enabled(&self, enabled: bool) {
             if self.account_enabled.get() == enabled {
                 return;
             }
@@ -408,8 +304,9 @@ mod imp {
             self.obj().notify_account_enabled();
         }
 
-        /// Set the global setting about which messages trigger notifications.
-        pub(super) fn set_global_setting(&self, setting: NotificationsGlobalSetting) {
+        /// Mirror the global setting about which messages trigger
+        /// notifications.
+        fn set_global_setting(&self, setting: NotificationsGlobalSetting) {
             if self.global_setting.get() == setting {
                 return;
             }
@@ -418,16 +315,11 @@ mod imp {
             self.obj().notify_global_setting();
         }
 
-        /// Update the local list of keywords with the remote one.
-        pub(super) async fn update_keywords_list(&self) {
-            let Some(api) = self.api() else {
-                return;
-            };
-
-            let keywords = spawn_tokio!(async move { api.enabled_keywords().await })
-                .await
-                .expect("task was not aborted");
-
+        /// Update the list of keywords with the given one.
+        ///
+        /// The `GtkStringList` is spliced from the first keyword that differs,
+        /// so that the rows before it stay where they are.
+        fn update_keywords_list(&self, keywords: &[String]) {
             let list = &self.keywords_list;
             let mut diverges_at = None;
 
@@ -462,70 +354,14 @@ mod imp {
             let additions = &keywords[pos as usize..];
             list.splice(pos, old_len.saturating_sub(pos), additions);
         }
-
-        /// Update the local list of per-room settings with the remote one.
-        pub(super) async fn update_per_room_settings(&self) {
-            let Some(api) = self.api() else {
-                return;
-            };
-
-            let api_clone = api.clone();
-            let room_ids = spawn_tokio!(async move {
-                api_clone
-                    .get_rooms_with_user_defined_rules(Some(true))
-                    .await
-            })
-            .await
-            .expect("task was not aborted");
-
-            // Update the local map.
-            let mut per_room_settings = HashMap::with_capacity(room_ids.len());
-            for room_id in room_ids {
-                let Ok(room_id) = RoomId::parse(room_id) else {
-                    continue;
-                };
-
-                let room_id_clone = room_id.clone();
-                let api_clone = api.clone();
-                let handle = spawn_tokio!(async move {
-                    api_clone
-                        .get_user_defined_room_notification_mode(&room_id_clone)
-                        .await
-                });
-
-                if let Some(setting) = handle.await.expect("task was not aborted") {
-                    per_room_settings.insert(room_id, setting.into());
-                }
-            }
-
-            self.per_room_settings.replace(per_room_settings.clone());
-
-            // Update the setting in the rooms.
-            // Since we don't know when a room was added or removed, we have to update every
-            // room.
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-            let room_list = session.room_list();
-
-            for room in room_list.iter::<Room>() {
-                let Ok(room) = room else {
-                    // Returns an error when the list changed, just stop.
-                    break;
-                };
-
-                if let Some(setting) = per_room_settings.get(room.room_id()) {
-                    room.set_notifications_setting(*setting);
-                } else {
-                    room.set_notifications_setting(NotificationsRoomSetting::Global);
-                }
-            }
-        }
     }
 }
 
 glib::wrapper! {
     /// The notifications settings of a `Session`.
+    ///
+    /// The settings are the core's; this presents them, and keeps the
+    /// per-session switch, which is this application's own.
     pub struct NotificationsSettings(ObjectSubclass<imp::NotificationsSettings>);
 }
 
@@ -535,121 +371,55 @@ impl NotificationsSettings {
         glib::Object::new()
     }
 
-    /// Set whether notifications are enabled for this session.
-    pub(crate) async fn set_account_enabled(
-        &self,
-        enabled: bool,
-    ) -> Result<(), NotificationSettingsError> {
-        let imp = self.imp();
+    /// Set whether notifications are enabled for this Matrix account.
+    pub(crate) async fn set_account_enabled(&self, enabled: bool) -> Result<(), ()> {
+        let core = self.imp().core().ok_or(())?;
 
-        let Some(api) = imp.api() else {
-            error!("Cannot update notifications settings when API is not initialized");
-            return Err(NotificationSettingsError::UnableToUpdatePushRule);
-        };
-
-        let handle = spawn_tokio!(async move {
-            api.set_push_rule_enabled(
-                RuleKind::Override,
-                PredefinedOverrideRuleId::Master,
-                // The rule disables notifications, so we need to invert the boolean.
-                !enabled,
-            )
+        spawn_tokio!(async move { core.set_account_enabled(enabled).await })
             .await
-        });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(()) => {
-                imp.set_account_enabled(enabled);
-                Ok(())
-            }
-            Err(error) => {
+            .expect("task was not aborted")
+            .map_err(|error| {
                 error!("Could not change account notifications setting: {error}");
-                Err(error)
-            }
-        }
+            })
     }
 
     /// Set the global setting about which messages trigger notifications.
     pub(crate) async fn set_global_setting(
         &self,
         setting: NotificationsGlobalSetting,
-    ) -> Result<(), NotificationSettingsError> {
-        let imp = self.imp();
+    ) -> Result<(), ()> {
+        let core = self.imp().core().ok_or(())?;
 
-        let Some(api) = imp.api() else {
-            error!("Cannot update notifications settings when API is not initialized");
-            return Err(NotificationSettingsError::UnableToUpdatePushRule);
-        };
-
-        let (group_all, one_to_one_all) = match setting {
-            NotificationsGlobalSetting::All => (true, true),
-            NotificationsGlobalSetting::DirectAndMentions => (false, true),
-            NotificationsGlobalSetting::MentionsOnly => (false, false),
-        };
-
-        if let Err(error) = set_default_rooms_notifications_all(api.clone(), false, group_all).await
-        {
-            error!("Could not change global group chats notifications setting: {error}");
-            return Err(error);
-        }
-        if let Err(error) = set_default_rooms_notifications_all(api, true, one_to_one_all).await {
-            error!("Could not change global 1-to-1 chats notifications setting: {error}");
-            return Err(error);
-        }
-
-        imp.set_global_setting(setting);
-
-        Ok(())
+        spawn_tokio!(async move { core.set_global_setting(setting.into()).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
+                error!("Could not change global notifications setting: {error}");
+            })
     }
 
     /// Remove a keyword from the list.
-    pub(crate) async fn remove_keyword(
-        &self,
-        keyword: String,
-    ) -> Result<(), NotificationSettingsError> {
-        let imp = self.imp();
+    pub(crate) async fn remove_keyword(&self, keyword: String) -> Result<(), ()> {
+        let core = self.imp().core().ok_or(())?;
 
-        let Some(api) = imp.api() else {
-            error!("Cannot update notifications settings when API is not initialized");
-            return Err(NotificationSettingsError::UnableToUpdatePushRule);
-        };
-
-        let keyword_clone = keyword.clone();
-        let handle = spawn_tokio!(async move { api.remove_keyword(&keyword_clone).await });
-
-        if let Err(error) = handle.await.expect("task was not aborted") {
-            error!("Could not remove notification keyword `{keyword}`: {error}");
-            return Err(error);
-        }
-
-        imp.update_keywords_list().await;
-
-        Ok(())
+        spawn_tokio!(async move { core.remove_keyword(keyword).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
+                error!("Could not remove notification keyword: {error}");
+            })
     }
 
     /// Add a keyword to the list.
-    pub(crate) async fn add_keyword(
-        &self,
-        keyword: String,
-    ) -> Result<(), NotificationSettingsError> {
-        let imp = self.imp();
+    pub(crate) async fn add_keyword(&self, keyword: String) -> Result<(), ()> {
+        let core = self.imp().core().ok_or(())?;
 
-        let Some(api) = imp.api() else {
-            error!("Cannot update notifications settings when API is not initialized");
-            return Err(NotificationSettingsError::UnableToUpdatePushRule);
-        };
-
-        let keyword_clone = keyword.clone();
-        let handle = spawn_tokio!(async move { api.add_keyword(keyword_clone).await });
-
-        if let Err(error) = handle.await.expect("task was not aborted") {
-            error!("Could not add notification keyword `{keyword}`: {error}");
-            return Err(error);
-        }
-
-        imp.update_keywords_list().await;
-
-        Ok(())
+        spawn_tokio!(async move { core.add_keyword(keyword).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
+                error!("Could not add notification keyword: {error}");
+            })
     }
 
     /// The state of the given special push rule.
@@ -667,28 +437,15 @@ impl NotificationsSettings {
         &self,
         rule: NotificationsSpecialRule,
         enabled: bool,
-    ) -> Result<(), NotificationSettingsError> {
-        let imp = self.imp();
+    ) -> Result<(), ()> {
+        let core = self.imp().core().ok_or(())?;
 
-        let Some(api) = imp.api() else {
-            error!("Cannot update notifications settings when API is not initialized");
-            return Err(NotificationSettingsError::UnableToUpdatePushRule);
-        };
-
-        let (kind, rule_id) = rule.kind_and_id();
-        let handle =
-            spawn_tokio!(async move { api.set_push_rule_enabled(kind, rule_id, enabled).await });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(()) => {
-                imp.set_special_rule_enabled(rule, enabled);
-                Ok(())
-            }
-            Err(error) => {
+        spawn_tokio!(async move { core.set_special_rule_enabled(rule, enabled).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
                 error!("Could not change the state of the {rule:?} push rule: {error}");
-                Err(error)
-            }
-        }
+            })
     }
 
     /// Set the notification setting for the room with the given ID.
@@ -696,29 +453,15 @@ impl NotificationsSettings {
         &self,
         room_id: OwnedRoomId,
         setting: NotificationsRoomSetting,
-    ) -> Result<(), NotificationSettingsError> {
-        let imp = self.imp();
+    ) -> Result<(), ()> {
+        let core = self.imp().core().ok_or(())?;
 
-        let Some(api) = imp.api() else {
-            error!("Cannot update notifications settings when API is not initialized");
-            return Err(NotificationSettingsError::UnableToUpdatePushRule);
-        };
-
-        let room_id_clone = room_id.clone();
-        let handle = if let Some(mode) = setting.to_notification_mode() {
-            spawn_tokio!(async move { api.set_room_notification_mode(&room_id_clone, mode).await })
-        } else {
-            spawn_tokio!(async move { api.delete_user_defined_room_rules(&room_id_clone).await })
-        };
-
-        if let Err(error) = handle.await.expect("task was not aborted") {
-            error!("Could not update notifications setting for room `{room_id}`: {error}");
-            return Err(error);
-        }
-
-        imp.update_per_room_settings().await;
-
-        Ok(())
+        spawn_tokio!(async move { core.set_per_room_setting(room_id, setting.into()).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
+                error!("Could not update the notifications setting of the room: {error}");
+            })
     }
 }
 
@@ -726,37 +469,4 @@ impl Default for NotificationsSettings {
     fn default() -> Self {
         Self::new()
     }
-}
-
-async fn default_rooms_notifications_is_all(
-    api: MatrixNotificationSettings,
-    is_one_to_one: bool,
-) -> bool {
-    let mode = spawn_tokio!(async move {
-        api.get_default_room_notification_mode(IsEncrypted::No, is_one_to_one.into())
-            .await
-    })
-    .await
-    .expect("task was not aborted");
-
-    mode == RoomNotificationMode::AllMessages
-}
-
-async fn set_default_rooms_notifications_all(
-    api: MatrixNotificationSettings,
-    is_one_to_one: bool,
-    all: bool,
-) -> Result<(), NotificationSettingsError> {
-    let mode = if all {
-        RoomNotificationMode::AllMessages
-    } else {
-        RoomNotificationMode::MentionsAndKeywordsOnly
-    };
-
-    spawn_tokio!(async move {
-        api.set_default_room_notification_mode(IsEncrypted::No, is_one_to_one.into(), mode)
-            .await
-    })
-    .await
-    .expect("task was not aborted")
 }

@@ -92,7 +92,10 @@ pub use self::{
         ImagePack, ImagePackSource, ImagePacks, ImagePacksError, RoomPackKind, UnavailablePack,
         room_state_packs, sticker_content,
     },
-    notifications::PushError,
+    notifications::{
+        NotificationsError, NotificationsGlobalSetting, NotificationsRoomSetting,
+        NotificationsSettings, NotificationsSpecialRule, PushError,
+    },
     presence::{Presence, PresenceError, PresenceList, UserPresence},
     remote::{
         PROFILE_VALIDITY_DURATION, PeekedMessage, ROOM_DATA_VALIDITY_DURATION, RemoteCache,
@@ -280,6 +283,8 @@ struct SessionInner {
     /// Remote rooms, users and URL previews, asked for once and kept for a
     /// while; built on first use.
     remote_cache: std::sync::OnceLock<RemoteCache>,
+    /// The notifications settings of the account, built on first use.
+    notifications_settings: std::sync::OnceLock<NotificationsSettings>,
     /// The image packs available to this account, built on first use.
     image_packs: std::sync::OnceLock<ImagePacks>,
     /// The account's other sessions.
@@ -362,6 +367,7 @@ impl Session {
             global_account_data: std::sync::OnceLock::new(),
             presence_list: std::sync::OnceLock::new(),
             remote_cache: std::sync::OnceLock::new(),
+            notifications_settings: std::sync::OnceLock::new(),
             image_packs: std::sync::OnceLock::new(),
             user_sessions: std::sync::OnceLock::new(),
             security: std::sync::OnceLock::new(),
@@ -411,6 +417,8 @@ impl Session {
         let _ = self.verification_list();
         let _ = self.global_account_data();
         self.presence_list().watch();
+        // The push rules need the client, which exists now.
+        notifications::spawn_load(self.notifications_settings());
         let _ = self.security();
         self.calls().init();
 
@@ -625,6 +633,17 @@ impl Session {
         self.inner
             .presence_list
             .get_or_init(|| PresenceList::new(self.downgrade()))
+    }
+
+    /// The notifications settings of this account.
+    ///
+    /// Built on first use; read from the push rules once the session is
+    /// ready, which is what `prepare()` does.
+    #[must_use]
+    pub fn notifications_settings(&self) -> &NotificationsSettings {
+        self.inner
+            .notifications_settings
+            .get_or_init(|| NotificationsSettings::new(self.downgrade()))
     }
 
     /// Remote rooms, users and URL previews, asked for once and kept for a

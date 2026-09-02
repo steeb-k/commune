@@ -245,7 +245,7 @@ mod imp {
         #[property(get)]
         typing_list: TypingList,
         /// The notifications settings for this room.
-        #[property(get, set = Self::set_notifications_setting, explicit_notify, builder(NotificationsRoomSetting::default()))]
+        #[property(get, builder(NotificationsRoomSetting::default()))]
         notifications_setting: Cell<NotificationsRoomSetting>,
         /// The permissions of our own user in this room
         #[property(get)]
@@ -405,6 +405,12 @@ mod imp {
                 .follow(core.subscribe_is_direct(), |obj: &R, is_direct| {
                     obj.imp().set_is_direct(is_direct);
                 })
+                .follow(
+                    core.subscribe_notifications_setting(),
+                    |obj: &R, setting| {
+                        obj.imp().set_notifications_setting(setting.into());
+                    },
+                )
                 .follow(core.subscribe_direct_member_user_id(), |obj: &R, _| {
                     obj.imp().spawn_update_direct_member();
                 })
@@ -487,6 +493,7 @@ mod imp {
             self.set_category(core.category().into());
             self.set_tag_order(core.tag_order());
             self.set_is_direct(core.is_direct());
+            self.set_notifications_setting(core.notifications_setting().into());
             self.spawn_update_direct_member();
             self.set_is_tombstoned(core.is_tombstoned());
             self.set_successor_id(core.successor_id());

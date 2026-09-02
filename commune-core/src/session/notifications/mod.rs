@@ -1,4 +1,7 @@
-//! The account's push registration.
+//! The account's push registration, and its notifications settings.
+//!
+//! The settings are in [`settings`]; the rest of this file is the push
+//! registration.
 //!
 //! The authority is `src/utils/android_push.rs` — the GTK Android port's
 //! own `UnifiedPush` implementation, which is the mature version of exactly
@@ -13,6 +16,13 @@
 use ruma::api::client::push::{Pusher, PusherIds, PusherInit, PusherKind, get_pushers, set_pusher};
 use tracing::{debug, info};
 
+mod settings;
+
+pub(crate) use self::settings::spawn_load;
+pub use self::settings::{
+    NotificationsError, NotificationsGlobalSetting, NotificationsRoomSetting,
+    NotificationsSettings, NotificationsSpecialRule,
+};
 use crate::{UserFacingError, config, spawn_tokio};
 
 /// What can go wrong while registering for push.
