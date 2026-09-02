@@ -303,6 +303,22 @@ impl From<crate::session::RoomDetailsError> for CoreError {
     }
 }
 
+impl From<crate::session::RoomSettingsError> for CoreError {
+    fn from(error: crate::session::RoomSettingsError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::AliasError> for CoreError {
+    fn from(error: crate::session::AliasError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 impl From<crate::session::RecoveryState> for FfiRecoveryState {
     fn from(state: crate::session::RecoveryState) -> Self {
         use crate::session::RecoveryState;
@@ -3583,156 +3599,79 @@ impl CoreApp {
         width: Option<u32>,
         height: Option<u32>,
     ) -> Result<(), CoreError> {
-        use ruma::events::room::avatar::ImageInfo as AvatarImageInfo;
+        let session = self.session()?;
+        let room = self.room(&room_id)?;
+        let mime = mime_type
+            .parse::<mime::Mime>()
+            .unwrap_or(mime::APPLICATION_OCTET_STREAM);
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let data = std::fs::read(&file_path).map_err(|read_error| CoreError::Failed {
+            msg: format!("Could not read the file: {read_error}"),
+        })?;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let mime = mime_type
-                    .parse::<mime::Mime>()
-                    .unwrap_or(mime::APPLICATION_OCTET_STREAM);
+        // The application uploads without asking the limit first; this
+        // side asks, as it does for every upload, so an oversized picture
+        // is refused before it is sent.
+        let size = u64::try_from(data.len()).ok();
+        crate::session::check_upload_size(&session.client(), size).await?;
 
-                let data = std::fs::read(&file_path).map_err(|read_error| CoreError::Failed {
-                    msg: format!("Could not read the file: {read_error}"),
-                })?;
-                let size = u64::try_from(data.len()).ok();
-                crate::session::check_upload_size(&session.client(), size).await?;
-
-                let response = session
-                    .client()
-                    .media()
-                    .upload(&mime, data, None)
-                    .await
-                    .map_err(|upload_error| CoreError::Failed {
-                        msg: format!("Could not upload the avatar: {upload_error}"),
-                    })?;
-
-                let mut info = AvatarImageInfo::new();
-                info.width = width.map(Into::into);
-                info.height = height.map(Into::into);
-                info.size = size.and_then(|s| u32::try_from(s).ok()).map(Into::into);
-                info.mimetype = Some(mime.to_string());
-
-                room.matrix_room()
-                    .set_avatar_url(&response.content_uri, Some(info))
-                    .await
-                    .map(|_| ())
-                    .map_err(|set_error| CoreError::Failed {
-                        msg: format!("Could not change the avatar: {set_error}"),
-                    })
-            })
+        room.set_avatar(&mime, data, width.map(Into::into), height.map(Into::into))
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// Remove the room's avatar.
     pub async fn remove_room_avatar(&self, room_id: String) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                room.matrix_room()
-                    .remove_avatar()
-                    .await
-                    .map(|_| ())
-                    .map_err(|remove_error| CoreError::Failed {
-                        msg: format!("Could not remove the avatar: {remove_error}"),
-                    })
-            })
-            .await
-            .expect("task was not aborted")
+        room.remove_avatar().await.map_err(CoreError::from)
     }
 
     /// The room's join rule, with what this room's version supports and
     /// whether we may change it.
     pub async fn room_join_rule(&self, room_id: String) -> Result<FfiJoinRuleInfo, CoreError> {
-        use ruma::events::room::join_rules::{JoinRule, RoomJoinRulesEventContent};
+        use ruma::events::room::join_rules::JoinRule;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
+        use crate::session::JoinRuleValue;
+
+        let room = self.room(&room_id)?;
+        let state = room.join_rule().state();
+
+        // The application's value and knock flag, as the FFI's one enum.
+        let value = match (state.value, state.can_knock) {
+            (JoinRuleValue::Public, _) => FfiJoinRuleValue::Public,
+            (JoinRuleValue::Invite, false) => FfiJoinRuleValue::Invite,
+            (JoinRuleValue::Invite, true) => FfiJoinRuleValue::Knock,
+            (JoinRuleValue::RoomMembership, false) => FfiJoinRuleValue::Restricted,
+            (JoinRuleValue::RoomMembership, true) => FfiJoinRuleValue::KnockRestricted,
+            (JoinRuleValue::Unsupported, _) => FfiJoinRuleValue::Unsupported,
+        };
+        let allow = match &state.matrix_join_rule {
+            Some(JoinRule::Restricted(restricted) | JoinRule::KnockRestricted(restricted)) => {
+                allow_room_ids(restricted)
+            }
+            _ => Vec::new(),
         };
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let matrix_room = room.matrix_room().clone();
+        let authorization = room.rules().authorization;
 
-                let rule = read_state_content::<RoomJoinRulesEventContent>(&matrix_room)
-                    .await
-                    .map(|content| content.join_rule)
-                    .unwrap_or(JoinRule::Invite);
+        // As the application's page decides it: a rule it cannot edit is
+        // not changed whatever the power level.
+        let can_change = state.value.can_be_edited()
+            && can_send_state(
+                room.matrix_room(),
+                ruma::events::StateEventType::RoomJoinRules,
+            )
+            .await;
 
-                let (value, allow) = match &rule {
-                    JoinRule::Public => (FfiJoinRuleValue::Public, Vec::new()),
-                    JoinRule::Invite => (FfiJoinRuleValue::Invite, Vec::new()),
-                    JoinRule::Knock => (FfiJoinRuleValue::Knock, Vec::new()),
-                    JoinRule::Restricted(restricted) => {
-                        (FfiJoinRuleValue::Restricted, allow_room_ids(restricted))
-                    }
-                    JoinRule::KnockRestricted(restricted) => (
-                        FfiJoinRuleValue::KnockRestricted,
-                        allow_room_ids(restricted),
-                    ),
-                    _ => (FfiJoinRuleValue::Unsupported, Vec::new()),
-                };
-
-                let authorization = matrix_room
-                    .clone_info()
-                    .room_version_rules_or_default()
-                    .authorization;
-
-                Ok(FfiJoinRuleInfo {
-                    value,
-                    allow_room_ids: allow,
-                    supports_knock: authorization.knocking,
-                    supports_restricted: authorization.restricted_join_rule,
-                    supports_knock_restricted: authorization.knock_restricted_join_rule,
-                    can_change: can_send_state(
-                        &matrix_room,
-                        ruma::events::StateEventType::RoomJoinRules,
-                    )
-                    .await,
-                })
-            })
-            .await
-            .expect("task was not aborted")
+        Ok(FfiJoinRuleInfo {
+            value,
+            allow_room_ids: allow,
+            supports_knock: authorization.knocking,
+            supports_restricted: authorization.restricted_join_rule,
+            supports_knock_restricted: authorization.knock_restricted_join_rule,
+            can_change,
+        })
     }
 
     /// Change the room's join rule, computed as the application does: a
@@ -3744,80 +3683,76 @@ impl CoreApp {
         value: FfiJoinRuleValue,
         allow_space_id: Option<String>,
     ) -> Result<(), CoreError> {
-        use ruma::events::room::join_rules::{
-            AllowRule, JoinRule, Restricted, RoomJoinRulesEventContent,
+        use ruma::events::room::join_rules::{AllowRule, JoinRule, Restricted};
+
+        use crate::session::{JoinRuleValue, compute_join_rule};
+
+        let room = self.room(&room_id)?;
+
+        // The FFI's one enum is the application's value and knock switch.
+        let (value, can_knock) = match value {
+            FfiJoinRuleValue::Public => (JoinRuleValue::Public, false),
+            FfiJoinRuleValue::Invite => (JoinRuleValue::Invite, false),
+            FfiJoinRuleValue::Knock => (JoinRuleValue::Invite, true),
+            FfiJoinRuleValue::Restricted => (JoinRuleValue::RoomMembership, false),
+            FfiJoinRuleValue::KnockRestricted => (JoinRuleValue::RoomMembership, true),
+            FfiJoinRuleValue::Unsupported => {
+                return Err(CoreError::Failed {
+                    msg: "Cannot set an unsupported rule".to_owned(),
+                });
+            }
         };
 
-        let Some(session) = self.first_ready_session() else {
+        // The page hides what the room's version cannot take; this side
+        // refuses it, since there is no picker to hide it from.
+        let authorization = room.rules().authorization;
+        let version_supports = match (value, can_knock) {
+            (JoinRuleValue::RoomMembership, true) => authorization.knock_restricted_join_rule,
+            (JoinRuleValue::RoomMembership, false) => authorization.restricted_join_rule,
+            (JoinRuleValue::Invite, true) => authorization.knocking,
+            _ => true,
+        };
+        if !version_supports {
             return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
+                msg: "The version of this room does not support this rule".to_owned(),
+            });
+        }
+
+        let current = room.join_rule().matrix_join_rule();
+
+        // A space picked here replaces the whole allow list. A list left
+        // alone is carried over verbatim, however many rooms are in it, so
+        // that changing whether people may knock never changes who may join.
+        let restricted = match allow_space_id {
+            Some(space_id) => Some(Restricted::new(vec![AllowRule::room_membership(
+                parse_room_id(&space_id)?,
+            )])),
+            None => match &current {
+                Some(JoinRule::Restricted(restricted) | JoinRule::KnockRestricted(restricted)) => {
+                    Some(restricted.clone())
+                }
+                _ => None,
+            },
+        };
+
+        // The membership rule with nothing to allow is a half-finished
+        // choice, not a rule: the page will not send it, and neither will
+        // this.
+        let Some(rule) = compute_join_rule(value, can_knock, restricted) else {
+            return Err(CoreError::Failed {
+                msg: "A membership rule needs a space".to_owned(),
             });
         };
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let matrix_room = room.matrix_room().clone();
+        // The page saves only a change.
+        if current.unwrap_or(JoinRule::Invite) == rule {
+            return Ok(());
+        }
 
-                let restricted = || async {
-                    if let Some(space_id) = &allow_space_id {
-                        let space_id =
-                            ruma::RoomId::parse(space_id).map_err(|_| CoreError::Failed {
-                                msg: "Invalid space ID".to_owned(),
-                            })?;
-                        return Ok::<_, CoreError>(Restricted::new(vec![
-                            AllowRule::room_membership(space_id),
-                        ]));
-                    }
-                    // Carry the saved list over verbatim, so changing
-                    // whether people may knock never changes who may join.
-                    let current = read_state_content::<RoomJoinRulesEventContent>(&matrix_room)
-                        .await
-                        .map(|content| content.join_rule);
-                    match current {
-                        Some(
-                            JoinRule::Restricted(restricted)
-                            | JoinRule::KnockRestricted(restricted),
-                        ) => Ok(restricted),
-                        _ => Err(CoreError::Failed {
-                            msg: "A membership rule needs a space".to_owned(),
-                        }),
-                    }
-                };
-
-                let rule = match value {
-                    FfiJoinRuleValue::Public => JoinRule::Public,
-                    FfiJoinRuleValue::Invite => JoinRule::Invite,
-                    FfiJoinRuleValue::Knock => JoinRule::Knock,
-                    FfiJoinRuleValue::Restricted => JoinRule::Restricted(restricted().await?),
-                    FfiJoinRuleValue::KnockRestricted => {
-                        JoinRule::KnockRestricted(restricted().await?)
-                    }
-                    FfiJoinRuleValue::Unsupported => {
-                        return Err(CoreError::Failed {
-                            msg: "Cannot set an unsupported rule".to_owned(),
-                        });
-                    }
-                };
-
-                matrix_room
-                    .send_state_event(RoomJoinRulesEventContent::new(rule))
-                    .await
-                    .map(|_| ())
-                    .map_err(|send_error| CoreError::Failed {
-                        msg: format!("Could not change who can join: {send_error}"),
-                    })
-            })
+        room.join_rule()
+            .set_matrix_join_rule(rule)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// The room's history visibility, and whether we may change it.
@@ -3825,53 +3760,30 @@ impl CoreApp {
         &self,
         room_id: String,
     ) -> Result<FfiHistoryVisibilityInfo, CoreError> {
-        use ruma::events::room::history_visibility::{
-            HistoryVisibility, RoomHistoryVisibilityEventContent,
+        use crate::session::HistoryVisibilityValue;
+
+        let room = self.room(&room_id)?;
+        let visibility = room.history_visibility();
+
+        // The FFI's enum has no unsupported variant, so an unsupported
+        // value shows as the most restrictive one and cannot be changed —
+        // the page shows the real value and refuses the change.
+        let value = match visibility {
+            HistoryVisibilityValue::WorldReadable => FfiHistoryVisibility::WorldReadable,
+            HistoryVisibilityValue::Shared => FfiHistoryVisibility::Shared,
+            HistoryVisibilityValue::Invited => FfiHistoryVisibility::Invited,
+            HistoryVisibilityValue::Joined | HistoryVisibilityValue::Unsupported => {
+                FfiHistoryVisibility::Joined
+            }
         };
+        let can_change = visibility != HistoryVisibilityValue::Unsupported
+            && can_send_state(
+                room.matrix_room(),
+                ruma::events::StateEventType::RoomHistoryVisibility,
+            )
+            .await;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let matrix_room = room.matrix_room().clone();
-
-                let visibility =
-                    read_state_content::<RoomHistoryVisibilityEventContent>(&matrix_room)
-                        .await
-                        .map(|content| content.history_visibility)
-                        .unwrap_or(HistoryVisibility::Shared);
-
-                let value = match visibility {
-                    HistoryVisibility::WorldReadable => FfiHistoryVisibility::WorldReadable,
-                    HistoryVisibility::Shared => FfiHistoryVisibility::Shared,
-                    HistoryVisibility::Invited => FfiHistoryVisibility::Invited,
-                    _ => FfiHistoryVisibility::Joined,
-                };
-
-                Ok(FfiHistoryVisibilityInfo {
-                    value,
-                    can_change: can_send_state(
-                        &matrix_room,
-                        ruma::events::StateEventType::RoomHistoryVisibility,
-                    )
-                    .await,
-                })
-            })
-            .await
-            .expect("task was not aborted")
+        Ok(FfiHistoryVisibilityInfo { value, can_change })
     }
 
     /// Change the room's history visibility.
@@ -3880,119 +3792,64 @@ impl CoreApp {
         room_id: String,
         value: FfiHistoryVisibility,
     ) -> Result<(), CoreError> {
-        use ruma::events::room::history_visibility::{
-            HistoryVisibility, RoomHistoryVisibilityEventContent,
+        use crate::session::HistoryVisibilityValue;
+
+        let room = self.room(&room_id)?;
+
+        let value = match value {
+            FfiHistoryVisibility::WorldReadable => HistoryVisibilityValue::WorldReadable,
+            FfiHistoryVisibility::Shared => HistoryVisibilityValue::Shared,
+            FfiHistoryVisibility::Invited => HistoryVisibilityValue::Invited,
+            FfiHistoryVisibility::Joined => HistoryVisibilityValue::Joined,
         };
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        // The page saves only a change.
+        if room.history_visibility() == value {
+            return Ok(());
+        }
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
-                let visibility = match value {
-                    FfiHistoryVisibility::WorldReadable => HistoryVisibility::WorldReadable,
-                    FfiHistoryVisibility::Shared => HistoryVisibility::Shared,
-                    FfiHistoryVisibility::Invited => HistoryVisibility::Invited,
-                    FfiHistoryVisibility::Joined => HistoryVisibility::Joined,
-                };
-
-                room.matrix_room()
-                    .send_state_event(RoomHistoryVisibilityEventContent::new(visibility))
-                    .await
-                    .map(|_| ())
-                    .map_err(|send_error| CoreError::Failed {
-                        msg: format!("Could not change the history visibility: {send_error}"),
-                    })
-            })
+        room.set_history_visibility(value)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// The room's addresses: canonical and alternative public aliases,
     /// the aliases registered on this homeserver, and whether the room
     /// is published in the server's directory.
     pub async fn room_addresses(&self, room_id: String) -> Result<FfiRoomAddresses, CoreError> {
-        use ruma::{
-            api::client::{
-                directory::get_room_visibility,
-                room::{Visibility, aliases},
-            },
-            events::room::canonical_alias::RoomCanonicalAliasEventContent,
-        };
+        let room = self.room(&room_id)?;
+        let aliases = room.aliases();
+        let state = aliases.state();
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let matrix_room = room.matrix_room().clone();
-                let client = session.client();
-
-                let content = read_state_content::<RoomCanonicalAliasEventContent>(&matrix_room)
-                    .await
-                    .unwrap_or_default();
-
-                let local = client
-                    .send(aliases::v3::Request::new(room_id.clone()))
-                    .await
-                    .map(|response| {
-                        response
-                            .aliases
-                            .into_iter()
-                            .map(|alias| alias.to_string())
-                            .collect()
-                    })
-                    .unwrap_or_default();
-
-                let published = client
-                    .send(get_room_visibility::v3::Request::new(room_id.clone()))
-                    .await
-                    .map(|response| response.visibility == Visibility::Public)
-                    .unwrap_or(false);
-
-                Ok(FfiRoomAddresses {
-                    canonical: content.alias.map(|alias| alias.to_string()),
-                    alt: content
-                        .alt_aliases
-                        .iter()
-                        .map(|alias| alias.to_string())
-                        .collect(),
-                    local,
-                    published,
-                    can_change: can_send_state(
-                        &matrix_room,
-                        ruma::events::StateEventType::RoomCanonicalAlias,
-                    )
-                    .await,
-                })
-            })
+        // The application's page shows nothing for a list it could not
+        // fetch, and an unpublished switch for a visibility it could not
+        // read; this record has no room for "unknown".
+        let local = aliases
+            .local_aliases()
             .await
-            .expect("task was not aborted")
+            .unwrap_or_default()
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        let published = room.is_published().await.unwrap_or(false);
+
+        // There is no clear definition of who is allowed to publish a room
+        // to the directory in the Matrix spec; the application assumes it
+        // does not make sense unless the user can change the public
+        // addresses.
+        let can_change = can_send_state(
+            room.matrix_room(),
+            ruma::events::StateEventType::RoomCanonicalAlias,
+        )
+        .await;
+
+        Ok(FfiRoomAddresses {
+            canonical: state.canonical_alias.map(|alias| alias.to_string()),
+            alt: state.alt_aliases.iter().map(ToString::to_string).collect(),
+            local,
+            published,
+            can_change,
+        })
     }
 
     /// Change one aspect of the room's addresses. The canonical-alias
@@ -4005,152 +3862,47 @@ impl CoreApp {
         room_id: String,
         action: FfiAddressAction,
     ) -> Result<(), CoreError> {
-        use ruma::{
-            api::client::{
-                alias::{create_alias, delete_alias},
-                directory::set_room_visibility,
-                room::Visibility,
-            },
-            events::room::canonical_alias::RoomCanonicalAliasEventContent,
-        };
+        let room = self.room(&room_id)?;
+        let aliases = room.aliases();
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let matrix_room = room.matrix_room().clone();
-                let client = session.client();
-
-                let parse_alias = |alias: &str| {
-                    ruma::RoomAliasId::parse(alias).map_err(|_| CoreError::Failed {
-                        msg: "Invalid address".to_owned(),
-                    })
-                };
-
-                match action {
-                    FfiAddressAction::Publish { published } => {
-                        let visibility = if published {
-                            Visibility::Public
-                        } else {
-                            Visibility::Private
-                        };
-                        client
-                            .send(set_room_visibility::v3::Request::new(
-                                room_id.clone(),
-                                visibility,
-                            ))
-                            .await
-                            .map(|_| ())
-                            .map_err(|send_error| CoreError::Failed {
-                                msg: format!("Could not change the visibility: {send_error}"),
-                            })
-                    }
-                    FfiAddressAction::RegisterLocal { alias } => {
-                        let alias = parse_alias(&alias)?;
-                        client
-                            .send(create_alias::v3::Request::new(alias, room_id.clone()))
-                            .await
-                            .map(|_| ())
-                            .map_err(|send_error| CoreError::Failed {
-                                msg: format!("Could not register the address: {send_error}"),
-                            })
-                    }
-                    FfiAddressAction::UnregisterLocal { alias } => {
-                        let alias = parse_alias(&alias)?;
-                        client
-                            .send(delete_alias::v3::Request::new(alias))
-                            .await
-                            .map(|_| ())
-                            .map_err(|send_error| CoreError::Failed {
-                                msg: format!("Could not unregister the address: {send_error}"),
-                            })
-                    }
-                    FfiAddressAction::SetCanonical { alias } => {
-                        let alias = parse_alias(&alias)?;
-                        let mut content =
-                            read_state_content::<RoomCanonicalAliasEventContent>(&matrix_room)
-                                .await
-                                .unwrap_or_default();
-                        if content.alias.as_ref() == Some(&alias) {
-                            return Ok(());
-                        }
-                        if let Some(pos) = content.alt_aliases.iter().position(|a| *a == alias) {
-                            content.alt_aliases.remove(pos);
-                        }
-                        if let Some(old) = content.alias.replace(alias)
-                            && !content.alt_aliases.contains(&old)
-                        {
-                            content.alt_aliases.push(old);
-                        }
-                        send_canonical(&matrix_room, content).await
-                    }
-                    FfiAddressAction::RemoveCanonical { alias } => {
-                        let alias = parse_alias(&alias)?;
-                        let mut content =
-                            read_state_content::<RoomCanonicalAliasEventContent>(&matrix_room)
-                                .await
-                                .unwrap_or_default();
-                        if content.alias.take().is_none_or(|a| a != alias) {
-                            return Ok(());
-                        }
-                        send_canonical(&matrix_room, content).await
-                    }
-                    FfiAddressAction::AddAlt { alias } => {
-                        let alias = parse_alias(&alias)?;
-                        // The alias must exist and point at this room.
-                        let resolved =
-                            client
-                                .resolve_room_alias(&alias)
-                                .await
-                                .map_err(|resolve_error| CoreError::Failed {
-                                    msg: format!("This address is not registered: {resolve_error}"),
-                                })?;
-                        if resolved.room_id != room_id {
-                            return Err(CoreError::Failed {
-                                msg: "This address points to another room".to_owned(),
-                            });
-                        }
-                        let mut content =
-                            read_state_content::<RoomCanonicalAliasEventContent>(&matrix_room)
-                                .await
-                                .unwrap_or_default();
-                        if content.alias.as_ref() == Some(&alias)
-                            || content.alt_aliases.contains(&alias)
-                        {
-                            return Ok(());
-                        }
-                        content.alt_aliases.push(alias);
-                        send_canonical(&matrix_room, content).await
-                    }
-                    FfiAddressAction::RemoveAlt { alias } => {
-                        let alias = parse_alias(&alias)?;
-                        let mut content =
-                            read_state_content::<RoomCanonicalAliasEventContent>(&matrix_room)
-                                .await
-                                .unwrap_or_default();
-                        let Some(pos) = content.alt_aliases.iter().position(|a| *a == alias) else {
-                            return Ok(());
-                        };
-                        content.alt_aliases.remove(pos);
-                        send_canonical(&matrix_room, content).await
-                    }
-                }
+        let parse_alias = |alias: &str| {
+            ruma::RoomAliasId::parse(alias).map_err(|_| CoreError::Failed {
+                msg: "Invalid address".to_owned(),
             })
-            .await
-            .expect("task was not aborted")
+        };
+
+        // Each edit is the application's, refusals included: it refuses to
+        // send an event that changes nothing, and names the two reasons an
+        // address cannot be added and the one it cannot be registered.
+        match action {
+            FfiAddressAction::Publish { published } => {
+                room.set_published(published).await.map_err(CoreError::from)
+            }
+            FfiAddressAction::RegisterLocal { alias } => aliases
+                .register_local_alias(parse_alias(&alias)?)
+                .await
+                .map_err(|error| alias_failure(error, "Could not register local address")),
+            FfiAddressAction::UnregisterLocal { alias } => aliases
+                .unregister_local_alias(parse_alias(&alias)?)
+                .await
+                .map_err(|error| alias_failure(error, "Could not unregister local address")),
+            FfiAddressAction::SetCanonical { alias } => aliases
+                .set_canonical_alias(parse_alias(&alias)?)
+                .await
+                .map_err(|error| alias_failure(error, "Could not set main public address")),
+            FfiAddressAction::RemoveCanonical { alias } => aliases
+                .remove_canonical_alias(&parse_alias(&alias)?)
+                .await
+                .map_err(|error| alias_failure(error, "Could not remove public address")),
+            FfiAddressAction::AddAlt { alias } => aliases
+                .add_alt_alias(parse_alias(&alias)?)
+                .await
+                .map_err(|error| alias_failure(error, "Could not add public address")),
+            FfiAddressAction::RemoveAlt { alias } => aliases
+                .remove_alt_alias(&parse_alias(&alias)?)
+                .await
+                .map_err(|error| alias_failure(error, "Could not remove public address")),
+        }
     }
 
     /// The room's server ACL. An absent event reads as the open default:
@@ -5642,6 +5394,26 @@ fn timeline_failure(error: crate::session::TimelineError, sentence: &str) -> Cor
     }
 }
 
+/// The FFI's sentence for a failed address edit.
+///
+/// The application's toasts name the action, so the sentence is the
+/// caller's; the three refusals the application names — not registered,
+/// another room's, already registered — are rendered from the value.
+fn alias_failure(error: crate::session::AliasError, sentence: &str) -> CoreError {
+    use crate::session::AliasError;
+
+    match error {
+        AliasError::NotRegistered | AliasError::OtherRoom | AliasError::AlreadyInUse => {
+            CoreError::from(error)
+        }
+        AliasError::NothingToDo | AliasError::Read(_) | AliasError::Server(_) => {
+            CoreError::Failed {
+                msg: sentence.to_owned(),
+            }
+        }
+    }
+}
+
 /// The chunks of a message typed in the Kotlin composer.
 ///
 /// The application's composer holds mentions and emoticons as pills, so
@@ -5750,20 +5522,6 @@ fn allow_room_ids(restricted: &ruma::events::room::join_rules::Restricted) -> Ve
             _ => None,
         })
         .collect()
-}
-
-/// Send the mutated canonical-alias content back whole.
-async fn send_canonical(
-    matrix_room: &matrix_sdk::Room,
-    content: ruma::events::room::canonical_alias::RoomCanonicalAliasEventContent,
-) -> Result<(), CoreError> {
-    matrix_room
-        .send_state_event(content)
-        .await
-        .map(|_| ())
-        .map_err(|send_error| CoreError::Failed {
-            msg: format!("Could not update the addresses: {send_error}"),
-        })
 }
 
 /// Build the upgrade choices from the current version and the server's

@@ -371,7 +371,7 @@ are named in the notes below and are not in the count.
 | 8 | Image packs, stickers, GIFs | 13 | 525 | `session/image_packs.rs`, `session/room/timeline.rs` (`send_sticker`, `send_gif`), `config.rs` (the packs room's name and topic) | `session/image_packs/` (1,323), `room_history/message_toolbar/mod.rs` (`send_sticker`, `send_gif`, `upload_gif`), `components/image_pack_editor/mod.rs` (522), `account_settings/image_packs_page/mod.rs` (565) | `ImagePacksError`, `SendGifError` |
 | 9 | Verification and security | 14 | 621 | `session/verification.rs`, `session/security.rs` | `session/verification/` (1,538), `session/security.rs` (491), `components/crypto/` (the setup views' requests), `account_settings/encryption_page/import_export_keys_subpage.rs` | `VerificationError`, `BootstrapError`, `RecoveryError`, `RoomKeysError` |
 | 10 | Timeline and messaging | 22 | 862 | `session/room/timeline.rs`, `session/room/composer.rs`, `session/room/mod.rs` | `session/room/timeline/` (3,033), `room_history/message_toolbar/` (the toolbar and `composer_parser.rs`), `room/mod.rs` (redact, report, invite, permalink), `room_details/edit_details_subpage.rs`, `room_history/event_actions/group.rs` | `TimelineError`, `RoomDetailsError` |
-| 11 | Room settings — details, join rule, history, addresses | 9 | 559 | `session/room/join_rule.rs`, `session/room/aliases.rs` | `session/room/join_rule.rs` (442), `aliases.rs` (544), the `room_details/` subpages | `RoomSettingsError` |
+| 11 | Room settings — avatar, join rule, history, addresses | 8 (+ `set_room_details`, taken by group 10) | 559 | `session/room/join_rule.rs`, `session/room/aliases.rs`, `session/room/mod.rs` | `session/room/join_rule.rs` (442), `aliases.rs` (544), `room_details/join_rule_subpage.rs`, `history_visibility_subpage.rs`, `addresses_subpage/`, `edit_details_subpage.rs`, `general_page.rs` (publish) | `RoomSettingsError`, `AliasError` |
 | 12 | Permissions, ACL, upgrade, moderation | 10 | 553 | `session/room/permissions.rs`, `server_acl.rs`, `upgrade.rs` | `session/room/permissions.rs` (733), `room_details/permissions/` (2,491), `upgrade_dialog/` (642) | `PermissionsError` |
 | 13 | Calls | 9 | 671 | `session/calls/` | `session/calls/call.rs` (1,607), `mod.rs` (989), `turn.rs` (360) | `CallError` |
 
@@ -1351,6 +1351,85 @@ not the core's. The Gates section's Linux command can drop
 The FFI surface is unchanged for the tenth time and the bindings came back
 byte-identical. The clippy count holds at 13.
 
+### Commit 11 — room settings, and the two objects the room had not grown yet
+
+**All eight move.** The table's ninth, `set_room_details`, went with group
+10. `session/room/join_rule.rs` is the application's `JoinRule` headless —
+the simplified value, the knock flag, the room a restricted rule names,
+whether we or anyone may join — following `room_info.join_rule()` on every
+room-info update; `session/room/aliases.rs` is its `RoomAliases`, the
+canonical and alternative aliases following the room info and the seven
+edits the addresses subpage makes; and the room itself gained the history
+visibility as an observable, `rules()`, `set_history_visibility`,
+`is_published`/`set_published` from the general page, and
+`set_avatar`/`remove_avatar` from the edit-details page. Both objects hang
+off `RoomInner` and update where the application updates them, in
+`update_with_room_info`. The subpage's `compute_join_rule` and its seven
+tests moved with it, plus one for the value.
+
+**The facade read state events per call where the application follows the
+room.** `room_join_rule`, `room_history_visibility` and `room_addresses`
+deserialised the raw state event from the store on every call, with a
+default when it was missing; the application's objects follow the SDK's
+own room info. The values are the same today; the shape is the one the
+GTK view-models will bind to.
+
+**A rule the page cannot edit was reported as changeable.** The page's
+`can_change` is `value.can_be_edited() && may send the state event`; the
+facade checked the power level alone, so an unsupported rule — a
+restricted rule with no room membership among its allows, or one the
+specification has not named — showed an editable page. The same for the
+history visibility: the FFI's enum has no unsupported variant, so an
+unsupported value shows as the most restrictive one and `can_change` is
+false, where the facade showed it as `Joined` and editable.
+
+**The join rule was sent whatever the room's version, and whether or not
+it changed.** The page hides the knock switch and the membership row where
+the version cannot take them and saves only a change; the facade sent
+`knock_restricted` to a version 7 room and sent the current rule again.
+The FFI refuses what the version does not support, since it has no picker
+to hide it from, and sends nothing when nothing changed. The same
+no-change guard for the history visibility.
+
+**Address edits that changed nothing were sent, and the two reasons an
+address cannot be added were one.** `RoomAliases` refuses to set a
+canonical alias that already is, to remove one that is not, to remove an
+alt alias not in the list, and to add one already listed — before
+resolving it — and tells "not registered" (404) from "belongs to another
+room" from anything else, and "already registered" (409) from anything
+else on registration. The facade sent the no-op events, resolved before
+checking, and folded the reasons. `AliasError` names all of them, and the
+facade's `alias_failure` renders the three the application shows in its
+error labels from the value and the rest with the toast's sentence.
+
+**The avatar could be changed in a room not joined.** The edit-details page
+refuses both the change and the removal there; `Room::set_avatar` and
+`Room::remove_avatar` do too. The facade's upload-size preflight stays
+ahead of the upload as an FFI extra — the application does not ask — and
+is recorded as such.
+
+**Where the notification-mode methods stand.** `room_notification_mode`
+and `set_room_notification_mode` sit beside this group in the file and in
+no group of the table. They are the SDK's `NotificationSettings` calls,
+two lines each; the application's `NotificationsSettings` object that
+wraps them is the account-settings page's state and a Phase 4 view-model
+question, so they stay passthroughs, and the table gains no row.
+
+**Two gaps found and not filled**, by the standing ruling:
+
+* **The membership room's name.** The application resolves the room a
+  restricted rule names to a local or remote room and follows its display
+  name; the core hands out the ID, and the FFI its list of IDs.
+* **`we_can_join` reads the room state, not our member.** The application
+  watches its own member's membership; the core has no member object per
+  room and reads `RoomState::Banned`, which is the same fact one step
+  later.
+
+The FFI surface is unchanged for the eleventh time and the bindings came
+back byte-identical. The clippy count falls from 13 to 8: three
+`map_unwrap_or` and one `too_many_lines` sat in the methods this group
+rewrote.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -1414,6 +1493,10 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `paginate_backwards` | **No guard on loading.** The application refuses a load while one runs, before the timeline is ready, and once the start was reached, which a pinned timeline is from the start. The facade asked the SDK every time. **Closed 1 Sep**: `Timeline::can_paginate_backwards`, `is_loading_start`, `MAX_BATCH_SIZE`. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_room_details` | **Untrimmed, and sent to a room not joined.** The details page trims, removes on an emptied field, refuses when not joined, and has a toast per field. **Closed 1 Sep**: `Room::set_name`, `Room::set_topic`, `RoomDetailsError`. | Done |
 | 1 Sep 2026 | `facade.rs`, `toggle_reaction` | **An added reaction is not recorded among the recent emoji.** The application's `Room::toggle_reaction` records it in `io.element.recent_emoji`; the core has no global account data object to record it in. Open. | Later phase |
+| 1 Sep 2026 | `facade.rs`, `room_join_rule`, `room_history_visibility` | **A rule the page cannot edit was reported as changeable.** The page's `can_change` is `value.can_be_edited()` and the power level; the facade checked the power level alone, and mapped an unsupported history visibility to `Joined`, editable. **Closed 1 Sep**: `JoinRuleValue::can_be_edited`, `HistoryVisibilityValue::Unsupported`; the FFI's history enum has no unsupported variant, so that value shows as `Joined` with `can_change` false. | Done, FFI variant owed |
+| 1 Sep 2026 | `facade.rs`, `set_room_join_rule`, `set_room_history_visibility` | **Sent whatever the room's version, and whether or not it changed.** The page hides what the version cannot take and saves only a change; the facade sent `knock_restricted` to any room and re-sent the current rule. **Closed 1 Sep**: the FFI refuses what `Room::rules()` says the version lacks and sends nothing for no change; `compute_join_rule` and its tests are `session/room/join_rule.rs`. | Done |
+| 1 Sep 2026 | `facade.rs`, `set_room_address` | **No-op edits were sent; the refusals were folded.** `RoomAliases` refuses to set a canonical alias that already is, remove one that is not, remove an alt alias not listed, or add one already listed, and tells not-registered (404) from another-room from already-registered (409). The facade sent the events and gave one sentence. **Closed 1 Sep**: `session/room/aliases.rs`, `AliasError`. | Done |
+| 1 Sep 2026 | `facade.rs`, `set_room_avatar`, `remove_room_avatar` | **The avatar was changed in a room not joined.** The edit-details page refuses both. **Closed 1 Sep**: `Room::set_avatar`, `Room::remove_avatar`. The facade's upload-size preflight before the upload is an FFI extra the application does not make; kept and recorded. | Done |
 
 ## Gates
 
