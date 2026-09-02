@@ -1153,20 +1153,12 @@ mod imp {
         }
 
         /// Initialize the live timeline of this room.
+        ///
+        /// Creating it creates the core's, whose read-state watcher keeps
+        /// `is_read` and the latest activity current from then on.
         fn init_live_timeline(&self) {
-            let timeline = self
-                .live_timeline
+            self.live_timeline
                 .get_or_init(|| Timeline::new(&self.obj()));
-
-            timeline.connect_read_change_trigger(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |_| {
-                    spawn!(glib::Priority::DEFAULT_IDLE, async move {
-                        imp.handle_read_change_trigger().await;
-                    });
-                }
-            ));
         }
 
         /// The live timeline of this room.
@@ -1194,25 +1186,6 @@ mod imp {
 
             self.is_read.set(is_read);
             self.obj().notify_is_read();
-        }
-
-        /// Handle the trigger emitted when a read change might have occurred.
-        ///
-        /// The timeline model is still the application's, so the walk that
-        /// decides whether anything is unread happens here; the answer goes
-        /// to the core, whose observable the sidebar and the store read.
-        async fn handle_read_change_trigger(&self) {
-            let timeline = self.live_timeline();
-
-            let is_read = if self.is_marked_unread.get() {
-                false
-            } else if let Some(has_unread) = timeline.has_unread_messages().await {
-                !has_unread
-            } else {
-                return;
-            };
-
-            self.core().note_is_read(is_read);
         }
 
         /// Set how this room is highlighted.
@@ -1944,24 +1917,6 @@ impl Room {
         }
     }
 
-    /// Update the latest activity of the room with the given events.
-    ///
-    /// The events must be in reverse chronological order.
-    fn update_latest_activity<'a>(&self, events: impl Iterator<Item = &'a Event>) {
-        let own_user_id = self.imp().own_member().user_id();
-        let mut latest_activity = self.latest_activity();
-
-        for event in events {
-            if event.counts_as_activity(own_user_id) {
-                latest_activity = latest_activity.max(event.origin_server_ts().get().into());
-                break;
-            }
-        }
-
-        // The core's observable is the one the sidebar and the store read.
-        self.core().note_latest_activity(latest_activity);
-    }
-
     /// Connect to the signal emitted when the room was forgotten.
     /// Whether the event with the given ID is pinned in this room.
     pub(crate) fn is_pinned(&self, event_id: &EventId) -> bool {
@@ -2074,4 +2029,13 @@ pub(crate) enum ReceiptPosition {
     End,
     /// We are at the event with the given ID.
     Event(OwnedEventId),
+}
+
+impl From<ReceiptPosition> for commune_core::session::ReceiptPosition {
+    fn from(value: ReceiptPosition) -> Self {
+        match value {
+            ReceiptPosition::End => Self::End,
+            ReceiptPosition::Event(event_id) => Self::Event(event_id),
+        }
+    }
 }

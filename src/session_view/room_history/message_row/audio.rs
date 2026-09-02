@@ -5,6 +5,7 @@ use super::ContentFormat;
 use crate::{
     components::{AudioPlayer, AudioPlayerMessage, AudioPlayerSource},
     gettext_f,
+    prelude::*,
 };
 
 mod imp {
