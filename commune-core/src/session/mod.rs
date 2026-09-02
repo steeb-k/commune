@@ -26,6 +26,7 @@
 //! sync loop sleeps and dials sockets). `SessionList` already does; the FFI
 //! facade will wrap calls in `RUNTIME.spawn`.
 
+mod calls;
 mod create_room;
 mod directory;
 mod ignored_users;
@@ -73,6 +74,11 @@ use url::Url;
 #[cfg(feature = "ffi")]
 pub(crate) use self::image_packs::room_state_packs_including_empty;
 pub use self::{
+    calls::{
+        Call, CallEndReason, CallError, CallEvent, CallOutcome, CallState, Calls, INVITE_LIFETIME,
+        IceServers, NEGOTIATE_LIFETIME, RawTurnCredentials, TurnCredentials, TurnServer, can_call,
+        first_stream_id, load_turn_credentials, other_member, sdp_has_video,
+    },
     create_room::{CreateRoomError, CreateRoomOptions, CreateRoomVisibility},
     directory::{DirectoryError, PublicRoomsPage, PublicRoomsQuery},
     ignored_users::{IgnoredUsers, IgnoredUsersError},
@@ -243,6 +249,8 @@ struct SessionInner {
     security: std::sync::OnceLock<SessionSecurity>,
     /// The ongoing identity verifications, built on first use.
     verification_list: std::sync::OnceLock<VerificationList>,
+    /// The calls of this session, built on first use.
+    calls: std::sync::OnceLock<Calls>,
     /// The task feeding the room list from the sync loop.
     room_updates_handle: Mutex<Option<AbortHandle>>,
 }
@@ -316,6 +324,7 @@ impl Session {
             user_sessions: std::sync::OnceLock::new(),
             security: std::sync::OnceLock::new(),
             verification_list: std::sync::OnceLock::new(),
+            calls: std::sync::OnceLock::new(),
             room_updates_handle: Mutex::new(None),
         });
 
@@ -355,10 +364,11 @@ impl Session {
         self.consume_room_updates();
         self.ignored_users().load().await;
 
-        // Verification and security attach here, as the application's
-        // session does when it is ready; calls follow with their group.
+        // Verification, security and calls attach here, as the
+        // application's session does when it is ready.
         let _ = self.verification_list();
         let _ = self.security();
+        self.calls().init();
 
         let client = self.client();
         spawn_tokio!(async move {
@@ -589,6 +599,16 @@ impl Session {
             verification::spawn_init(&list);
             list
         })
+    }
+
+    /// The calls of this session.
+    ///
+    /// Built on first use; `prepare()` installs its handlers.
+    #[must_use]
+    pub fn calls(&self) -> &Calls {
+        self.inner
+            .calls
+            .get_or_init(|| Calls::new(self.downgrade()))
     }
 
     /// The account's other sessions.

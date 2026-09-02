@@ -17,6 +17,10 @@ use matrix_sdk::{
 };
 
 #[tokio::main]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one driver script, read top to bottom"
+)]
 async fn main() -> anyhow::Result<()> {
     let mut args = std::env::args().skip(1);
     let homeserver = args.next().expect("homeserver");
