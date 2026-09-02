@@ -319,6 +319,22 @@ impl From<crate::session::AliasError> for CoreError {
     }
 }
 
+impl From<crate::session::ServerAclError> for CoreError {
+    fn from(error: crate::session::ServerAclError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::PermissionsError> for CoreError {
+    fn from(error: crate::session::PermissionsError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 impl From<crate::session::RecoveryState> for FfiRecoveryState {
     fn from(state: crate::session::RecoveryState) -> Self {
         use crate::session::RecoveryState;
@@ -2425,9 +2441,10 @@ impl CoreApp {
         // Through the composer, as the thread's own composer is in the
         // application, minus the mention and emoticon completion the
         // Kotlin thread view does not have. An empty message is not sent.
-        let Some(content) =
-            crate::session::compose_message(&composer_chunks(&body, &[], &[]), MARKDOWN_ENABLED)
-        else {
+        let Some(content) = crate::session::compose_message(
+            &composer_chunks(&body, &[], &[], false),
+            MARKDOWN_ENABLED,
+        ) else {
             return Ok(());
         };
 
@@ -2484,12 +2501,18 @@ impl CoreApp {
     ) -> Result<(), CoreError> {
         let room = self.room(&room_id)?;
 
+        // The application's completion offers `@room` only where our own
+        // member may notify the room and the room is not a direct chat.
+        let permissions = room.permissions();
+        permissions.ensure_loaded().await;
+        let allow_at_room = !room.is_direct() && permissions.state().can_notify_room;
+
         // The composer's chunks — text, mentions, emoticons — become the
         // application's exact content in the core; finding the chunks in
         // the plain text is this side's shortcut. An empty message is not
         // sent, as the composer does not send one.
         let Some(content) = crate::session::compose_message(
-            &composer_chunks(&body, &mentions, &emoticons),
+            &composer_chunks(&body, &mentions, &emoticons, allow_at_room),
             MARKDOWN_ENABLED,
         ) else {
             return Ok(());
@@ -2540,9 +2563,10 @@ impl CoreApp {
         // Through the composer, as the toolbar's reply is: the body is
         // Markdown, whatever the doc comment above — part of the bindings'
         // checksum — still calls it.
-        let Some(content) =
-            crate::session::compose_message(&composer_chunks(&body, &[], &[]), MARKDOWN_ENABLED)
-        else {
+        let Some(content) = crate::session::compose_message(
+            &composer_chunks(&body, &[], &[], false),
+            MARKDOWN_ENABLED,
+        ) else {
             return Ok(());
         };
 
@@ -2570,7 +2594,7 @@ impl CoreApp {
         // Through the composer, as the toolbar's edit is; see `send_reply`
         // about the doc comment.
         let Some(content) = crate::session::compose_message(
-            &composer_chunks(&new_body, &[], &[]),
+            &composer_chunks(&new_body, &[], &[], false),
             MARKDOWN_ENABLED,
         ) else {
             return Ok(());
@@ -3658,11 +3682,7 @@ impl CoreApp {
         // As the application's page decides it: a rule it cannot edit is
         // not changed whatever the power level.
         let can_change = state.value.can_be_edited()
-            && can_send_state(
-                room.matrix_room(),
-                ruma::events::StateEventType::RoomJoinRules,
-            )
-            .await;
+            && can_send_state(&room, ruma::events::StateEventType::RoomJoinRules).await;
 
         Ok(FfiJoinRuleInfo {
             value,
@@ -3777,11 +3797,7 @@ impl CoreApp {
             }
         };
         let can_change = visibility != HistoryVisibilityValue::Unsupported
-            && can_send_state(
-                room.matrix_room(),
-                ruma::events::StateEventType::RoomHistoryVisibility,
-            )
-            .await;
+            && can_send_state(&room, ruma::events::StateEventType::RoomHistoryVisibility).await;
 
         Ok(FfiHistoryVisibilityInfo { value, can_change })
     }
@@ -3837,11 +3853,8 @@ impl CoreApp {
         // to the directory in the Matrix spec; the application assumes it
         // does not make sense unless the user can change the public
         // addresses.
-        let can_change = can_send_state(
-            room.matrix_room(),
-            ruma::events::StateEventType::RoomCanonicalAlias,
-        )
-        .await;
+        let can_change =
+            can_send_state(&room, ruma::events::StateEventType::RoomCanonicalAlias).await;
 
         Ok(FfiRoomAddresses {
             canonical: state.canonical_alias.map(|alias| alias.to_string()),
@@ -3908,46 +3921,23 @@ impl CoreApp {
     /// The room's server ACL. An absent event reads as the open default:
     /// every server allowed, IP literals too.
     pub async fn room_server_acl(&self, room_id: String) -> Result<FfiServerAcl, CoreError> {
-        use ruma::events::room::server_acl::RoomServerAclEventContent;
+        let room = self.room(&room_id)?;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let matrix_room = room.matrix_room().clone();
-
-                let content = read_state_content::<RoomServerAclEventContent>(&matrix_room)
-                    .await
-                    .unwrap_or_else(|| {
-                        RoomServerAclEventContent::new(true, vec!["*".to_owned()], Vec::new())
-                    });
-
-                Ok(FfiServerAcl {
-                    allow: content.allow,
-                    deny: content.deny,
-                    allow_ip_literals: content.allow_ip_literals,
-                    can_change: can_send_state(
-                        &matrix_room,
-                        ruma::events::StateEventType::RoomServerAcl,
-                    )
-                    .await,
-                })
-            })
+        // A room with no ACL at all starts from the unrestricted one, as
+        // the page does, so blocking a single server is one action rather
+        // than two.
+        let content = room
+            .server_acl()
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)?
+            .unwrap_or_else(crate::session::unrestricted_acl);
+
+        Ok(FfiServerAcl {
+            allow: content.allow,
+            deny: content.deny,
+            allow_ip_literals: content.allow_ip_literals,
+            can_change: can_send_state(&room, ruma::events::StateEventType::RoomServerAcl).await,
+        })
     }
 
     /// Replace the room's server ACL.
@@ -3960,38 +3950,45 @@ impl CoreApp {
     ) -> Result<(), CoreError> {
         use ruma::events::room::server_acl::RoomServerAclEventContent;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        use crate::session::AclProblem;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
+        let session = self.session()?;
+        let room = self.room(&room_id)?;
 
-                room.matrix_room()
-                    .send_state_event(RoomServerAclEventContent::new(
-                        allow_ip_literals,
-                        allow,
-                        deny,
-                    ))
-                    .await
-                    .map(|_| ())
-                    .map_err(|send_error| CoreError::Failed {
-                        msg: format!("Could not change the server ACL: {send_error}"),
-                    })
-            })
+        let acl = RoomServerAclEventContent::new(allow_ip_literals, allow, deny);
+
+        // The page's two checks, from the worst down. An ACL that allows
+        // no server is refused: it shuts every homeserver out of the room
+        // and nothing can send the repair. One that shuts our own server
+        // out is confirmed by the page; this side has no dialog to ask
+        // with, so it is refused too, and says why.
+        match crate::session::check_acl(&acl, session.user_id().server_name()) {
+            Some(AclProblem::NoServerAllowed) => {
+                return Err(CoreError::Failed {
+                    msg: "At least one allowed server is required. An empty list shuts every \
+                          homeserver out of the room, which cannot be undone from here."
+                        .to_owned(),
+                });
+            }
+            Some(AclProblem::OwnServerExcluded) => {
+                return Err(CoreError::Failed {
+                    msg: "This list would shut your own homeserver out of the room".to_owned(),
+                });
+            }
+            None => {}
+        }
+
+        // The page saves only a change.
+        let remote = room
+            .server_acl()
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)?
+            .unwrap_or_else(crate::session::unrestricted_acl);
+        if crate::session::acls_are_equal(&acl, &remote) {
+            return Ok(());
+        }
+
+        room.set_server_acl(acl).await.map_err(CoreError::from)
     }
 
     /// The room's permission thresholds — the application's permissions
@@ -4001,75 +3998,37 @@ impl CoreApp {
         &self,
         room_id: String,
     ) -> Result<FfiPowerLevelsMatrix, CoreError> {
-        use ruma::events::TimelineEventType;
+        use ruma::events::{StateEventType, room::power_levels::PowerLevelAction};
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
+        let permissions = room.permissions();
+        permissions.ensure_loaded().await;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let matrix_room = room.matrix_room().clone();
+        let matrix =
+            crate::session::PowerLevelsMatrix::from_power_levels(&permissions.power_levels());
 
-                let power_levels =
-                    matrix_room
-                        .power_levels()
-                        .await
-                        .map_err(|levels_error| CoreError::Failed {
-                            msg: format!("Could not read the permissions: {levels_error}"),
-                        })?;
-
-                let events_default: i64 = power_levels.events_default.into();
-                let state_default: i64 = power_levels.state_default.into();
-                let event_level = |event_type: TimelineEventType, default: i64| -> i64 {
-                    power_levels
-                        .events
-                        .get(&event_type)
-                        .map_or(default, |level| (*level).into())
-                };
-
-                Ok(FfiPowerLevelsMatrix {
-                    users_default: power_levels.users_default.into(),
-                    events_default,
-                    state_default,
-                    invite: power_levels.invite.into(),
-                    kick: power_levels.kick.into(),
-                    ban: power_levels.ban.into(),
-                    redact_others: power_levels.redact.into(),
-                    redact_own: event_level(TimelineEventType::RoomRedaction, events_default),
-                    notify_room: power_levels.notifications.room.into(),
-                    name: event_level(TimelineEventType::RoomName, state_default),
-                    topic: event_level(TimelineEventType::RoomTopic, state_default),
-                    avatar: event_level(TimelineEventType::RoomAvatar, state_default),
-                    aliases: event_level(TimelineEventType::RoomCanonicalAlias, state_default),
-                    history_visibility: event_level(
-                        TimelineEventType::RoomHistoryVisibility,
-                        state_default,
-                    ),
-                    encryption: event_level(TimelineEventType::RoomEncryption, state_default),
-                    power_levels: event_level(TimelineEventType::RoomPowerLevels, state_default),
-                    server_acl: event_level(TimelineEventType::RoomServerAcl, state_default),
-                    upgrade: event_level(TimelineEventType::RoomTombstone, state_default),
-                    can_change: can_send_state(
-                        &matrix_room,
-                        ruma::events::StateEventType::RoomPowerLevels,
-                    )
-                    .await,
-                })
-            })
-            .await
-            .expect("task was not aborted")
+        Ok(FfiPowerLevelsMatrix {
+            users_default: matrix.users_default,
+            events_default: matrix.events_default,
+            state_default: matrix.state_default,
+            invite: matrix.invite,
+            kick: matrix.kick,
+            ban: matrix.ban,
+            redact_others: matrix.redact_others,
+            redact_own: matrix.redact_own,
+            notify_room: matrix.notify_room,
+            name: matrix.name,
+            topic: matrix.topic,
+            avatar: matrix.avatar,
+            aliases: matrix.aliases,
+            history_visibility: matrix.history_visibility,
+            encryption: matrix.encryption,
+            power_levels: matrix.power_levels,
+            server_acl: matrix.server_acl,
+            upgrade: matrix.upgrade,
+            can_change: permissions
+                .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomPowerLevels)),
+        })
     }
 
     /// Replace the room's permission thresholds, collected exactly as
@@ -4082,126 +4041,43 @@ impl CoreApp {
         room_id: String,
         matrix: FfiPowerLevelsMatrix,
     ) -> Result<(), CoreError> {
-        use ruma::{
-            Int,
-            events::{TimelineEventType, room::power_levels::RoomPowerLevelsEventContent},
+        let room = self.room(&room_id)?;
+        let permissions = room.permissions();
+        permissions.ensure_loaded().await;
+
+        let rows = crate::session::PowerLevelsMatrix {
+            users_default: matrix.users_default,
+            events_default: matrix.events_default,
+            state_default: matrix.state_default,
+            invite: matrix.invite,
+            kick: matrix.kick,
+            ban: matrix.ban,
+            redact_others: matrix.redact_others,
+            redact_own: matrix.redact_own,
+            notify_room: matrix.notify_room,
+            name: matrix.name,
+            topic: matrix.topic,
+            avatar: matrix.avatar,
+            aliases: matrix.aliases,
+            history_visibility: matrix.history_visibility,
+            encryption: matrix.encryption,
+            power_levels: matrix.power_levels,
+            server_acl: matrix.server_acl,
+            upgrade: matrix.upgrade,
         };
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        // The page saves only a change; the rows are compared as the page
+        // reads them, after the same clamping.
+        let mut power_levels = permissions.power_levels();
+        if crate::session::PowerLevelsMatrix::from_power_levels(&power_levels) == rows {
+            return Ok(());
+        }
+        rows.apply_to(&mut power_levels);
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let matrix_room = room.matrix_room().clone();
-
-                let mut power_levels =
-                    matrix_room
-                        .power_levels()
-                        .await
-                        .map_err(|levels_error| CoreError::Failed {
-                            msg: format!("Could not read the permissions: {levels_error}"),
-                        })?;
-
-                let int = Int::new_saturating;
-                power_levels.users_default = int(matrix.users_default);
-                power_levels.events_default = int(matrix.events_default);
-                power_levels.state_default = int(matrix.state_default);
-                power_levels.invite = int(matrix.invite);
-                power_levels.kick = int(matrix.kick);
-                power_levels.ban = int(matrix.ban);
-                power_levels.redact = int(matrix.redact_others);
-                power_levels.notifications.room = int(matrix.notify_room);
-
-                let mut set_event = |event_type: TimelineEventType, value: i64, default: i64| {
-                    if value == default {
-                        power_levels.events.remove(&event_type);
-                    } else {
-                        power_levels.events.insert(event_type, int(value));
-                    }
-                };
-
-                // Redacting our own events is sending a redaction event.
-                let redact_own = matrix.redact_own.min(matrix.redact_others);
-                set_event(
-                    TimelineEventType::RoomRedaction,
-                    redact_own,
-                    matrix.events_default,
-                );
-                set_event(
-                    TimelineEventType::RoomName,
-                    matrix.name,
-                    matrix.state_default,
-                );
-                set_event(
-                    TimelineEventType::RoomTopic,
-                    matrix.topic,
-                    matrix.state_default,
-                );
-                set_event(
-                    TimelineEventType::RoomAvatar,
-                    matrix.avatar,
-                    matrix.state_default,
-                );
-                set_event(
-                    TimelineEventType::RoomCanonicalAlias,
-                    matrix.aliases,
-                    matrix.state_default,
-                );
-                set_event(
-                    TimelineEventType::RoomHistoryVisibility,
-                    matrix.history_visibility,
-                    matrix.state_default,
-                );
-                set_event(
-                    TimelineEventType::RoomEncryption,
-                    matrix.encryption,
-                    matrix.state_default,
-                );
-                set_event(
-                    TimelineEventType::RoomPowerLevels,
-                    matrix.power_levels,
-                    matrix.state_default,
-                );
-                set_event(
-                    TimelineEventType::RoomServerAcl,
-                    matrix.server_acl,
-                    matrix.state_default,
-                );
-                set_event(
-                    TimelineEventType::RoomTombstone,
-                    matrix.upgrade,
-                    matrix.state_default,
-                );
-
-                let content =
-                    RoomPowerLevelsEventContent::try_from(power_levels).map_err(|error| {
-                        CoreError::Failed {
-                            msg: format!("Could not build the permissions: {error}"),
-                        }
-                    })?;
-
-                matrix_room
-                    .send_state_event(content)
-                    .await
-                    .map(|_| ())
-                    .map_err(|send_error| CoreError::Failed {
-                        msg: format!("Could not save the permissions: {send_error}"),
-                    })
-            })
+        permissions
+            .set_power_levels(power_levels)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// The room versions an upgrade could go to, per the application's
@@ -4209,55 +4085,44 @@ impl CoreApp {
     /// server's default, the current and default versions listed as
     /// unstable when they are, sorted, with the suggested pick marked.
     pub async fn room_upgrade_info(&self, room_id: String) -> Result<FfiUpgradeInfo, CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
+        let room = self.room(&room_id)?;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let matrix_room = room.matrix_room().clone();
-
-                let room_info = matrix_room.clone_info();
-                let current_version = room_info
-                    .create()
-                    .map(|create| create.room_version.clone())
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "The room has no create event".to_owned(),
-                    })?;
-
-                let capability = session
-                    .client()
-                    .homeserver_capabilities()
-                    .room_versions()
-                    .await
-                    .map_err(|capability_error| CoreError::Failed {
-                        msg: format!("Could not ask the server: {capability_error}"),
-                    })?;
-
-                let can_upgrade = !matrix_room.is_direct().await.unwrap_or(false)
-                    && matrix_room.successor_room().is_none()
-                    && can_send_state(&matrix_room, ruma::events::StateEventType::RoomTombstone)
-                        .await;
-
-                Ok(build_upgrade_info(
-                    &current_version,
-                    &capability,
-                    can_upgrade,
-                ))
-            })
+        // The general page fetches the server's room versions once, when it
+        // opens; the answer is the SDK's to cache.
+        let capability = session
+            .client()
+            .homeserver_capabilities()
+            .room_versions()
             .await
-            .expect("task was not aborted")
+            .map_err(|capability_error| CoreError::Failed {
+                msg: format!("Could not ask the server: {capability_error}"),
+            })?;
+
+        let info = room
+            .upgrade_info(&capability)
+            .ok_or_else(|| CoreError::Failed {
+                msg: "The room has no create event".to_owned(),
+            })?;
+
+        room.permissions().ensure_loaded().await;
+        let can_upgrade = room.can_upgrade();
+
+        Ok(FfiUpgradeInfo {
+            current_version: info.current_room_version.to_string(),
+            stable: info
+                .stable_room_versions
+                .iter()
+                .map(ToString::to_string)
+                .collect(),
+            unstable: info
+                .unstable_room_versions
+                .iter()
+                .map(ToString::to_string)
+                .collect(),
+            selected_index: u32::try_from(info.selected).unwrap_or(0),
+            can_upgrade,
+        })
     }
 
     /// Upgrade the room to the given version.
@@ -4268,35 +4133,23 @@ impl CoreApp {
     ) -> Result<(), CoreError> {
         use ruma::api::client::room::upgrade_room;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
+        let room_id = parse_room_id(&room_id)?;
+        let new_version =
+            ruma::RoomVersionId::try_from(new_version.as_str()).map_err(|_| CoreError::Failed {
+                msg: "Invalid room version".to_owned(),
+            })?;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let new_version =
-                    ruma::RoomVersionId::try_from(new_version.as_str()).map_err(|_| {
-                        CoreError::Failed {
-                            msg: "Invalid room version".to_owned(),
-                        }
-                    })?;
-
-                session
-                    .client()
-                    .send(upgrade_room::v3::Request::new(room_id, new_version))
-                    .await
-                    .map(|_| ())
-                    .map_err(|upgrade_error| CoreError::Failed {
-                        msg: format!("Could not upgrade the room: {upgrade_error}"),
-                    })
-            })
+        // The one request the general page makes once the dialog answers;
+        // a passthrough on both sides, by the standing ruling.
+        session
+            .client()
+            .send(upgrade_room::v3::Request::new(room_id, new_version))
             .await
-            .expect("task was not aborted")
+            .map(|_response| ())
+            .map_err(|upgrade_error| CoreError::Failed {
+                msg: format!("Could not upgrade the room: {upgrade_error}"),
+            })
     }
 
     /// Kick the given user from the given room.
@@ -5321,26 +5174,6 @@ impl CoreApp {
     }
 }
 
-/// Read one of the room's state events (empty state key) as its typed
-/// content, `None` when it is absent or unreadable.
-async fn read_state_content<C>(matrix_room: &matrix_sdk::Room) -> Option<C>
-where
-    C: ruma::events::StaticEventContent + serde::de::DeserializeOwned,
-{
-    use matrix_sdk::deserialized_responses::RawAnySyncOrStrippedState;
-
-    let raw = matrix_room
-        .get_state_event(C::TYPE.into(), "")
-        .await
-        .ok()
-        .flatten()?;
-    let RawAnySyncOrStrippedState::Sync(raw) = raw else {
-        return None;
-    };
-    let value = raw.deserialize_as::<serde_json::Value>().ok()?;
-    serde_json::from_value(value.get("content")?.clone()).ok()
-}
-
 /// Parse a room ID handed over the FFI.
 fn parse_room_id(room_id: &str) -> Result<ruma::OwnedRoomId, CoreError> {
     ruma::RoomId::parse(room_id).map_err(|_| CoreError::Failed {
@@ -5420,13 +5253,13 @@ fn alias_failure(error: crate::session::AliasError, sentence: &str) -> CoreError
 /// its parser knows one when it meets one. The Kotlin composer is plain
 /// text: this is where `@Name`, `:shortcode:` and `@room` are found in
 /// it, the FFI's shortcut rather than the core's behaviour. `@room` is
-/// found as the push rules find it; the application only mentions the
-/// room through a pill its completion offers where the user may notify
-/// the room, which the Kotlin composer does not offer at all.
+/// found as the push rules find it, and only where the application's
+/// completion would offer the pill: `allow_at_room` is that gate.
 fn composer_chunks(
     body: &str,
     mentions: &[FfiMention],
     emoticons: &[FfiSticker],
+    allow_at_room: bool,
 ) -> Vec<crate::session::ComposerChunk> {
     use crate::{
         matrix::{AT_ROOM, find_at_room},
@@ -5467,7 +5300,7 @@ fn composer_chunks(
     }
 
     let mut from = 0;
-    while let Some(offset) = find_at_room(&body[from..]) {
+    while allow_at_room && let Some(offset) = find_at_room(&body[from..]) {
         let start = from + offset;
         let end = start + AT_ROOM.len();
         pills.push((start, end, ComposerChunk::AtRoom));
@@ -5499,15 +5332,18 @@ fn composer_chunks(
 }
 
 /// Whether our own user may send the given state event in the room.
+///
+/// The application's `Permissions::is_allowed_to`, after the permissions
+/// are loaded — the pages ask it on every change.
 async fn can_send_state(
-    matrix_room: &matrix_sdk::Room,
+    room: &crate::session::Room,
     event_type: ruma::events::StateEventType,
 ) -> bool {
-    let own_user_id = matrix_room.own_user_id().to_owned();
-    match matrix_room.power_levels().await {
-        Ok(power_levels) => power_levels.user_can_send_state(&own_user_id, event_type),
-        Err(_) => false,
-    }
+    use ruma::events::room::power_levels::PowerLevelAction;
+
+    let permissions = room.permissions();
+    permissions.ensure_loaded().await;
+    permissions.is_allowed_to(PowerLevelAction::SendState(event_type))
 }
 
 /// The room IDs a restricted join rule allows the members of.
@@ -5522,107 +5358,6 @@ fn allow_room_ids(restricted: &ruma::events::room::join_rules::Restricted) -> Ve
             _ => None,
         })
         .collect()
-}
-
-/// Build the upgrade choices from the current version and the server's
-/// capabilities, per the application's upgrade dialog: stable versions
-/// at or above both the current and the default version, the current
-/// and default listed as unstable when they are, sorted, the suggested
-/// pick marked.
-fn build_upgrade_info(
-    current: &ruma::RoomVersionId,
-    capability: &ruma::api::client::discovery::get_capabilities::v3::RoomVersionsCapability,
-    can_upgrade: bool,
-) -> FfiUpgradeInfo {
-    use std::cmp::Ordering;
-
-    use ruma::api::client::discovery::get_capabilities::v3::RoomVersionStability;
-
-    let is_stable = |version: &ruma::RoomVersionId| {
-        capability
-            .available
-            .get(version)
-            .is_some_and(|stability| *stability == RoomVersionStability::Stable)
-    };
-    let maximum_stable = capability
-        .available
-        .iter()
-        .filter(|(_, stability)| **stability == RoomVersionStability::Stable)
-        .map(|(version, _)| version)
-        .max_by(|a, b| cmp_room_versions(a, b));
-
-    let current_is_stable = is_stable(current);
-    let default_is_stable = is_stable(&capability.default);
-    // The minimum stable version is the highest stable version between
-    // the current version and the default version.
-    let minimum_stable = match (current_is_stable, default_is_stable) {
-        (true, false) => Some(current),
-        (false, true) => Some(&capability.default),
-        (true, true) => Some(match cmp_room_versions(current, &capability.default) {
-            Ordering::Less => &capability.default,
-            _ => current,
-        }),
-        (false, false) => None,
-    };
-    let selected_version = minimum_stable.unwrap_or(&capability.default).clone();
-
-    let mut stable: Vec<ruma::RoomVersionId> = if let Some(minimum) = minimum_stable {
-        capability
-            .available
-            .iter()
-            .filter(|(version, stability)| {
-                **stability == RoomVersionStability::Stable
-                    && (cmp_room_versions(version, minimum) != Ordering::Less
-                        || maximum_stable.is_some_and(|maximum| maximum == *version))
-            })
-            .map(|(version, _)| version.clone())
-            .collect()
-    } else {
-        maximum_stable.into_iter().cloned().collect()
-    };
-
-    let mut unstable = Vec::new();
-    if !current_is_stable {
-        unstable.push(current.clone());
-    }
-    if *current != capability.default && !default_is_stable {
-        unstable.push(capability.default.clone());
-    }
-
-    stable.sort_unstable_by(|a, b| cmp_room_versions(a, b));
-    unstable.sort_unstable_by(|a, b| cmp_room_versions(a, b));
-
-    let selected = stable
-        .iter()
-        .position(|version| *version == selected_version)
-        .or_else(|| {
-            unstable
-                .iter()
-                .position(|version| *version == selected_version)
-                .map(|pos| stable.len() + pos)
-        })
-        .unwrap_or(0);
-
-    FfiUpgradeInfo {
-        current_version: current.to_string(),
-        stable: stable.iter().map(ToString::to_string).collect(),
-        unstable: unstable.iter().map(ToString::to_string).collect(),
-        selected_index: u32::try_from(selected).unwrap_or(0),
-        can_upgrade,
-    }
-}
-
-/// Order room versions: whole-number versions numerically, before the
-/// rest lexicographically — the application's digit-sequence-aware
-/// comparison, simplified without changing the order of the versions
-/// that exist.
-fn cmp_room_versions(lhs: &ruma::RoomVersionId, rhs: &ruma::RoomVersionId) -> std::cmp::Ordering {
-    match (lhs.as_str().parse::<u64>(), rhs.as_str().parse::<u64>()) {
-        (Ok(lhs_number), Ok(rhs_number)) => lhs_number.cmp(&rhs_number),
-        (Ok(_), Err(_)) => std::cmp::Ordering::Less,
-        (Err(_), Ok(_)) => std::cmp::Ordering::Greater,
-        (Err(_), Err(_)) => lhs.as_str().cmp(rhs.as_str()),
-    }
 }
 
 /// The join rule of a room, as the choice the details page offers.
