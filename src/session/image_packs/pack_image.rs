@@ -137,10 +137,6 @@ impl PackImage {
 
     /// The content to send this image as a sticker.
     pub(crate) fn sticker_content(&self) -> StickerEventContent {
-        StickerEventContent::new(
-            self.body(),
-            self.info().cloned().unwrap_or_default(),
-            self.uri().clone(),
-        )
+        commune_core::session::sticker_content(&self.shortcode(), self.imp().data())
     }
 }

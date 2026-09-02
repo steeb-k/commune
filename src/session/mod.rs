@@ -176,7 +176,7 @@ mod imp {
             self.ignored_users.set_session(Some(obj.clone()));
             self.presence_list.set_session(Some(obj.clone()));
             self.notifications.set_session(Some(obj.clone()));
-            self.user_sessions.init(&obj, obj.user_id().clone());
+            self.user_sessions.init(&obj, obj.user_id());
 
             let monitor = gio::NetworkMonitor::default();
             let handler_id = monitor.connect_network_changed(clone!(

@@ -1,3 +1,4 @@
+use commune_core::session::Device;
 use gettextrs::gettext;
 use gtk::{
     glib,
@@ -5,8 +6,7 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::{HttpError, encryption::identities::Device as CryptoDevice};
-use ruma::{DeviceId, OwnedDeviceId, api::client::device::Device as DeviceData};
+use ruma::{MilliSecondsSinceUnixEpoch, OwnedDeviceId, UInt};
 use tracing::{debug, error};
 
 use crate::{
@@ -18,61 +18,6 @@ use crate::{
     system_settings::ClockFormat,
     utils::matrix::timestamp_to_date,
 };
-
-/// The possible sources of the user data.
-#[derive(Debug, Clone)]
-pub(super) enum UserSessionData {
-    /// The data comes from the `/devices` API.
-    DevicesApi(DeviceData),
-    /// The data comes from the crypto store.
-    Crypto(CryptoDevice),
-    /// The data comes from both sources.
-    Both {
-        api: DeviceData,
-        crypto: CryptoDevice,
-    },
-}
-
-impl UserSessionData {
-    /// The ID of the user session.
-    pub(super) fn device_id(&self) -> &DeviceId {
-        match self {
-            UserSessionData::DevicesApi(api) | UserSessionData::Both { api, .. } => &api.device_id,
-            UserSessionData::Crypto(crypto) => crypto.device_id(),
-        }
-    }
-
-    /// Set the display name of user session.
-    fn set_display_name(&mut self, name: String) {
-        match self {
-            UserSessionData::DevicesApi(api) | UserSessionData::Both { api, .. } => {
-                api.display_name = Some(name);
-            }
-            UserSessionData::Crypto(crypto) => {
-                *self = UserSessionData::Both {
-                    api: DeviceData::new(crypto.device_id().into()),
-                    crypto: crypto.to_owned(),
-                }
-            }
-        }
-    }
-
-    /// The `/devices` API data.
-    fn api(&self) -> Option<&DeviceData> {
-        match self {
-            UserSessionData::DevicesApi(api) | UserSessionData::Both { api, .. } => Some(api),
-            UserSessionData::Crypto(_) => None,
-        }
-    }
-
-    /// The crypto API.
-    fn crypto(&self) -> Option<&CryptoDevice> {
-        match self {
-            UserSessionData::Crypto(crypto) | UserSessionData::Both { crypto, .. } => Some(crypto),
-            UserSessionData::DevicesApi(_) => None,
-        }
-    }
-}
 
 mod imp {
     use std::{
@@ -93,8 +38,8 @@ mod imp {
         session: glib::WeakRef<Session>,
         /// The ID of the user session.
         device_id: OnceCell<OwnedDeviceId>,
-        /// The user session data.
-        data: RefCell<Option<UserSessionData>>,
+        /// The device, as the core describes it.
+        device: RefCell<Option<Device>>,
         /// Whether this is the current user session.
         #[property(get)]
         is_current: Cell<bool>,
@@ -181,14 +126,14 @@ mod imp {
                 .expect("device ID should be initialized")
         }
 
-        /// Set the user session data.
-        pub(super) fn set_data(&self, data: UserSessionData) {
+        /// Set the device this session presents.
+        pub(super) fn set_device(&self, device: &Device) {
             let old_display_name = self.display_name();
             let old_last_seen_ip = self.last_seen_ip();
             let old_last_seen_ts = self.last_seen_ts();
             let old_verified = self.verified();
 
-            self.data.replace(Some(data));
+            self.device.replace(Some(device.clone()));
 
             let obj = self.obj();
             if self.display_name() != old_display_name {
@@ -215,32 +160,20 @@ mod imp {
 
         /// The display name of the device.
         fn display_name(&self) -> String {
-            self.data
+            self.device
                 .borrow()
                 .as_ref()
-                .and_then(UserSessionData::api)
-                .and_then(|d| d.display_name.clone())
+                .and_then(|device| device.display_name.clone())
                 .unwrap_or_default()
-        }
-
-        /// Set the display name of the device.
-        pub(super) fn set_display_name(&self, name: String) {
-            if let Some(data) = &mut *self.data.borrow_mut() {
-                data.set_display_name(name);
-            }
-
-            self.obj().notify_display_name();
-            self.obj().notify_display_name_or_device_id();
         }
 
         /// The display name of the device, or the device id as a fallback.
         fn display_name_or_device_id(&self) -> String {
             if let Some(display_name) = self
-                .data
+                .device
                 .borrow()
                 .as_ref()
-                .and_then(UserSessionData::api)
-                .and_then(|d| d.display_name.as_ref().map(|s| s.trim()))
+                .and_then(|device| device.display_name.as_ref().map(|s| s.trim()))
                 .filter(|s| !s.is_empty())
                 .map(ToOwned::to_owned)
             {
@@ -252,7 +185,7 @@ mod imp {
 
         /// The last IP address used by the user session.
         fn last_seen_ip(&self) -> Option<String> {
-            self.data.borrow().as_ref()?.api()?.last_seen_ip.clone()
+            self.device.borrow().as_ref()?.last_seen_ip.clone()
         }
 
         /// The last time the user session was used, as the number of
@@ -260,23 +193,18 @@ mod imp {
         ///
         /// Defaults to `0` if the timestamp is unknown.
         fn last_seen_ts(&self) -> u64 {
-            self.data
+            self.device
                 .borrow()
                 .as_ref()
-                .and_then(UserSessionData::api)
-                .and_then(|s| s.last_seen_ts)
-                .map(|ts| ts.0.into())
+                .and_then(|device| device.last_seen_ts)
                 .unwrap_or_default()
         }
 
         /// The last time the user session was used, as a `GDateTime`.
         fn last_seen_datetime(&self) -> Option<glib::DateTime> {
-            self.data
-                .borrow()
-                .as_ref()?
-                .api()?
-                .last_seen_ts
-                .map(timestamp_to_date)
+            let timestamp = self.device.borrow().as_ref()?.last_seen_ts?;
+            let timestamp = MilliSecondsSinceUnixEpoch(UInt::new(timestamp)?);
+            Some(timestamp_to_date(timestamp))
         }
 
         /// The last time the user session was used, as a localized formatted
@@ -405,11 +333,10 @@ mod imp {
 
         /// Whether this device is verified.
         fn verified(&self) -> bool {
-            self.data
+            self.device
                 .borrow()
                 .as_ref()
-                .and_then(UserSessionData::crypto)
-                .is_some_and(CryptoDevice::is_verified)
+                .is_some_and(|device| device.is_verified)
         }
     }
 }
@@ -435,37 +362,33 @@ impl UserSession {
         self.imp().device_id()
     }
 
-    /// Set the user session data.
-    pub(super) fn set_data(&self, data: UserSessionData) {
-        self.imp().set_data(data);
+    /// Set the device this session presents.
+    pub(super) fn set_device(&self, device: &Device) {
+        self.imp().set_device(device);
     }
 
     /// Renames the user session.
-    pub(crate) async fn rename(&self, display_name: String) -> Result<(), HttpError> {
-        let Some(client) = self.session().map(|s| s.client()) else {
+    ///
+    /// The core reads the list again when the homeserver took the name,
+    /// which is how it reaches this object.
+    pub(crate) async fn rename(&self, display_name: String) -> Result<(), ()> {
+        let Some(session) = self.session() else {
             return Ok(());
         };
+        let core = session.core().user_sessions().clone();
         let device_id = self.imp().device_id().clone();
 
-        let cloned_display_name = display_name.clone();
-        let res =
-            spawn_tokio!(
-                async move { client.rename_device(&device_id, &cloned_display_name).await }
-            )
-            .await
-            .expect("task was not aborted");
+        let handle = spawn_tokio!(async move { core.rename(&device_id, &display_name).await });
 
-        match res {
-            Ok(_) => {
-                self.imp().set_display_name(display_name);
-                Ok(())
-            }
-            Err(error) => {
-                let device_id = self.device_id();
-                error!("Could not rename user session {device_id}: {error}");
-                Err(error)
-            }
-        }
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
+                error!(
+                    "Could not rename user session {}: {error}",
+                    self.device_id()
+                );
+            })
     }
 
     /// Deletes the `UserSession`.

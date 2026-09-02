@@ -155,6 +155,11 @@ impl UserSessions {
         self.inner.state.get()
     }
 
+    /// Subscribe to how far the read has got.
+    pub fn subscribe_state(&self) -> Subscriber<LoadingState> {
+        self.inner.state.subscribe()
+    }
+
     /// A snapshot of the account's sessions.
     #[must_use]
     pub fn snapshot(&self) -> Vec<Device> {

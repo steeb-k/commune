@@ -1,30 +1,19 @@
+pub(crate) use commune_core::session::RoomPackKind;
+use commune_core::session::{ImagePack as CoreImagePack, ImagePackSource as CoreImagePackSource};
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
-use super::{
-    PackImage,
-    events::{PackContent, PackUsage},
+use super::{PackImage, events::PackContent};
+use crate::{
+    prelude::*,
+    session::{Room, Session},
 };
-use crate::{prelude::*, session::Room};
-
-/// The event type that an image pack in the state of a room is defined under.
-///
-/// A pack is written back under the type that it was read from, so that
-/// editing a pack that another client defined does not leave a second copy of
-/// it behind under the other name.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum RoomPackKind {
-    /// `im.ponies.room_emotes`, from MSC2545, which we read but do not
-    /// create.
-    Unstable,
-    /// `m.room.image_pack`, from the specification, which is the one we
-    /// create.
-    Stable,
-}
 
 /// Where an image pack comes from.
 ///
 /// Always the state of a room: the specification has no personal pack, and
-/// expects one to be a room pack enabled everywhere instead.
+/// expects one to be a room pack enabled everywhere instead. This is the
+/// core's [`ImagePackSource`](CoreImagePackSource) with the room the
+/// interface presents.
 #[derive(Debug, Clone)]
 pub(crate) struct ImagePackSource {
     /// The room that defines the pack.
@@ -35,6 +24,17 @@ pub(crate) struct ImagePackSource {
     pub(crate) kind: RoomPackKind,
 }
 
+impl ImagePackSource {
+    /// This source, as the core names it.
+    pub(crate) fn to_core(&self) -> CoreImagePackSource {
+        CoreImagePackSource {
+            room: self.room.core().clone(),
+            state_key: self.state_key.clone(),
+            kind: self.kind,
+        }
+    }
+}
+
 mod imp {
     use std::{cell::OnceCell, marker::PhantomData};
 
@@ -43,10 +43,10 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::ImagePack)]
     pub struct ImagePack {
-        /// Where this pack comes from.
+        /// The pack, as the core holds it.
+        pub(super) core: OnceCell<CoreImagePack>,
+        /// Where this pack comes from, with the room the interface presents.
         pub(super) source: OnceCell<ImagePackSource>,
-        /// The content of this pack.
-        pub(super) content: OnceCell<PackContent>,
         /// The images of this pack.
         #[property(get = Self::images)]
         images: OnceCell<gio::ListStore>,
@@ -65,14 +65,14 @@ mod imp {
     impl ObjectImpl for ImagePack {}
 
     impl ImagePack {
+        /// The pack, as the core holds it.
+        pub(super) fn core(&self) -> &CoreImagePack {
+            self.core.get().expect("core should be initialized")
+        }
+
         /// Where this pack comes from.
         pub(super) fn source(&self) -> &ImagePackSource {
             self.source.get().expect("source should be initialized")
-        }
-
-        /// The content of this pack.
-        pub(super) fn content(&self) -> &PackContent {
-            self.content.get().expect("content should be initialized")
         }
 
         /// The images of this pack.
@@ -84,7 +84,7 @@ mod imp {
                 .get_or_init(|| {
                     let images = gio::ListStore::new::<PackImage>();
 
-                    for (shortcode, data) in &self.content().images {
+                    for (shortcode, data) in &self.core().content.images {
                         images.append(&PackImage::new(shortcode.clone(), data.clone()));
                     }
 
@@ -94,33 +94,44 @@ mod imp {
         }
 
         /// The name of this pack, as shown to the user.
+        ///
+        /// The core answers when the pack or its room is named; the other
+        /// names of a room are sentences, and those are the interface's.
         fn display_name(&self) -> String {
-            if let Some(display_name) = &self.content().pack.display_name {
-                return display_name.clone();
-            }
-
-            self.source().room.display_name()
+            self.core()
+                .display_name()
+                .unwrap_or_else(|| self.source().room.display_name())
         }
     }
 }
 
 glib::wrapper! {
     /// An image pack.
+    ///
+    /// The pack is the core's; this presents it.
     pub struct ImagePack(ObjectSubclass<imp::ImagePack>);
 }
 
 impl ImagePack {
-    /// Create a new `ImagePack` with the given source and content.
-    pub(crate) fn new(source: ImagePackSource, content: PackContent) -> Self {
+    /// Present the given pack of the core.
+    ///
+    /// `None` when the room that defines it is not in the list, which the
+    /// core already ruled out for the packs it returns.
+    pub(crate) fn from_core(session: &Session, pack: CoreImagePack) -> Option<Self> {
+        let room = session.room_list().get(pack.source.room.room_id())?;
+        let source = ImagePackSource {
+            room,
+            state_key: pack.source.state_key.clone(),
+            kind: pack.source.kind,
+        };
+
         let obj = glib::Object::new::<Self>();
 
         let imp = obj.imp();
+        imp.core.set(pack).expect("core is not initialized");
         imp.source.set(source).expect("source is not initialized");
-        imp.content
-            .set(content)
-            .expect("content is not initialized");
 
-        obj
+        Some(obj)
     }
 
     /// Where this pack comes from.
@@ -134,21 +145,11 @@ impl ImagePack {
     /// copy and sends the result, and the pack is built again from what comes
     /// back through sync.
     pub(crate) fn content(&self) -> PackContent {
-        self.imp().content().clone()
+        self.imp().core().content.clone()
     }
 
     /// Who to credit for this pack.
     pub(crate) fn attribution(&self) -> Option<&str> {
-        self.imp().content().pack.attribution.as_deref()
-    }
-
-    /// Whether this pack can be used for the given usage.
-    pub(crate) fn has_usage(&self, usage: &PackUsage) -> bool {
-        self.imp().content().pack.has_usage(usage)
-    }
-
-    /// Whether this pack has no images.
-    pub(crate) fn is_empty(&self) -> bool {
-        self.imp().content().images.is_empty()
+        self.imp().core().attribution()
     }
 }

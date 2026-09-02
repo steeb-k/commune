@@ -335,6 +335,21 @@ impl SessionSecurity {
         self.inner.backup_exists_on_server.get()
     }
 
+    /// Subscribe to whether all the cross-signing keys are available.
+    pub fn subscribe_cross_signing_keys_available(&self) -> Subscriber<bool> {
+        self.inner.cross_signing_keys_available.subscribe()
+    }
+
+    /// Subscribe to whether the room keys backup is enabled.
+    pub fn subscribe_backup_enabled(&self) -> Subscriber<bool> {
+        self.inner.backup_enabled.subscribe()
+    }
+
+    /// Subscribe to whether the room keys backup exists on the homeserver.
+    pub fn subscribe_backup_exists_on_server(&self) -> Subscriber<bool> {
+        self.inner.backup_exists_on_server.subscribe()
+    }
+
     /// Listen to crypto identity changes: the identities and the devices of
     /// our own user.
     async fn watch_crypto_identity_state(&self) {
