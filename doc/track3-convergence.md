@@ -2590,7 +2590,12 @@ the desktop: **every module's eyeball section is owed**, and module 11's
 call harness with it. By the rule at the head of this section, no module
 is done until then; the sessions have done the part they can. Phase 5,
 the strings, is audited below; Phase 6, the ledgers, runs with every
-commit.
+commit. **The sweep's sheet is `doc/eyeball-track3.md`**, every owed
+paragraph below as checks in dependency order, drawn as
+`doc/eyeball-track3-run.html` by `doc/eyeball-page.py track3` and
+published at
+<https://claude.ai/code/artifact/a6d6e7db-11c8-46d5-ab6b-dbf5b8e221c4>;
+a result is recorded by striking it there, then in the module's record.
 
 ## Phase 5 — the strings, audited
 
