@@ -1758,6 +1758,18 @@ impl CoreApp {
         })
     }
 
+    /// Drop any stale offline claim and find out fresh.
+    ///
+    /// For the moment the application comes back to the foreground: what
+    /// the session last learned about its connection predates a background
+    /// freeze, and a backoff measured against a network that no longer
+    /// exists is not worth sleeping out.
+    pub fn recheck_connectivity(&self) {
+        if let Some(session) = self.first_ready_session() {
+            session.recheck_connectivity();
+        }
+    }
+
     /// Set whether notifications are enabled for this session.
     pub fn set_notifications_enabled(&self, enabled: bool) {
         if let Some(session) = self.first_ready_session() {

@@ -62,6 +62,11 @@ class CommuneState(context: Context) {
         set(value) {
             field = value
             notifier.visibleRoomId = if (value) openRoom?.roomId else null
+            // Coming back to the foreground is the moment the session's
+            // connectivity knowledge went stale: the background froze the
+            // process mid-claim, and the claim would otherwise be sleeping
+            // out a backoff against a network that no longer exists.
+            if (value) app.recheckConnectivity()
         }
 
     /// Set by the activity: opens the system file picker for an attachment.

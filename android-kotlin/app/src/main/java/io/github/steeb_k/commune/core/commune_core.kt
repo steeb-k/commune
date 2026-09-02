@@ -941,6 +941,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_paginate_backwards(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_place_call(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_recheck_connectivity(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_recover(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_recovery_state(
@@ -1273,6 +1275,8 @@ external fun uniffi_commune_core_fn_method_coreapp_paginate_backwards(`ptr`: Lon
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_place_call(`ptr`: Long,`roomId`: RustBuffer.ByValue,`invitee`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_recheck_connectivity(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_commune_core_fn_method_coreapp_recover(`ptr`: Long,`recoveryKey`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_recovery_state(`ptr`: Long,
@@ -1792,6 +1796,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_place_call() != 24301.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_recheck_connectivity() != 25639.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_recover() != 8793.toShort()) {
@@ -3345,6 +3352,16 @@ public interface CoreAppInterface {
      * WebRTC produced, and return the call ID everything else uses.
      */
     suspend fun `placeCall`(`roomId`: kotlin.String, `invitee`: kotlin.String, `sdp`: kotlin.String): kotlin.String
+    
+    /**
+     * Drop any stale offline claim and find out fresh.
+     *
+     * For the moment the application comes back to the foreground: what
+     * the session last learned about its connection predates a background
+     * freeze, and a backoff measured against a network that no longer
+     * exists is not worth sleeping out.
+     */
+    fun `recheckConnectivity`()
     
     /**
      * Recover the account's secrets with the given recovery key.
@@ -5258,6 +5275,26 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         CoreException.ErrorHandler,
     )
     }
+
+    
+    /**
+     * Drop any stale offline claim and find out fresh.
+     *
+     * For the moment the application comes back to the foreground: what
+     * the session last learned about its connection predates a background
+     * freeze, and a backoff measured against a network that no longer
+     * exists is not worth sleeping out.
+     */override fun `recheckConnectivity`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_recheck_connectivity(
+        it,
+        _status)
+}
+    }
+    
+    
 
     
     /**

@@ -1885,6 +1885,27 @@ sidebar — every section fills, join by alias, knock, forget, the
 tombstone successor — are owed, and only a person at the desktop can run
 them; the sessions compiled it, linted it, and ran the core's tests.
 
+**Corrected 2 September, from the Pixel.** The Kotlin application went
+"offline" for one account while sending still worked: no new messages in
+any room, nothing said, every send delivered. The core was up — its
+runtime's eight workers, one live connection to the homeserver — and
+logged nothing at all, which was the clue: a sync loop that had been
+stopped and never restarted logs nothing. The core's `update_homeserver_
+reachable` begins by cancelling the pending retry, as the application's
+did; the application's retry was a `glib` timeout that had already fired
+when its callback removed it, and the core's is a tokio task, which
+cancelling from inside itself ends at its next await — the probe — with
+no answer and no further retry. So one failed probe at start-up, which a
+process restarted in the background by a sticky service or a push gets
+easily, left the session unreachable for good, its sync loop aborted and
+nothing to bring it back, until a cold start with the network up. The
+retry now takes itself out of the slot before it checks. The same code
+runs under the desktop's `Session` since module 1, so the desktop had it
+too, for a probe that failed at launch. With it, `recheck_connectivity`
+— which the GTK Android port called when its window came back, and the
+core kept — reaches the FFI and the Kotlin application calls it when its
+UI becomes visible; it had not, which the parity audit had not seen.
+
 ### Module 2 — the room's properties are mirrors
 
 **Done 1 September, the same day as module 1.** `src/session/room/mod.rs`
@@ -2777,6 +2798,8 @@ recorded here as it is found, with the phase that closes it.
 | 2 Sep 2026 | `session/calls/call.rs`, `hangup` | **A call hung up before its offer came back ends without a word; the application never had that moment.** The application's invite was sent from inside the offer's callback and a hang-up before it also sent nothing. Same behaviour, now with a name. | Accepted 2 Sep, module 11 |
 | 2 Sep 2026 | `session_list/mod.rs`, `insert` | **A session the login flow adds has its row a main-loop turn after the core has it.** The application inserted the row itself, synchronously, and selected it; the view hands the core the session and selects the row when the core's change has come back, so `Window::add_session` waits for it. Nothing looks for the row in between. | Accepted 2 Sep, module 13 |
 | 2 Sep 2026 | `session/mod.rs`, `from_prepared_core` | **A restored session's wrapper never attached to its prepared core, and the window waited forever.** Found on the first desktop run of the spine; module 13's `from_core` wired the info and settings and nothing that `prepare` did. Fixed the same day: `attach` is the half of `prepare` that is the application's, and the list calls it for a session the core restored. | Fixed 2 Sep, module 13 |
+| 2 Sep 2026 | `commune-core/src/session/mod.rs`, `update_homeserver_reachable` | **The reachability retry cancelled itself, so a session whose first probe failed stayed offline for good.** Found on the Pixel: the Kotlin application sent but never received, and the core logged nothing. The application's `glib` timeout had fired before its callback removed it; the core's tokio task was aborted from inside itself. Fixed the same day: the retry leaves the slot before it checks. The desktop has run this code since module 1. | Fixed 2 Sep, core |
+| 2 Sep 2026 | `commune-core/src/facade.rs`, `recheck_connectivity` | **The Kotlin application never told the core it had come to the foreground.** The GTK Android port called `recheck_connectivity` when its window became active, the core kept the method, and the FFI did not export it. Exported, and called from `uiVisible`. | Fixed 2 Sep, Kotlin |
 
 ## Gates
 
