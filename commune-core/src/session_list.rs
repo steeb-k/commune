@@ -263,20 +263,29 @@ impl SessionList {
     /// for.
     #[allow(clippy::must_use_candidate)]
     pub fn insert(&self, entry: SessionEntry) -> usize {
-        if let SessionEntry::Ready(session) = &entry {
-            self.watch_logged_out(session);
-        }
-
-        let mut entries = self.inner.entries.lock().expect("mutex is not poisoned");
+        let session = entry.session().cloned();
         let session_id = entry.session_id().to_owned();
 
-        if let Some(index) = entries.iter().position(|e| e.session_id() == session_id) {
-            entries.set(index, entry);
-            index
-        } else {
-            entries.push_back(entry);
-            entries.len() - 1
+        let index = {
+            let mut entries = self.inner.entries.lock().expect("mutex is not poisoned");
+
+            if let Some(index) = entries.iter().position(|e| e.session_id() == session_id) {
+                entries.set(index, entry);
+                index
+            } else {
+                entries.push_back(entry);
+                entries.len() - 1
+            }
+        };
+
+        // After the entry is in, so that a session already logged out — one
+        // whose token the homeserver refused while it was being prepared —
+        // is taken out again rather than listed for good.
+        if let Some(session) = session {
+            self.watch_logged_out(&session);
         }
+
+        index
     }
 
     /// Remove the session with the given ID from the list.
@@ -294,6 +303,13 @@ impl SessionList {
         let mut subscriber = session.subscribe_state();
         let weak = Arc::downgrade(&self.inner);
         let session_id = session.session_id().to_owned();
+
+        // Subscribed first, then read: a session logged out before this
+        // watch began never announces it again.
+        if session.state() == SessionState::LoggedOut {
+            self.remove(&session_id);
+            return;
+        }
 
         RUNTIME.spawn(async move {
             while let Some(state) = subscriber.next().await {
