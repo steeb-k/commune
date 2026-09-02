@@ -938,7 +938,8 @@ impl Room {
         self.inner
             .live_timeline
             .get_or_init(|| {
-                let timeline = Timeline::new(self.inner.matrix_room.clone());
+                let timeline =
+                    Timeline::new(self.inner.matrix_room.clone(), self.inner.session.clone());
                 RoomInner::watch_read_state(&self.inner, &timeline);
                 timeline
             })
@@ -983,7 +984,11 @@ impl Room {
     /// pinned view is open.
     #[must_use]
     pub fn pinned_timeline(&self) -> Timeline {
-        Timeline::with_focus(self.inner.matrix_room.clone(), TimelineFocusKind::Pinned)
+        Timeline::with_focus(
+            self.inner.matrix_room.clone(),
+            TimelineFocusKind::Pinned,
+            self.inner.session.clone(),
+        )
     }
 
     /// A timeline of the thread rooted at the given event.
@@ -995,6 +1000,7 @@ impl Room {
         Timeline::with_focus(
             self.inner.matrix_room.clone(),
             TimelineFocusKind::Thread { root },
+            self.inner.session.clone(),
         )
     }
 

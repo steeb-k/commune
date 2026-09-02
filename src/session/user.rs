@@ -7,11 +7,13 @@ use ruma::{
         reporting::report_user,
     },
 };
+use tokio::task::AbortHandle;
 use tracing::{debug, error};
 
-use super::{IdentityVerification, Presence, Room, Session};
+use super::{IdentityVerification, Presence, Room, Session, UserPresence};
 use crate::{
     components::{AvatarImage, AvatarUriSource, PillSource},
+    core_bridge::ObjectWatcher,
     prelude::*,
     spawn, spawn_tokio,
 };
@@ -71,7 +73,8 @@ mod imp {
         /// The message this user set to go with their presence, if any.
         #[property(get)]
         presence_status_message: RefCell<Option<String>>,
-        presence_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// The task following the core's presence for this user.
+        presence_watch: RefCell<Option<AbortHandle>>,
     }
 
     #[glib::object_subclass]
@@ -92,14 +95,14 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(session) = self.session.get() {
-                if let Some(handler) = self.ignored_handler.take() {
-                    session.ignored_users().disconnect(handler);
-                }
+            if let Some(session) = self.session.get()
+                && let Some(handler) = self.ignored_handler.take()
+            {
+                session.ignored_users().disconnect(handler);
+            }
 
-                if let Some(handler) = self.presence_handler.take() {
-                    session.presence_list().disconnect(handler);
-                }
+            if let Some(handle) = self.presence_watch.take() {
+                handle.abort();
             }
         }
     }
@@ -157,22 +160,20 @@ mod imp {
             self.ignored_handler.replace(Some(ignored_handler));
 
             let presence_list = session.presence_list();
-            let presence_handler = presence_list.connect_changed(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |_, changed_user_id| {
-                    if changed_user_id == imp.user_id().as_str() {
-                        imp.update_presence();
-                    }
-                }
-            ));
-            self.presence_handler.replace(Some(presence_handler));
+            if let Some(subscriber) = presence_list.subscribe(user_id) {
+                let handle = ObjectWatcher::new(&*self.obj())
+                    .follow(subscriber, |obj: &super::User, known| {
+                        obj.imp().update_presence(known.unwrap_or_default());
+                    })
+                    .spawn();
+                self.presence_watch.replace(Some(handle));
+            }
 
             // Sync only carries presence when it changes, so a user who has
             // not moved since this client started has none until they do. What
             // earlier syncs delivered is in the store.
             presence_list.load(user_id.clone());
-            self.update_presence();
+            self.update_presence(presence_list.get(user_id));
 
             spawn!(clone!(
                 #[weak(rename_to = imp)]
@@ -184,13 +185,13 @@ mod imp {
         }
 
         /// Update what is known about whether this user is around.
-        fn update_presence(&self) {
+        fn update_presence(&self, known: UserPresence) {
             let obj = self.obj();
-            let known = self.session().presence_list().get(self.user_id());
+            let presence = Presence::from(known.presence);
 
-            if self.presence.get() != known.presence {
-                self.presence.set(known.presence);
-                obj.avatar_data().set_presence(known.presence);
+            if self.presence.get() != presence {
+                self.presence.set(presence);
+                obj.avatar_data().set_presence(presence);
                 obj.notify_presence();
             }
 
