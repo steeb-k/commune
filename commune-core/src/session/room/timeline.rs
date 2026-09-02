@@ -35,10 +35,75 @@ use ruma::{
 use tracing::error;
 
 use crate::{
+    UserFacingError,
+    klipy::SelectedGif,
     matrix::{ext_traits::TimelineItemContentExt, media::MediaMessage},
     spawn_tokio,
     utils::LoadingState,
 };
+
+/// The maximum size of a GIF that is downloaded to be sent, in bytes.
+///
+/// `SelectedGif` prefers a variant under a smaller limit but can fall back
+/// to a larger one, so this is a guard rather than the preferred size.
+pub const MAX_GIF_SIZE: u64 = 16 * 1024 * 1024;
+
+/// An error encountered while sending a GIF.
+#[derive(Debug, thiserror::Error)]
+pub enum SendGifError {
+    /// The timeline could not be built.
+    #[error("the timeline is not available")]
+    NoTimeline,
+    /// The GIF could not be downloaded from the service.
+    #[error(transparent)]
+    Download(#[from] crate::http::HttpError),
+    /// The GIF could not be uploaded to the homeserver.
+    ///
+    /// Boxed because `matrix_sdk::Error` is large enough that carrying it
+    /// by value makes every `Result` here expensive.
+    #[error(transparent)]
+    Upload(Box<matrix_sdk::Error>),
+    /// The sticker carrying the GIF could not be sent.
+    #[error(transparent)]
+    Send(Box<matrix_sdk_ui::timeline::Error>),
+}
+
+impl UserFacingError for SendGifError {
+    fn to_user_facing(&self) -> String {
+        // The application says the same thing for every step.
+        "Could not send GIF".to_owned()
+    }
+}
+
+/// Upload the given GIF to the homeserver and return the source to refer to it.
+///
+/// The GIF is encrypted first if it is going to an encrypted room, so a GIF is
+/// no less private than any other image sent there.
+async fn upload_gif(
+    client: &matrix_sdk::Client,
+    is_encrypted: bool,
+    data: Vec<u8>,
+) -> Result<ruma::events::sticker::StickerMediaSource, SendGifError> {
+    use ruma::events::sticker::StickerMediaSource;
+
+    if is_encrypted {
+        let mut cursor = std::io::Cursor::new(data);
+        let file = client
+            .upload_encrypted_file(&mut cursor)
+            .await
+            .map_err(|upload_error| SendGifError::Upload(Box::new(upload_error)))?;
+
+        Ok(StickerMediaSource::Encrypted(Box::new(file)))
+    } else {
+        let response = client
+            .media()
+            .upload(&mime::IMAGE_GIF, data, None)
+            .await
+            .map_err(|upload_error| SendGifError::Upload(Box::new(upload_error)))?;
+
+        Ok(StickerMediaSource::Plain(response.content_uri))
+    }
+}
 
 /// The timeline of a room.
 ///
@@ -388,6 +453,95 @@ impl Timeline {
                 Err(())
             }
         }
+    }
+
+    /// Send the given sticker to the room, through the timeline so it gets
+    /// a local echo and the send queue like every other message.
+    pub async fn send_sticker(
+        &self,
+        content: ruma::events::sticker::StickerEventContent,
+    ) -> Result<(), ()> {
+        use ruma::events::AnyMessageLikeEventContent;
+
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return Err(());
+        };
+
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .send(AnyMessageLikeEventContent::Sticker(content))
+                .await
+        });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(_) => Ok(()),
+            Err(send_error) => {
+                error!("Could not send sticker: {send_error}");
+                Err(())
+            }
+        }
+    }
+
+    /// Send the given GIF as a sticker, then tell the service it was shared.
+    ///
+    /// The GIF is downloaded from the service and uploaded to the
+    /// homeserver, rather than linked: a link would leak the IP address of
+    /// everyone in the room to the service, would rot when the service
+    /// drops the file, and could not be end-to-end encrypted. The service
+    /// is told afterwards because that is how it counts, and it is why the
+    /// API is free to use.
+    pub async fn send_gif(&self, gif: SelectedGif, is_encrypted: bool) -> Result<(), SendGifError> {
+        use ruma::events::{
+            AnyMessageLikeEventContent, room::ImageInfo, sticker::StickerEventContent,
+        };
+
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return Err(SendGifError::NoTimeline);
+        };
+        let client = self.inner.matrix_room.client();
+
+        let SelectedGif {
+            url,
+            width,
+            height,
+            size,
+            slug,
+            title,
+        } = gif;
+
+        let source = spawn_tokio!(async move {
+            let data = crate::http::fetch(&url, MAX_GIF_SIZE).await?;
+            upload_gif(&client, is_encrypted, data).await
+        })
+        .await
+        .expect("task was not aborted")
+        .inspect_err(|send_error| error!("Could not send GIF: {send_error}"))?;
+
+        let mut info = ImageInfo::new();
+        info.width = Some(width.into());
+        info.height = Some(height.into());
+        info.size = size.try_into().ok();
+        info.mimetype = Some(mime::IMAGE_GIF.to_string());
+        // Without this the receiving client asks its homeserver for a
+        // thumbnail, which is a still frame.
+        info.is_animated = Some(true);
+
+        let content = StickerEventContent::with_source(title, info, source);
+
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .send(AnyMessageLikeEventContent::Sticker(content))
+                .await
+        });
+
+        if let Err(send_error) = handle.await.expect("task was not aborted") {
+            error!("Could not send GIF: {send_error}");
+            return Err(SendGifError::Send(Box::new(send_error)));
+        }
+
+        spawn_tokio!(async move { crate::klipy::report_share(&slug).await });
+
+        Ok(())
     }
 
     /// Send the user's location to the room: the application's exact

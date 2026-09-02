@@ -29,6 +29,7 @@
 mod create_room;
 mod directory;
 mod ignored_users;
+mod image_packs;
 mod notifications;
 mod remote;
 mod room;
@@ -66,10 +67,17 @@ use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, info};
 use url::Url;
 
+// The facade's create-then-add flow is the only reader; see the function.
+#[cfg(feature = "ffi")]
+pub(crate) use self::image_packs::room_state_packs_including_empty;
 pub use self::{
     create_room::{CreateRoomError, CreateRoomOptions, CreateRoomVisibility},
     directory::{DirectoryError, PublicRoomsPage, PublicRoomsQuery},
     ignored_users::{IgnoredUsers, IgnoredUsersError},
+    image_packs::{
+        ImagePack, ImagePackSource, ImagePacks, ImagePacksError, RoomPackKind, UnavailablePack,
+        room_state_packs, sticker_content,
+    },
     notifications::PushError,
     remote::{RemoteRoom, RemoteRoomError, SpaceChild, SpaceChildren, SpaceChildrenError},
     room::{
@@ -212,6 +220,8 @@ struct SessionInner {
     room_list: std::sync::OnceLock<RoomList>,
     /// The users this account ignores.
     ignored_users: std::sync::OnceLock<IgnoredUsers>,
+    /// The image packs available to this account, built on first use.
+    image_packs: std::sync::OnceLock<ImagePacks>,
     /// The account's other sessions.
     user_sessions: std::sync::OnceLock<UserSessions>,
     /// The task feeding the room list from the sync loop.
@@ -283,6 +293,7 @@ impl Session {
             room_updates_rx: Mutex::new(Some(room_updates_rx)),
             room_list: std::sync::OnceLock::new(),
             ignored_users: std::sync::OnceLock::new(),
+            image_packs: std::sync::OnceLock::new(),
             user_sessions: std::sync::OnceLock::new(),
             room_updates_handle: Mutex::new(None),
         });
@@ -514,6 +525,20 @@ impl Session {
         self.inner
             .ignored_users
             .get_or_init(|| IgnoredUsers::new(self.downgrade()))
+    }
+
+    /// The image packs available to this account.
+    ///
+    /// Built on first use, as the application builds its `ImagePacks`
+    /// when the session is first asked for them; loading the enabled
+    /// packs starts then, and the SDK's event handlers keep them fresh.
+    #[must_use]
+    pub fn image_packs(&self) -> &ImagePacks {
+        self.inner.image_packs.get_or_init(|| {
+            let packs = ImagePacks::new(self.downgrade());
+            image_packs::spawn_load(&packs);
+            packs
+        })
     }
 
     /// The account's other sessions.

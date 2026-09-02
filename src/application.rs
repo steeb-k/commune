@@ -240,6 +240,12 @@ mod imp {
                 // search off rather than making it fail.
                 klipy_api_key: (!crate::config::KLIPY_API_KEY.is_empty())
                     .then(|| crate::config::KLIPY_API_KEY.to_owned()),
+                // Written into the room the one time it is created, and
+                // never translated again: see `session::image_packs`.
+                packs_room_name: Some(gettext("Sticker Packs")),
+                packs_room_topic: Some(gettext(
+                    "The sticker and emoticon packs that you created. Invite someone here to share them.",
+                )),
             });
 
             // Needs libadwaita started, so it cannot be done at construction.
