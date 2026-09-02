@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn `doc/eyeball-tests.md` into a run sheet you can tick.
+"""Turn an eyeball ledger under `doc/` into a run sheet you can tick.
 
 The ledger is the source. This only draws it, so the two cannot drift: after
 changing the ledger, run this again and republish.
@@ -39,6 +39,15 @@ SHEETS = {
         "artifact_url": "https://claude.ai/code/artifact/67e80429-f48d-4c9a-9277-325f6e7b7efd",
         "title": "Commune Android Eyeball Run",
         "subtitle": "Commune Android",
+    },
+    # The Track 3 sheet: the spine's modules as views over the core, each
+    # record's "eyeball owed" paragraph as checks.
+    "track3": {
+        "ledger": WORKSPACE / "doc" / "eyeball-track3.md",
+        "output": WORKSPACE / "doc" / "eyeball-track3-run.html",
+        "artifact_url": "https://claude.ai/code/artifact/a6d6e7db-11c8-46d5-ab6b-dbf5b8e221c4",
+        "title": "Commune Track 3 Eyeball Run",
+        "subtitle": "Commune on the core",
     },
 }
 
