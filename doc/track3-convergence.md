@@ -370,7 +370,7 @@ are named in the notes below and are not in the count.
 | 7 | Login and registration | 9 | 354 | `login.rs`, `config.rs` (`OAuthClientConfig`, `app_name`, `device_display_name`) | `login/` (3,290 over ten files), `components/dialogs/auth/mod.rs` (the stage selection, 755) | `LoginError`, `RegisterError`, `ResetPasswordError` |
 | 8 | Image packs, stickers, GIFs | 13 | 525 | `session/image_packs.rs`, `session/room/timeline.rs` (`send_sticker`, `send_gif`), `config.rs` (the packs room's name and topic) | `session/image_packs/` (1,323), `room_history/message_toolbar/mod.rs` (`send_sticker`, `send_gif`, `upload_gif`), `components/image_pack_editor/mod.rs` (522), `account_settings/image_packs_page/mod.rs` (565) | `ImagePacksError`, `SendGifError` |
 | 9 | Verification and security | 14 | 621 | `session/verification.rs`, `session/security.rs` | `session/verification/` (1,538), `session/security.rs` (491), `components/crypto/` (the setup views' requests), `account_settings/encryption_page/import_export_keys_subpage.rs` | `VerificationError`, `BootstrapError`, `RecoveryError`, `RoomKeysError` |
-| 10 | Timeline and messaging | 22 | 862 | `session/room/timeline.rs`, `session/room/mod.rs` | `session/room/timeline/` (3,033), `room_history/message_toolbar/` | `TimelineError` |
+| 10 | Timeline and messaging | 22 | 862 | `session/room/timeline.rs`, `session/room/composer.rs`, `session/room/mod.rs` | `session/room/timeline/` (3,033), `room_history/message_toolbar/` (the toolbar and `composer_parser.rs`), `room/mod.rs` (redact, report, invite, permalink), `room_details/edit_details_subpage.rs`, `room_history/event_actions/group.rs` | `TimelineError`, `RoomDetailsError` |
 | 11 | Room settings — details, join rule, history, addresses | 9 | 559 | `session/room/join_rule.rs`, `session/room/aliases.rs` | `session/room/join_rule.rs` (442), `aliases.rs` (544), the `room_details/` subpages | `RoomSettingsError` |
 | 12 | Permissions, ACL, upgrade, moderation | 10 | 553 | `session/room/permissions.rs`, `server_acl.rs`, `upgrade.rs` | `session/room/permissions.rs` (733), `room_details/permissions/` (2,491), `upgrade_dialog/` (642) | `PermissionsError` |
 | 13 | Calls | 9 | 671 | `session/calls/` | `session/calls/call.rs` (1,607), `mod.rs` (989), `turn.rs` (360) | `CallError` |
@@ -1205,6 +1205,152 @@ answer.
 The FFI surface is unchanged for the ninth time and the bindings came back
 byte-identical. The clippy count holds at 13.
 
+### Commit 10 — timeline and messaging, and the composer the facade had improvised
+
+**Nineteen of the twenty-two move; the three listeners stay, and so do the
+two that are compositions of passthroughs.** What the message toolbar sends
+through the timeline — messages, replies, edits, attachments, voice
+messages, locations, stickers — is sent from `session/room/timeline.rs` now,
+with the toolbar's upload-size preflight ahead of it; back-pagination has
+the application's guard; and the room-level actions — redact, report,
+invite, the event permalink, the name and topic — are on
+`session/room/mod.rs` as the application's `Room` has them. The nine
+`Result<(), ()>` signatures are `TimelineError` now, which is the debt the
+Gates section left for this group, and `with_room_event`, the helper that
+existed to carry the unit error, is gone. `mark_room_read` stays: it is the
+room history's two receipt calls, and `retry_sends` stays: it is the
+session's two send-queue calls. `forward_event` stays for the reason its
+own doc comment gives. The three listeners are the FFI's snapshot shape.
+
+**The composer is the core's.** The application's `ComposerParser` walks a
+`GtkTextBuffer` and turns text, mention pills and emoticon pills into the
+content of a message event. The walk is the widget's; what the chunks
+become on the wire is not, and `session/room/composer.rs` is that:
+`compose_message(chunks, markdown_enabled)` is `into_message_event_content`
+line for line — the plain body with the names and shortcodes, the formatted
+body with the links and image tags, the emote command stripped, the empty
+message refused, and `m.mentions` always present. Seven tests pin it. What
+the facade had was an approximation written from memory of the wire, and
+it was wrong in five ways:
+
+* **`m.mentions` was absent from a message that mentioned nobody.** The
+  application always adds the mentions, empty or not, "to avoid triggering
+  legacy pushrules"; the facade added them only when there was a user to
+  name. Every plain message from the Kotlin application was evaluated by
+  the legacy rules on every recipient's homeserver.
+* **`/me` was sent as text, and an empty message was sent.** The composer
+  turns the command into an `m.emote` and refuses whitespace; the facade
+  did neither.
+* **The mention link and the emoticon tag were built by hand.** The
+  application's mention URI is `UserId::matrix_to_uri()`, percent-encoded;
+  the facade wrote `https://matrix.to/#/` and the raw ID. The emoticon tag
+  is escaped with `g_markup_escape_text`, apostrophes included; the facade's
+  escaper knew four characters. The application renders the formatted body
+  from Markdown with the tags in it; the facade rendered Markdown, then
+  substituted tags into the HTML.
+* **A reply and an edit were plain text.** The toolbar sends the composer's
+  content in both cases; the facade sent `text_plain`, so a reply lost its
+  Markdown and an edit its mentions.
+* **An edit went through the timeline item.** The toolbar makes the edit
+  event through the room and sends it through the send queue, so the event
+  edited need not be among the loaded items; the SDK's `Timeline::edit`
+  fails for one that is not.
+
+Finding the chunks in the Kotlin composer's plain text — `@Name`,
+`:shortcode:`, `@room` — is the FFI's shortcut and stays in `facade.rs` as
+`composer_chunks`. `@room` is recorded as such: the application mentions the
+room only through a pill its completion offers where the user may notify
+the room and the room is not a direct chat; the Kotlin composer offers
+nothing, and the FFI finds the word as the push rules find it.
+
+**Redaction went through the timeline item too.** The application's remove
+action is `Room::redact`, through the room, and it is a no-op in a room
+that is not joined; the facade's `Timeline::redact` needed the event loaded.
+`Room::redact`, `Room::report_events` and `Room::invite` are the
+application's three, with their `Result<(), Vec<failed>>` signatures.
+
+**A video was sent as a file, and so was an audio file.** The toolbar's
+`send_file_inner` chooses the attachment info by MIME type — image, video,
+audio, file — and the SDK chooses the `msgtype` from it; the core knew
+image and file. A video picked on the Pixel arrived as an `m.file` download.
+The dimensions, durations, thumbnails and waveforms the toolbar measures
+with the desktop's media stack are the embedder's to add: the core sends
+the size, and the FFI passes the size and, for a voice message, the
+duration.
+
+**The voice message was named after the recorder's temporary file, and
+the file was never removed.** The toolbar sends the bytes under
+`"Voice message.ogg"` — translated — and deletes the recording; the facade
+sent the path, so the body other clients show was `voice-1756…ogg`, and
+the cache kept every recording. `Timeline::send_voice` takes the file
+name from the embedder, reads the bytes and removes the file.
+
+**The upload-size sentence is a value.** `check_upload_size` is the core's,
+in `timeline.rs`, and refuses with `TimelineError::UploadTooLarge {
+max_bytes }`. The English — "This file is too large, the homeserver takes
+up to {size}" — is `UserFacingError`'s, with `format_size` moved to
+`utils.rs` as the core's fallback formatter. This closes the ledger row from
+Phase 2. The facade's other toasts name the action, as the application's
+do, so `timeline_failure(error, sentence)` renders the limit from the value
+and everything else with the caller's sentence.
+
+**The location body was the core's sentence.** "User Location {geo_uri} at
+{iso8601_datetime}" is a `gettext_f` in the toolbar. It is the embedder's
+now: `Timeline::send_location(geo_uri, body)`, with the facade writing the
+English and the UTC stamp it wrote before.
+
+**The permalink failed where the application falls back.**
+`Room::matrix_to_event_uri` returns the unrouted link when the SDK cannot
+compute the routed one; the facade returned an error.
+
+**The event source was fetched.** The properties dialog shows the loaded
+item's `original_json`, and offers the view only when it has one; the
+facade asked the server. `Timeline::event_source` reads the item.
+
+**Pagination had no guard.** The application's `can_paginate_backwards`
+refuses a load while one runs, before the timeline is ready, and once the
+start was reached — which a pinned timeline is from the start, since the
+SDK refuses to paginate it. The facade asked the SDK every time, twenty
+events, and `MAX_BATCH_SIZE` was the facade's literal. The guard, the flag
+and the constant are the timeline's.
+
+**The room details were sent untrimmed, and to a room not joined.** The
+details page trims, turns an emptied field into a removal, and refuses
+when the room is not joined; `Room::set_name` and `Room::set_topic` do the
+same, with `RoomDetailsError` telling the two failures apart as the page's
+two toasts do.
+
+**Five gaps found and not filled**, by the standing ruling:
+
+* **An added reaction is not recorded among the recent emoji.** The
+  application's `Room::toggle_reaction` records it in
+  `io.element.recent_emoji`; the core has no global account data object.
+* **The media measurements.** Image dimensions, video dimensions and
+  duration, audio duration and waveform, and the thumbnails — the toolbar's
+  loaders are GTK's and GStreamer's.
+* **No per-event retry.** The application's retry is the failed echo's
+  `SendHandle::unwedge`; the FFI's `retry_sends` restarts the queues.
+* **`@room` is not gated on the permission.** The application's completion
+  offers it only where `can_notify_room`; the core has no permissions
+  object until group 12.
+* **No preload.** The application loads a batch when a live timeline opens
+  with fewer than twenty items; the FFI's listener never asks.
+
+**The Linux core clippy could not run at all, and now can.** Proving the
+nine `result_unit_err` errors gone meant running `cargo clippy -p
+commune-core --all-targets` on Linux with only the `result_large_err`
+allow, which no gate had done: it overflowed the query depth limit
+computing the layout of an async block in `session/room/search.rs`, at
+this commit's parent as much as here. The compiler's own suggestion,
+`#![recursion_limit = "256"]` on the crate, lets it run; the library then
+passes with the nine errors gone, and the only remaining hits are
+`too_many_lines` in the two example drivers, which predate Phase 3 and are
+not the core's. The Gates section's Linux command can drop
+`-A clippy::result_unit_err`.
+
+The FFI surface is unchanged for the tenth time and the bindings came back
+byte-identical. The clippy count holds at 13.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -1233,7 +1379,7 @@ recorded here as it is found, with the phase that closes it.
 | 31 Aug 2026 | `facade.rs` candidates and negotiate handlers | Both drop **every** event whose sender is our own user. The application drops only its own party's echo, because a party is a user _and_ a device: another of our own devices answering our invite is a legitimate remote party. Kept as-is deliberately — the broader check is documented in the core as the fix for a real bug where the echo of our own answer ended the call, and narrowing it wants a two-device test rather than a guess. | Phase 4, module 9 |
 | 1 Sep 2026 | `facade.rs` login flows | **The OAuth and SSO redirect is Android's, hardcoded.** `ANDROID_REDIRECT_URI` is `io.github.steeb-k.commune:/oauth2redirect`, and `oauth_client_registration_data()` builds a fixed native-application registration around it. The desktop application does not use a custom scheme at all: `src/login/local_server.rs` runs a loopback HTTP server and registers _its_ address, because a desktop browser has nowhere to send an app scheme. A GTK login through this core would open an authorization URL the browser could never come back from. The redirect and the registration are embedder facts, like `credential_label` and `klipy_api_key` before them, and belong in `CoreConfig`. **Closed 1 Sep**: `CoreConfig::oauth_client` carries each embedder's client URI and redirect URIs — the GTK application's loopback pair, `init_core`'s Android scheme — and every login step that needs the redirect for one login takes it as an argument. The Android constants live in `facade.rs`, which is the Android embedder's Rust half; the core no longer knows them. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **The pusher describes an Android device, in English, whatever the embedder is.** `app_display_name` is `"Commune"` and `device_display_name` is `"Commune on Android"`, both literals; the `LEGACY_APP_ID` deletion that runs first cleans up after a specific Android debug build. The device name is what a user sees in another client's session list when they audit what is pushing to them, so a desktop session announcing itself as Android is wrong in the one place the string is read. Embedder values, `CoreConfig` again — and the legacy cleanup is Android's alone and should say so. Commit 4 moved the pusher and left these as they were. **Closed 1 Sep** with the login redirect: `CoreConfig::app_name` names the application on the pusher, on a new device and on the OAuth client, and `CoreConfig::device_display_name` is the Android embedder's to set — the desktop passes none, since it never registers a pusher. The legacy cleanup still runs unconditionally, keyed on this device's pushkey, which is harmless where there is nothing to delete. | Done |
-| 1 Sep 2026 | `facade.rs`, `check_upload_size` | **The upload-size refusal is a rendered English sentence, with a private byte formatter.** The core builds `"This file is too large, the homeserver takes up to {size}"` and formats the number with its own `format_size`. The application says the same thing at `src/session_view/room_history/message_toolbar/mod.rs:1310` as a `gettext_f` over `glib::format_size`. It is the most commonly hit error in the file — every oversized attachment, avatar and pack image goes through it — and it is a sentence, so it must not cross: the core owes a value (`UploadTooLarge { max_bytes }`) and the two embedders own the wording. The two formatters agree on decimal units, so the rendered text is identical today; only the translation is lost. | Phase 3, group 10 |
+| 1 Sep 2026 | `facade.rs`, `check_upload_size` | **The upload-size refusal is a rendered English sentence, with a private byte formatter.** The core builds `"This file is too large, the homeserver takes up to {size}"` and formats the number with its own `format_size`. The application says the same thing at `src/session_view/room_history/message_toolbar/mod.rs:1310` as a `gettext_f` over `glib::format_size`. It is the most commonly hit error in the file — every oversized attachment, avatar and pack image goes through it — and it is a sentence, so it must not cross: the core owes a value (`UploadTooLarge { max_bytes }`) and the two embedders own the wording. The two formatters agree on decimal units, so the rendered text is identical today; only the translation is lost. **Closed 1 Sep**: `TimelineError::UploadTooLarge { max_bytes }`, with `format_size` in `utils.rs` as the core's English fallback. | Done |
 | 1 Sep 2026 | `facade.rs`, `ensure_packs_room` | **The packs room is created with an English name and topic.** `"Sticker Packs"` and `"The sticker and emoticon packs that you created. Invite someone here to share them."` are literals; `src/session/image_packs/mod.rs:627` wraps both in `gettext`. This one is worse than a lost error message, because a room name is not an error: it is written into `m.room.name` on the server, it shows in the sidebar next to the conversations, and it is _permanent_ — a user whose packs room was created by the Kotlin build keeps the English name after they translate their client, because nothing re-creates the room. Embedder-supplied strings, and the room the core makes should carry whichever the embedder passed. **Closed 1 Sep**: `CoreConfig::packs_room_name` and `packs_room_topic`, the GTK application passing its `gettext` calls and the FFI passing `None` for the English, as `credential_label` before them. | Done |
 | 1 Sep 2026 | `facade.rs` ignored users | **The core never followed the list, and never refused a redundant request.** `src/session/ignored_users.rs` subscribes to the SDK's ignore-list changes and re-reads `m.ignored_user_list` whenever one arrives; the facade read the account data once per call and had no subscription at all, so ignoring somebody from the desktop never reached a phone with the Ignored Users screen open — it would sit on a stale list until it was closed and reopened. The application also guards both directions: adding a user already on the list, or removing one that is not, is a warning and a no-op rather than a round trip the server will ignore. Neither guard existed in the core. **Closed 1 Sep** with Phase 3's first commit, which also found the thing the move would have broken: `SessionList::active_session()` returns a session before `prepare()` has run, so a cache-only read would answer "nobody" during startup where the old fetch answered correctly — `ensure_loaded()` keeps that guarantee. | Done |
 | 1 Sep 2026 | `facade.rs`, `list_devices` | **Four divergences in one method, and the worst is what it does when something is wrong.** `src/session/user_sessions_list/` merges `/devices` with the crypto store, so a device known to one source and not the other is still listed; the facade walked `/devices` alone. The application lists what it has when one source fails and errors only when both do; **the facade returned an error the moment `/devices` failed, which is exactly the case a person opens the sessions screen in.** The application follows `devices_stream()` — taking an _empty_ update, because that is how a disconnection arrives without saying whose — and the facade fetched once per call. And the application breaks a sort tie on device ID where the facade had none, so devices the server never dated came back in a different order on every read. **Closed 1 Sep** in `session/user_sessions.rs`, with four tests over the ordering. | Done |
@@ -1260,6 +1406,14 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `set_verification_listener` | **To-device requests from other users were taken, finished requests too, and no request was ever dismissed.** `verification_list.rs` takes a to-device request only for a self-verification — another user is verified in a room — skips requests already done, cancelled or passive, ignores in-room requests in rooms the user left, and dismisses a received request nobody answered after two minutes. The facade did none of the four. It also handled a bare legacy `m.key.verification.start` the application has no handler for. **Closed 1 Sep** in `session/verification.rs`; the legacy handler is removed as a no-precedent design. | Done |
 | 1 Sep 2026 | `facade.rs`, `accept` and `request_verification` | **Verification methods were the SDK's defaults, not ours.** The application accepts with the intersection of both sides' methods and requests with its own list; the facade called `accept()` and `request_verification()` bare, so the other side could pick a method this client could not drive — showing a QR code it could not display. **Closed 1 Sep**: `VerificationList::set_supported_methods`, the FFI declaring SAS, scanning and reciprocating. | Done |
 | 1 Sep 2026 | `facade.rs`, `security_state`, `recover` | **Three states asked per call, nothing watched; two recovery refusals shown as one.** `session/security.rs` follows four SDK streams and keeps six values current; the facade asked three questions on each call. The recovery view separates an invalid key from inaccessible data and shows an incomplete recovery as such; the facade showed SDK text and plain success. **Closed 1 Sep**: `SessionSecurity`, `RecoveryError::InvalidKey`, `RecoveryOutcome`. Not on the FFI: the three backup flags, the incomplete outcome (the Kotlin flow polls the state instead). | Done, FFI fields owed |
+| 1 Sep 2026 | `facade.rs`, `send_message` | **The message content was improvised: no `m.mentions` without a user to name, `/me` sent as text, an empty message sent, the mention URI and the emoticon tag built by hand.** The application's `ComposerParser` always adds the mentions, empty or not, so that legacy push rules are not evaluated; turns `/me` into an emote; refuses whitespace; links with `matrix_to_uri()` and escapes with `g_markup_escape_text`. **Closed 1 Sep** in `session/room/composer.rs`, seven tests; finding the chunks in the Kotlin composer's plain text stays the FFI's shortcut. | Done |
+| 1 Sep 2026 | `facade.rs`, `send_reply`, `edit_message`, `redact_event` | **A reply and an edit were plain text; an edit and a redaction went through the timeline item.** The toolbar sends the composer's content for both, makes the edit event through the room and sends it through the send queue; the remove action redacts through the room and is a no-op in a room not joined. The facade sent `text_plain` and needed the event among the loaded items. **Closed 1 Sep**: `Timeline::send_reply`, `Timeline::edit`, `Room::redact`. | Done |
+| 1 Sep 2026 | `facade.rs`, `send_attachment`, `send_voice_message` | **A video or an audio file was sent as `m.file`; a voice message was named after the recorder's temporary file, which was never removed.** `send_file_inner` chooses image, video, audio or file by MIME type; `send_voice_message` sends the bytes as `"Voice message.ogg"` and deletes the recording. **Closed 1 Sep**: `Timeline::send_attachment`, `Timeline::send_voice` with the file name from the embedder. The measurements — dimensions, durations, thumbnails, waveform — stay the embedder's. | Done, measurements owed |
+| 1 Sep 2026 | `timeline.rs`, `send_location` | **The location body was the core's English sentence.** "User Location {geo_uri} at {iso8601_datetime}" is a `gettext_f` in the toolbar, so it must not cross. **Closed 1 Sep**: the body is a parameter, and the facade writes the Kotlin side's English. | Done |
+| 1 Sep 2026 | `facade.rs`, `event_permalink`, `event_source` | **The permalink failed where the application falls back to the unrouted link; the event source was fetched where the application reads the loaded item.** **Closed 1 Sep**: `Room::matrix_to_event_uri`, `Timeline::event_source`. | Done |
+| 1 Sep 2026 | `facade.rs`, `paginate_backwards` | **No guard on loading.** The application refuses a load while one runs, before the timeline is ready, and once the start was reached, which a pinned timeline is from the start. The facade asked the SDK every time. **Closed 1 Sep**: `Timeline::can_paginate_backwards`, `is_loading_start`, `MAX_BATCH_SIZE`. | Done |
+| 1 Sep 2026 | `facade.rs`, `set_room_details` | **Untrimmed, and sent to a room not joined.** The details page trims, removes on an emptied field, refuses when not joined, and has a toast per field. **Closed 1 Sep**: `Room::set_name`, `Room::set_topic`, `RoomDetailsError`. | Done |
+| 1 Sep 2026 | `facade.rs`, `toggle_reaction` | **An added reaction is not recorded among the recent emoji.** The application's `Room::toggle_reaction` records it in `io.element.recent_emoji`; the core has no global account data object to record it in. Open. | Later phase |
 
 ## Gates
 

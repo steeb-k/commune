@@ -1,46 +1,116 @@
 //! The timeline of a room, headless.
 //!
-//! Version 1 of the chunk-5 extraction: the live timeline only, as a thin
-//! orchestration of [`matrix_sdk_ui::timeline::Timeline`] whose items and
-//! diffs pass straight through to the subscriber — the application's
-//! `GListModel` splicing, and therefore the diff minimizer, have nothing to
-//! translate for and are not needed here. The event filter is the
-//! application's `show_in_timeline`, verbatim. Focused, pinned and thread
-//! timelines, the read-change trigger and receipts follow with the rest of
-//! the chunk.
+//! The application's `Timeline` as a thin orchestration of
+//! [`matrix_sdk_ui::timeline::Timeline`] whose items and diffs pass straight
+//! through to the subscriber — the application's `GListModel` splicing, and
+//! therefore the diff minimizer, have nothing to translate for and are not
+//! needed here. The event filter is the application's `show_in_timeline`,
+//! verbatim; the live, pinned and thread focuses, back-pagination and
+//! receipts are the application's; and what the message toolbar sends
+//! through the timeline — messages, replies, edits, attachments, voice
+//! messages, locations, stickers — is sent from here, with the upload-size
+//! preflight the toolbar makes. A timeline focused on a single event
+//! follows with a caller for it.
 
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
+use std::{
+    path::PathBuf,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
 };
 
 use eyeball::{SharedObservable, Subscriber};
 use eyeball_im::{Vector, VectorDiff};
 use futures_util::Stream;
+use matrix_sdk::{
+    attachment::{AttachmentInfo, BaseAudioInfo, BaseFileInfo, BaseImageInfo, BaseVideoInfo},
+    room::edit::EditedContent,
+};
 use matrix_sdk_ui::timeline::{
-    RoomExt, Timeline as SdkTimeline, TimelineFocus, TimelineItem as SdkTimelineItem,
-    default_event_filter,
+    AttachmentConfig, AttachmentSource, EventTimelineItem, RoomExt, Timeline as SdkTimeline,
+    TimelineEventItemId, TimelineFocus, TimelineItem as SdkTimelineItem, default_event_filter,
 };
 use ruma::{
-    UserId,
+    EventId, OwnedEventId, UInt, UserId,
     api::client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
     events::{
-        AnySyncMessageLikeEvent, AnySyncStateEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
-        SyncStateEvent,
-        room::message::{MessageType, RoomMessageEventContent},
+        AnyMessageLikeEventContent, AnySyncMessageLikeEvent, AnySyncStateEvent,
+        AnySyncTimelineEvent, Mentions, SyncMessageLikeEvent, SyncStateEvent,
+        room::message::{
+            LocationMessageEventContent, MessageType, RoomMessageEventContent,
+            RoomMessageEventContentWithoutRelation,
+        },
+        sticker::StickerEventContent,
         tag::TagName,
     },
     room_version_rules::RoomVersionRules,
 };
-use tracing::error;
+use tracing::{error, warn};
 
 use crate::{
     UserFacingError,
     klipy::SelectedGif,
     matrix::{ext_traits::TimelineItemContentExt, media::MediaMessage},
     spawn_tokio,
-    utils::LoadingState,
+    utils::{LoadingState, OptionStringExt, format_size},
 };
+
+/// The number of events to request when loading more history.
+pub const MAX_BATCH_SIZE: u16 = 20;
+
+/// An error encountered while acting on a timeline.
+#[derive(Debug, thiserror::Error)]
+pub enum TimelineError {
+    /// The timeline could not be built.
+    #[error("the timeline is not available")]
+    NoTimeline,
+    /// The event is not in this timeline.
+    #[error("the event is not in the timeline")]
+    UnknownEvent,
+    /// The file is larger than the homeserver accepts.
+    ///
+    /// The value is the limit, for the embedder to name in its own words
+    /// and units: the application formats it with `glib::format_size`
+    /// inside a translated sentence.
+    #[error("the file is larger than the {max_bytes} bytes the homeserver accepts")]
+    UploadTooLarge {
+        /// The homeserver's upload limit, in bytes.
+        max_bytes: u64,
+    },
+    /// The file to send could not be read.
+    #[error(transparent)]
+    Read(#[from] std::io::Error),
+    /// The SDK refused or failed to send.
+    ///
+    /// Boxed because the SDK's error is large enough that carrying it by
+    /// value makes every `Result` here expensive.
+    #[error(transparent)]
+    Send(Box<matrix_sdk_ui::timeline::Error>),
+}
+
+impl From<matrix_sdk_ui::timeline::Error> for TimelineError {
+    fn from(error: matrix_sdk_ui::timeline::Error) -> Self {
+        Self::Send(Box::new(error))
+    }
+}
+
+impl UserFacingError for TimelineError {
+    fn to_user_facing(&self) -> String {
+        match self {
+            Self::UploadTooLarge { max_bytes } => format!(
+                "This file is too large, the homeserver takes up to {}",
+                format_size(*max_bytes)
+            ),
+            Self::UnknownEvent => "The event is not in the timeline".to_owned(),
+            Self::Read(_) => "Could not read the file".to_owned(),
+            // The application's toasts name the action; an embedder that
+            // knows which one it took says so itself.
+            Self::NoTimeline | Self::Send(_) => "Could not send the message".to_owned(),
+        }
+    }
+}
 
 /// The maximum size of a GIF that is downloaded to be sent, in bytes.
 ///
@@ -139,6 +209,8 @@ struct TimelineInner {
     state: SharedObservable<LoadingState>,
     /// Whether the start of the room's history has been reached.
     has_reached_start: SharedObservable<bool>,
+    /// Whether events are being loaded at the start of the timeline.
+    is_loading_start: SharedObservable<bool>,
 }
 
 impl Timeline {
@@ -159,6 +231,7 @@ impl Timeline {
                 matrix_timeline: tokio::sync::OnceCell::new(),
                 state: SharedObservable::new(LoadingState::Initial),
                 has_reached_start: SharedObservable::new(false),
+                is_loading_start: SharedObservable::new(false),
             }),
         }
     }
@@ -218,6 +291,12 @@ impl Timeline {
 
                 match build_sdk_timeline(inner.matrix_room.clone(), inner.focus.clone()).await {
                     Ok(timeline) => {
+                        if matches!(inner.focus, TimelineFocusKind::Pinned) {
+                            // The pinned events are the whole of this
+                            // timeline. The SDK refuses to paginate it, so
+                            // never ask.
+                            inner.has_reached_start.set_if_not_eq(true);
+                        }
                         inner.state.set_if_not_eq(LoadingState::Ready);
                         Ok(Arc::new(timeline))
                     }
@@ -250,26 +329,67 @@ impl Timeline {
         Some(handle.await.expect("task was not aborted"))
     }
 
-    /// Paginate backwards by the given number of events.
-    ///
-    /// Returns whether the start of the timeline was reached, or `None` if
-    /// the pagination failed.
-    pub async fn paginate_backwards(&self, count: u16) -> Option<bool> {
-        let matrix_timeline = self.matrix_timeline().await?;
+    /// Whether events are being loaded at the start of the timeline.
+    #[must_use]
+    pub fn is_loading_start(&self) -> bool {
+        self.inner.is_loading_start.get()
+    }
 
-        let handle = spawn_tokio!(async move { matrix_timeline.paginate_backwards(count).await });
+    /// Subscribe to whether events are being loaded at the start of the
+    /// timeline.
+    pub fn subscribe_is_loading_start(&self) -> Subscriber<bool> {
+        self.inner.is_loading_start.subscribe()
+    }
+
+    /// Whether more events can be loaded at the start of the timeline with
+    /// the current state.
+    ///
+    /// We do not want to load twice at the same time, and it is useless to
+    /// try to load more history before the timeline is ready or if we have
+    /// reached the start of the timeline.
+    #[must_use]
+    pub fn can_paginate_backwards(&self) -> bool {
+        self.state() != LoadingState::Initial
+            && !self.is_loading_start()
+            && !self.has_reached_start()
+    }
+
+    /// Load one batch of events at the start of the timeline, if the
+    /// current state allows it.
+    ///
+    /// The application loads batches until its caller says stop; one batch
+    /// is what one request for older history is. A failure puts the
+    /// timeline in the error state, which the state observable reports.
+    pub async fn paginate_backwards(&self) {
+        if !self.can_paginate_backwards() {
+            return;
+        }
+        let Some(matrix_timeline) = self.matrix_timeline().await else {
+            return;
+        };
+
+        let inner = &self.inner;
+        inner.is_loading_start.set_if_not_eq(true);
+        inner.state.set_if_not_eq(LoadingState::Loading);
+
+        let handle =
+            spawn_tokio!(async move { matrix_timeline.paginate_backwards(MAX_BATCH_SIZE).await });
 
         match handle.await.expect("task was not aborted") {
             Ok(reached_start) => {
                 if reached_start {
-                    self.inner.has_reached_start.set_if_not_eq(true);
+                    inner.has_reached_start.set_if_not_eq(true);
                 }
-                Some(reached_start)
             }
             Err(paginate_error) => {
-                error!("Could not paginate timeline: {paginate_error}");
-                None
+                error!("Could not load timeline: {paginate_error}");
+                inner.state.set_if_not_eq(LoadingState::Error);
             }
+        }
+
+        inner.is_loading_start.set_if_not_eq(false);
+        if inner.state.get() != LoadingState::Error {
+            inner.state.set_if_not_eq(LoadingState::Ready);
         }
     }
 
@@ -392,80 +512,240 @@ impl Timeline {
         None
     }
 
-    /// Send the given message to the room, rendered from Markdown the
-    /// way the application's composer sends by default, mentioning the
-    /// given users.
-    pub async fn send_text(
+    /// Send the given message through this timeline: the composer's
+    /// content, with no relation.
+    ///
+    /// Sent through a thread timeline, the message carries the thread
+    /// relation; the SDK adds it.
+    pub async fn send_message(
         &self,
-        body: String,
-        plain_body: Option<String>,
-        mentions: Vec<ruma::OwnedUserId>,
-        room_mention: bool,
-        emoticons: Vec<(String, String, String)>,
-    ) -> Result<(), ()> {
-        let Some(matrix_timeline) = self.matrix_timeline().await else {
-            return Err(());
+        content: RoomMessageEventContentWithoutRelation,
+    ) -> Result<(), TimelineError> {
+        let matrix_timeline = self
+            .matrix_timeline()
+            .await
+            .ok_or(TimelineError::NoTimeline)?;
+
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .send(content.with_relation(None).into())
+                .await
+        });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_send_handle| ())
+            .map_err(|send_error| {
+                error!("Could not send message: {send_error}");
+                TimelineError::from(send_error)
+            })
+    }
+
+    /// Send the given message as a reply to the given event.
+    pub async fn send_reply(
+        &self,
+        content: RoomMessageEventContentWithoutRelation,
+        in_reply_to: OwnedEventId,
+    ) -> Result<(), TimelineError> {
+        let matrix_timeline = self
+            .matrix_timeline()
+            .await
+            .ok_or(TimelineError::NoTimeline)?;
+
+        let handle =
+            spawn_tokio!(async move { matrix_timeline.send_reply(content, in_reply_to).await });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|send_error| {
+                error!("Could not send reply: {send_error}");
+                TimelineError::from(send_error)
+            })
+    }
+
+    /// Replace the content of the given event with the given message.
+    ///
+    /// The edit event is made by the room and sent through its send queue,
+    /// as the message toolbar sends it: the event being edited does not
+    /// have to be among the timeline's loaded items.
+    pub async fn edit(
+        &self,
+        event_id: OwnedEventId,
+        content: RoomMessageEventContentWithoutRelation,
+    ) -> Result<(), TimelineError> {
+        let matrix_room = self.inner.matrix_room.clone();
+
+        let handle = spawn_tokio!(async move {
+            let full_content = matrix_room
+                .make_edit_event(&event_id, EditedContent::RoomMessage(content))
+                .await
+                .map_err(matrix_sdk_ui::timeline::EditError::from)?;
+            matrix_room.send_queue().send(full_content).await?;
+            Ok::<(), matrix_sdk_ui::timeline::Error>(())
+        });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|edit_error| {
+                error!("Could not send edit: {edit_error}");
+                TimelineError::from(edit_error)
+            })
+    }
+
+    /// Toggle the given reaction key on the given event.
+    ///
+    /// The SDK can only react to an event it knows about, so the event
+    /// has to be in this timeline. The application also records an added
+    /// emoji among the recently used ones; the core has no account-data
+    /// object to record it in yet.
+    pub async fn toggle_reaction(
+        &self,
+        event_id: OwnedEventId,
+        key: &str,
+    ) -> Result<(), TimelineError> {
+        let matrix_timeline = self
+            .matrix_timeline()
+            .await
+            .ok_or(TimelineError::NoTimeline)?;
+
+        let key = key.to_owned();
+        let handle = spawn_tokio!(async move {
+            matrix_timeline
+                .toggle_reaction(&TimelineEventItemId::EventId(event_id), &key)
+                .await
+        });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_was_added| ())
+            .map_err(|toggle_error| {
+                error!("Could not toggle reaction: {toggle_error}");
+                TimelineError::from(toggle_error)
+            })
+    }
+
+    /// Send the file at the given path as an attachment.
+    ///
+    /// The kind of message follows the MIME type, as the message toolbar
+    /// decides it: an image, a video, an audio file or a plain file. The
+    /// toolbar also measures images, videos and audio — dimensions,
+    /// durations, thumbnails — with the desktop's media stack; the core
+    /// sends the size alone, and the embedder that has such a stack owes
+    /// the rest.
+    pub async fn send_attachment(
+        &self,
+        path: PathBuf,
+        mime: mime::Mime,
+    ) -> Result<(), TimelineError> {
+        let size = std::fs::metadata(&path)
+            .ok()
+            .and_then(|metadata| UInt::new(metadata.len()));
+        let info = match mime.type_() {
+            mime::IMAGE => AttachmentInfo::Image(BaseImageInfo {
+                size,
+                ..Default::default()
+            }),
+            mime::VIDEO => AttachmentInfo::Video(BaseVideoInfo {
+                size,
+                ..Default::default()
+            }),
+            mime::AUDIO => AttachmentInfo::Audio(BaseAudioInfo {
+                size,
+                ..Default::default()
+            }),
+            _ => AttachmentInfo::File(BaseFileInfo { size }),
+        };
+
+        self.send_attachment_with(AttachmentSource::File(path), mime, info)
+            .await
+    }
+
+    /// Send the recording at the given path as a voice message, under the
+    /// given file name.
+    ///
+    /// The recording is read and its file removed, as the message toolbar
+    /// does with its own recorder's file; the bytes are sent under the
+    /// given name — the application's translated "Voice message" — since
+    /// that is what other clients show. The waveform the toolbar measures
+    /// is the embedder's to add.
+    pub async fn send_voice(
+        &self,
+        path: PathBuf,
+        mime: mime::Mime,
+        duration_ms: u64,
+        filename: String,
+    ) -> Result<(), TimelineError> {
+        let bytes = std::fs::read(&path);
+        if let Err(remove_error) = std::fs::remove_file(&path) {
+            warn!("Could not remove the voice recording file: {remove_error}");
+        }
+        let bytes = bytes.inspect_err(|read_error| {
+            error!("Could not read the voice recording: {read_error}");
+        })?;
+
+        let info = AttachmentInfo::Voice(BaseAudioInfo {
+            duration: Some(Duration::from_millis(duration_ms)),
+            size: u64::try_from(bytes.len()).ok().and_then(UInt::new),
+            waveform: None,
+        });
+
+        self.send_attachment_with(AttachmentSource::Data { bytes, filename }, mime, info)
+            .await
+    }
+
+    /// Send the given attachment, after asking the homeserver's upload
+    /// limit.
+    async fn send_attachment_with(
+        &self,
+        source: AttachmentSource,
+        mime: mime::Mime,
+        info: AttachmentInfo,
+    ) -> Result<(), TimelineError> {
+        let matrix_timeline = self
+            .matrix_timeline()
+            .await
+            .ok_or(TimelineError::NoTimeline)?;
+
+        let size = match &source {
+            AttachmentSource::Data { bytes, .. } => u64::try_from(bytes.len()).ok(),
+            AttachmentSource::File(path) => {
+                std::fs::metadata(path).ok().map(|metadata| metadata.len())
+            }
+        };
+        check_upload_size(&self.inner.matrix_room.client(), size).await?;
+
+        let config = AttachmentConfig {
+            info: Some(info),
+            ..Default::default()
         };
 
         let handle = spawn_tokio!(async move {
-            let mut content = RoomMessageEventContent::text_markdown(body);
-            // Mention anchors ride in as markdown; the plain body carries
-            // the bare names instead of the link syntax.
-            if let Some(plain) = plain_body
-                && let MessageType::Text(text) = &mut content.msgtype
-            {
-                text.body = plain;
-            }
-            // A completed emoticon stays `:shortcode:` in the plain body
-            // and becomes the application's exact image tag in the HTML.
-            if !emoticons.is_empty()
-                && let MessageType::Text(text) = &mut content.msgtype
-            {
-                use ruma::events::room::message::FormattedBody;
-
-                let mut html = text.formatted.as_ref().map_or_else(
-                    || escape_html(&text.body),
-                    |formatted| formatted.body.clone(),
-                );
-                for (shortcode, url, alt) in &emoticons {
-                    let tag = format!(
-                        r#"<img data-mx-emoticon src="{}" alt="{}" title="{}" height="32">"#,
-                        escape_html(url),
-                        escape_html(alt),
-                        escape_html(shortcode),
-                    );
-                    html = html.replace(&format!(":{shortcode}:"), &tag);
-                }
-                text.formatted = Some(FormattedBody::html(html));
-            }
-            if !mentions.is_empty() || room_mention {
-                let mut all = ruma::events::Mentions::with_user_ids(mentions);
-                all.room = room_mention;
-                content.mentions = Some(all);
-            }
-            matrix_timeline.send(content.into()).await
+            matrix_timeline
+                .send_attachment(source, mime, config)
+                .use_send_queue()
+                .await
         });
 
-        match handle.await.expect("task was not aborted") {
-            Ok(_) => Ok(()),
-            Err(send_error) => {
-                error!("Could not send message: {send_error}");
-                Err(())
-            }
-        }
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|send_error| {
+                error!("Could not send file: {send_error}");
+                TimelineError::from(send_error)
+            })
     }
 
-    /// Send the given sticker to the room, through the timeline so it gets
-    /// a local echo and the send queue like every other message.
-    pub async fn send_sticker(
-        &self,
-        content: ruma::events::sticker::StickerEventContent,
-    ) -> Result<(), ()> {
-        use ruma::events::AnyMessageLikeEventContent;
-
-        let Some(matrix_timeline) = self.matrix_timeline().await else {
-            return Err(());
-        };
+    /// Send the given sticker, through the timeline so it gets a local
+    /// echo and the send queue like every other message.
+    pub async fn send_sticker(&self, content: StickerEventContent) -> Result<(), TimelineError> {
+        let matrix_timeline = self
+            .matrix_timeline()
+            .await
+            .ok_or(TimelineError::NoTimeline)?;
 
         let handle = spawn_tokio!(async move {
             matrix_timeline
@@ -473,13 +753,14 @@ impl Timeline {
                 .await
         });
 
-        match handle.await.expect("task was not aborted") {
-            Ok(_) => Ok(()),
-            Err(send_error) => {
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_send_handle| ())
+            .map_err(|send_error| {
                 error!("Could not send sticker: {send_error}");
-                Err(())
-            }
-        }
+                TimelineError::from(send_error)
+            })
     }
 
     /// Send the given GIF as a sticker, then tell the service it was shared.
@@ -544,205 +825,45 @@ impl Timeline {
         Ok(())
     }
 
-    /// Send the user's location to the room: the application's exact
-    /// `m.location` content, a geo URI with a spoken body naming it and
-    /// the timestamp, plus the always-present mentions.
-    pub async fn send_location(&self, geo_uri: String) -> Result<(), ()> {
-        use ruma::events::room::message::LocationMessageEventContent;
-
-        let Some(matrix_timeline) = self.matrix_timeline().await else {
-            return Err(());
-        };
-
-        let handle = spawn_tokio!(async move {
-            // The application stamps local time; UTC keeps the core off
-            // the platform's timezone database.
-            let timestamp = time::OffsetDateTime::now_utc()
-                .format(&time::format_description::well_known::Iso8601::DEFAULT)
-                .unwrap_or_default();
-            let body = format!("User Location {geo_uri} at {timestamp}");
-            let content = RoomMessageEventContent::new(MessageType::Location(
-                LocationMessageEventContent::new(body, geo_uri),
-            ))
-            // To avoid triggering legacy pushrules, we must always
-            // include the mentions, even if they are empty.
-            .add_mentions(ruma::events::Mentions::default());
-
-            matrix_timeline.send(content.into()).await
-        });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(_) => Ok(()),
-            Err(send_error) => {
-                error!("Could not send location: {send_error}");
-                Err(())
-            }
-        }
-    }
-
-    /// Send the given plain-text message as a reply to the given event.
-    pub async fn send_reply(
-        &self,
-        in_reply_to: ruma::OwnedEventId,
-        body: String,
-    ) -> Result<(), ()> {
-        use ruma::events::room::message::RoomMessageEventContentWithoutRelation;
-
-        let Some(matrix_timeline) = self.matrix_timeline().await else {
-            return Err(());
-        };
-
-        let handle = spawn_tokio!(async move {
-            matrix_timeline
-                .send_reply(
-                    RoomMessageEventContentWithoutRelation::text_plain(body),
-                    in_reply_to,
-                )
-                .await
-        });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(()) => Ok(()),
-            Err(send_error) => {
-                error!("Could not send reply: {send_error}");
-                Err(())
-            }
-        }
-    }
-
-    /// Replace the given event's content with the given plain text.
-    pub async fn edit(&self, event_id: ruma::OwnedEventId, new_body: String) -> Result<(), ()> {
-        use matrix_sdk::room::edit::EditedContent;
-        use matrix_sdk_ui::timeline::TimelineEventItemId;
-        use ruma::events::room::message::RoomMessageEventContentWithoutRelation;
-
-        let Some(matrix_timeline) = self.matrix_timeline().await else {
-            return Err(());
-        };
-
-        let handle = spawn_tokio!(async move {
-            matrix_timeline
-                .edit(
-                    &TimelineEventItemId::EventId(event_id),
-                    EditedContent::RoomMessage(RoomMessageEventContentWithoutRelation::text_plain(
-                        new_body,
-                    )),
-                )
-                .await
-        });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(()) => Ok(()),
-            Err(edit_error) => {
-                error!("Could not edit message: {edit_error}");
-                Err(())
-            }
-        }
-    }
-
-    /// Redact the given event, without a reason.
-    pub async fn redact(&self, event_id: ruma::OwnedEventId) -> Result<(), ()> {
-        use matrix_sdk_ui::timeline::TimelineEventItemId;
-
-        let Some(matrix_timeline) = self.matrix_timeline().await else {
-            return Err(());
-        };
-
-        let handle = spawn_tokio!(async move {
-            matrix_timeline
-                .redact(&TimelineEventItemId::EventId(event_id), None)
-                .await
-        });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(()) => Ok(()),
-            Err(redact_error) => {
-                error!("Could not redact event: {redact_error}");
-                Err(())
-            }
-        }
-    }
-
-    /// Toggle the given reaction key on the given event.
-    pub async fn toggle_reaction(&self, event_id: ruma::OwnedEventId, key: &str) -> Result<(), ()> {
-        let Some(matrix_timeline) = self.matrix_timeline().await else {
-            return Err(());
-        };
-
-        let key = key.to_owned();
-        let handle = spawn_tokio!(async move {
-            matrix_timeline
-                .toggle_reaction(
-                    &matrix_sdk_ui::timeline::TimelineEventItemId::EventId(event_id),
-                    &key,
-                )
-                .await
-        });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(_) => Ok(()),
-            Err(toggle_error) => {
-                error!("Could not toggle reaction: {toggle_error}");
-                Err(())
-            }
-        }
-    }
-
-    /// Send the file at the given path as an attachment to the room.
+    /// Send the user's location: the application's exact `m.location`
+    /// content, the geo URI with the given body naming it and the
+    /// always-present mentions.
     ///
-    /// The upload-size preflight lives in the facade, ahead of this;
-    /// thumbnails arrive with the composer chunk.
-    pub async fn send_attachment(
-        &self,
-        path: std::path::PathBuf,
-        mime: mime::Mime,
-    ) -> Result<(), ()> {
-        use matrix_sdk::attachment::{AttachmentInfo, BaseFileInfo, BaseImageInfo};
-        use matrix_sdk_ui::timeline::{AttachmentConfig, AttachmentSource};
+    /// The body is the embedder's: the application's is a translated
+    /// sentence naming the URI and a local timestamp.
+    pub async fn send_location(&self, geo_uri: String, body: String) -> Result<(), TimelineError> {
+        let matrix_timeline = self
+            .matrix_timeline()
+            .await
+            .ok_or(TimelineError::NoTimeline)?;
 
-        let Some(matrix_timeline) = self.matrix_timeline().await else {
-            return Err(());
-        };
+        let content = RoomMessageEventContent::new(MessageType::Location(
+            LocationMessageEventContent::new(body, geo_uri),
+        ))
+        // To avoid triggering legacy pushrules, we must always include the
+        // mentions, even if they are empty.
+        .add_mentions(Mentions::default());
 
-        let size = std::fs::metadata(&path)
-            .ok()
-            .and_then(|metadata| metadata.len().try_into().ok());
-        let info = if mime.type_() == mime::IMAGE {
-            AttachmentInfo::Image(BaseImageInfo {
-                size,
-                ..Default::default()
+        let handle = spawn_tokio!(async move { matrix_timeline.send(content.into()).await });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_send_handle| ())
+            .map_err(|send_error| {
+                error!("Could not send location: {send_error}");
+                TimelineError::from(send_error)
             })
-        } else {
-            AttachmentInfo::File(BaseFileInfo { size })
-        };
-        let config = AttachmentConfig {
-            info: Some(info),
-            ..Default::default()
-        };
-
-        let handle = spawn_tokio!(async move {
-            matrix_timeline
-                .send_attachment(AttachmentSource::File(path), mime, config)
-                .use_send_queue()
-                .await
-        });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(()) => Ok(()),
-            Err(send_error) => {
-                error!("Could not send attachment: {send_error}");
-                Err(())
-            }
-        }
     }
 
-    /// Discard the local echo with the given unique ID: redact it
-    /// through the timeline, which for an unsent message aborts the
-    /// send, as the application's cancel-send action does.
-    pub async fn discard_local_echo(&self, unique_id: &str) -> Result<(), ()> {
-        let Some(matrix_timeline) = self.matrix_timeline().await else {
-            return Err(());
-        };
+    /// Discard the local echo with the given unique ID: redact it through
+    /// the timeline, which for an unsent message aborts the send, as the
+    /// application's cancel-send action does.
+    pub async fn discard_local_echo(&self, unique_id: &str) -> Result<(), TimelineError> {
+        let matrix_timeline = self
+            .matrix_timeline()
+            .await
+            .ok_or(TimelineError::NoTimeline)?;
 
         let unique_id = unique_id.to_owned();
         let handle = spawn_tokio!(async move {
@@ -752,62 +873,72 @@ impl Timeline {
                 .iter()
                 .find(|item| item.unique_id().0 == unique_id)
                 .and_then(|item| item.as_event())
-                .map(matrix_sdk_ui::timeline::EventTimelineItem::identifier);
+                .map(EventTimelineItem::identifier)
+                .ok_or(TimelineError::UnknownEvent)?;
 
-            match identifier {
-                Some(identifier) => matrix_timeline
-                    .redact(&identifier, None)
-                    .await
-                    .map_err(|_| ()),
-                None => Err(()),
-            }
-        });
-
-        handle.await.expect("task was not aborted")
-    }
-
-    /// Send a recorded voice message: an audio attachment with its
-    /// duration and the voice-message marker.
-    pub async fn send_voice(
-        &self,
-        path: std::path::PathBuf,
-        mime: mime::Mime,
-        duration_ms: u64,
-    ) -> Result<(), ()> {
-        use matrix_sdk::attachment::{AttachmentInfo, BaseAudioInfo};
-        use matrix_sdk_ui::timeline::{AttachmentConfig, AttachmentSource};
-
-        let Some(matrix_timeline) = self.matrix_timeline().await else {
-            return Err(());
-        };
-
-        let size = std::fs::metadata(&path)
-            .ok()
-            .and_then(|metadata| metadata.len().try_into().ok());
-        let config = AttachmentConfig {
-            info: Some(AttachmentInfo::Voice(BaseAudioInfo {
-                duration: Some(std::time::Duration::from_millis(duration_ms)),
-                size,
-                waveform: None,
-            })),
-            ..Default::default()
-        };
-
-        let handle = spawn_tokio!(async move {
             matrix_timeline
-                .send_attachment(AttachmentSource::File(path), mime, config)
-                .use_send_queue()
+                .redact(&identifier, None)
                 .await
+                .map_err(TimelineError::from)
         });
 
-        match handle.await.expect("task was not aborted") {
-            Ok(()) => Ok(()),
-            Err(send_error) => {
-                error!("Could not send voice message: {send_error}");
-                Err(())
-            }
-        }
+        handle
+            .await
+            .expect("task was not aborted")
+            .inspect_err(|discard_error| error!("Could not discard local event: {discard_error}"))
     }
+
+    /// The pretty-printed JSON source of the given event, if it is in
+    /// this timeline and the server echoed it back.
+    ///
+    /// The application's `Event::source()`: what the properties dialog
+    /// shows, read from the loaded item rather than fetched.
+    pub async fn event_source(&self, event_id: &EventId) -> Option<String> {
+        let matrix_timeline = self.matrix_timeline().await?;
+
+        let items = spawn_tokio!(async move { matrix_timeline.items().await })
+            .await
+            .expect("task was not aborted");
+
+        let raw = items
+            .iter()
+            .filter_map(|item| item.as_event())
+            .find(|event| event.event_id() == Some(event_id))
+            .and_then(|event| event.original_json().cloned())?;
+
+        // The raw value has to become a `Value`, because a `RawValue`
+        // cannot be pretty-printed.
+        let json = serde_json::to_value(&raw).ok()?;
+        serde_json::to_string_pretty(&json).ok().into_clean_string()
+    }
+}
+
+/// Refuse a file of the given size that the homeserver would not take.
+///
+/// The message toolbar asks the homeserver's upload limit before sending,
+/// rather than uploading the whole file to be told no at the end. The SDK
+/// caches the answer after the first ask; when it cannot be had, the
+/// upload proceeds and the server stays the judge. A size that is not
+/// known is not checked.
+pub async fn check_upload_size(
+    client: &matrix_sdk::Client,
+    size: Option<u64>,
+) -> Result<(), TimelineError> {
+    let Some(size) = size else {
+        return Ok(());
+    };
+
+    let client = client.clone();
+    let handle = spawn_tokio!(async move { client.load_or_fetch_max_upload_size().await });
+    if let Ok(max_upload_size) = handle.await.expect("task was not aborted")
+        && size > u64::from(max_upload_size)
+    {
+        return Err(TimelineError::UploadTooLarge {
+            max_bytes: u64::from(max_upload_size),
+        });
+    }
+
+    Ok(())
 }
 
 /// Build the SDK timeline for the given room, with the application's
@@ -974,12 +1105,4 @@ pub enum ReceiptPosition {
     End,
     /// We are at the event with the given ID.
     Event(ruma::OwnedEventId),
-}
-
-/// Escape a string for HTML attribute and text positions.
-fn escape_html(raw: &str) -> String {
-    raw.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
 }

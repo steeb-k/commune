@@ -6,6 +6,11 @@
 //! The `UniFFI` surface is behind the `ffi` feature, so the GTK build links
 //! this crate without an FFI runtime; the Android build turns it on.
 
+// Clippy's layout lints walk the async blocks of `session/room/search.rs`
+// deeper than the default limit lets them; the Linux toolchain overflows
+// without this, and reports nothing else.
+#![recursion_limit = "256"]
+
 use std::sync::LazyLock;
 
 pub mod config;

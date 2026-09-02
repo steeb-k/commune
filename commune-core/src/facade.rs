@@ -287,6 +287,22 @@ impl From<crate::session::RoomKeysError> for CoreError {
     }
 }
 
+impl From<crate::session::TimelineError> for CoreError {
+    fn from(error: crate::session::TimelineError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::RoomDetailsError> for CoreError {
+    fn from(error: crate::session::RoomDetailsError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 impl From<crate::session::RecoveryState> for FfiRecoveryState {
     fn from(state: crate::session::RecoveryState) -> Self {
         use crate::session::RecoveryState;
@@ -2280,28 +2296,23 @@ impl CoreApp {
     /// fully-read marker to the end of its timeline, as the application's
     /// room history does when the newest message is looked at.
     pub async fn mark_room_read(&self, room_id: String) {
-        let Some(session) = self.first_ready_session() else {
+        use ruma::api::client::receipt::create_receipt::v3::ReceiptType;
+
+        let Ok(room) = self.room(&room_id) else {
             return;
         };
 
+        // The read receipt through the displayed timeline and the
+        // fully-read marker through the room, as the room history sends
+        // them when the newest message is looked at; the timeline this
+        // side displays is the live one. The timeline may still have to
+        // be built, which spawns onto the runtime and so has to run on it.
         RUNTIME
             .spawn(async move {
-                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
-                    return;
-                };
-                let Some(room) = session.room_list().get(&room_id) else {
-                    return;
-                };
-                room.send_receipt(
-                    ruma::api::client::receipt::create_receipt::v3::ReceiptType::Read,
-                    crate::session::ReceiptPosition::End,
-                )
-                .await;
-                room.send_receipt(
-                    ruma::api::client::receipt::create_receipt::v3::ReceiptType::FullyRead,
-                    crate::session::ReceiptPosition::End,
-                )
-                .await;
+                room.send_receipt(ReceiptType::Read, crate::session::ReceiptPosition::End)
+                    .await;
+                room.send_receipt(ReceiptType::FullyRead, crate::session::ReceiptPosition::End)
+                    .await;
             })
             .await
             .expect("task was not aborted");
@@ -2392,34 +2403,24 @@ impl CoreApp {
         root_event_id: String,
         body: String,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
+        let room = self.room(&room_id)?;
+        let thread_root = parse_event_id(&root_event_id)?;
+
+        // Through the composer, as the thread's own composer is in the
+        // application, minus the mention and emoticon completion the
+        // Kotlin thread view does not have. An empty message is not sent.
+        let Some(content) =
+            crate::session::compose_message(&composer_chunks(&body, &[], &[]), MARKDOWN_ENABLED)
+        else {
+            return Ok(());
         };
 
         RUNTIME
             .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let thread_root =
-                    ruma::EventId::parse(&root_event_id).map_err(|_| CoreError::Failed {
-                        msg: "Invalid event ID".to_owned(),
-                    })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
                 room.thread_timeline(thread_root)
-                    .send_text(body, None, Vec::new(), false, Vec::new())
+                    .send_message(content)
                     .await
-                    .map_err(|()| CoreError::Failed {
-                        msg: "Could not send the message".to_owned(),
-                    })
+                    .map_err(|error| timeline_failure(error, "Could not send the message"))
             })
             .await
             .expect("task was not aborted")
@@ -2427,19 +2428,16 @@ impl CoreApp {
 
     /// Paginate the given room's timeline backwards.
     pub async fn paginate_backwards(&self, room_id: String) {
-        let Some(session) = self.first_ready_session() else {
+        let Ok(room) = self.room(&room_id) else {
             return;
         };
 
+        // One batch, as one request for older history is; the timeline
+        // refuses when it is loading already, not ready yet, or at the
+        // start of the room's history.
         RUNTIME
             .spawn(async move {
-                let Ok(room_id) = ruma::RoomId::parse(&room_id) else {
-                    return;
-                };
-                let Some(room) = session.room_list().get(&room_id) else {
-                    return;
-                };
-                room.live_timeline().paginate_backwards(20).await;
+                room.live_timeline().paginate_backwards().await;
             })
             .await
             .expect("task was not aborted");
@@ -2468,63 +2466,25 @@ impl CoreApp {
         mentions: Vec<FfiMention>,
         emoticons: Vec<FfiSticker>,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
+        let room = self.room(&room_id)?;
+
+        // The composer's chunks — text, mentions, emoticons — become the
+        // application's exact content in the core; finding the chunks in
+        // the plain text is this side's shortcut. An empty message is not
+        // sent, as the composer does not send one.
+        let Some(content) = crate::session::compose_message(
+            &composer_chunks(&body, &mentions, &emoticons),
+            MARKDOWN_ENABLED,
+        ) else {
+            return Ok(());
         };
 
         RUNTIME
             .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
-                // A mention becomes a matrix.to link in the body — the
-                // application's composer produces the same anchor — plus
-                // its entry in m.mentions.
-                let mut markdown = body.clone();
-                let mut plain = body;
-                let mut user_ids = Vec::new();
-                for mention in &mentions {
-                    let Ok(user_id) = ruma::UserId::parse(&mention.user_id) else {
-                        continue;
-                    };
-                    let at_name = format!("@{}", mention.display_name);
-                    let anchor = format!(
-                        "[{}](https://matrix.to/#/{})",
-                        mention.display_name, mention.user_id,
-                    );
-                    markdown = markdown.replace(&at_name, &anchor);
-                    // The plain body carries the bare name, as the
-                    // application's composer writes it.
-                    plain = plain.replace(&at_name, &mention.display_name);
-                    user_ids.push(user_id);
-                }
-                let room_mention = plain.split_whitespace().any(|word| word == "@room");
-                let plain = if user_ids.is_empty() {
-                    None
-                } else {
-                    Some(plain)
-                };
-
-                let emoticons = emoticons
-                    .into_iter()
-                    .map(|emoticon| (emoticon.shortcode, emoticon.url, emoticon.body))
-                    .collect();
-
                 room.live_timeline()
-                    .send_text(markdown, plain, user_ids, room_mention, emoticons)
+                    .send_message(content)
                     .await
-                    .map_err(|()| CoreError::Failed {
-                        msg: "Could not send the message".to_owned(),
-                    })
+                    .map_err(|error| timeline_failure(error, "Could not send the message"))
             })
             .await
             .expect("task was not aborted")
@@ -2537,33 +2497,15 @@ impl CoreApp {
         event_id: String,
         key: String,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
+        let event_id = parse_event_id(&event_id)?;
 
         RUNTIME
             .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid event ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
                 room.live_timeline()
                     .toggle_reaction(event_id, &key)
                     .await
-                    .map_err(|()| CoreError::Failed {
-                        msg: "Could not toggle the reaction".to_owned(),
-                    })
+                    .map_err(|error| timeline_failure(error, "Could not toggle the reaction"))
             })
             .await
             .expect("task was not aborted")
@@ -2576,13 +2518,27 @@ impl CoreApp {
         in_reply_to: String,
         body: String,
     ) -> Result<(), CoreError> {
-        self.with_room_event(room_id, in_reply_to, move |room, event_id| async move {
-            room.live_timeline().send_reply(event_id, body).await
-        })
-        .await
-        .map_err(|()| CoreError::Failed {
-            msg: "Could not send the reply".to_owned(),
-        })
+        let room = self.room(&room_id)?;
+        let in_reply_to = parse_event_id(&in_reply_to)?;
+
+        // Through the composer, as the toolbar's reply is: the body is
+        // Markdown, whatever the doc comment above — part of the bindings'
+        // checksum — still calls it.
+        let Some(content) =
+            crate::session::compose_message(&composer_chunks(&body, &[], &[]), MARKDOWN_ENABLED)
+        else {
+            return Ok(());
+        };
+
+        RUNTIME
+            .spawn(async move {
+                room.live_timeline()
+                    .send_reply(content, in_reply_to)
+                    .await
+                    .map_err(|error| timeline_failure(error, "Could not send the reply"))
+            })
+            .await
+            .expect("task was not aborted")
     }
 
     /// Replace the given event's content with the given plain text.
@@ -2592,24 +2548,41 @@ impl CoreApp {
         event_id: String,
         new_body: String,
     ) -> Result<(), CoreError> {
-        self.with_room_event(room_id, event_id, move |room, event_id| async move {
-            room.live_timeline().edit(event_id, new_body).await
-        })
-        .await
-        .map_err(|()| CoreError::Failed {
-            msg: "Could not edit the message".to_owned(),
-        })
+        let room = self.room(&room_id)?;
+        let event_id = parse_event_id(&event_id)?;
+
+        // Through the composer, as the toolbar's edit is; see `send_reply`
+        // about the doc comment.
+        let Some(content) = crate::session::compose_message(
+            &composer_chunks(&new_body, &[], &[]),
+            MARKDOWN_ENABLED,
+        ) else {
+            return Ok(());
+        };
+
+        RUNTIME
+            .spawn(async move {
+                room.live_timeline()
+                    .edit(event_id, content)
+                    .await
+                    .map_err(|error| timeline_failure(error, "Could not edit the message"))
+            })
+            .await
+            .expect("task was not aborted")
     }
 
     /// Redact the given event in the given room.
     pub async fn redact_event(&self, room_id: String, event_id: String) -> Result<(), CoreError> {
-        self.with_room_event(room_id, event_id, move |room, event_id| async move {
-            room.live_timeline().redact(event_id).await
-        })
-        .await
-        .map_err(|()| CoreError::Failed {
-            msg: "Could not redact the event".to_owned(),
-        })
+        let room = self.room(&room_id)?;
+        let event_id = parse_event_id(&event_id)?;
+
+        // Through the room, as the application's remove action is: the
+        // event does not have to be among the timeline's loaded items.
+        room.redact(&[event_id], None)
+            .await
+            .map_err(|_failed| CoreError::Failed {
+                msg: "Could not remove the message".to_owned(),
+            })
     }
 
     /// Move the given room to the given category: accepting an invite is a
@@ -2788,45 +2761,30 @@ impl CoreApp {
         name: String,
         topic: String,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let matrix_room = room.matrix_room().clone();
+        // Whitespace is trimmed and an emptied field removes the value, as
+        // the details page does; only what changed is sent, as it sends
+        // only what was edited.
+        let name = Some(name.trim())
+            .filter(|name| !name.is_empty())
+            .map(ToOwned::to_owned);
+        if name != room.name() {
+            room.set_name(name.as_deref())
+                .await
+                .map_err(CoreError::from)?;
+        }
 
-                if room.name().unwrap_or_default() != name {
-                    matrix_room
-                        .set_name(name)
-                        .await
-                        .map_err(|set_error| CoreError::Failed {
-                            msg: format!("Could not set the name: {set_error}"),
-                        })?;
-                }
-                if room.topic().unwrap_or_default() != topic {
-                    matrix_room
-                        .set_room_topic(&topic)
-                        .await
-                        .map_err(|set_error| CoreError::Failed {
-                            msg: format!("Could not set the topic: {set_error}"),
-                        })?;
-                }
-                Ok(())
-            })
-            .await
-            .expect("task was not aborted")
+        let topic = Some(topic.trim())
+            .filter(|topic| !topic.is_empty())
+            .map(ToOwned::to_owned);
+        if topic != room.topic() {
+            room.set_topic(topic.as_deref())
+                .await
+                .map_err(CoreError::from)?;
+        }
+
+        Ok(())
     }
 
     /// The rooms inside the given space, from the server's hierarchy.
@@ -3049,38 +3007,17 @@ impl CoreApp {
         file_path: String,
         mime_type: String,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
+        let mime = mime_type
+            .parse::<mime::Mime>()
+            .unwrap_or(mime::APPLICATION_OCTET_STREAM);
 
         RUNTIME
             .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let mime = mime_type
-                    .parse::<mime::Mime>()
-                    .unwrap_or(mime::APPLICATION_OCTET_STREAM);
-
-                let size = std::fs::metadata(&file_path)
-                    .ok()
-                    .map(|metadata| metadata.len());
-                check_upload_size(&session.client(), size).await?;
-
                 room.live_timeline()
                     .send_attachment(file_path.into(), mime)
                     .await
-                    .map_err(|()| CoreError::Failed {
-                        msg: "Could not send the attachment".to_owned(),
-                    })
+                    .map_err(|error| timeline_failure(error, "Could not send the attachment"))
             })
             .await
             .expect("task was not aborted")
@@ -3317,37 +3254,14 @@ impl CoreApp {
 
     /// Invite the given user to the given room.
     pub async fn invite_user(&self, room_id: String, user_id: String) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
+        let user_id = parse_user_id(&user_id)?;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let user_id =
-                    ruma::UserId::parse(user_id.trim()).map_err(|_| CoreError::Failed {
-                        msg: "That is not a valid user ID".to_owned(),
-                    })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
-                room.matrix_room()
-                    .invite_user_by_id(&user_id)
-                    .await
-                    .map_err(|invite_error| CoreError::Failed {
-                        msg: format!("Could not invite: {invite_error}"),
-                    })
-            })
+        room.invite(&[user_id])
             .await
-            .expect("task was not aborted")
+            .map_err(|_failed| CoreError::Failed {
+                msg: "Could not invite the user".to_owned(),
+            })
     }
 
     /// Create a room, as the application's create dialog does: private
@@ -3696,7 +3610,7 @@ impl CoreApp {
                     msg: format!("Could not read the file: {read_error}"),
                 })?;
                 let size = u64::try_from(data.len()).ok();
-                check_upload_size(&session.client(), size).await?;
+                crate::session::check_upload_size(&session.client(), size).await?;
 
                 let response = session
                     .client()
@@ -4727,38 +4641,22 @@ impl CoreApp {
         mime_type: String,
         duration_ms: u64,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
+        let mime = mime_type
+            .parse::<mime::Mime>()
+            .unwrap_or(mime::APPLICATION_OCTET_STREAM);
 
         RUNTIME
             .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let mime = mime_type
-                    .parse::<mime::Mime>()
-                    .unwrap_or(mime::APPLICATION_OCTET_STREAM);
-
-                let size = std::fs::metadata(&file_path)
-                    .ok()
-                    .map(|metadata| metadata.len());
-                check_upload_size(&session.client(), size).await?;
-
                 room.live_timeline()
-                    .send_voice(file_path.into(), mime, duration_ms)
+                    .send_voice(
+                        file_path.into(),
+                        mime,
+                        duration_ms,
+                        VOICE_MESSAGE_FILENAME.to_owned(),
+                    )
                     .await
-                    .map_err(|()| CoreError::Failed {
-                        msg: "Could not send the voice message".to_owned(),
-                    })
+                    .map_err(|error| timeline_failure(error, "Could not send the voice message"))
             })
             .await
             .expect("task was not aborted")
@@ -4791,30 +4689,22 @@ impl CoreApp {
     /// Send the user's location to the room, as the application's
     /// message toolbar does.
     pub async fn send_location(&self, room_id: String, geo_uri: String) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
+
+        // The body is the embedder's sentence: the application's is
+        // translated and stamps local time. UTC keeps this side off the
+        // platform's timezone database.
+        let timestamp = time::OffsetDateTime::now_utc()
+            .format(&time::format_description::well_known::Iso8601::DEFAULT)
+            .unwrap_or_default();
+        let body = format!("User Location {geo_uri} at {timestamp}");
 
         RUNTIME
             .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
                 room.live_timeline()
-                    .send_location(geo_uri)
+                    .send_location(geo_uri, body)
                     .await
-                    .map_err(|()| CoreError::Failed {
-                        msg: "Could not send the location".to_owned(),
-                    })
+                    .map_err(|error| timeline_failure(error, "Could not send the location"))
             })
             .await
             .expect("task was not aborted")
@@ -4941,7 +4831,7 @@ impl CoreApp {
         })?;
         let size = u64::try_from(data.len()).ok();
         let client = session.client();
-        check_upload_size(&client, size).await?;
+        crate::session::check_upload_size(&client, size).await?;
 
         let upload_mime = mime.clone();
         let response = RUNTIME
@@ -5060,9 +4950,7 @@ impl CoreApp {
             .spawn(async move { room.live_timeline().send_sticker(content).await })
             .await
             .expect("task was not aborted")
-            .map_err(|()| CoreError::Failed {
-                msg: "Could not send the sticker".to_owned(),
-            })
+            .map_err(|error| timeline_failure(error, "Could not send the sticker"))
     }
 
     /// Fetch the media behind a plain `mxc:` URI into a file, returning
@@ -5092,37 +4980,12 @@ impl CoreApp {
         room_id: String,
         event_id: String,
     ) -> Result<String, CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
+        let event_id = parse_event_id(&event_id)?;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid event ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
-                room.matrix_room()
-                    .matrix_to_event_permalink(event_id)
-                    .await
-                    .map(|uri| uri.to_string())
-                    .map_err(|link_error| CoreError::Failed {
-                        msg: format!("Could not build the link: {link_error}"),
-                    })
-            })
-            .await
-            .expect("task was not aborted")
+        // Never fails past this point: without routing, the link is the
+        // room ID's own, as the application falls back to.
+        Ok(room.matrix_to_event_uri(event_id).await.to_string())
     }
 
     /// The raw JSON of the given event, pretty-printed — the properties
@@ -5132,45 +4995,20 @@ impl CoreApp {
         room_id: String,
         event_id: String,
     ) -> Result<String, CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
+        let event_id = parse_event_id(&event_id)?;
 
+        // Read from the loaded timeline item, as the properties dialog
+        // reads it; the application offers the view only for an event it
+        // has the source of.
         RUNTIME
             .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid event ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
+                room.live_timeline()
+                    .event_source(&event_id)
+                    .await
                     .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
-                let event =
-                    room.matrix_room()
-                        .event(&event_id, None)
-                        .await
-                        .map_err(|event_error| CoreError::Failed {
-                            msg: format!("Could not fetch the event: {event_error}"),
-                        })?;
-
-                let value =
-                    event
-                        .raw()
-                        .deserialize_as::<serde_json::Value>()
-                        .map_err(|json_error| CoreError::Failed {
-                            msg: format!("Could not read the event: {json_error}"),
-                        })?;
-                serde_json::to_string_pretty(&value).map_err(|json_error| CoreError::Failed {
-                    msg: format!("Could not render the event: {json_error}"),
-                })
+                        msg: "The source of the event is not available".to_owned(),
+                    })
             })
             .await
             .expect("task was not aborted")
@@ -5184,37 +5022,14 @@ impl CoreApp {
         event_id: String,
         reason: Option<String>,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
+        let event_id = parse_event_id(&event_id)?;
 
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid event ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
-                room.matrix_room()
-                    .report_content(event_id, reason)
-                    .await
-                    .map(|_| ())
-                    .map_err(|report_error| CoreError::Failed {
-                        msg: format!("Could not report the event: {report_error}"),
-                    })
-            })
+        room.report_events(&[(event_id, reason)])
             .await
-            .expect("task was not aborted")
+            .map_err(|_failed| CoreError::Failed {
+                msg: "Could not report the event".to_owned(),
+            })
     }
 
     /// Send the given event's content to another room, verbatim.
@@ -5229,38 +5044,15 @@ impl CoreApp {
         event_id: String,
         target_room_id: String,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
+        let target = self.room(&target_room_id)?;
+        let event_id = parse_event_id(&event_id)?;
 
+        // With no precedent to mirror there is no core method either: this
+        // stays the FFI's own design, and stays here, until the
+        // application registers its Forward action.
         RUNTIME
             .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid event ID".to_owned(),
-                })?;
-                let target_room_id =
-                    ruma::RoomId::parse(&target_room_id).map_err(|_| CoreError::Failed {
-                        msg: "Invalid room ID".to_owned(),
-                    })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-                let target =
-                    session
-                        .room_list()
-                        .get(&target_room_id)
-                        .ok_or_else(|| CoreError::Failed {
-                            msg: "Unknown room".to_owned(),
-                        })?;
-
                 let event =
                     room.matrix_room()
                         .event(&event_id, None)
@@ -5315,30 +5107,14 @@ impl CoreApp {
         room_id: String,
         unique_id: String,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let room = self.room(&room_id)?;
 
         RUNTIME
             .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid room ID".to_owned(),
-                })?;
-                let room = session
-                    .room_list()
-                    .get(&room_id)
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "Unknown room".to_owned(),
-                    })?;
-
                 room.live_timeline()
                     .discard_local_echo(&unique_id)
                     .await
-                    .map_err(|()| CoreError::Failed {
-                        msg: "Could not discard the message".to_owned(),
-                    })
+                    .map_err(|error| timeline_failure(error, "Could not discard the message"))
             })
             .await
             .expect("task was not aborted")
@@ -5793,47 +5569,6 @@ impl CoreApp {
     }
 }
 
-/// Ask the homeserver's upload limit before sending, rather than
-/// uploading the whole file to be told no at the end, as the
-/// application's message toolbar does. The SDK caches the answer after
-/// the first ask; when it cannot be had, the upload proceeds and the
-/// server stays the judge.
-async fn check_upload_size(
-    client: &matrix_sdk::Client,
-    size: Option<u64>,
-) -> Result<(), CoreError> {
-    let Some(size) = size else {
-        return Ok(());
-    };
-    if let Ok(max_upload_size) = client.load_or_fetch_max_upload_size().await
-        && size > u64::from(max_upload_size)
-    {
-        return Err(CoreError::Failed {
-            msg: format!(
-                "This file is too large, the homeserver takes up to {}",
-                format_size(u64::from(max_upload_size))
-            ),
-        });
-    }
-    Ok(())
-}
-
-/// A byte count in decimal units, as the application's toast renders it.
-fn format_size(bytes: u64) -> String {
-    const UNITS: [&str; 5] = ["bytes", "kB", "MB", "GB", "TB"];
-    let mut value = bytes as f64;
-    let mut unit = 0;
-    while value >= 1000.0 && unit < UNITS.len() - 1 {
-        value /= 1000.0;
-        unit += 1;
-    }
-    if unit == 0 {
-        format!("{bytes} bytes")
-    } else {
-        format!("{value:.1} {}", UNITS[unit])
-    }
-}
-
 /// Read one of the room's state events (empty state key) as its typed
 /// content, `None` when it is absent or unreadable.
 async fn read_state_content<C>(matrix_room: &matrix_sdk::Room) -> Option<C>
@@ -5867,6 +5602,128 @@ fn parse_user_id(user_id: &str) -> Result<ruma::OwnedUserId, CoreError> {
     ruma::UserId::parse(user_id.trim()).map_err(|_| CoreError::Failed {
         msg: "That is not a valid user ID".to_owned(),
     })
+}
+
+/// Parse an event ID handed over the FFI.
+fn parse_event_id(event_id: &str) -> Result<ruma::OwnedEventId, CoreError> {
+    ruma::EventId::parse(event_id).map_err(|_| CoreError::Failed {
+        msg: "Invalid event ID".to_owned(),
+    })
+}
+
+/// Whether messages are sent as Markdown.
+///
+/// The application's setting, on by default; the Kotlin application has
+/// no such setting.
+const MARKDOWN_ENABLED: bool = true;
+
+/// The file name of a voice message, which is what other clients show as
+/// its body.
+///
+/// The application's is translated; this is the Kotlin side's English.
+const VOICE_MESSAGE_FILENAME: &str = "Voice message.ogg";
+
+/// The FFI's sentence for a failed timeline action.
+///
+/// The application's toasts name the action, so the sentence is the
+/// caller's. The upload limit is the one refusal the core has a value
+/// for, and that one is rendered with it.
+fn timeline_failure(error: crate::session::TimelineError, sentence: &str) -> CoreError {
+    use crate::session::TimelineError;
+
+    match error {
+        TimelineError::UploadTooLarge { .. } => CoreError::from(error),
+        TimelineError::NoTimeline
+        | TimelineError::UnknownEvent
+        | TimelineError::Read(_)
+        | TimelineError::Send(_) => CoreError::Failed {
+            msg: sentence.to_owned(),
+        },
+    }
+}
+
+/// The chunks of a message typed in the Kotlin composer.
+///
+/// The application's composer holds mentions and emoticons as pills, so
+/// its parser knows one when it meets one. The Kotlin composer is plain
+/// text: this is where `@Name`, `:shortcode:` and `@room` are found in
+/// it, the FFI's shortcut rather than the core's behaviour. `@room` is
+/// found as the push rules find it; the application only mentions the
+/// room through a pill its completion offers where the user may notify
+/// the room, which the Kotlin composer does not offer at all.
+fn composer_chunks(
+    body: &str,
+    mentions: &[FfiMention],
+    emoticons: &[FfiSticker],
+) -> Vec<crate::session::ComposerChunk> {
+    use crate::{
+        matrix::{AT_ROOM, find_at_room},
+        session::ComposerChunk,
+    };
+
+    // Every place a pill would stand: where it starts, where it ends, and
+    // what it is.
+    let mut pills = Vec::new();
+
+    for mention in mentions {
+        let Ok(user_id) = ruma::UserId::parse(&mention.user_id) else {
+            continue;
+        };
+        let at_name = format!("@{}", mention.display_name);
+        for (start, _) in body.match_indices(&at_name) {
+            pills.push((
+                start,
+                start + at_name.len(),
+                ComposerChunk::user_mention(&user_id, Some(&mention.display_name)),
+            ));
+        }
+    }
+
+    for emoticon in emoticons {
+        let plain = crate::session::emoticon_plain(&emoticon.shortcode);
+        for (start, _) in body.match_indices(&plain) {
+            pills.push((
+                start,
+                start + plain.len(),
+                ComposerChunk::Emoticon {
+                    shortcode: emoticon.shortcode.clone(),
+                    uri: emoticon.url.clone(),
+                    body: emoticon.body.clone(),
+                },
+            ));
+        }
+    }
+
+    let mut from = 0;
+    while let Some(offset) = find_at_room(&body[from..]) {
+        let start = from + offset;
+        let end = start + AT_ROOM.len();
+        pills.push((start, end, ComposerChunk::AtRoom));
+        from = end;
+    }
+
+    // Earliest first; where two overlap, the longer wins.
+    pills.sort_by(|(a_start, a_end, _), (b_start, b_end, _)| {
+        a_start.cmp(b_start).then(b_end.cmp(a_end))
+    });
+
+    let mut chunks = Vec::new();
+    let mut pos = 0;
+    for (start, end, chunk) in pills {
+        if start < pos {
+            continue;
+        }
+        if start > pos {
+            chunks.push(ComposerChunk::Text(body[pos..start].to_owned()));
+        }
+        chunks.push(chunk);
+        pos = end;
+    }
+    if pos < body.len() {
+        chunks.push(ComposerChunk::Text(body[pos..].to_owned()));
+    }
+
+    chunks
 }
 
 /// Whether our own user may send the given state event in the room.
@@ -6409,33 +6266,6 @@ impl CoreApp {
                     })?;
 
                 action(room.matrix_room().clone(), user_id).await
-            })
-            .await
-            .expect("task was not aborted")
-    }
-
-    /// Run the given action with the room and parsed event ID, off the
-    /// runtime.
-    async fn with_room_event<F, Fut>(
-        &self,
-        room_id: String,
-        event_id: String,
-        action: F,
-    ) -> Result<(), ()>
-    where
-        F: FnOnce(crate::session::Room, ruma::OwnedEventId) -> Fut + Send + 'static,
-        Fut: std::future::Future<Output = Result<(), ()>> + Send,
-    {
-        let Some(session) = self.first_ready_session() else {
-            return Err(());
-        };
-
-        RUNTIME
-            .spawn(async move {
-                let room_id = ruma::RoomId::parse(&room_id).map_err(|_| ())?;
-                let event_id = ruma::EventId::parse(&event_id).map_err(|_| ())?;
-                let room = session.room_list().get(&room_id).ok_or(())?;
-                action(room, event_id).await
             })
             .await
             .expect("task was not aborted")

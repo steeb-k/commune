@@ -137,3 +137,26 @@ impl OptionStringExt for Option<String> {
         });
     }
 }
+
+/// A byte count in decimal units, as `glib::format_size` renders it.
+///
+/// The core's English fallback for an embedder without a formatter of its
+/// own; the application uses `GLib`'s, which agrees on the units.
+#[must_use]
+pub fn format_size(bytes: u64) -> String {
+    const UNITS: [&str; 5] = ["bytes", "kB", "MB", "GB", "TB"];
+
+    #[allow(clippy::cast_precision_loss, reason = "a size, shown to one decimal")]
+    let mut value = bytes as f64;
+    let mut unit = 0;
+    while value >= 1000.0 && unit < UNITS.len() - 1 {
+        value /= 1000.0;
+        unit += 1;
+    }
+
+    if unit == 0 {
+        format!("{bytes} bytes")
+    } else {
+        format!("{value:.1} {}", UNITS[unit])
+    }
+}
