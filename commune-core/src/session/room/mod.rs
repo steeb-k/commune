@@ -18,6 +18,7 @@
 //! [`RoomDisplayName`] — "Empty Room (was X)" is the UI's sentence to make.
 
 mod category;
+mod composer;
 mod media_history;
 mod member;
 mod search;
@@ -35,13 +36,14 @@ use matrix_sdk::{
     deserialized_responses::RawSyncOrStrippedState, room::Room as MatrixRoom,
 };
 use ruma::{
-    MilliSecondsSinceUnixEpoch, OwnedMxcUri, OwnedRoomId, OwnedUserId, RoomId,
+    MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedMxcUri, OwnedRoomId, OwnedUserId, RoomId,
     api::client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
     events::{
         AnySyncTimelineEvent,
         room::member::{MembershipState, RoomMemberEventContent},
         tag::TagName,
     },
+    matrix_uri::MatrixToUri,
     serde::Raw,
 };
 use serde::Deserialize;
@@ -51,13 +53,17 @@ use tracing::{debug, error, warn};
 
 pub use self::{
     category::{RoomCategory, RoomHighlight, TargetRoomCategory},
+    composer::{ComposerChunk, compose_message, emoticon_plain},
     media_history::{MediaHistoryError, MediaHistoryEvent, MediaHistoryKind, MediaHistoryPage},
     member::{Member, MemberList, MemberRole, Membership},
     search::{RoomSearch, SearchError, SearchResult},
-    timeline::{ReceiptPosition, Timeline, TimelineFocusKind},
+    timeline::{
+        MAX_BATCH_SIZE, ReceiptPosition, Timeline, TimelineError, TimelineFocusKind,
+        check_upload_size,
+    },
 };
 use crate::{
-    RUNTIME,
+    RUNTIME, UserFacingError,
     session::{Session, WeakSession, room_list::RoomMetainfo},
     spawn_tokio,
     utils::{OptionStringExt, StrMutExt},
@@ -95,6 +101,33 @@ impl RoomDisplayName {
             | SdkRoomDisplayName::Aliased(s) => cleaned(s).map_or(Self::Unknown, Self::Named),
             SdkRoomDisplayName::EmptyWas(s) => cleaned(s).map_or(Self::Empty, Self::EmptyWas),
             SdkRoomDisplayName::Empty => Self::Empty,
+        }
+    }
+}
+
+/// An error encountered while changing the details of a room.
+#[derive(Debug, thiserror::Error)]
+pub enum RoomDetailsError {
+    /// The room is not joined, so its details cannot be changed.
+    #[error("the room is not joined")]
+    NotJoined,
+    /// The name could not be changed.
+    ///
+    /// Boxed because `matrix_sdk::Error` is large enough that carrying it
+    /// by value makes every `Result` here expensive.
+    #[error(transparent)]
+    Name(Box<matrix_sdk::Error>),
+    /// The topic could not be changed.
+    #[error(transparent)]
+    Topic(Box<matrix_sdk::Error>),
+}
+
+impl UserFacingError for RoomDetailsError {
+    fn to_user_facing(&self) -> String {
+        match self {
+            Self::NotJoined => "The room is not joined".to_owned(),
+            Self::Name(_) => "Could not change room name".to_owned(),
+            Self::Topic(_) => "Could not change room description".to_owned(),
         }
     }
 }
@@ -579,7 +612,206 @@ impl Room {
             .await;
     }
 
-    /// The users currently typing in this room, our own user excluded.
+    /// Set the name of this room, or remove it with `None`.
+    ///
+    /// Whitespace around the name is not part of it and a name that is
+    /// only whitespace removes it, as the details page trims what was
+    /// typed. Refused when the room is not joined. Success is not
+    /// reported beyond the request: the change comes back through sync.
+    pub async fn set_name(&self, name: Option<&str>) -> Result<(), RoomDetailsError> {
+        if !self.is_joined() {
+            error!("Cannot change name of room not joined");
+            return Err(RoomDetailsError::NotJoined);
+        }
+
+        let name = name
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .map(ToOwned::to_owned)
+            .unwrap_or_default();
+
+        let matrix_room = self.inner.matrix_room.clone();
+        let handle = spawn_tokio!(async move { matrix_room.set_name(name).await });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_response| ())
+            .map_err(|set_error| {
+                error!("Could not change room name: {set_error}");
+                RoomDetailsError::Name(Box::new(set_error))
+            })
+    }
+
+    /// Set the topic of this room, or remove it with `None`.
+    ///
+    /// It is not possible to remove a topic, so an empty string is what
+    /// stands for none. The same trimming and the same refusal as
+    /// [`Room::set_name`].
+    pub async fn set_topic(&self, topic: Option<&str>) -> Result<(), RoomDetailsError> {
+        if !self.is_joined() {
+            error!("Cannot change description of room not joined");
+            return Err(RoomDetailsError::NotJoined);
+        }
+
+        let topic = topic
+            .map(str::trim)
+            .filter(|topic| !topic.is_empty())
+            .map(ToOwned::to_owned)
+            .unwrap_or_default();
+
+        let matrix_room = self.inner.matrix_room.clone();
+        let handle = spawn_tokio!(async move { matrix_room.set_room_topic(&topic).await });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_response| ())
+            .map_err(|set_error| {
+                error!("Could not change room description: {set_error}");
+                RoomDetailsError::Topic(Box::new(set_error))
+            })
+    }
+
+    /// Redact the given events in this room because of the given reason.
+    ///
+    /// Returns `Ok(())` if all the redactions are successful, otherwise
+    /// returns the list of events that could not be redacted. Nothing is
+    /// redacted in a room that is not joined.
+    pub async fn redact(
+        &self,
+        events: &[OwnedEventId],
+        reason: Option<String>,
+    ) -> Result<(), Vec<OwnedEventId>> {
+        if !self.is_joined() {
+            return Ok(());
+        }
+
+        let events = events.to_owned();
+        let matrix_room = self.inner.matrix_room.clone();
+        let handle = spawn_tokio!(async move {
+            let mut failed_redactions = Vec::new();
+
+            for event_id in events {
+                if let Err(redact_error) =
+                    matrix_room.redact(&event_id, reason.as_deref(), None).await
+                {
+                    error!("Could not redact event with ID {event_id}: {redact_error}");
+                    failed_redactions.push(event_id);
+                }
+            }
+
+            failed_redactions
+        });
+
+        let failed_redactions = handle.await.expect("task was not aborted");
+        if failed_redactions.is_empty() {
+            Ok(())
+        } else {
+            Err(failed_redactions)
+        }
+    }
+
+    /// Report the given events in this room.
+    ///
+    /// The events are a list of `(event_id, reason)` tuples.
+    ///
+    /// Returns `Ok(())` if all the reports are sent successfully, otherwise
+    /// returns the list of event IDs that could not be reported.
+    pub async fn report_events(
+        &self,
+        events: &[(OwnedEventId, Option<String>)],
+    ) -> Result<(), Vec<OwnedEventId>> {
+        let events = events.to_owned();
+        let matrix_room = self.inner.matrix_room.clone();
+        let handle = spawn_tokio!(async move {
+            let futures = events.into_iter().map(|(event_id, reason)| {
+                let matrix_room = matrix_room.clone();
+                async move {
+                    let result = matrix_room.report_content(event_id.clone(), reason).await;
+                    (event_id, result)
+                }
+            });
+            futures_util::future::join_all(futures).await
+        });
+
+        let mut failed = Vec::new();
+        for (event_id, result) in handle.await.expect("task was not aborted") {
+            if let Err(report_error) = result {
+                error!("Could not report content with event ID {event_id}: {report_error}");
+                failed.push(event_id);
+            }
+        }
+
+        if failed.is_empty() {
+            Ok(())
+        } else {
+            Err(failed)
+        }
+    }
+
+    /// Invite the given users to this room.
+    ///
+    /// Returns `Ok(())` if all the invites are sent successfully, otherwise
+    /// returns the list of users who could not be invited. Nobody is
+    /// invited to a room that is not joined.
+    pub async fn invite(&self, user_ids: &[OwnedUserId]) -> Result<(), Vec<OwnedUserId>> {
+        if !self.is_joined() {
+            error!("Can’t invite users, because this room isn’t a joined room");
+            return Ok(());
+        }
+
+        let user_ids = user_ids.to_owned();
+        let matrix_room = self.inner.matrix_room.clone();
+        let handle = spawn_tokio!(async move {
+            let invitations = user_ids.into_iter().map(|user_id| {
+                let matrix_room = matrix_room.clone();
+                async move {
+                    let result = matrix_room.invite_user_by_id(&user_id).await;
+                    (user_id, result)
+                }
+            });
+            futures_util::future::join_all(invitations).await
+        });
+
+        let mut failed_invites = Vec::new();
+        for (user_id, result) in handle.await.expect("task was not aborted") {
+            if let Err(invite_error) = result {
+                error!("Could not invite user with ID {user_id}: {invite_error}");
+                failed_invites.push(user_id);
+            }
+        }
+
+        if failed_invites.is_empty() {
+            Ok(())
+        } else {
+            Err(failed_invites)
+        }
+    }
+
+    /// The `matrix.to` URI representation for the given event in this
+    /// room.
+    ///
+    /// With the routing the SDK computes; falling back to the room ID
+    /// alone, without routing, when it cannot.
+    pub async fn matrix_to_event_uri(&self, event_id: OwnedEventId) -> MatrixToUri {
+        let matrix_room = self.inner.matrix_room.clone();
+
+        let event_id_clone = event_id.clone();
+        let handle =
+            spawn_tokio!(
+                async move { matrix_room.matrix_to_event_permalink(event_id_clone).await }
+            );
+        match handle.await.expect("task was not aborted") {
+            Ok(permalink) => permalink,
+            Err(permalink_error) => {
+                error!("Could not get room event permalink: {permalink_error}");
+                // Fallback to using just the room ID, without routing.
+                self.room_id().matrix_to_event_uri(event_id)
+            }
+        }
+    }
+
     /// The display name of the direct member, if this is a direct chat
     /// and it is known.
     #[must_use]
@@ -587,6 +819,7 @@ impl Room {
         self.inner.direct_member_display_name.get()
     }
 
+    /// The users currently typing in this room, our own user excluded.
     #[must_use]
     pub fn typing_users(&self) -> Vec<OwnedUserId> {
         self.inner.typing.get()
