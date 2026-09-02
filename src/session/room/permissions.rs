@@ -1,29 +1,20 @@
 use std::fmt;
 
+use commune_core::session::{Permissions as CorePermissions, PermissionsState};
 use gettextrs::{gettext, pgettext};
-use gtk::{
-    glib,
-    glib::{clone, closure_local},
-    prelude::*,
-    subclass::prelude::*,
-};
-use matrix_sdk::{RoomState, event_handler::EventHandlerDropGuard};
+use gtk::{glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use ruma::{
     Int, OwnedUserId, UserId,
-    events::{
-        MessageLikeEventType, StateEventType, SyncStateEvent,
-        room::power_levels::{
-            NotificationPowerLevelType, PowerLevelAction, PowerLevelUserAction, RoomPowerLevels,
-            RoomPowerLevelsEventContent, RoomPowerLevelsSource, UserPowerLevel,
-        },
+    events::room::power_levels::{
+        PowerLevelAction, PowerLevelUserAction, RoomPowerLevels, UserPowerLevel,
     },
     int,
-    room_version_rules::AuthorizationRules,
 };
+use tokio::task::AbortHandle;
 use tracing::error;
 
-use super::{Member, Membership, Room};
-use crate::{prelude::*, session::ROOM_IMAGE_PACK_EVENT_TYPE, spawn, spawn_tokio};
+use super::Room;
+use crate::{core_bridge::ObjectWatcher, spawn_tokio};
 
 /// The maximum power level that can be set, according to the Matrix
 /// specification.
@@ -88,6 +79,16 @@ impl fmt::Display for MemberRole {
     }
 }
 
+/// Set a mirrored property and notify it if it changed.
+macro_rules! mirror {
+    ($imp:ident, $obj:ident, $field:ident, $value:expr, $notify:ident) => {
+        if $imp.$field.get() != $value {
+            $imp.$field.set($value);
+            $obj.$notify();
+        }
+    };
+}
+
 mod imp {
     use std::{
         cell::{Cell, OnceCell, RefCell},
@@ -104,9 +105,10 @@ mod imp {
         /// The room where these permissions apply.
         #[property(get)]
         pub(super) room: glib::WeakRef<Room>,
-        /// The source of the power levels information.
-        pub(super) power_levels: RefCell<RoomPowerLevels>,
-        power_levels_drop_guard: OnceCell<EventHandlerDropGuard>,
+        /// The core's permissions, which this presents.
+        pub(super) core: OnceCell<CorePermissions>,
+        /// The task following the core's state.
+        watch_handle: RefCell<Option<AbortHandle>>,
         /// Whether our own member is joined.
         #[property(get)]
         is_joined: Cell<bool>,
@@ -160,12 +162,8 @@ mod imp {
         fn default() -> Self {
             Self {
                 room: Default::default(),
-                power_levels: RefCell::new(RoomPowerLevels::new(
-                    RoomPowerLevelsSource::None,
-                    &AuthorizationRules::V1,
-                    None,
-                )),
-                power_levels_drop_guard: Default::default(),
+                core: Default::default(),
+                watch_handle: Default::default(),
                 is_joined: Default::default(),
                 own_power_level: Cell::new(UserPowerLevel::Int(int!(0))),
                 default_power_level: Default::default(),
@@ -203,361 +201,154 @@ mod imp {
             });
             SIGNALS.as_ref()
         }
+
+        fn dispose(&self) {
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
+            }
+        }
     }
 
     impl Permissions {
-        /// Initialize the room.
-        pub(super) fn init_own_member(&self, own_member: &Member) {
-            own_member.connect_membership_notify(clone!(
-                #[weak(rename_to = imp)]
+        /// Follow the core's state.
+        pub(super) fn watch_core(&self, core: &CorePermissions) {
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(core.subscribe(), |obj: &super::Permissions, state| {
+                    obj.imp().set_state(&state);
+                })
+                .spawn();
+            self.watch_handle.replace(Some(handle));
+
+            // What the core already knows, after subscribing so that
+            // nothing between the two is lost.
+            self.set_state(&core.state());
+        }
+
+        /// Mirror the core's state into the properties.
+        #[allow(
+            clippy::too_many_lines,
+            reason = "one mirror per property, fourteen properties"
+        )]
+        fn set_state(&self, state: &PermissionsState) {
+            let obj = self.obj();
+
+            mirror!(self, obj, is_joined, state.is_joined, notify_is_joined);
+            mirror!(
                 self,
-                move |_| {
-                    imp.update_is_joined();
-                }
-            ));
-
-            self.update_is_joined();
-        }
-
-        /// The room member for our own user.
-        pub(super) fn own_member(&self) -> Option<Member> {
-            self.room.upgrade().map(|r| r.own_member())
-        }
-
-        /// Initialize the power levels from the store.
-        pub(super) async fn init_power_levels(&self) {
-            let Some(room) = self.room.upgrade() else {
-                return;
-            };
-
-            let matrix_room = room.matrix_room();
-
-            // We will probably not be able to load the power levels if we were never in the
-            // room, so skip this. We should get the power levels when we join the room.
-            if !matches!(matrix_room.state(), RoomState::Invited | RoomState::Knocked) {
-                self.update_power_levels().await;
-            }
-
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let handle = matrix_room.add_event_handler(
-                move |_event: SyncStateEvent<RoomPowerLevelsEventContent>| {
-                    let obj_weak = obj_weak.clone();
-                    async move {
-                        let ctx = glib::MainContext::default();
-                        ctx.spawn(async move {
-                            spawn!(async move {
-                                if let Some(obj) = obj_weak.upgrade() {
-                                    obj.imp().update_power_levels().await;
-                                }
-                            });
-                        });
-                    }
-                },
+                obj,
+                default_power_level,
+                state.default_power_level,
+                notify_default_power_level
+            );
+            mirror!(
+                self,
+                obj,
+                mute_power_level,
+                state.mute_power_level,
+                notify_mute_power_level
+            );
+            mirror!(
+                self,
+                obj,
+                can_change_avatar,
+                state.can_change_avatar,
+                notify_can_change_avatar
+            );
+            mirror!(
+                self,
+                obj,
+                can_change_name,
+                state.can_change_name,
+                notify_can_change_name
+            );
+            mirror!(
+                self,
+                obj,
+                can_change_topic,
+                state.can_change_topic,
+                notify_can_change_topic
+            );
+            mirror!(self, obj, can_invite, state.can_invite, notify_can_invite);
+            mirror!(
+                self,
+                obj,
+                can_send_message,
+                state.can_send_message,
+                notify_can_send_message
+            );
+            mirror!(
+                self,
+                obj,
+                can_send_sticker,
+                state.can_send_sticker,
+                notify_can_send_sticker
+            );
+            mirror!(
+                self,
+                obj,
+                can_send_reaction,
+                state.can_send_reaction,
+                notify_can_send_reaction
+            );
+            mirror!(
+                self,
+                obj,
+                can_change_image_packs,
+                state.can_change_image_packs,
+                notify_can_change_image_packs
+            );
+            mirror!(
+                self,
+                obj,
+                can_pin_events,
+                state.can_pin_events,
+                notify_can_pin_events
+            );
+            mirror!(
+                self,
+                obj,
+                can_redact_own,
+                state.can_redact_own,
+                notify_can_redact_own
+            );
+            mirror!(
+                self,
+                obj,
+                can_redact_other,
+                state.can_redact_other,
+                notify_can_redact_other
+            );
+            mirror!(
+                self,
+                obj,
+                can_notify_room,
+                state.can_notify_room,
+                notify_can_notify_room
             );
 
-            let drop_guard = matrix_room.client().event_handler_drop_guard(handle);
-            self.power_levels_drop_guard
-                .set(drop_guard)
-                .expect("power levels drop guard is uninitialized");
-        }
+            let own_power_level = state
+                .own_power_level
+                .unwrap_or(UserPowerLevel::Int(int!(0)));
+            if self.own_power_level.get() != own_power_level {
+                self.own_power_level.set(own_power_level);
+                obj.emit_by_name::<()>("own-power-level-changed", &[]);
 
-        /// Update whether our own member is joined
-        fn update_is_joined(&self) {
-            let Some(own_member) = self.own_member() else {
-                return;
-            };
-
-            let is_joined = own_member.membership() == Membership::Join;
-
-            if self.is_joined.get() == is_joined {
-                return;
-            }
-
-            self.is_joined.set(is_joined);
-            self.permissions_changed();
-        }
-
-        /// Update the power levels with the data from the SDK's room.
-        async fn update_power_levels(&self) {
-            let Some(room) = self.room.upgrade() else {
-                return;
-            };
-
-            let matrix_room = room.matrix_room().clone();
-            let handle = spawn_tokio!(async move { matrix_room.power_levels().await });
-
-            let power_levels = match handle.await.expect("task was not aborted") {
-                Ok(power_levels) => power_levels,
-                Err(error) => {
-                    error!("Could not load room power levels: {error}");
-                    return;
+                // Our own member is here before any member list is; a listed
+                // member's power level arrives with the core's snapshot too.
+                if let Some(room) = self.room.upgrade() {
+                    room.own_member().set_power_level(own_power_level);
                 }
-            };
-
-            self.power_levels.replace(power_levels.clone());
-            self.permissions_changed();
-
-            // A listed member's power level arrives with the core's
-            // snapshot; our own member is here before any list is.
-            let own_member = room.own_member();
-            let own_user_id = own_member.user_id();
-            own_member.set_power_level(power_levels.for_user(own_user_id));
-        }
-
-        /// Trigger updates when the permissions changed.
-        fn permissions_changed(&self) {
-            self.update_own_power_level();
-            self.update_default_power_level();
-            self.update_mute_power_level();
-            self.update_can_change_avatar();
-            self.update_can_change_name();
-            self.update_can_change_topic();
-            self.update_can_invite();
-            self.update_can_send_message();
-            self.update_can_send_sticker();
-            self.update_can_send_reaction();
-            self.update_can_change_image_packs();
-            self.update_can_pin_events();
-            self.update_can_redact_own();
-            self.update_can_redact_other();
-            self.update_can_notify_room();
-            self.obj().emit_by_name::<()>("changed", &[]);
-        }
-
-        /// Update the power level of our own member.
-        fn update_own_power_level(&self) {
-            let Some(room) = self.room.upgrade() else {
-                return;
-            };
-            let own_member = room.own_member();
-
-            let power_level = self.power_levels.borrow().for_user(own_member.user_id());
-
-            if self.own_power_level.get() == power_level {
-                return;
             }
 
-            self.own_power_level.set(power_level);
-            self.obj()
-                .emit_by_name::<()>("own-power-level-changed", &[]);
-        }
-
-        /// Update the default power level for members.
-        fn update_default_power_level(&self) {
-            let power_level = self.power_levels.borrow().users_default.into();
-
-            if self.default_power_level.get() == power_level {
-                return;
-            }
-
-            self.default_power_level.set(power_level);
-            self.obj().notify_default_power_level();
-        }
-
-        /// Update the power level to mute members.
-        fn update_mute_power_level(&self) {
-            // To mute user they must not have enough power to send messages.
-            let power_levels = self.power_levels.borrow();
-            let message_power_level = power_levels
-                .events
-                .get(&MessageLikeEventType::RoomMessage.into())
-                .copied()
-                .unwrap_or(power_levels.events_default);
-            let power_level = (-1).min(message_power_level.into());
-
-            if self.mute_power_level.get() == power_level {
-                return;
-            }
-
-            self.mute_power_level.set(power_level);
-            self.obj().notify_mute_power_level();
-        }
-
-        /// Whether our own member is allowed to do the given action.
-        pub(super) fn is_allowed_to(&self, room_action: PowerLevelAction) -> bool {
-            if !self.is_joined.get() {
-                // We cannot do anything if the member is not joined.
-                return false;
-            }
-
-            let Some(own_member) = self.own_member() else {
-                return false;
-            };
-
-            self.power_levels
-                .borrow()
-                .user_can_do(own_member.user_id(), room_action)
-        }
-
-        /// Update whether our own member can change the room's avatar.
-        fn update_can_change_avatar(&self) {
-            let can_change_avatar =
-                self.is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomAvatar));
-
-            if self.can_change_avatar.get() == can_change_avatar {
-                return;
-            }
-
-            self.can_change_avatar.set(can_change_avatar);
-            self.obj().notify_can_change_avatar();
-        }
-
-        /// Update whether our own member can change the room's name.
-        fn update_can_change_name(&self) {
-            let can_change_name =
-                self.is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomName));
-
-            if self.can_change_name.get() == can_change_name {
-                return;
-            }
-
-            self.can_change_name.set(can_change_name);
-            self.obj().notify_can_change_name();
-        }
-
-        /// Update whether our own member can change the room's topic.
-        fn update_can_change_topic(&self) {
-            let can_change_topic =
-                self.is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomTopic));
-
-            if self.can_change_topic.get() == can_change_topic {
-                return;
-            }
-
-            self.can_change_topic.set(can_change_topic);
-            self.obj().notify_can_change_topic();
-        }
-
-        /// Update whether our own member can invite another user in the room.
-        fn update_can_invite(&self) {
-            let can_invite = self.is_allowed_to(PowerLevelAction::Invite);
-
-            if self.can_invite.get() == can_invite {
-                return;
-            }
-
-            self.can_invite.set(can_invite);
-            self.obj().notify_can_invite();
-        }
-
-        /// Update whether our own member can send a message in the room.
-        fn update_can_send_message(&self) {
-            let can_send_message = self.is_allowed_to(PowerLevelAction::SendMessage(
-                MessageLikeEventType::RoomMessage,
-            ));
-
-            if self.can_send_message.get() == can_send_message {
-                return;
-            }
-
-            self.can_send_message.set(can_send_message);
-            self.obj().notify_can_send_message();
-        }
-
-        /// Update whether our own member can send a sticker.
-        fn update_can_send_sticker(&self) {
-            let can_send_sticker =
-                self.is_allowed_to(PowerLevelAction::SendMessage(MessageLikeEventType::Sticker));
-
-            if self.can_send_sticker.get() == can_send_sticker {
-                return;
-            }
-
-            self.can_send_sticker.set(can_send_sticker);
-            self.obj().notify_can_send_sticker();
-        }
-
-        /// Update whether our own member can send a reaction.
-        fn update_can_send_reaction(&self) {
-            let can_send_reaction = self.is_allowed_to(PowerLevelAction::SendMessage(
-                MessageLikeEventType::Reaction,
-            ));
-
-            if self.can_send_reaction.get() == can_send_reaction {
-                return;
-            }
-
-            self.can_send_reaction.set(can_send_reaction);
-            self.obj().notify_can_send_reaction();
-        }
-
-        /// Update whether our own member can change the image packs of the
-        /// room.
-        fn update_can_change_image_packs(&self) {
-            // The packs that we create use the stable event type. A pack that
-            // was created under the unstable one is written back under that
-            // name, and a room that gives the two types different power levels
-            // would need this to be per pack, which is not worth the trouble:
-            // the request fails and the error is reported.
-            let can_change_image_packs = self.is_allowed_to(PowerLevelAction::SendState(
-                StateEventType::from(ROOM_IMAGE_PACK_EVENT_TYPE),
-            ));
-
-            if self.can_change_image_packs.get() == can_change_image_packs {
-                return;
-            }
-
-            self.can_change_image_packs.set(can_change_image_packs);
-            self.obj().notify_can_change_image_packs();
-        }
-
-        /// Update whether our own member can pin and unpin the events of the
-        /// room.
-        fn update_can_pin_events(&self) {
-            let can_pin_events = self.is_allowed_to(PowerLevelAction::SendState(
-                StateEventType::RoomPinnedEvents,
-            ));
-
-            if self.can_pin_events.get() == can_pin_events {
-                return;
-            }
-
-            self.can_pin_events.set(can_pin_events);
-            self.obj().notify_can_pin_events();
-        }
-
-        /// Update whether our own member can redact their own event.
-        fn update_can_redact_own(&self) {
-            let can_redact_own = self.is_allowed_to(PowerLevelAction::RedactOwn);
-
-            if self.can_redact_own.get() == can_redact_own {
-                return;
-            }
-
-            self.can_redact_own.set(can_redact_own);
-            self.obj().notify_can_redact_own();
-        }
-
-        /// Update whether our own member can redact the event of another user.
-        fn update_can_redact_other(&self) {
-            let can_redact_other = self.is_allowed_to(PowerLevelAction::RedactOther);
-
-            if self.can_redact_other.get() == can_redact_other {
-                return;
-            }
-
-            self.can_redact_other.set(can_redact_other);
-            self.obj().notify_can_redact_other();
-        }
-
-        /// Update whether our own member can notify the whole room.
-        fn update_can_notify_room(&self) {
-            let can_notify_room = self.is_allowed_to(PowerLevelAction::TriggerNotification(
-                NotificationPowerLevelType::Room,
-            ));
-
-            if self.can_notify_room.get() == can_notify_room {
-                return;
-            }
-
-            self.can_notify_room.set(can_notify_room);
-            self.obj().notify_can_notify_room();
+            obj.emit_by_name::<()>("changed", &[]);
         }
     }
 }
 
 glib::wrapper! {
     /// The permissions of our own user in a room.
+    ///
+    /// The permissions themselves are the core's; this presents them.
     pub struct Permissions(ObjectSubclass<imp::Permissions>);
 }
 
@@ -566,18 +357,43 @@ impl Permissions {
         glib::Object::new()
     }
 
-    /// Set our own member.
+    /// Set the room, load the core's permissions and follow them.
     pub(super) async fn init(&self, room: &Room) {
         let imp = self.imp();
 
         imp.room.set(Some(room));
-        imp.init_own_member(&room.own_member());
-        imp.init_power_levels().await;
+
+        let core = room.core().permissions().clone();
+
+        // The power levels come from the store, which wants the runtime.
+        let load = core.clone();
+        spawn_tokio!(async move { load.ensure_loaded().await })
+            .await
+            .expect("task was not aborted");
+
+        imp.watch_core(&core);
+        imp.core
+            .set(core)
+            .expect("core permissions are uninitialized");
+    }
+
+    /// The core's permissions, once the room is known.
+    fn core(&self) -> Option<&CorePermissions> {
+        self.imp().core.get()
     }
 
     /// The source of the power levels information.
     pub(crate) fn power_levels(&self) -> RoomPowerLevels {
-        self.imp().power_levels.borrow().clone()
+        self.core().map_or_else(
+            || {
+                RoomPowerLevels::new(
+                    ruma::events::room::power_levels::RoomPowerLevelsSource::None,
+                    &ruma::room_version_rules::AuthorizationRules::V1,
+                    None,
+                )
+            },
+            CorePermissions::power_levels,
+        )
     }
 
     /// The power level of our own member.
@@ -587,69 +403,34 @@ impl Permissions {
 
     /// The power level for the user with the given ID.
     pub(crate) fn user_power_level(&self, user_id: &UserId) -> UserPowerLevel {
-        self.imp().power_levels.borrow().for_user(user_id)
+        self.core().map_or(UserPowerLevel::Int(int!(0)), |core| {
+            core.user_power_level(user_id)
+        })
     }
 
     /// The current [`MemberRole`] for the given power level.
     pub(crate) fn role(&self, power_level: UserPowerLevel) -> MemberRole {
-        let UserPowerLevel::Int(power_level) = power_level else {
-            return MemberRole::Creator;
-        };
-
-        let power_level = i64::from(power_level);
-
-        if power_level >= POWER_LEVEL_ADMIN {
-            MemberRole::Administrator
-        } else if power_level >= POWER_LEVEL_MOD {
-            MemberRole::Moderator
-        } else if power_level == self.default_power_level() {
-            MemberRole::Default
-        } else if power_level < self.default_power_level() && power_level <= self.mute_power_level()
-        {
-            // Only set role as muted for members below default, to avoid visual noise in
-            // rooms where muted is the default.
-            MemberRole::Muted
-        } else {
-            MemberRole::Custom
-        }
+        self.core()
+            .map_or(MemberRole::Default, |core| core.role(power_level).into())
     }
 
     /// Whether our own member is allowed to do the given action.
     pub(crate) fn is_allowed_to(&self, room_action: PowerLevelAction) -> bool {
-        self.imp().is_allowed_to(room_action)
+        self.core()
+            .is_some_and(|core| core.is_allowed_to(room_action))
     }
 
     /// Whether our own user can do the given action on the user with the given
     /// ID.
     pub(crate) fn can_do_to_user(&self, user_id: &UserId, action: PowerLevelUserAction) -> bool {
-        let imp = self.imp();
-
-        if !self.is_joined() {
-            // We cannot do anything if the member is not joined.
-            return false;
-        }
-
-        let Some(own_member) = imp.own_member() else {
-            return false;
-        };
-        let own_user_id = own_member.user_id();
-
-        let power_levels = imp.power_levels.borrow();
-
-        if own_user_id == user_id {
-            // The only action we can do for our own user is change the power level, if it's
-            // not a creator.
-            return action == PowerLevelUserAction::ChangePowerLevel
-                && power_levels.user_can_change_user_power_level(own_user_id, own_user_id);
-        }
-
-        power_levels.user_can_do_to_user(own_user_id, user_id, action)
+        self.core()
+            .is_some_and(|core| core.can_do_to_user(user_id, action))
     }
 
     /// Whether our user can set the given power level for another user.
     pub(crate) fn can_set_user_power_level_to(&self, power_level: i64) -> bool {
-        self.is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomPowerLevels))
-            && self.own_power_level() >= Int::new_saturating(power_level)
+        self.core()
+            .is_some_and(|core| core.can_set_user_power_level_to(power_level))
     }
 
     /// Set the power level of the room member with the given user ID.
@@ -658,46 +439,35 @@ impl Permissions {
         user_id: OwnedUserId,
         power_level: Int,
     ) -> Result<(), ()> {
-        let Some(room) = self.room() else {
+        let Some(core) = self.core().cloned() else {
             return Err(());
         };
 
-        let matrix_room = room.matrix_room().clone();
-        let handle = spawn_tokio!(async move {
-            matrix_room
-                .update_power_levels(vec![(&user_id, power_level)])
-                .await
-        });
+        let handle =
+            spawn_tokio!(async move { core.set_user_power_level(user_id, power_level).await });
 
-        match handle.await.expect("task was not aborted") {
-            Ok(_) => Ok(()),
-            Err(error) => {
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
                 error!("Could not set user power level: {error}");
-                Err(())
-            }
-        }
+            })
     }
 
     /// Set the power levels.
     pub(crate) async fn set_power_levels(&self, power_levels: RoomPowerLevels) -> Result<(), ()> {
-        let Some(room) = self.room() else {
+        let Some(core) = self.core().cloned() else {
             return Err(());
         };
 
-        let event = RoomPowerLevelsEventContent::try_from(power_levels).map_err(|error| {
-            error!("Could not set power levels: {error}");
-        })?;
+        let handle = spawn_tokio!(async move { core.set_power_levels(power_levels).await });
 
-        let matrix_room = room.matrix_room().clone();
-        let handle = spawn_tokio!(async move { matrix_room.send_state_event(event).await });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(_) => Ok(()),
-            Err(error) => {
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
                 error!("Could not set power levels: {error}");
-                Err(())
-            }
-        }
+            })
     }
 
     /// Whether the user with the given ID is allowed to do the given action.
@@ -706,10 +476,8 @@ impl Permissions {
         user_id: &UserId,
         room_action: PowerLevelAction,
     ) -> bool {
-        self.imp()
-            .power_levels
-            .borrow()
-            .user_can_do(user_id, room_action)
+        self.core()
+            .is_some_and(|core| core.user_is_allowed_to(user_id, room_action))
     }
 
     /// Connect to the signal emitted when the permissions changed.

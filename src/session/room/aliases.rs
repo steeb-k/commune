@@ -1,17 +1,11 @@
+use commune_core::session::{AliasError, AliasesState};
 use gtk::{glib, glib::closure_local, prelude::*, subclass::prelude::*};
-use matrix_sdk::{deserialized_responses::RawSyncOrStrippedState, reqwest::StatusCode};
-use ruma::{
-    OwnedRoomAliasId,
-    api::client::{
-        alias::{create_alias, delete_alias},
-        room,
-    },
-    events::{SyncStateEvent, room::canonical_alias::RoomCanonicalAliasEventContent},
-};
+use ruma::OwnedRoomAliasId;
+use tokio::task::AbortHandle;
 use tracing::error;
 
 use super::Room;
-use crate::spawn_tokio;
+use crate::{core_bridge::ObjectWatcher, spawn_tokio};
 
 mod imp {
     use std::{cell::RefCell, marker::PhantomData, sync::LazyLock};
@@ -41,6 +35,8 @@ mod imp {
         /// If the canonical alias is not set, it can be an alt alias.
         #[property(get = Self::alias_string)]
         alias_string: PhantomData<Option<String>>,
+        /// The task following the core's aliases.
+        watch_handle: RefCell<Option<AbortHandle>>,
     }
 
     #[glib::object_subclass]
@@ -56,12 +52,45 @@ mod imp {
                 LazyLock::new(|| vec![Signal::builder("changed").build()]);
             SIGNALS.as_ref()
         }
+
+        fn dispose(&self) {
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
+            }
+        }
     }
 
     impl RoomAliases {
-        /// Set the room these aliases belong to.
+        /// Set the room these aliases belong to, and follow its core
+        /// aliases.
         pub(super) fn set_room(&self, room: &Room) {
             self.room.set(Some(room));
+
+            let core = room.core().aliases();
+
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(core.subscribe(), |obj: &super::RoomAliases, state| {
+                    obj.imp().set_state(&state);
+                })
+                .spawn();
+            self.watch_handle.replace(Some(handle));
+
+            // What the core already knows, after subscribing so that
+            // nothing between the two is lost.
+            self.set_state(&core.state());
+        }
+
+        /// Mirror the core's aliases.
+        fn set_state(&self, state: &AliasesState) {
+            let obj = self.obj();
+            let _guard = obj.freeze_notify();
+
+            let mut changed = self.set_canonical_alias(state.canonical_alias.clone());
+            changed |= self.set_alt_aliases(state.alt_aliases.clone());
+
+            if changed {
+                obj.emit_by_name::<()>("changed", &[]);
+            }
         }
 
         /// Set the canonical alias.
@@ -153,29 +182,14 @@ mod imp {
             self.canonical_alias_string()
                 .or_else(|| self.alt_aliases_model.string(0).map(Into::into))
         }
-
-        /// Update the aliases with the SDK data.
-        pub(super) fn update(&self) {
-            let Some(room) = self.room.upgrade() else {
-                return;
-            };
-
-            let obj = self.obj();
-            let _guard = obj.freeze_notify();
-
-            let matrix_room = room.matrix_room();
-            let mut changed = self.set_canonical_alias(matrix_room.canonical_alias());
-            changed |= self.set_alt_aliases(matrix_room.alt_aliases());
-
-            if changed {
-                obj.emit_by_name::<()>("changed", &[]);
-            }
-        }
     }
 }
 
 glib::wrapper! {
     /// Aliases of a room.
+    ///
+    /// The aliases themselves are the core's; this presents them, and hands
+    /// the addresses subpage's edits to it.
     pub struct RoomAliases(ObjectSubclass<imp::RoomAliases>);
 }
 
@@ -189,45 +203,9 @@ impl RoomAliases {
         self.imp().set_room(room);
     }
 
-    /// Update the aliases with the SDK data.
-    pub(crate) fn update(&self) {
-        self.imp().update();
-    }
-
-    /// Get the content of the canonical alias event from the store.
-    async fn canonical_alias_event_content(
-        &self,
-    ) -> Result<Option<RoomCanonicalAliasEventContent>, ()> {
-        let Some(room) = self.room() else {
-            return Err(());
-        };
-
-        let matrix_room = room.matrix_room().clone();
-        let handle = spawn_tokio!(async move {
-            matrix_room
-                .get_state_event_static::<RoomCanonicalAliasEventContent>()
-                .await
-        });
-
-        let raw_event = match handle.await.unwrap() {
-            Ok(Some(RawSyncOrStrippedState::Sync(raw_event))) => raw_event,
-            // We shouldn't need to load this is an invited room.
-            Ok(_) => return Ok(None),
-            Err(error) => {
-                error!("Could not get canonical alias event: {error}");
-                return Err(());
-            }
-        };
-
-        match raw_event.deserialize() {
-            Ok(SyncStateEvent::Original(event)) => Ok(Some(event.content)),
-            // The redacted event doesn't have a content.
-            Ok(_) => Ok(None),
-            Err(error) => {
-                error!("Could not deserialize canonical alias event: {error}");
-                Err(())
-            }
-        }
+    /// The core's room, if it is still around.
+    fn core_room(&self) -> Option<commune_core::session::Room> {
+        self.room().map(|room| room.core().clone())
     }
 
     /// The canonical alias.
@@ -239,77 +217,34 @@ impl RoomAliases {
     ///
     /// Checks that the canonical alias is the correct one before proceeding.
     pub(crate) async fn remove_canonical_alias(&self, alias: &OwnedRoomAliasId) -> Result<(), ()> {
-        let mut event_content = self
-            .canonical_alias_event_content()
-            .await?
-            .unwrap_or_default();
-
-        // Remove the canonical alias, if it is there.
-        if event_content.alias.take().is_none_or(|a| a != *alias) {
-            // Nothing to do.
-            return Err(());
-        }
-
-        let Some(room) = self.room() else {
+        let Some(core) = self.core_room() else {
             return Err(());
         };
+        let alias = alias.clone();
 
-        let matrix_room = room.matrix_room().clone();
-        let handle = spawn_tokio!(async move { matrix_room.send_state_event(event_content).await });
+        let handle =
+            spawn_tokio!(async move { core.aliases().remove_canonical_alias(&alias).await });
 
-        match handle.await.unwrap() {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                error!("Could not remove canonical alias: {error}");
-                Err(())
-            }
-        }
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| log_alias_error("remove canonical alias", &error))
     }
 
     /// Set the given alias to be the canonical alias.
     ///
     /// Removes the given alias from the alt aliases if it is in the list.
     pub(crate) async fn set_canonical_alias(&self, alias: OwnedRoomAliasId) -> Result<(), ()> {
-        let mut event_content = self
-            .canonical_alias_event_content()
-            .await?
-            .unwrap_or_default();
-
-        if event_content.alias.as_ref().is_some_and(|a| *a == alias) {
-            // Nothing to do.
-            return Err(());
-        }
-
-        let Some(room) = self.room() else {
+        let Some(core) = self.core_room() else {
             return Err(());
         };
 
-        // Remove from the alt aliases, if it is there.
-        let alt_alias_pos = event_content.alt_aliases.iter().position(|a| *a == alias);
-        if let Some(pos) = alt_alias_pos {
-            event_content.alt_aliases.remove(pos);
-        }
+        let handle = spawn_tokio!(async move { core.aliases().set_canonical_alias(alias).await });
 
-        // Set as canonical alias.
-        if let Some(old_canonical) = event_content.alias.replace(alias) {
-            // Move the old canonical alias to the alt aliases, if it is not there already.
-            let has_old_canonical = event_content.alt_aliases.contains(&old_canonical);
-
-            if !has_old_canonical {
-                event_content.alt_aliases.push(old_canonical);
-            }
-        }
-
-        let matrix_room = room.matrix_room().clone();
-        let handle = spawn_tokio!(async move { matrix_room.send_state_event(event_content).await });
-
-        match handle.await.unwrap() {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                error!("Could not set canonical alias: {error}");
-                Err(())
-            }
-        }
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| log_alias_error("set canonical alias", &error))
     }
 
     /// The other public aliases.
@@ -321,99 +256,43 @@ impl RoomAliases {
     ///
     /// Checks that is in the list of alt aliases before proceeding.
     pub(crate) async fn remove_alt_alias(&self, alias: &OwnedRoomAliasId) -> Result<(), ()> {
-        let mut event_content = self
-            .canonical_alias_event_content()
-            .await?
-            .unwrap_or_default();
-
-        // Remove from the alt aliases, if it is there.
-        let alt_alias_pos = event_content.alt_aliases.iter().position(|a| a == alias);
-        if let Some(pos) = alt_alias_pos {
-            event_content.alt_aliases.remove(pos);
-        } else {
-            // Nothing to do.
-            return Err(());
-        }
-
-        let Some(room) = self.room() else {
+        let Some(core) = self.core_room() else {
             return Err(());
         };
+        let alias = alias.clone();
 
-        let matrix_room = room.matrix_room().clone();
-        let handle = spawn_tokio!(async move { matrix_room.send_state_event(event_content).await });
+        let handle = spawn_tokio!(async move { core.aliases().remove_alt_alias(&alias).await });
 
-        match handle.await.unwrap() {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                error!("Could not remove alt alias: {error}");
-                Err(())
-            }
-        }
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| log_alias_error("remove alt alias", &error))
     }
 
     /// Set the given alias to be an alt alias.
     ///
-    /// Removes the given alias from the alt aliases if it is in the list.
+    /// The alias must be registered, and to this room.
     pub(crate) async fn add_alt_alias(
         &self,
         alias: OwnedRoomAliasId,
     ) -> Result<(), AddAltAliasError> {
-        let Ok(event_content) = self.canonical_alias_event_content().await else {
+        let Some(core) = self.core_room() else {
             return Err(AddAltAliasError::Other);
         };
 
-        let mut event_content = event_content.unwrap_or_default();
+        let handle = spawn_tokio!(async move { core.aliases().add_alt_alias(alias).await });
 
-        // Do nothing if it is already present.
-        if event_content.alias.as_ref().is_some_and(|a| *a == alias)
-            || event_content.alt_aliases.contains(&alias)
-        {
-            error!("Cannot add alias already listed");
-            return Err(AddAltAliasError::Other);
-        }
-
-        let Some(room) = self.room() else {
-            return Err(AddAltAliasError::Other);
-        };
-
-        let matrix_room = room.matrix_room().clone();
-
-        // Check that the alias exists and points to the proper room.
-        let client = matrix_room.client();
-        let alias_clone = alias.clone();
-        let handle = spawn_tokio!(async move { client.resolve_room_alias(&alias_clone).await });
-
-        match handle.await.unwrap() {
-            Ok(response) => {
-                if response.room_id != matrix_room.room_id() {
-                    error!("Cannot add alias that points to other room");
-                    return Err(AddAltAliasError::InvalidRoomId);
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| match error {
+                AliasError::NotRegistered => AddAltAliasError::NotRegistered,
+                AliasError::OtherRoom => AddAltAliasError::InvalidRoomId,
+                error => {
+                    log_alias_error("add alt alias", &error);
+                    AddAltAliasError::Other
                 }
-            }
-            Err(error) => {
-                error!("Could not check room alias: {error}");
-                if error
-                    .as_client_api_error()
-                    .is_some_and(|e| e.status_code == StatusCode::NOT_FOUND)
-                {
-                    return Err(AddAltAliasError::NotRegistered);
-                }
-
-                return Err(AddAltAliasError::Other);
-            }
-        }
-
-        // Add as alt alias.
-        event_content.alt_aliases.push(alias);
-        let handle = spawn_tokio!(async move { matrix_room.send_state_event(event_content).await });
-
-        match handle.await.unwrap() {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                error!("Could not add alt alias: {error}");
-                Err(AddAltAliasError::Other)
-            }
-        }
+            })
     }
 
     /// The main alias.
@@ -427,48 +306,31 @@ impl RoomAliases {
 
     /// Get the local aliases registered on the homeserver.
     pub(crate) async fn local_aliases(&self) -> Result<Vec<OwnedRoomAliasId>, ()> {
-        let Some(room) = self.room() else {
+        let Some(core) = self.core_room() else {
             return Err(());
         };
 
-        let matrix_room = room.matrix_room();
-        let client = matrix_room.client();
-        let room_id = matrix_room.room_id().to_owned();
+        let handle = spawn_tokio!(async move { core.aliases().local_aliases().await });
 
-        let handle =
-            spawn_tokio!(
-                async move { client.send(room::aliases::v3::Request::new(room_id)).await }
-            );
-
-        match handle.await.unwrap() {
-            Ok(response) => Ok(response.aliases),
-            Err(error) => {
-                error!("Could not fetch local room aliases: {error}");
-                Err(())
-            }
-        }
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| log_alias_error("fetch local room aliases", &error))
     }
 
     /// Unregister the given local alias.
     pub(crate) async fn unregister_local_alias(&self, alias: OwnedRoomAliasId) -> Result<(), ()> {
-        let Some(room) = self.room() else {
+        let Some(core) = self.core_room() else {
             return Err(());
         };
 
-        // Check that the alias exists and points to the proper room.
-        let matrix_room = room.matrix_room();
-        let client = matrix_room.client();
+        let handle =
+            spawn_tokio!(async move { core.aliases().unregister_local_alias(alias).await });
 
-        let request = delete_alias::v3::Request::new(alias);
-        let handle = spawn_tokio!(async move { client.send(request).await });
-
-        match handle.await.unwrap() {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                error!("Could not unregister local alias: {error}");
-                Err(())
-            }
-        }
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| log_alias_error("unregister local alias", &error))
     }
 
     /// Register the given local alias.
@@ -476,33 +338,22 @@ impl RoomAliases {
         &self,
         alias: OwnedRoomAliasId,
     ) -> Result<(), RegisterLocalAliasError> {
-        let Some(room) = self.room() else {
+        let Some(core) = self.core_room() else {
             return Err(RegisterLocalAliasError::Other);
         };
 
-        // Check that the alias exists and points to the proper room.
-        let matrix_room = room.matrix_room();
-        let client = matrix_room.client();
-        let room_id = matrix_room.room_id().to_owned();
+        let handle = spawn_tokio!(async move { core.aliases().register_local_alias(alias).await });
 
-        let request = create_alias::v3::Request::new(alias, room_id);
-        let handle = spawn_tokio!(async move { client.send(request).await });
-
-        match handle.await.unwrap() {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                error!("Could not register local alias: {error}");
-
-                if error
-                    .as_client_api_error()
-                    .is_some_and(|e| e.status_code == StatusCode::CONFLICT)
-                {
-                    Err(RegisterLocalAliasError::AlreadyInUse)
-                } else {
-                    Err(RegisterLocalAliasError::Other)
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| match error {
+                AliasError::AlreadyInUse => RegisterLocalAliasError::AlreadyInUse,
+                error => {
+                    log_alias_error("register local alias", &error);
+                    RegisterLocalAliasError::Other
                 }
-            }
-        }
+            })
     }
 
     /// Connect to the signal emitted when the aliases changed.
@@ -520,6 +371,16 @@ impl RoomAliases {
 impl Default for RoomAliases {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Log a refused or failed alias edit.
+///
+/// The core already says what the homeserver said; a refusal that changes
+/// nothing is the caller's to explain.
+fn log_alias_error(action: &str, error: &AliasError) {
+    if !matches!(error, AliasError::NothingToDo) {
+        error!("Could not {action}: {error}");
     }
 }
 

@@ -53,12 +53,6 @@ pub(crate) use self::{
 use super::{Room, Session};
 use crate::{spawn, spawn_tokio};
 
-/// The event type of the room image packs that we create.
-///
-/// Exposed so that the permission to change them can be checked without
-/// repeating the string.
-pub(crate) const ROOM_IMAGE_PACK_EVENT_TYPE: &str = RoomImagePackEventContent::TYPE;
-
 /// The state key of the first image pack of a room.
 const FIRST_STATE_KEY: &str = "";
 

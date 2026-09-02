@@ -1,3 +1,4 @@
+use commune_core::session::JoinRuleState;
 use gettextrs::gettext;
 use gtk::{
     glib,
@@ -5,16 +6,14 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use ruma::{
-    OwnedRoomId,
-    events::room::join_rules::{
-        AllowRule, JoinRule as MatrixJoinRule, Restricted, RoomJoinRulesEventContent,
-    },
-};
+use ruma::events::room::join_rules::JoinRule as MatrixJoinRule;
+use tokio::task::AbortHandle;
 use tracing::error;
 
-use super::{Membership, Room};
-use crate::{components::PillSource, gettext_f, spawn_tokio, utils::BoundObject};
+use super::Room;
+use crate::{
+    components::PillSource, core_bridge::ObjectWatcher, gettext_f, spawn_tokio, utils::BoundObject,
+};
 
 /// Simplified join rules.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
@@ -38,21 +37,33 @@ impl JoinRuleValue {
     }
 }
 
+impl From<commune_core::session::JoinRuleValue> for JoinRuleValue {
+    fn from(value: commune_core::session::JoinRuleValue) -> Self {
+        use commune_core::session::JoinRuleValue as Core;
+
+        match value {
+            Core::Invite => Self::Invite,
+            Core::Public => Self::Public,
+            Core::RoomMembership => Self::RoomMembership,
+            Core::Unsupported => Self::Unsupported,
+        }
+    }
+}
+
+impl From<JoinRuleValue> for commune_core::session::JoinRuleValue {
+    fn from(value: JoinRuleValue) -> Self {
+        match value {
+            JoinRuleValue::Invite => Self::Invite,
+            JoinRuleValue::Public => Self::Public,
+            JoinRuleValue::RoomMembership => Self::RoomMembership,
+            JoinRuleValue::Unsupported => Self::Unsupported,
+        }
+    }
+}
+
 impl From<&MatrixJoinRule> for JoinRuleValue {
     fn from(value: &MatrixJoinRule) -> Self {
-        match value {
-            MatrixJoinRule::Invite | MatrixJoinRule::Knock => Self::Invite,
-            MatrixJoinRule::Restricted(restricted)
-            | MatrixJoinRule::KnockRestricted(restricted) => {
-                if has_restricted_membership_room(restricted) {
-                    Self::RoomMembership
-                } else {
-                    Self::Unsupported
-                }
-            }
-            MatrixJoinRule::Public => Self::Public,
-            _ => Self::Unsupported,
-        }
+        commune_core::session::JoinRuleValue::from(value).into()
     }
 }
 
@@ -72,8 +83,6 @@ mod imp {
         /// The room where this join rule apply.
         #[property(get)]
         room: glib::WeakRef<Room>,
-        /// The current join rule from the SDK.
-        matrix_join_rule: RefCell<Option<MatrixJoinRule>>,
         /// The value of the join rule.
         #[property(get, builder(JoinRuleValue::default()))]
         value: Cell<JoinRuleValue>,
@@ -97,7 +106,8 @@ mod imp {
         /// Whether anyone can join this room on their own.
         #[property(get)]
         anyone_can_join: Cell<bool>,
-        own_membership_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// The task following the core's state.
+        watch_handle: RefCell<Option<AbortHandle>>,
     }
 
     #[glib::object_subclass]
@@ -115,63 +125,46 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(room) = self.room.upgrade()
-                && let Some(handler) = self.own_membership_handler.take()
-            {
-                room.own_member().disconnect(handler);
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
             }
         }
     }
 
     impl JoinRule {
-        /// Set the room where this join rule applies.
+        /// Set the room where this join rule applies, and follow its core
+        /// rule.
         pub(super) fn set_room(&self, room: &Room) {
             self.room.set(Some(room));
 
-            let own_membership_handler = room.own_member().connect_membership_notify(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                move |_| {
-                    imp.update_we_can_join();
-                }
-            ));
-            self.own_membership_handler
-                .replace(Some(own_membership_handler));
+            let core = room.core().join_rule();
+
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(core.subscribe(), |obj: &super::JoinRule, state| {
+                    obj.imp().set_state(&state);
+                })
+                .spawn();
+            self.watch_handle.replace(Some(handle));
+
+            // What the core already knows, after subscribing so that
+            // nothing between the two is lost.
+            self.set_state(&core.state());
         }
 
-        /// The current join rule from the SDK.
-        pub(super) fn matrix_join_rule(&self) -> Option<MatrixJoinRule> {
-            self.matrix_join_rule.borrow().clone()
-        }
-
-        /// Update the join rule.
-        pub(super) fn update_join_rule(&self, join_rule: Option<&MatrixJoinRule>) {
-            if self.matrix_join_rule.borrow().as_ref() == join_rule {
-                return;
-            }
-
-            self.matrix_join_rule.replace(join_rule.cloned());
-
-            self.update_value();
-            self.update_can_knock();
-            self.update_membership_room();
+        /// Mirror the core's state into the properties.
+        fn set_state(&self, state: &JoinRuleState) {
+            self.set_value(state.value.into());
+            self.set_can_knock(state.can_knock);
+            self.update_membership_room(state);
             self.update_display_name();
-
-            self.update_we_can_join();
-            self.update_anyone_can_join();
+            self.set_we_can_join(state.we_can_join);
+            self.set_anyone_can_join(state.anyone_can_join);
 
             self.obj().emit_by_name::<()>("changed", &[]);
         }
 
-        /// Update the value of the join rule.
-        fn update_value(&self) {
-            let value = self
-                .matrix_join_rule
-                .borrow()
-                .as_ref()
-                .map(Into::into)
-                .unwrap_or_default();
-
+        /// Set the value of the join rule.
+        fn set_value(&self, value: JoinRuleValue) {
             if self.value.get() == value {
                 return;
             }
@@ -180,15 +173,8 @@ mod imp {
             self.obj().notify_value();
         }
 
-        /// Update whether users can knock.
-        fn update_can_knock(&self) {
-            let can_knock = self.matrix_join_rule.borrow().as_ref().is_some_and(|r| {
-                matches!(
-                    r,
-                    MatrixJoinRule::Knock | MatrixJoinRule::KnockRestricted(_)
-                )
-            });
-
+        /// Set whether users can knock.
+        fn set_can_knock(&self, can_knock: bool) {
             if self.can_knock.get() == can_knock {
                 return;
             }
@@ -198,18 +184,8 @@ mod imp {
         }
 
         /// Set the room we need to be a member of to match this join rule.
-        fn update_membership_room(&self) {
-            let room_id = self
-                .matrix_join_rule
-                .borrow()
-                .as_ref()
-                .and_then(|r| match r {
-                    MatrixJoinRule::Restricted(restricted)
-                    | MatrixJoinRule::KnockRestricted(restricted) => {
-                        restricted_membership_room(restricted)
-                    }
-                    _ => None,
-                });
+        fn update_membership_room(&self, state: &JoinRuleState) {
+            let room_id = state.membership_room_id.clone();
 
             if self
                 .membership_room
@@ -296,10 +272,8 @@ mod imp {
             self.obj().notify_display_name();
         }
 
-        /// Update whether our own user can join this room on their own.
-        fn update_we_can_join(&self) {
-            let we_can_join = self.we_can_join();
-
+        /// Set whether our own user can join this room on their own.
+        fn set_we_can_join(&self, we_can_join: bool) {
             if self.we_can_join.get() == we_can_join {
                 return;
             }
@@ -308,37 +282,8 @@ mod imp {
             self.obj().notify_we_can_join();
         }
 
-        /// Whether our own user can join this room on their own.
-        fn we_can_join(&self) -> bool {
-            let Some(matrix_join_rule) = self.matrix_join_rule() else {
-                return false;
-            };
-            let Some(room) = self.room.upgrade() else {
-                return false;
-            };
-
-            if room.own_member().membership() == Membership::Ban {
-                return false;
-            }
-
-            match matrix_join_rule {
-                MatrixJoinRule::Public => true,
-                MatrixJoinRule::Restricted(rules) | MatrixJoinRule::KnockRestricted(rules) => rules
-                    .allow
-                    .into_iter()
-                    .any(|rule| we_pass_restricted_allow_rule(&room, rule)),
-                _ => false,
-            }
-        }
-
-        /// Update whether our own user can join this room on their own.
-        fn update_anyone_can_join(&self) {
-            let anyone_can_join = self
-                .matrix_join_rule
-                .borrow()
-                .as_ref()
-                .is_some_and(|r| *r == MatrixJoinRule::Public);
-
+        /// Set whether anyone can join this room on their own.
+        fn set_anyone_can_join(&self, anyone_can_join: bool) {
             if self.anyone_can_join.get() == anyone_can_join {
                 return;
             }
@@ -351,6 +296,9 @@ mod imp {
 
 glib::wrapper! {
     /// The join rule of a room.
+    ///
+    /// The rule itself is the core's; this presents it, with the sentence
+    /// the interface shows for it.
     pub struct JoinRule(ObjectSubclass<imp::JoinRule>);
 }
 
@@ -364,14 +312,10 @@ impl JoinRule {
         self.imp().set_room(room);
     }
 
-    /// Update the join rule with the given value from the SDK.
-    pub(super) fn update(&self, join_rule: Option<&MatrixJoinRule>) {
-        self.imp().update_join_rule(join_rule);
-    }
-
     /// Get the current join rule from the SDK.
     pub(crate) fn matrix_join_rule(&self) -> Option<MatrixJoinRule> {
-        self.imp().matrix_join_rule()
+        self.room()
+            .and_then(|room| room.core().join_rule().matrix_join_rule())
     }
 
     /// Change the join rule.
@@ -380,18 +324,15 @@ impl JoinRule {
             return Err(());
         };
 
-        let content = RoomJoinRulesEventContent::new(rule);
+        let core = room.core().clone();
+        let handle = spawn_tokio!(async move { core.join_rule().set_matrix_join_rule(rule).await });
 
-        let matrix_room = room.matrix_room().clone();
-        let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
-
-        match handle.await.expect("task was not aborted") {
-            Ok(_) => Ok(()),
-            Err(error) => {
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
                 error!("Could not change join rule: {error}");
-                Err(())
-            }
-        }
+            })
     }
 
     /// Connect to the signal emitted when the join rule changed.
@@ -409,34 +350,5 @@ impl JoinRule {
 impl Default for JoinRule {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-/// Whether the given restricted rule allows a room membership.
-fn has_restricted_membership_room(restricted: &Restricted) -> bool {
-    restricted
-        .allow
-        .iter()
-        .any(|a| matches!(a, AllowRule::RoomMembership(_)))
-}
-
-/// The ID of the first room, if the given restricted rule allows a room
-/// membership.
-fn restricted_membership_room(restricted: &Restricted) -> Option<OwnedRoomId> {
-    restricted.allow.iter().find_map(|a| match a {
-        AllowRule::RoomMembership(m) => Some(m.room_id.clone()),
-        _ => None,
-    })
-}
-
-/// Whether our account passes the given restricted allow rule.
-fn we_pass_restricted_allow_rule(room: &Room, rule: AllowRule) -> bool {
-    match rule {
-        AllowRule::RoomMembership(room_membership) => room.session().is_some_and(|s| {
-            s.room_list()
-                .get_by_identifier((&*room_membership.room_id).into())
-                .is_some_and(|room| room.is_joined())
-        }),
-        _ => false,
     }
 }

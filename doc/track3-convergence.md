@@ -2028,6 +2028,47 @@ a member whose name changes while the list is open, two members sharing
 a name, the inviter on an invite, and a call hung up by the other party
 leaving.
 
+### Module 4 — permissions, the join rule and the aliases are views
+
+**Done 2 September.** The three objects Phase 3 already wrote headless
+get their `GObject` fronts: 401 lines in, 908 out, across the three
+files and the room. Each is the same shape. `Permissions` follows the
+core's `PermissionsState` — one stream, fourteen `can_*` mirrors, the
+joined flag, the default and mute levels, and the own power level, whose
+change still fires `own-power-level-changed` and still reaches the own
+member, which is here before any member list is; every query — `role`,
+`is_allowed_to`, `can_do_to_user`, `user_is_allowed_to`, the power
+levels — forwards, and the two setters forward and keep their
+`Result<(), ()>` for their callers. `JoinRule` follows `JoinRuleState`:
+value, knocking, the membership room resolved from its ID to a local
+room or the remote cache as before, and the two can-join flags; the
+sentence with its four translations stays here. `RoomAliases` follows
+`AliasesState`, keeping the `GtkStringList` splice, and hands the seven
+edits to the core, mapping `AliasError` back onto the application's two
+small enums and its `Result<(), ()>`s. `init()` on each is where the
+watcher starts; `Permissions::init` awaits the core's `ensure_loaded`
+on the runtime first, since the power levels come from the store.
+
+**The room's last own room-info subscription is gone.** The application's
+`Room` had kept `watch_room_info` for exactly these two objects; with
+them following the core, it and `update_with_room_info` are deleted, and
+the room reads the SDK's room info nowhere. What the room still reads
+from the SDK directly is the version, federation and call flags — pure
+getters — and the member-event watch the desktop's calls need until
+module 11.
+
+**What died of the move.** `ROOM_IMAGE_PACK_EVENT_TYPE`, which existed
+so the permission to change packs could be checked without repeating a
+string; the core checks it. The `JoinRule`'s own membership watch, since
+the core recomputes whether we can join on every room-info update, where
+our membership arrives. The helpers that read a restricted rule, which
+the core's `JoinRuleValue` conversion carries — the application's `From`
+goes through it now.
+
+**Eyeball owed:** the permissions subpage and every control it enables,
+the join-rule subpage in all four values and the knock switch, the
+addresses subpage's seven edits and their refusals.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
