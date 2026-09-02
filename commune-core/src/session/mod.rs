@@ -83,11 +83,12 @@ pub use self::{
     notifications::PushError,
     remote::{RemoteRoom, RemoteRoomError, SpaceChild, SpaceChildren, SpaceChildrenError},
     room::{
-        ComposerChunk, MAX_BATCH_SIZE, MediaHistoryError, MediaHistoryEvent, MediaHistoryKind,
+        AliasError, AliasesState, ComposerChunk, HistoryVisibilityValue, JoinRule, JoinRuleState,
+        JoinRuleValue, MAX_BATCH_SIZE, MediaHistoryError, MediaHistoryEvent, MediaHistoryKind,
         MediaHistoryPage, Member, MemberList, MemberRole, Membership, ReceiptPosition, Room,
-        RoomCategory, RoomDetailsError, RoomDisplayName, RoomHighlight, RoomSearch, SearchError,
-        SearchResult, TargetRoomCategory, Timeline, TimelineError, TimelineFocusKind,
-        check_upload_size, compose_message, emoticon_plain,
+        RoomAliases, RoomCategory, RoomDetailsError, RoomDisplayName, RoomHighlight, RoomSearch,
+        RoomSettingsError, SearchError, SearchResult, TargetRoomCategory, Timeline, TimelineError,
+        TimelineFocusKind, check_upload_size, compose_message, compute_join_rule, emoticon_plain,
     },
     room_list::{DirectChatError, JoinError, RoomList, RoomMetainfo},
     security::{

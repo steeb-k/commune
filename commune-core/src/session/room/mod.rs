@@ -17,8 +17,10 @@
 //! Strings policy: the display name is handed out as the semantic
 //! [`RoomDisplayName`] — "Empty Room (was X)" is the UI's sentence to make.
 
+mod aliases;
 mod category;
 mod composer;
+mod join_rule;
 mod media_history;
 mod member;
 mod search;
@@ -36,14 +38,23 @@ use matrix_sdk::{
     deserialized_responses::RawSyncOrStrippedState, room::Room as MatrixRoom,
 };
 use ruma::{
-    MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedMxcUri, OwnedRoomId, OwnedUserId, RoomId,
-    api::client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
+    MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedMxcUri, OwnedRoomId, OwnedUserId, RoomId, UInt,
+    api::client::{
+        directory::{get_room_visibility, set_room_visibility},
+        receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
+        room::Visibility,
+    },
     events::{
         AnySyncTimelineEvent,
-        room::member::{MembershipState, RoomMemberEventContent},
+        room::{
+            avatar::ImageInfo as AvatarImageInfo,
+            history_visibility::{HistoryVisibility, RoomHistoryVisibilityEventContent},
+            member::{MembershipState, RoomMemberEventContent},
+        },
         tag::TagName,
     },
     matrix_uri::MatrixToUri,
+    room_version_rules::RoomVersionRules,
     serde::Raw,
 };
 use serde::Deserialize;
@@ -52,8 +63,10 @@ use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
 pub use self::{
+    aliases::{AliasError, AliasesState, RoomAliases},
     category::{RoomCategory, RoomHighlight, TargetRoomCategory},
     composer::{ComposerChunk, compose_message, emoticon_plain},
+    join_rule::{JoinRule, JoinRuleState, JoinRuleValue, compute_join_rule},
     media_history::{MediaHistoryError, MediaHistoryEvent, MediaHistoryKind, MediaHistoryPage},
     member::{Member, MemberList, MemberRole, Membership},
     search::{RoomSearch, SearchError, SearchResult},
@@ -132,6 +145,112 @@ impl UserFacingError for RoomDetailsError {
     }
 }
 
+/// An error encountered while changing the settings of a room.
+#[derive(Debug, thiserror::Error)]
+pub enum RoomSettingsError {
+    /// The room is not joined, so its settings cannot be changed.
+    #[error("the room is not joined")]
+    NotJoined,
+    /// The value cannot be sent: the application never offers it.
+    #[error("the value is not supported")]
+    Unsupported,
+    /// The join rule could not be changed.
+    ///
+    /// Boxed because `matrix_sdk::Error` is large enough that carrying it
+    /// by value makes every `Result` here expensive.
+    #[error(transparent)]
+    JoinRule(Box<matrix_sdk::Error>),
+    /// The history visibility could not be changed.
+    #[error(transparent)]
+    HistoryVisibility(Box<matrix_sdk::Error>),
+    /// Whether the room is published in the directory could not be read.
+    #[error(transparent)]
+    Directory(Box<matrix_sdk::Error>),
+    /// The room could not be published in, or withdrawn from, the
+    /// directory.
+    #[error("could not {} the room", if *published { "publish" } else { "unpublish" })]
+    Publish {
+        /// Whether the room was being published.
+        published: bool,
+        /// The request's error.
+        error: Box<matrix_sdk::Error>,
+    },
+    /// The avatar could not be uploaded.
+    #[error(transparent)]
+    AvatarUpload(Box<matrix_sdk::Error>),
+    /// The avatar could not be changed.
+    #[error(transparent)]
+    Avatar(Box<matrix_sdk::Error>),
+    /// The avatar could not be removed.
+    #[error(transparent)]
+    AvatarRemove(Box<matrix_sdk::Error>),
+}
+
+impl UserFacingError for RoomSettingsError {
+    fn to_user_facing(&self) -> String {
+        match self {
+            Self::NotJoined => "The room is not joined".to_owned(),
+            Self::Unsupported => "This value is not supported".to_owned(),
+            Self::JoinRule(_) => "Could not change who can join".to_owned(),
+            Self::HistoryVisibility(_) => "Could not change who can read history".to_owned(),
+            Self::Directory(_) => "Could not get directory visibility of room".to_owned(),
+            Self::Publish {
+                published: true, ..
+            } => "Could not publish room in directory".to_owned(),
+            Self::Publish {
+                published: false, ..
+            } => "Could not unpublish room from directory".to_owned(),
+            Self::AvatarUpload(_) => "Could not upload avatar".to_owned(),
+            Self::Avatar(_) => "Could not change avatar".to_owned(),
+            Self::AvatarRemove(_) => "Could not remove avatar".to_owned(),
+        }
+    }
+}
+
+/// Who can read the history of a room.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum HistoryVisibilityValue {
+    /// Anyone can read.
+    WorldReadable,
+    /// Members, since this was selected.
+    #[default]
+    Shared,
+    /// Members, since they were invited.
+    Invited,
+    /// Members, since they joined.
+    Joined,
+    /// Unsupported value.
+    Unsupported,
+}
+
+impl From<HistoryVisibility> for HistoryVisibilityValue {
+    fn from(value: HistoryVisibility) -> Self {
+        match value {
+            HistoryVisibility::Invited => Self::Invited,
+            HistoryVisibility::Joined => Self::Joined,
+            HistoryVisibility::Shared => Self::Shared,
+            HistoryVisibility::WorldReadable => Self::WorldReadable,
+            _ => Self::Unsupported,
+        }
+    }
+}
+
+impl HistoryVisibilityValue {
+    /// The specification's value, if this is one that can be sent.
+    ///
+    /// The application's conversion panics on the unsupported value, which
+    /// its page never selects; the core refuses instead.
+    fn to_history_visibility(self) -> Option<HistoryVisibility> {
+        match self {
+            Self::Invited => Some(HistoryVisibility::Invited),
+            Self::Joined => Some(HistoryVisibility::Joined),
+            Self::Shared => Some(HistoryVisibility::Shared),
+            Self::WorldReadable => Some(HistoryVisibility::WorldReadable),
+            Self::Unsupported => None,
+        }
+    }
+}
+
 /// A Matrix room.
 ///
 /// Cheap to clone; every clone shares the same state.
@@ -206,6 +325,12 @@ struct RoomInner {
     highlight: SharedObservable<RoomHighlight>,
     /// Whether this room is encrypted.
     is_encrypted: SharedObservable<bool>,
+    /// The aliases of this room.
+    aliases: RoomAliases,
+    /// The join rule of this room.
+    join_rule: JoinRule,
+    /// Who can read the history of this room.
+    history_visibility: SharedObservable<HistoryVisibilityValue>,
     /// Whether this room was forgotten.
     forgotten: SharedObservable<bool>,
     /// Whether the room info is initialized.
@@ -246,6 +371,8 @@ impl Room {
         metainfo: Option<RoomMetainfo>,
     ) -> Self {
         let inner = Arc::new(RoomInner {
+            aliases: RoomAliases::new(matrix_room.clone()),
+            join_rule: JoinRule::new(matrix_room.clone(), session.downgrade()),
             matrix_room,
             session: session.downgrade(),
             name: SharedObservable::new(None),
@@ -271,6 +398,7 @@ impl Room {
             has_notifications: SharedObservable::new(false),
             highlight: SharedObservable::new(RoomHighlight::default()),
             is_encrypted: SharedObservable::new(false),
+            history_visibility: SharedObservable::new(HistoryVisibilityValue::default()),
             forgotten: SharedObservable::new(false),
             is_room_info_initialized: SharedObservable::new(false),
             attempted_auto_join: AtomicBool::new(false),
@@ -810,6 +938,179 @@ impl Room {
                 self.room_id().matrix_to_event_uri(event_id)
             }
         }
+    }
+
+    /// The aliases of this room.
+    #[must_use]
+    pub fn aliases(&self) -> &RoomAliases {
+        &self.inner.aliases
+    }
+
+    /// The join rule of this room.
+    #[must_use]
+    pub fn join_rule(&self) -> &JoinRule {
+        &self.inner.join_rule
+    }
+
+    /// Who can read the history of this room.
+    #[must_use]
+    pub fn history_visibility(&self) -> HistoryVisibilityValue {
+        self.inner.history_visibility.get()
+    }
+
+    /// Subscribe to who can read the history of this room.
+    pub fn subscribe_history_visibility(&self) -> Subscriber<HistoryVisibilityValue> {
+        self.inner.history_visibility.subscribe()
+    }
+
+    /// The rules for the version of this room.
+    #[must_use]
+    pub fn rules(&self) -> RoomVersionRules {
+        self.inner
+            .matrix_room
+            .clone_info()
+            .room_version_rules_or_default()
+    }
+
+    /// Change who can read the history of this room.
+    ///
+    /// The unsupported value is refused; the history-visibility page never
+    /// offers it.
+    pub async fn set_history_visibility(
+        &self,
+        value: HistoryVisibilityValue,
+    ) -> Result<(), RoomSettingsError> {
+        let visibility = value
+            .to_history_visibility()
+            .ok_or(RoomSettingsError::Unsupported)?;
+        let content = RoomHistoryVisibilityEventContent::new(visibility);
+
+        let matrix_room = self.inner.matrix_room.clone();
+        let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_response| ())
+            .map_err(|send_error| {
+                error!("Could not change room history visibility: {send_error}");
+                RoomSettingsError::HistoryVisibility(Box::new(send_error))
+            })
+    }
+
+    /// Whether this room is published in the homeserver's directory.
+    pub async fn is_published(&self) -> Result<bool, RoomSettingsError> {
+        let client = self.inner.matrix_room.client();
+        let request = get_room_visibility::v3::Request::new(self.room_id().to_owned());
+
+        let handle = spawn_tokio!(async move { client.send(request).await });
+
+        match handle.await.expect("task was not aborted") {
+            Ok(response) => Ok(response.visibility == Visibility::Public),
+            Err(directory_error) => {
+                error!("Could not get directory visibility of room: {directory_error}");
+                Err(RoomSettingsError::Directory(Box::new(
+                    directory_error.into(),
+                )))
+            }
+        }
+    }
+
+    /// Publish this room in the homeserver's directory, or withdraw it.
+    pub async fn set_published(&self, published: bool) -> Result<(), RoomSettingsError> {
+        let visibility = if published {
+            Visibility::Public
+        } else {
+            Visibility::Private
+        };
+
+        let client = self.inner.matrix_room.client();
+        let request = set_room_visibility::v3::Request::new(self.room_id().to_owned(), visibility);
+
+        let handle = spawn_tokio!(async move { client.send(request).await });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_response| ())
+            .map_err(|publish_error| {
+                error!("Could not change directory visibility of room: {publish_error}");
+                RoomSettingsError::Publish {
+                    published,
+                    error: Box::new(publish_error.into()),
+                }
+            })
+    }
+
+    /// Change the avatar of this room: upload the given image, then point
+    /// `m.room.avatar` at it, with the dimensions the embedder decoded.
+    ///
+    /// Refused when the room is not joined. Success is not reported beyond
+    /// the request: the change comes back through sync.
+    pub async fn set_avatar(
+        &self,
+        mime: &mime::Mime,
+        data: Vec<u8>,
+        width: Option<UInt>,
+        height: Option<UInt>,
+    ) -> Result<(), RoomSettingsError> {
+        if !self.is_joined() {
+            error!("Cannot change avatar of room not joined");
+            return Err(RoomSettingsError::NotJoined);
+        }
+
+        let mut image_info = AvatarImageInfo::new();
+        image_info.width = width;
+        image_info.height = height;
+        image_info.size = u64::try_from(data.len()).ok().and_then(UInt::new);
+        image_info.mimetype = Some(mime.to_string());
+
+        let client = self.inner.matrix_room.client();
+        let mime = mime.clone();
+        let handle = spawn_tokio!(async move { client.media().upload(&mime, data, None).await });
+
+        let uri: OwnedMxcUri = match handle.await.expect("task was not aborted") {
+            Ok(response) => response.content_uri,
+            Err(upload_error) => {
+                error!("Could not upload room avatar: {upload_error}");
+                return Err(RoomSettingsError::AvatarUpload(Box::new(upload_error)));
+            }
+        };
+
+        let matrix_room = self.inner.matrix_room.clone();
+        let handle =
+            spawn_tokio!(async move { matrix_room.set_avatar_url(&uri, Some(image_info)).await });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_response| ())
+            .map_err(|set_error| {
+                error!("Could not change room avatar: {set_error}");
+                RoomSettingsError::Avatar(Box::new(set_error))
+            })
+    }
+
+    /// Remove the avatar of this room.
+    ///
+    /// Refused when the room is not joined.
+    pub async fn remove_avatar(&self) -> Result<(), RoomSettingsError> {
+        if !self.is_joined() {
+            error!("Cannot remove avatar of room not joined");
+            return Err(RoomSettingsError::NotJoined);
+        }
+
+        let matrix_room = self.inner.matrix_room.clone();
+        let handle = spawn_tokio!(async move { matrix_room.remove_avatar().await });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_response| ())
+            .map_err(|remove_error| {
+                error!("Could not remove room avatar: {remove_error}");
+                RoomSettingsError::AvatarRemove(Box::new(remove_error))
+            })
     }
 
     /// The display name of the direct member, if this is a direct chat
@@ -1693,8 +1994,17 @@ impl RoomInner {
             self.is_read.set_if_not_eq(false);
         }
         self.update_highlight();
-        // The aliases, server notice, pinned events, join rule, guest access
-        // and history visibility updates attach here with their chunks.
+        self.aliases.update();
+        self.join_rule.update(room_info.join_rule());
+        self.update_history_visibility();
+        // The server notice, pinned events and guest access updates attach
+        // here with their groups.
+    }
+
+    /// Update the visibility of the history.
+    fn update_history_visibility(&self) {
+        let visibility = self.matrix_room.history_visibility_or_default().into();
+        self.history_visibility.set_if_not_eq(visibility);
     }
 
     /// Change the category of this room.
