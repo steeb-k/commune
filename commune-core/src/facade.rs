@@ -255,6 +255,76 @@ impl From<crate::session::ImagePacksError> for CoreError {
     }
 }
 
+impl From<crate::session::VerificationError> for CoreError {
+    fn from(error: crate::session::VerificationError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::BootstrapError> for CoreError {
+    fn from(error: crate::session::BootstrapError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::RecoveryError> for CoreError {
+    fn from(error: crate::session::RecoveryError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::RoomKeysError> for CoreError {
+    fn from(error: crate::session::RoomKeysError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
+impl From<crate::session::RecoveryState> for FfiRecoveryState {
+    fn from(state: crate::session::RecoveryState) -> Self {
+        use crate::session::RecoveryState;
+
+        match state {
+            RecoveryState::Unknown => Self::Unknown,
+            RecoveryState::Enabled => Self::Enabled,
+            RecoveryState::Disabled => Self::Disabled,
+            RecoveryState::Incomplete => Self::Incomplete,
+        }
+    }
+}
+
+impl From<crate::session::CryptoIdentityState> for FfiCryptoIdentityState {
+    fn from(state: crate::session::CryptoIdentityState) -> Self {
+        use crate::session::CryptoIdentityState;
+
+        match state {
+            CryptoIdentityState::Unknown => Self::Unknown,
+            CryptoIdentityState::Missing => Self::Missing,
+            CryptoIdentityState::LastManStanding => Self::LastManStanding,
+            CryptoIdentityState::OtherSessions => Self::OtherSessions,
+        }
+    }
+}
+
+impl From<crate::session::SessionVerificationState> for FfiVerificationState {
+    fn from(state: crate::session::SessionVerificationState) -> Self {
+        use crate::session::SessionVerificationState;
+
+        match state {
+            SessionVerificationState::Unknown => Self::Unknown,
+            SessionVerificationState::Verified => Self::Verified,
+            SessionVerificationState::Unverified => Self::Unverified,
+        }
+    }
+}
+
 /// A room's display name, semantically: the Empty variants are the UI's
 /// sentences to make.
 #[derive(uniffi::Enum)]
@@ -898,7 +968,7 @@ pub struct CoreApp {
     /// The task feeding the pinned-events listener.
     pinned_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
     /// The verification listener and the flows in progress.
-    verification: Arc<VerificationFlows>,
+    verification: Arc<VerificationBridge>,
     /// The task feeding the member-list listener.
     member_list_listener_handle: Mutex<Option<tokio::task::AbortHandle>>,
     /// The login the discovery step started, kept for the flow's next
@@ -921,7 +991,7 @@ impl CoreApp {
             typing_listener_handle: Mutex::new(None),
             thread_listener_handle: Mutex::new(None),
             pinned_listener_handle: Mutex::new(None),
-            verification: Arc::new(VerificationFlows::default()),
+            verification: Arc::new(VerificationBridge::default()),
             member_list_listener_handle: Mutex::new(None),
             pending_login: Mutex::new(None),
             calls: Arc::new(CallFlows::default()),
@@ -2613,18 +2683,18 @@ impl CoreApp {
     /// Replaces any previous listener; registering starts watching for
     /// incoming requests.
     pub fn set_verification_listener(&self, listener: Arc<dyn VerificationListener>) {
-        let flows = self.verification.clone();
+        let bridge = self.verification.clone();
 
-        *flows.listener.lock().expect("mutex is not poisoned") = Some(listener);
+        *bridge.listener.lock().expect("mutex is not poisoned") = Some(listener);
 
-        // As with calls: handlers belong to one client, and an account
-        // switch hands us a different one. Installing once per ready
-        // session and no more is what the bound id records.
+        // As with calls: the list belongs to one session, and an account
+        // switch hands us a different one. Following once per ready session
+        // and no more is what the bound id records.
         let active_id = self
             .first_ready_session()
             .map(|session| session.session_id().to_owned());
         if active_id.is_some() {
-            let mut bound = flows.bound_session.lock().expect("mutex is not poisoned");
+            let mut bound = bridge.bound_session.lock().expect("mutex is not poisoned");
             if *bound == active_id {
                 return;
             }
@@ -2632,107 +2702,53 @@ impl CoreApp {
         }
 
         let list = self.session_list.clone();
-        RUNTIME.spawn(async move {
-            use ruma::events::key::verification::{
-                request::ToDeviceKeyVerificationRequestEvent,
-                start::ToDeviceKeyVerificationStartEvent,
-            };
+        let watcher = bridge.clone();
+        let handle = RUNTIME
+            .spawn(async move {
+                use ruma::events::key::verification::VerificationMethod;
 
-            let session = wait_for_ready_session(&list).await;
-            let client = session.client();
+                let session = wait_for_ready_session(&list).await;
+                let verifications = session.verification_list().clone();
 
-            let flows_for_request = flows.clone();
-            client.add_event_handler(
-                move |event: ToDeviceKeyVerificationRequestEvent, client: matrix_sdk::Client| {
-                    let flows = flows_for_request.clone();
-                    async move {
-                        let flow_id = event.content.transaction_id.to_string();
-                        tracing::info!(
-                            "Verification request event from {}: {flow_id}",
-                            event.sender
-                        );
-                        let Some(request) = client
-                            .encryption()
-                            .get_verification_request(&event.sender, &event.content.transaction_id)
-                            .await
-                        else {
-                            tracing::warn!("Request {flow_id} not found in the SDK");
-                            return;
-                        };
-                        flows.insert_request(flow_id.clone(), request);
-                        flows.emit(|listener| {
-                            listener.on_request(flow_id.clone(), event.sender.to_string());
-                        });
-                    }
-                },
-            );
+                // This side can scan a QR code and compare emojis, but has
+                // nowhere to show a QR code of its own.
+                verifications.set_supported_methods(vec![
+                    VerificationMethod::SasV1,
+                    VerificationMethod::QrCodeScanV1,
+                    VerificationMethod::ReciprocateV1,
+                ]);
 
-            // A verification request from another user arrives in the
-            // direct chat as a message, per the application's
-            // identity_verification_view.
-            let flows_for_room = flows.clone();
-            client.add_event_handler(
-                move |event: ruma::events::room::message::OriginalSyncRoomMessageEvent,
-                      client: matrix_sdk::Client| {
-                    let flows = flows_for_room.clone();
-                    async move {
-                        use ruma::events::room::message::MessageType;
-
-                        if !matches!(event.content.msgtype, MessageType::VerificationRequest(_)) {
-                            return;
+                // Follow every verification the list holds, now and as they
+                // arrive; the core's list is what the application's
+                // notifications and views bind to.
+                let mut changed = verifications.subscribe_changed();
+                loop {
+                    for verification in verifications.snapshot() {
+                        let flow_id = verification.flow_id().to_owned();
+                        let is_new = watcher
+                            .followed
+                            .lock()
+                            .expect("mutex is not poisoned")
+                            .insert(flow_id);
+                        if is_new {
+                            watcher.clone().follow(verification);
                         }
-                        if client.user_id().is_some_and(|own| own == event.sender) {
-                            return;
-                        }
-                        let flow_id = event.event_id.to_string();
-                        tracing::info!(
-                            "In-room verification request from {}: {flow_id}",
-                            event.sender
-                        );
-                        let Some(request) = client
-                            .encryption()
-                            .get_verification_request(&event.sender, &event.event_id)
-                            .await
-                        else {
-                            tracing::warn!("In-room request {flow_id} not found in the SDK");
-                            return;
-                        };
-                        flows.insert_request(flow_id.clone(), request);
-                        flows.emit(|listener| {
-                            listener.on_request(flow_id.clone(), event.sender.to_string());
-                        });
                     }
-                },
-            );
-
-            let flows_for_start = flows.clone();
-            client.add_event_handler(
-                move |event: ToDeviceKeyVerificationStartEvent, client: matrix_sdk::Client| {
-                    let flows = flows_for_start.clone();
-                    async move {
-                        use matrix_sdk::encryption::verification::Verification;
-
-                        let flow_id = event.content.transaction_id.to_string();
-                        // A start belonging to a request flow is handled by
-                        // that flow; only a bare legacy start arrives alone.
-                        if flows.has(&flow_id) {
-                            return;
-                        }
-                        let Some(Verification::SasV1(sas)) = client
-                            .encryption()
-                            .get_verification(&event.sender, flow_id.as_str())
-                            .await
-                        else {
-                            return;
-                        };
-                        flows.insert_sas(flow_id.clone(), sas);
-                        flows.emit(|listener| {
-                            listener.on_request(flow_id.clone(), event.sender.to_string());
-                        });
+                    if changed.next().await.is_none() {
+                        break;
                     }
-                },
-            );
-        });
+                }
+            })
+            .abort_handle();
+
+        if let Some(previous) = bridge
+            .watch_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .replace(handle)
+        {
+            previous.abort();
+        }
     }
 
     /// Search the given room's messages on the server — the application's
@@ -2858,298 +2874,101 @@ impl CoreApp {
     pub async fn scan_qr(&self, flow_id: String, data: Vec<u8>) -> Result<(), CoreError> {
         use matrix_sdk::encryption::verification::QrVerificationData;
 
-        let flows = self.verification.clone();
+        let verification = self.verification(&flow_id)?;
 
-        RUNTIME
-            .spawn(async move {
-                let request = {
-                    let map = flows.flows.lock().expect("mutex is not poisoned");
-                    match map.get(&flow_id) {
-                        Some(VerificationFlow::Request(request)) => request.clone(),
-                        _ => {
-                            return Err(CoreError::Failed {
-                                msg: "No verification in progress".to_owned(),
-                            });
-                        }
-                    }
-                };
+        let data = QrVerificationData::from_bytes(&data).map_err(|_| CoreError::Failed {
+            msg: "Not a verification QR code".to_owned(),
+        })?;
 
-                let data =
-                    QrVerificationData::from_bytes(&data).map_err(|_| CoreError::Failed {
-                        msg: "Not a verification QR code".to_owned(),
-                    })?;
-                let qr = request
-                    .scan_qr_code(data)
-                    .await
-                    .map_err(|scan_error| CoreError::Failed {
-                        msg: format!("Could not scan the code: {scan_error}"),
-                    })?
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "The code belongs to another verification".to_owned(),
-                    })?;
-
-                let follow_flows = flows.clone();
-                RUNTIME.spawn(async move {
-                    use futures_util::StreamExt;
-                    use matrix_sdk::encryption::verification::QrVerificationState;
-
-                    let mut changes = qr.changes();
-                    while let Some(state) = changes.next().await {
-                        match state {
-                            QrVerificationState::Done { .. } => {
-                                let flow_id = flow_id.clone();
-                                follow_flows.emit(move |listener| listener.on_done(flow_id));
-                                break;
-                            }
-                            QrVerificationState::Cancelled(info) => {
-                                let flow_id = flow_id.clone();
-                                let reason = info.reason().to_owned();
-                                follow_flows
-                                    .emit(move |listener| listener.on_cancelled(flow_id, reason));
-                                break;
-                            }
-                            _ => {}
-                        }
-                    }
-                });
-
-                Ok(())
-            })
+        verification
+            .qr_code_scanned(data)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// Ask the account's verified sessions to verify this one. The flow
     /// then arrives through the listener like an incoming one: emojis,
     /// then done.
     pub async fn request_verification(&self) -> Result<String, CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-        let flows = self.verification.clone();
+        let session = self.session()?;
 
-        RUNTIME
-            .spawn(async move {
-                let client = session.client();
-                let user_id = client.user_id().expect("logged in").to_owned();
-                let identity = client
-                    .encryption()
-                    .get_user_identity(&user_id)
-                    .await
-                    .ok()
-                    .flatten()
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "No identity to verify against".to_owned(),
-                    })?;
-
-                let request = identity
-                    .request_verification()
-                    .await
-                    .map_err(|request_error| CoreError::Failed {
-                        msg: format!("Could not request verification: {request_error}"),
-                    })?;
-                let flow_id = request.flow_id().to_owned();
-                flows.insert_request(flow_id.clone(), request.clone());
-
-                // As the requester we wait for the other side to accept and
-                // start; the SAS is then followed like any other.
-                let follow_flows = flows.clone();
-                let follow_flow_id = flow_id.clone();
-                RUNTIME.spawn(async move {
-                    use futures_util::StreamExt;
-                    use matrix_sdk::encryption::verification::{
-                        Verification, VerificationRequestState,
-                    };
-
-                    let mut changes = request.changes();
-                    while let Some(state) = changes.next().await {
-                        match state {
-                            VerificationRequestState::Transitioned {
-                                verification: Verification::SasV1(sas),
-                            } => {
-                                follow_flows.insert_sas(follow_flow_id.clone(), sas.clone());
-                                if let Err(sas_error) = sas.accept().await {
-                                    tracing::error!("Could not accept SAS: {sas_error}");
-                                    return;
-                                }
-                                follow_flows.clone().follow_sas(follow_flow_id, sas);
-                                return;
-                            }
-                            VerificationRequestState::Cancelled(info) => {
-                                let reason = info.reason().to_owned();
-                                follow_flows.emit(move |listener| {
-                                    listener.on_cancelled(follow_flow_id, reason);
-                                });
-                                return;
-                            }
-                            _ => {}
-                        }
-                    }
-                });
-
-                Ok(flow_id)
-            })
+        // The flow then arrives through the listener like any other: the
+        // list's watcher picks a new verification up as it is added.
+        session
+            .verification_list()
+            .create(None)
             .await
-            .expect("task was not aborted")
+            .map(|verification| verification.flow_id().to_owned())
+            .map_err(CoreError::from)
     }
 
     /// Ask another user to verify: the request goes into the direct
     /// chat as a message, and the flow then runs like any other SAS.
     pub async fn request_user_verification(&self, user_id: String) -> Result<String, CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-        let flows = self.verification.clone();
+        let session = self.session()?;
+        let user_id = parse_user_id(&user_id)?;
 
-        RUNTIME
-            .spawn(async move {
-                let user_id = ruma::UserId::parse(&user_id).map_err(|_| CoreError::Failed {
-                    msg: "Invalid user ID".to_owned(),
-                })?;
-                let client = session.client();
-                let identity = client
-                    .encryption()
-                    .get_user_identity(&user_id)
-                    .await
-                    .ok()
-                    .flatten()
-                    .ok_or_else(|| CoreError::Failed {
-                        msg: "This user has no cross-signing identity yet".to_owned(),
-                    })?;
-
-                let request = identity
-                    .request_verification()
-                    .await
-                    .map_err(|request_error| CoreError::Failed {
-                        msg: format!("Could not request verification: {request_error}"),
-                    })?;
-                let flow_id = request.flow_id().to_owned();
-                flows.insert_request(flow_id.clone(), request.clone());
-
-                // As the requester we wait for the other side to accept and
-                // start; the SAS is then followed like any other.
-                let follow_flows = flows.clone();
-                let follow_flow_id = flow_id.clone();
-                RUNTIME.spawn(async move {
-                    use futures_util::StreamExt;
-                    use matrix_sdk::encryption::verification::{
-                        Verification, VerificationRequestState,
-                    };
-
-                    let mut changes = request.changes();
-                    while let Some(state) = changes.next().await {
-                        match state {
-                            VerificationRequestState::Transitioned {
-                                verification: Verification::SasV1(sas),
-                            } => {
-                                follow_flows.insert_sas(follow_flow_id.clone(), sas.clone());
-                                if let Err(sas_error) = sas.accept().await {
-                                    tracing::error!("Could not accept SAS: {sas_error}");
-                                    return;
-                                }
-                                follow_flows.clone().follow_sas(follow_flow_id, sas);
-                                return;
-                            }
-                            VerificationRequestState::Cancelled(info) => {
-                                let reason = info.reason().to_owned();
-                                follow_flows.emit(move |listener| {
-                                    listener.on_cancelled(follow_flow_id, reason);
-                                });
-                                return;
-                            }
-                            _ => {}
-                        }
-                    }
-                });
-
-                Ok(flow_id)
-            })
+        session
+            .verification_list()
+            .create(Some(&user_id))
             .await
-            .expect("task was not aborted")
+            .map(|verification| verification.flow_id().to_owned())
+            .map_err(CoreError::from)
     }
 
     /// Accept the verification with the given flow ID; the emojis arrive
     /// through the listener when both sides are ready.
     pub async fn accept_verification(&self, flow_id: String) {
-        let flows = self.verification.clone();
-        RUNTIME
-            .spawn(async move {
-                flows.accept(&flow_id).await;
-            })
-            .await
-            .expect("task was not aborted");
+        // The listener's follower starts SAS once the request is ready:
+        // this side has no page to choose a method on.
+        if let Ok(verification) = self.verification(&flow_id)
+            && let Err(accept_error) = verification.accept().await
+        {
+            tracing::error!("Could not accept verification {flow_id}: {accept_error}");
+        }
     }
 
     /// Confirm that the emojis matched.
     pub async fn confirm_verification(&self, flow_id: String) {
-        let flows = self.verification.clone();
-        RUNTIME
-            .spawn(async move {
-                flows.confirm(&flow_id).await;
-            })
-            .await
-            .expect("task was not aborted");
+        if let Ok(verification) = self.verification(&flow_id)
+            && let Err(confirm_error) = verification.sas_match().await
+        {
+            tracing::error!("Could not confirm verification {flow_id}: {confirm_error}");
+        }
     }
 
     /// Cancel the verification — the emojis did not match, or the user
     /// declined.
     pub async fn cancel_verification(&self, flow_id: String) {
-        let flows = self.verification.clone();
-        RUNTIME
-            .spawn(async move {
-                flows.cancel(&flow_id).await;
-            })
-            .await
-            .expect("task was not aborted");
+        if let Ok(verification) = self.verification(&flow_id)
+            && let Err(cancel_error) = verification.cancel().await
+        {
+            tracing::error!("Could not cancel verification {flow_id}: {cancel_error}");
+        }
     }
 
     /// Where account recovery stands for the first ready session.
     pub async fn recovery_state(&self) -> FfiRecoveryState {
-        use matrix_sdk::encryption::recovery::RecoveryState;
-
-        let Some(session) = self.first_ready_session() else {
+        let Ok(session) = self.session() else {
             return FfiRecoveryState::Unknown;
         };
 
-        RUNTIME
-            .spawn(async move {
-                match session.client().encryption().recovery().state() {
-                    RecoveryState::Unknown => FfiRecoveryState::Unknown,
-                    RecoveryState::Enabled => FfiRecoveryState::Enabled,
-                    RecoveryState::Disabled => FfiRecoveryState::Disabled,
-                    RecoveryState::Incomplete => FfiRecoveryState::Incomplete,
-                }
-            })
-            .await
-            .expect("task was not aborted")
+        let security = session.security().clone();
+        security.ensure_loaded().await;
+        security.recovery_state().into()
     }
 
     /// Set up recovery, returning the recovery key to write down.
     pub async fn enable_recovery(&self) -> Result<String, CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
 
-        RUNTIME
-            .spawn(async move {
-                session
-                    .client()
-                    .encryption()
-                    .recovery()
-                    .enable()
-                    .await
-                    .map_err(|enable_error| CoreError::Failed {
-                        msg: format!("Could not set up recovery: {enable_error}"),
-                    })
-            })
+        // Without a passphrase: the Kotlin flow shows the key and has no
+        // field for one.
+        session
+            .security()
+            .enable_recovery(None)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// Where this session stands on encryption: whether the account has
@@ -3157,9 +2976,7 @@ impl CoreApp {
     /// session is verified, and whether recovery is set up. The
     /// application's `session/security.rs` computes the same three.
     pub async fn security_state(&self) -> FfiSecurityState {
-        use matrix_sdk::encryption::{VerificationState, recovery::RecoveryState};
-
-        let Some(session) = self.first_ready_session() else {
+        let Ok(session) = self.session() else {
             return FfiSecurityState {
                 identity: FfiCryptoIdentityState::Unknown,
                 verification: FfiVerificationState::Unknown,
@@ -3167,129 +2984,62 @@ impl CoreApp {
             };
         };
 
-        RUNTIME
-            .spawn(async move {
-                let client = session.client();
-                let encryption = client.encryption();
-                // The states are only meaningful once the encryption
-                // tasks have run, as the setup view waits for.
-                encryption.wait_for_e2ee_initialization_tasks().await;
+        let security = session.security().clone();
+        security.ensure_loaded().await;
 
-                let own_user_id = client.user_id().expect("logged in").to_owned();
-                let has_identity = matches!(
-                    encryption.get_user_identity(&own_user_id).await,
-                    Ok(Some(_))
-                );
-
-                let identity = if has_identity {
-                    let own_device_id = session.info().device_id.clone();
-                    // Another session that the account's own identity
-                    // has signed is one this session can verify against.
-                    let has_other_sessions = match encryption.get_user_devices(&own_user_id).await {
-                        Ok(devices) => devices.devices().any(|device| {
-                            device.device_id() != own_device_id && device.is_cross_signed_by_owner()
-                        }),
-                        // Not knowing must not hide the reset path.
-                        Err(_) => true,
-                    };
-                    if has_other_sessions {
-                        FfiCryptoIdentityState::OtherSessions
-                    } else {
-                        FfiCryptoIdentityState::LastManStanding
-                    }
-                } else {
-                    FfiCryptoIdentityState::Missing
-                };
-
-                let verification = match encryption.verification_state().get() {
-                    VerificationState::Verified => FfiVerificationState::Verified,
-                    VerificationState::Unverified => FfiVerificationState::Unverified,
-                    VerificationState::Unknown => FfiVerificationState::Unknown,
-                };
-
-                let recovery = match encryption.recovery().state() {
-                    RecoveryState::Enabled => FfiRecoveryState::Enabled,
-                    RecoveryState::Disabled => FfiRecoveryState::Disabled,
-                    RecoveryState::Incomplete => FfiRecoveryState::Incomplete,
-                    RecoveryState::Unknown => FfiRecoveryState::Unknown,
-                };
-
-                FfiSecurityState {
-                    identity,
-                    verification,
-                    recovery,
-                }
-            })
-            .await
-            .expect("task was not aborted")
+        FfiSecurityState {
+            identity: security.crypto_identity_state().into(),
+            verification: security.verification_state().into(),
+            recovery: security.recovery_state().into(),
+        }
     }
 
     /// Create the account's crypto identity — cross-signing — for an
     /// account that has none, answering the password stage the
     /// homeserver asks for.
     pub async fn bootstrap_cross_signing(&self, password: String) -> Result<(), CoreError> {
-        use ruma::api::client::uiaa::{AuthData, MatrixUserIdentifier, Password};
+        use ruma::api::client::uiaa::AuthType;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
+        use crate::{login::AuthStage, session::BootstrapError};
+
+        let session = self.session()?;
+        let security = session.security().clone();
+
+        // The application's `AuthDialog` loop, without the dialog: the
+        // password is the one stage this side can answer.
+        let Err(BootstrapError::Uiaa(uiaa_info)) = security.bootstrap_cross_signing(None).await
+        else {
+            return security
+                .bootstrap_cross_signing(None)
+                .await
+                .map_err(CoreError::from);
         };
 
-        RUNTIME
-            .spawn(async move {
-                let client = session.client();
-                let encryption = client.encryption();
-                let user_id = client.user_id().expect("logged in").to_owned();
+        let stage = AuthStage::next(&uiaa_info, &[AuthType::Password])
+            .filter(|stage| stage.stage == AuthType::Password)
+            .ok_or_else(|| CoreError::Failed {
+                msg: "This homeserver asks for steps this app cannot answer yet".to_owned(),
+            })?;
+        let auth = stage.password_data(session.user_id(), &password);
 
-                let Err(bootstrap_error) = encryption.bootstrap_cross_signing(None).await else {
-                    return Ok(());
-                };
-                // The homeserver wants the account's password before it
-                // will hold new signing keys.
-                let Some(info) = bootstrap_error.as_uiaa_response() else {
-                    return Err(CoreError::Failed {
-                        msg: format!("Could not set up encryption: {bootstrap_error}"),
-                    });
-                };
-                let auth = AuthData::Password(ruma::assign!(
-                    Password::new(MatrixUserIdentifier::new(user_id.to_string()).into(), password),
-                    { session: info.session.clone() }
-                ));
-
-                encryption
-                    .bootstrap_cross_signing(Some(auth))
-                    .await
-                    .map_err(|bootstrap_error| CoreError::Failed {
-                        msg: format!("Could not set up encryption: {bootstrap_error}"),
-                    })
-            })
+        security
+            .bootstrap_cross_signing(Some(auth))
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// Recover the account's secrets with the given recovery key.
     pub async fn recover(&self, recovery_key: String) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
 
-        RUNTIME
-            .spawn(async move {
-                session
-                    .client()
-                    .encryption()
-                    .recovery()
-                    .recover(recovery_key.trim())
-                    .await
-                    .map_err(|recover_error| CoreError::Failed {
-                        msg: format!("Could not recover: {recover_error}"),
-                    })
-            })
+        // An incomplete recovery is not a failure: the secrets that came in
+        // are kept, and the recovery state says what is still missing.
+        session
+            .security()
+            .recover(recovery_key.trim())
             .await
-            .expect("task was not aborted")
+            .map(|_outcome| ())
+            .map_err(CoreError::from)
     }
 
     /// Send the file at the given path as an attachment to the given room.
@@ -4942,25 +4692,13 @@ impl CoreApp {
         path: String,
         passphrase: String,
     ) -> Result<(), CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
 
-        RUNTIME
-            .spawn(async move {
-                session
-                    .client()
-                    .encryption()
-                    .export_room_keys(path.into(), &passphrase, |_| true)
-                    .await
-                    .map_err(|export_error| CoreError::Failed {
-                        msg: format!("Could not export the keys: {export_error}"),
-                    })
-            })
+        session
+            .security()
+            .export_room_keys(path.into(), &passphrase)
             .await
-            .expect("task was not aborted")
+            .map_err(CoreError::from)
     }
 
     /// Import room keys from an encrypted export at the given path.
@@ -4971,26 +4709,14 @@ impl CoreApp {
         path: String,
         passphrase: String,
     ) -> Result<u64, CoreError> {
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
+        let session = self.session()?;
 
-        RUNTIME
-            .spawn(async move {
-                session
-                    .client()
-                    .encryption()
-                    .import_room_keys(path.into(), &passphrase)
-                    .await
-                    .map(|counts| counts.imported_count as u64)
-                    .map_err(|import_error| CoreError::Failed {
-                        msg: format!("Could not import the keys: {import_error}"),
-                    })
-            })
+        session
+            .security()
+            .import_room_keys(path.into(), &passphrase)
             .await
-            .expect("task was not aborted")
+            .map(|count| count as u64)
+            .map_err(CoreError::from)
     }
 
     /// Send a recorded voice message.
@@ -6794,6 +6520,21 @@ impl CoreApp {
             })
     }
 
+    /// The ongoing verification with the given flow ID.
+    fn verification(
+        &self,
+        flow_id: &str,
+    ) -> Result<crate::session::IdentityVerification, CoreError> {
+        self.session()?
+            .verification_list()
+            .snapshot()
+            .into_iter()
+            .find(|verification| verification.flow_id() == flow_id)
+            .ok_or_else(|| CoreError::Failed {
+                msg: "No verification in progress".to_owned(),
+            })
+    }
+
     /// Make the logged-in client of the given flow a stored session and
     /// the active one — the tail of every login.
     async fn adopt_login(&self, flow: crate::login::LoginFlow) -> Result<(), CoreError> {
@@ -7133,49 +6874,23 @@ pub trait CallListener: Send + Sync {
     fn on_ended(&self, call_id: String, reason: FfiCallEnd);
 }
 
+/// What feeds the foreign verification listener from the core's list.
+///
+/// The core's `VerificationList` is the state; this is the task that
+/// follows each verification it holds and turns the application's states
+/// into the four calls the listener has.
 #[derive(Default)]
-struct VerificationFlows {
+struct VerificationBridge {
     listener: Mutex<Option<Arc<dyn VerificationListener>>>,
-    flows: Mutex<std::collections::HashMap<String, VerificationFlow>>,
-    /// The session whose client carries the handlers, if any.
+    /// The flows already being followed.
+    followed: Mutex<std::collections::HashSet<String>>,
+    /// The session whose list is being followed, if any.
     bound_session: Mutex<Option<String>>,
+    /// The task following the list.
+    watch_handle: Mutex<Option<tokio::task::AbortHandle>>,
 }
 
-enum VerificationFlow {
-    Request(matrix_sdk::encryption::verification::VerificationRequest),
-    Sas(matrix_sdk::encryption::verification::SasVerification),
-}
-
-impl VerificationFlows {
-    fn has(&self, flow_id: &str) -> bool {
-        self.flows
-            .lock()
-            .expect("mutex is not poisoned")
-            .contains_key(flow_id)
-    }
-
-    fn insert_request(
-        &self,
-        flow_id: String,
-        request: matrix_sdk::encryption::verification::VerificationRequest,
-    ) {
-        self.flows
-            .lock()
-            .expect("mutex is not poisoned")
-            .insert(flow_id, VerificationFlow::Request(request));
-    }
-
-    fn insert_sas(
-        &self,
-        flow_id: String,
-        sas: matrix_sdk::encryption::verification::SasVerification,
-    ) {
-        self.flows
-            .lock()
-            .expect("mutex is not poisoned")
-            .insert(flow_id, VerificationFlow::Sas(sas));
-    }
-
+impl VerificationBridge {
     fn emit(&self, f: impl FnOnce(&Arc<dyn VerificationListener>)) {
         if let Some(listener) = self
             .listener
@@ -7187,159 +6902,84 @@ impl VerificationFlows {
         }
     }
 
-    /// Accept the flow: a request is accepted and its SAS awaited, a bare
-    /// SAS is accepted directly. Either way the SAS is then followed to
-    /// its end.
-    async fn accept(self: &Arc<Self>, flow_id: &str) {
-        use futures_util::StreamExt;
-        use matrix_sdk::encryption::verification::{Verification, VerificationRequestState};
-
-        tracing::info!("Accepting verification flow {flow_id}");
-
-        let flow = {
-            let flows = self.flows.lock().expect("mutex is not poisoned");
-            match flows.get(flow_id) {
-                Some(VerificationFlow::Request(request)) => Some(request.clone()),
-                _ => None,
-            }
-        };
-
-        if let Some(request) = flow {
-            if let Err(accept_error) = request.accept().await {
-                tracing::error!("Could not accept verification request: {accept_error}");
-                return;
-            }
-
-            // Wait for the flow to transition into a SAS verification,
-            // starting one ourselves once both sides are ready — someone
-            // has to go first.
-            let mut changes = request.changes();
-            while let Some(state) = changes.next().await {
-                match state {
-                    VerificationRequestState::Ready { .. } => {
-                        if let Err(start_error) = request.start_sas().await {
-                            tracing::error!("Could not start SAS: {start_error}");
-                        }
-                    }
-                    VerificationRequestState::Transitioned {
-                        verification: Verification::SasV1(sas),
-                    } => {
-                        self.insert_sas(flow_id.to_owned(), sas.clone());
-                        if let Err(sas_error) = sas.accept().await {
-                            tracing::error!("Could not accept SAS: {sas_error}");
-                            return;
-                        }
-                        self.clone().follow_sas(flow_id.to_owned(), sas);
-                        return;
-                    }
-                    VerificationRequestState::Cancelled(info) => {
-                        let flow_id = flow_id.to_owned();
-                        self.emit(move |listener| {
-                            listener.on_cancelled(flow_id, info.reason().to_owned());
-                        });
-                        return;
-                    }
-                    _ => {}
-                }
-            }
-            return;
-        }
-
-        let sas = {
-            let flows = self.flows.lock().expect("mutex is not poisoned");
-            match flows.get(flow_id) {
-                Some(VerificationFlow::Sas(sas)) => Some(sas.clone()),
-                _ => None,
-            }
-        };
-        if let Some(sas) = sas {
-            if let Err(sas_error) = sas.accept().await {
-                tracing::error!("Could not accept SAS: {sas_error}");
-                return;
-            }
-            tracing::info!("SAS accepted for flow {flow_id}");
-            self.clone().follow_sas(flow_id.to_owned(), sas);
-        } else {
-            tracing::warn!("No flow found to accept for {flow_id}");
-        }
-    }
-
-    /// Follow a SAS to its end, reporting the emojis and the outcome.
-    fn follow_sas(
-        self: Arc<Self>,
-        flow_id: String,
-        sas: matrix_sdk::encryption::verification::SasVerification,
-    ) {
-        use futures_util::StreamExt;
-        use matrix_sdk::encryption::verification::SasState;
+    /// Follow one verification to its end, reporting what the listener can
+    /// take: the request, the emojis, done, or cancelled.
+    ///
+    /// Where the application asks the user to choose a method, this side
+    /// has no page for it and starts SAS — the one method it can drive to
+    /// completion — as the application itself does when SAS is the only
+    /// method both sides support.
+    fn follow(self: Arc<Self>, verification: crate::session::IdentityVerification) {
+        use crate::session::VerificationState;
 
         RUNTIME.spawn(async move {
-            let mut changes = sas.changes();
-            while let Some(state) = changes.next().await {
-                tracing::info!("SAS state for {flow_id}: {state:?}");
+            let flow_id = verification.flow_id().to_owned();
+            let mut states = verification.subscribe_state();
+            let mut reported_request = false;
+            let mut reported_emojis = false;
+
+            loop {
+                let state = states.get();
                 match state {
-                    SasState::KeysExchanged {
-                        emojis: Some(emojis),
-                        ..
-                    } => {
-                        let ffi: Vec<FfiSasEmoji> = emojis
-                            .emojis
-                            .iter()
-                            .map(|emoji| FfiSasEmoji {
-                                symbol: emoji.symbol.to_owned(),
-                                description: emoji.description.to_owned(),
-                            })
-                            .collect();
+                    VerificationState::Requested if !reported_request => {
+                        reported_request = true;
                         let flow_id = flow_id.clone();
-                        self.emit(move |listener| listener.on_emojis(flow_id, ffi));
+                        let user_id = verification.other_user_id().to_string();
+                        self.emit(move |listener| listener.on_request(flow_id, user_id));
                     }
-                    SasState::Done { .. } => {
+                    VerificationState::Ready if !verification.started_by_us() => {
+                        if let Err(start_error) = verification.start_sas().await {
+                            tracing::error!("Could not start SAS for {flow_id}: {start_error}");
+                        }
+                    }
+                    VerificationState::SasConfirm if !reported_emojis => {
+                        reported_emojis = true;
+                        let emojis: Vec<FfiSasEmoji> = verification
+                            .sas_emoji()
+                            .map(|emojis| {
+                                emojis
+                                    .iter()
+                                    .map(|emoji| FfiSasEmoji {
+                                        symbol: emoji.symbol.to_owned(),
+                                        description: emoji.description.to_owned(),
+                                    })
+                                    .collect()
+                            })
+                            .unwrap_or_default();
+                        let flow_id = flow_id.clone();
+                        self.emit(move |listener| listener.on_emojis(flow_id, emojis));
+                    }
+                    VerificationState::Done => {
                         let flow_id = flow_id.clone();
                         self.emit(move |listener| listener.on_done(flow_id));
                         break;
                     }
-                    SasState::Cancelled(info) => {
+                    VerificationState::Cancelled
+                    | VerificationState::Dismissed
+                    | VerificationState::RoomLeft
+                    | VerificationState::Error
+                    | VerificationState::NoSupportedMethods => {
+                        let reason = verification
+                            .cancel_info()
+                            .map(|info| info.reason().to_owned())
+                            .unwrap_or_else(|| format!("{state:?}"));
                         let flow_id = flow_id.clone();
-                        let reason = info.reason().to_owned();
                         self.emit(move |listener| listener.on_cancelled(flow_id, reason));
                         break;
                     }
                     _ => {}
                 }
+
+                if states.next().await.is_none() {
+                    break;
+                }
             }
+
+            self.followed
+                .lock()
+                .expect("mutex is not poisoned")
+                .remove(&flow_id);
         });
-    }
-
-    async fn confirm(&self, flow_id: &str) {
-        let sas = {
-            let flows = self.flows.lock().expect("mutex is not poisoned");
-            match flows.get(flow_id) {
-                Some(VerificationFlow::Sas(sas)) => Some(sas.clone()),
-                _ => None,
-            }
-        };
-        if let Some(sas) = sas
-            && let Err(confirm_error) = sas.confirm().await
-        {
-            tracing::error!("Could not confirm verification: {confirm_error}");
-        }
-    }
-
-    async fn cancel(&self, flow_id: &str) {
-        let flow = self
-            .flows
-            .lock()
-            .expect("mutex is not poisoned")
-            .remove(flow_id);
-        match flow {
-            Some(VerificationFlow::Request(request)) => {
-                let _ = request.cancel().await;
-            }
-            Some(VerificationFlow::Sas(sas)) => {
-                let _ = sas.cancel().await;
-            }
-            None => {}
-        }
     }
 }
 

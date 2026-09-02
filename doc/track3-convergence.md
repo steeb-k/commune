@@ -369,7 +369,7 @@ are named in the notes below and are not in the count.
 | 6 | Room list, joining, directory | 8 | 324 | `session/room_list.rs`, `session/directory.rs`, `session/remote/room.rs`, `session/remote/space_children.rs`, `session/create_room.rs` | `session_view/explore/` (1,287), `session/remote/room.rs` (550), `session/remote/space_children.rs` (521), `session/room_list/` (730), `components/dialogs/room_preview.rs` (630), `session/user.rs` (547), `session_view/create_room_dialog.rs` (342) | `JoinError`, `DirectChatError`, `RemoteRoomError`, `SpaceChildrenError`, `DirectoryError`, `CreateRoomError` |
 | 7 | Login and registration | 9 | 354 | `login.rs`, `config.rs` (`OAuthClientConfig`, `app_name`, `device_display_name`) | `login/` (3,290 over ten files), `components/dialogs/auth/mod.rs` (the stage selection, 755) | `LoginError`, `RegisterError`, `ResetPasswordError` |
 | 8 | Image packs, stickers, GIFs | 13 | 525 | `session/image_packs.rs`, `session/room/timeline.rs` (`send_sticker`, `send_gif`), `config.rs` (the packs room's name and topic) | `session/image_packs/` (1,323), `room_history/message_toolbar/mod.rs` (`send_sticker`, `send_gif`, `upload_gif`), `components/image_pack_editor/mod.rs` (522), `account_settings/image_packs_page/mod.rs` (565) | `ImagePacksError`, `SendGifError` |
-| 9 | Verification and security | 14 | 621 | `session/verification.rs`, `session/security.rs` | `session/verification/` (1,538), `session/security.rs` (491) | `VerificationError`, `SecurityError` |
+| 9 | Verification and security | 14 | 621 | `session/verification.rs`, `session/security.rs` | `session/verification/` (1,538), `session/security.rs` (491), `components/crypto/` (the setup views' requests), `account_settings/encryption_page/import_export_keys_subpage.rs` | `VerificationError`, `BootstrapError`, `RecoveryError`, `RoomKeysError` |
 | 10 | Timeline and messaging | 22 | 862 | `session/room/timeline.rs`, `session/room/mod.rs` | `session/room/timeline/` (3,033), `room_history/message_toolbar/` | `TimelineError` |
 | 11 | Room settings — details, join rule, history, addresses | 9 | 559 | `session/room/join_rule.rs`, `session/room/aliases.rs` | `session/room/join_rule.rs` (442), `aliases.rs` (544), the `room_details/` subpages | `RoomSettingsError` |
 | 12 | Permissions, ACL, upgrade, moderation | 10 | 553 | `session/room/permissions.rs`, `server_acl.rs`, `upgrade.rs` | `session/room/permissions.rs` (733), `room_details/permissions/` (2,491), `upgrade_dialog/` (642) | `PermissionsError` |
@@ -1121,6 +1121,90 @@ is gated on the feature now, and the Windows side of every commit should
 run `cargo check -p commune-core --all-targets` without `--features ffi`
 as well as with.
 
+### Commit 9 — verification and security, and the state machine the facade had flattened
+
+**Thirteen of the fourteen move; the listener stays as a bridge, and
+`VerificationFlows` is gone.** The application's `IdentityVerification` is
+a thirteen-state machine over the SDK's request and the SAS or QR
+verification it turns into, and `VerificationList` is what follows
+incoming requests and creates outgoing ones. The facade had a two-variant
+map of SDK handles and four listener calls, with the machine's decisions
+made inline in seven places. `commune-core/src/session/verification.rs`
+is the application's two objects headless, states, method intersection,
+timeouts and automatic steps included; `set_verification_listener` now
+follows the core's list and turns its states into the four calls the
+listener has. `session/security.rs` is the application's `SessionSecurity`
+— three watched states and the three flags derived from the recovery
+state — with the setup views' and the encryption page's operations on the
+session beside it.
+
+**Requests from other users arrived as to-device requests, which the
+application refuses.** `verification_list.rs` takes a to-device request
+only when it is a self-verification, because verifying another user
+happens in a room; the facade took every to-device request. It also took
+requests already done, cancelled or passive, which the application skips,
+and in-room requests in rooms the user had left or been banned from. All
+three follow the application now.
+
+**An unanswered request was never dismissed.** The application dismisses
+a received request nobody accepted after `REQUEST_RECEIVED_TIMEOUT`, two
+minutes; the facade kept it forever, and the Kotlin screen with it.
+
+**Accepting used the SDK's default methods, and so did requesting.** The
+application accepts with the intersection of what both sides support and
+requests with its own list — SAS, showing a QR code, reciprocating, and
+scanning one where there is a camera. The facade called `accept()` and
+`request_verification()` bare, offering methods it could not drive. The
+FFI now declares what it can do: SAS and scanning, since it can read a QR
+code but has nowhere to show one.
+
+**The bare `m.key.verification.start` handler had no precedent and is
+gone.** The facade handled a legacy start arriving without a request. The
+application does not — every client the SDK talks to sends a request
+first — and under the mirror rule a no-precedent handler is a design to
+flag, not a behaviour to keep. It is recorded here, and removed.
+
+**`security_state` computed three states on demand and watched nothing.**
+The application's `SessionSecurity` follows the SDK's identity, device,
+verification and recovery streams and keeps six values current; the
+facade asked the SDK three questions per call. The core object is the
+observable, `ensure_loaded` waits for the encryption tasks the application
+waits for, and the FFI reads it. Three of the six values —
+`cross_signing_keys_available`, `backup_enabled`,
+`backup_exists_on_server` — are not on the FFI record.
+
+**Recovery's two refusals were one.** The recovery view tells "the
+passphrase or key is invalid" from "could not access recovery data"; the
+facade formatted the SDK error for both. And a recovery that succeeded
+with secrets still missing was reported as plain success, where the
+application shows an incomplete page: `RecoveryOutcome` says which, and
+the FFI still returns success because the Kotlin flow polls the recovery
+state afterwards.
+
+**Cross-signing was bootstrapped with a hand-written password stage.** The
+application walks the `AuthDialog`; the facade built the password data
+itself. It goes through `AuthStage` now, the same stage selection login
+uses, with `AuthStage::password_data` as the one stage this side can
+answer.
+
+**Four gaps found and not filled**, by the standing ruling:
+
+* **No method choice on the Kotlin side.** The application asks the user
+  to choose when both SAS and QR are possible; the FFI's follower starts
+  SAS, as the application does when SAS is the only method.
+* **No passphrase for recovery, and no key reset.** `enable_recovery`
+  takes a passphrase in the core and the FFI passes none;
+  `reset_recovery_key` has no FFI caller.
+* **No QR code to show.** The core keeps the `QrVerification` for the
+  embedder to render; the FFI declares it cannot.
+* **A room left mid-verification is watched by category, not by
+  membership.** The application watches its own member's membership; the
+  core has no member object per room yet and watches the room's category
+  becoming Left, which is the same event one step later.
+
+The FFI surface is unchanged for the ninth time and the bindings came back
+byte-identical. The clippy count holds at 13.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -1173,6 +1257,9 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `send_sticker` and `send_gif` | **Sent past the timeline.** The application sends both through the SDK timeline, which is what gives them a local echo and the send queue's retry; the facade called `Room::send`, so a sticker sent without connectivity was lost rather than queued. The GIF path also checked the upload size, which the application does not — it bounds the download at 16 MiB and lets the homeserver refuse — and bounded the download at 20. **Closed 1 Sep** as `Timeline::send_sticker` and `Timeline::send_gif`. | Done |
 | 1 Sep 2026 | `facade.rs`, `collect_image_packs` | **Read `im.ponies.user_emotes`, a personal pack the specification dropped.** `events/image_packs.rs` records that the stable specification expects a personal pack to be a room pack enabled globally, and that the unstable personal pack is not supported here; the facade read it under the name "My Stickers". It also honoured a per-image `usage` list, which the application keeps among an image's unknown properties and never reads. **Closed 1 Sep** by following the application on both; the per-image usage is a specification feature the authority does not implement, noted for whoever adds it. | Done, per-image usage noted |
 | 1 Sep 2026 | `facade.rs`, `add_pack_image` | **Any shortcode was accepted.** The application refuses one outside the grammar — ASCII alphanumerics, dashes and underscores, up to a hundred bytes — before it saves; the facade wrote whatever came, and a shortcode with a colon in it breaks the `:shortcode:` completion that reads it back. **Closed 1 Sep**: `save_pack` refuses with `ImagePacksError::InvalidShortcode`. | Done |
+| 1 Sep 2026 | `facade.rs`, `set_verification_listener` | **To-device requests from other users were taken, finished requests too, and no request was ever dismissed.** `verification_list.rs` takes a to-device request only for a self-verification — another user is verified in a room — skips requests already done, cancelled or passive, ignores in-room requests in rooms the user left, and dismisses a received request nobody answered after two minutes. The facade did none of the four. It also handled a bare legacy `m.key.verification.start` the application has no handler for. **Closed 1 Sep** in `session/verification.rs`; the legacy handler is removed as a no-precedent design. | Done |
+| 1 Sep 2026 | `facade.rs`, `accept` and `request_verification` | **Verification methods were the SDK's defaults, not ours.** The application accepts with the intersection of both sides' methods and requests with its own list; the facade called `accept()` and `request_verification()` bare, so the other side could pick a method this client could not drive — showing a QR code it could not display. **Closed 1 Sep**: `VerificationList::set_supported_methods`, the FFI declaring SAS, scanning and reciprocating. | Done |
+| 1 Sep 2026 | `facade.rs`, `security_state`, `recover` | **Three states asked per call, nothing watched; two recovery refusals shown as one.** `session/security.rs` follows four SDK streams and keeps six values current; the facade asked three questions on each call. The recovery view separates an invalid key from inaccessible data and shows an incomplete recovery as such; the facade showed SDK text and plain success. **Closed 1 Sep**: `SessionSecurity`, `RecoveryError::InvalidKey`, `RecoveryOutcome`. Not on the FFI: the three backup flags, the incomplete outcome (the Kotlin flow polls the state instead). | Done, FFI fields owed |
 
 ## Gates
 
