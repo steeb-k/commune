@@ -1692,7 +1692,7 @@ from `wc -l`, and the core column names what the module becomes a view of.
 | 2 | `room/mod.rs`, `category.rs`, `highlight_flags.rs`, `typing_list.rs` | 2,763 + 303 | `session::Room` | The room's identity, category, counts, activity, read state, typing, history visibility and successor become bridged properties; the application's own `room_info` subscription, category computation, `update_latest_activity` and `handle_sync_timeline_events` are deleted; the setters forward. Likely the largest diff of the phase; split 2a/2b if the read says so. |
 | 3 | `room/member.rs`, `member_list.rs` | 338 + 387 | `session::{Member, MemberList}` | Members over the core's; the ambiguity changes move into the core here, closing module 1's ledger row. |
 | 4 | `room/{permissions,join_rule,aliases}.rs` | 733 + 442 + 544 | Phase 3's `Permissions`, `JoinRule`, `RoomAliases` | View-models over what Phase 3 already wrote; the application's own copies of the same rules are deleted. |
-| 5 | `ignored_users.rs`, `user_sessions_list/`, `security.rs`, `image_packs/` | 282 + 987 + 491 + 1,323 | `IgnoredUsers`, `UserSessions`, `SessionSecurity`, `ImagePacks` | The session-level models Phase 3 already wrote, each a thin `GObject`. |
+| 5 | `ignored_users.rs`, `user_sessions_list/`, `security.rs`, `image_packs/` | 282 + 987 + 491 + 1,323 | `IgnoredUsers`, `UserSessions`, `SessionSecurity`, `ImagePacks` | **Done 2 Sep.** The session-level models Phase 3 already wrote, each a thin `GObject`; the core gains four subscribers. |
 | 6 | `global_account_data.rs`, `presence.rs` | 603 + 349 | **none yet** | The core has neither; both move in first (GTK is the authority), then the `GObject`s become views. This is where the Kotlin side gets recent emoji and presence. |
 | 7 | `remote/` | 2,031 | `session::remote::{RemoteRoom, SpaceChildren}`, `url_preview` | `room.rs`, `space_children.rs` and `url_preview.rs` over the core's; `room_peek.rs`, `user.rs` and `cache.rs` move in first. |
 | 8 | `room/timeline/`, `thread_list.rs`, `search.rs` | 1,893 + 433 + 767 | `session::Timeline`, `RoomSearch` | The timeline item models over the core's `Timeline`; `media_message.rs`'s data types are decided here (the Phase 2 question). |
@@ -2069,6 +2069,62 @@ goes through it now.
 the join-rule subpage in all four values and the knock switch, the
 addresses subpage's seven edits and their refusals.
 
+### Module 5 — the session's four models are views
+
+**Done 2 September.** The four session-level objects Phase 3 wrote
+headless get their `GObject` fronts: 442 lines in, 1,512 out, across nine
+files, and 20 lines into the core. Each follows the pattern modules 2–4
+set — subscribe, then read what the core already knows — and each keeps
+every property, signal and `Result<(), ()>` its pages bind to.
+
+**`IgnoredUsers`** is a `ListModel` over the core's list: one stream,
+the same ordered splice the application computed before, and `add` and
+`remove` forwarded. Its own SDK ignore-list watcher and its re-read of
+`m.ignored_user_list` are deleted; the core has them since commit 1.
+
+**`SessionSecurity`** mirrors six values from six streams. The core kept
+three of them — the cross-signing keys, the backup switch and whether a
+backup exists on the server — as getters only, so it gains the three
+subscribers; the four SDK streams the application followed itself, and
+the fold that made six values of them, are deleted.
+
+**`UserSessionsList`** follows the core's device list and its loading
+state, which the core also gains a subscriber for. The application's own
+merge of `/devices` with the crypto store — `UserSessionData` with its
+`Api`, `Crypto` and `Both` — is deleted, along with the device-list watch
+that re-ran it: a `UserSession` now presents one core `Device`, which
+carries the name, the last IP and time, whether it is verified and
+whether it is this one. `rename` forwards, and the name comes back the
+way every other change does, through the core's re-read. `delete` stays
+where it was: signing a device out is user-interactive authentication,
+and the dialog that answers it is the interface's. The list for another
+user, which the application accepted and never filled, is refused with a
+warning: the core keeps the account's own devices and nothing else.
+
+**`ImagePacks`** is the largest: 879 lines become 305. The four SDK
+event handlers, the two enabled-pack maps under their two event names,
+the room-state read under both pack types, the fetch for a pack sync has
+not brought, the packs room and its creation, and every write are the
+core's, and the `GObject` keeps the `changed` signal — emitted from the
+core's counter now — and forwards ten calls, mapping `ImagePacksError`
+onto the `Result<(), ()>` its callers take. An `ImagePack` holds the
+core's value and the interface's `Room` for it, resolved through the
+room list, so `source().room.permissions()` still works; `RoomPackKind`
+and `UnavailablePack` are the core's types re-exported; `display_name`
+asks the core and falls back to the room's rendered name only for the
+sentences the core will not make. `sticker_content` forwards. Gone from
+the interface: `ImagePack::new`, `has_usage`, `is_empty`, `room_packs`
+and `stored_packs_room`, which no page called.
+
+**Eyeball owed:** the ignored-users list with an ignore and an unignore
+from a member's page; the sessions page — the current session's row, a
+rename, a sign-out through the password dialog, and a session signed out
+from another device disappearing; the security page through a recovery
+enable and disable; the sticker picker and the emoticon completion in a
+room with a room pack and a pack enabled everywhere; the packs settings
+page — create, edit, delete, enable and disable, and a pack whose room
+was left showing as unavailable; the room details' packs subpage.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -2156,6 +2212,10 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `session/room/mod.rs`, guest access, pinned events, server notice, inviter, send queue | **Five things the application's room computed and the core's did not**: `guests_allowed`, the pinned event IDs (excluded in the notices room), the active server notice with its admin contact, the inviter, and the send-queue watcher that re-enables sending after a rate limit. **Moved in 1 Sep**, module 2, as observables and a task. None of them is on the FFI: Kotlin shows no server notice banner, no pinned count, no inviter, and a rate-limited send queue there stays stopped until the session goes offline and back. | Core done; FFI owed |
 | 1 Sep 2026 | `session/room/mod.rs`, member events | **The core never watched `m.room.member` events.** The application refreshes the member named, the direct member, and hangs up a call whose other party left; the core did none of it, so on Kotlin a member's name or power level changed only when the room info happened to update, and a party leaving mid-call left the call ringing. **Closed 1 Sep**, module 3: `RoomInner::watch_members`, the three things the application did with each event. | Done |
 | 1 Sep 2026 | `session/room/member.rs`, `get_or_create` | **The core's member list could not hand out a member it had not loaded.** The application creates one for a sender, a typing user or an inviter and shows it while the store answers. **Closed 1 Sep**, module 3: `MemberList::ensure` appends a placeholder, reads the store, and promises the index. | Done |
+| 2 Sep 2026 | `session/image_packs.rs`, `unused_state_key` | **The core counts a deleted pack's state key as taken; the application reused it.** The application read only packs with images, so the first pack after a deletion took the empty key again; the core reads the empty ones too, because a pack the FFI creates has no image yet. The application takes the core's answer with module 5: a state event cannot be removed, and reusing its key was never a promise. The difference is one name in a room's state that no page shows. | Accepted 2 Sep, module 5 |
+| 2 Sep 2026 | `session/image_packs/mod.rs`, `changed` | **The application emitted `changed` before `set_pack_enabled` and `save_pack` returned; the core's counter reaches the signal a main-loop turn later.** Every listener reloads on the signal and none reads state in between, so nothing is lost, but a page that awaited a write and then read the list read it once for itself and once for the signal. Recorded so that a duplicate reload is not mistaken for a bug. | Accepted 2 Sep, module 5 |
+| 2 Sep 2026 | `session/image_packs/mod.rs`, `packs_room` | **Two waits for one room.** The core waits for the packs room to reach its list; the interface's list follows that one through a diff, so the `GObject` waits again on its own `get_wait`. Module 1's transitional shape, as in `Room::new`. | Module 13, when the list models share one wait |
+| 2 Sep 2026 | `session/user_sessions_list/mod.rs`, `init` | **The list for a user who is not the account was accepted and never filled.** The application's `init` took any user ID and only loaded the account's devices; it now warns and returns for another user. No page ever asked for another user's sessions. | Closed 2 Sep, module 5 |
 
 ## Gates
 

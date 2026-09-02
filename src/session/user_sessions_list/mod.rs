@@ -1,22 +1,19 @@
-use futures_util::StreamExt;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::encryption::identities::UserDevices;
-use ruma::{OwnedDeviceId, OwnedUserId};
+use commune_core::session::Device;
+use gtk::{glib, prelude::*, subclass::prelude::*};
+use ruma::{OwnedDeviceId, UserId};
 use tokio::task::AbortHandle;
-use tracing::error;
+use tracing::warn;
 
 mod other_sessions_list;
 mod user_session;
 
-use self::user_session::UserSessionData;
 pub use self::{other_sessions_list::OtherSessionsList, user_session::UserSession};
 use super::Session;
-use crate::{prelude::*, spawn, spawn_tokio, utils::LoadingState};
+use crate::{core_bridge::ObjectWatcher, prelude::*, spawn_tokio, utils::LoadingState};
 
 mod imp {
     use std::{
-        cell::{Cell, OnceCell, RefCell},
-        collections::HashMap,
+        cell::{Cell, RefCell},
         marker::PhantomData,
     };
 
@@ -28,8 +25,6 @@ mod imp {
         /// The current session.
         #[property(get)]
         session: glib::WeakRef<Session>,
-        /// The ID of the user the sessions belong to.
-        user_id: OnceCell<OwnedUserId>,
         /// The other user sessions.
         #[property(get)]
         other_sessions: OtherSessionsList,
@@ -42,7 +37,8 @@ mod imp {
         /// Whether the list is empty.
         #[property(get = Self::is_empty)]
         is_empty: PhantomData<bool>,
-        sessions_watch_abort_handle: RefCell<Option<AbortHandle>>,
+        /// The task following the core's list.
+        watch_handle: RefCell<Option<AbortHandle>>,
     }
 
     #[glib::object_subclass]
@@ -54,209 +50,80 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for UserSessionsList {
         fn dispose(&self) {
-            if let Some(abort_handle) = self.sessions_watch_abort_handle.take() {
-                abort_handle.abort();
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
             }
         }
     }
 
     impl UserSessionsList {
-        /// Initialize this list with the given session and user ID.
-        pub(super) fn init(&self, session: &Session, user_id: OwnedUserId) {
+        /// Initialize this list with the given session and user ID, and
+        /// follow the core's list.
+        ///
+        /// The core keeps the sessions of the account itself; a list for
+        /// another user has nothing to follow.
+        pub(super) fn init(&self, session: &Session, user_id: &UserId) {
+            type L = super::UserSessionsList;
+
             self.session.set(Some(session));
-            let user_id = self.user_id.get_or_init(|| user_id);
+
+            if **session.user_id() != *user_id {
+                warn!("The sessions of another user are not listed");
+                return;
+            }
 
             // We know that we have at least this session for our own user.
-            if session.user_id() == user_id {
-                let current_session = UserSession::new(session, session.device_id().clone());
-                self.current_session.replace(Some(current_session));
-            }
+            let current_session = UserSession::new(session, session.device_id().clone());
+            self.current_session.replace(Some(current_session));
 
-            spawn!(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                async move {
-                    imp.load().await;
-                }
-            ));
-            spawn!(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                async move {
-                    imp.watch_sessions().await;
-                }
-            ));
+            let core = session.core().user_sessions().clone();
+
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(core.subscribe(), |obj: &L, devices| {
+                    obj.imp().set_devices(devices);
+                })
+                .follow(core.subscribe_state(), |obj: &L, state| {
+                    obj.imp().set_loading_state(state.into());
+                })
+                .spawn();
+            self.watch_handle.replace(Some(handle));
+
+            // What the core already knows, after subscribing so that
+            // nothing between the two is lost.
+            self.set_devices(core.snapshot());
+            self.set_loading_state(core.state().into());
+
+            // The application has always read the list when the session is
+            // set up; the core reads it on first use, which is now.
+            spawn_tokio!(async move { core.ensure_loaded().await });
         }
 
-        /// The ID of the user the sessions belong to.
-        fn user_id(&self) -> &OwnedUserId {
-            self.user_id.get().expect("user ID is initialized")
-        }
-
-        /// Listen to changes in the user sessions.
-        async fn watch_sessions(&self) {
+        /// Mirror the core's devices: the current one onto its object, the
+        /// rest onto the list of other sessions.
+        fn set_devices(&self, devices: Vec<Device>) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
-
-            let client = session.client();
-            let stream = match client.encryption().devices_stream().await {
-                Ok(stream) => stream,
-                Err(error) => {
-                    error!("Could not access the user sessions stream: {error}");
-                    return;
-                }
-            };
-
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let user_id = self.user_id().clone();
-            let fut = stream.for_each(move |updates| {
-                let user_id = user_id.clone();
-                let obj_weak = obj_weak.clone();
-
-                async move {
-                    // If a device update is received for an account different than the one
-                    // for which the settings are currently opened, we don't want to reload the user
-                    // sessions, to save bandwidth.
-                    // However, when a device is disconnected, an empty device update is received.
-                    // In this case, we do not know which account had a device disconnection, so we
-                    // want to reload the sessions just in case.
-                    if !updates.new.contains_key(&user_id)
-                        && !updates.changed.contains_key(&user_id)
-                        && (!updates.new.is_empty() || !updates.changed.is_empty())
-                    {
-                        return;
-                    }
-
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        spawn!(async move {
-                            if let Some(obj) = obj_weak.upgrade() {
-                                obj.imp().load().await;
-                            }
-                        });
-                    });
-                }
-            });
-
-            let abort_handle = spawn_tokio!(fut).abort_handle();
-            self.sessions_watch_abort_handle.replace(Some(abort_handle));
-        }
-
-        /// Load the list of user sessions.
-        pub(super) async fn load(&self) {
-            if self.loading_state.get() == LoadingState::Loading {
-                // Do not load the list twice at the same time.
-                return;
-            }
-
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-
-            self.set_loading_state(LoadingState::Loading);
-
-            let user_id = self.user_id().clone();
-            let client = session.client();
-            let handle = spawn_tokio!(async move {
-                // Load the crypto sessions, to know whether the device is encrypted or not.
-                let crypto_sessions = match client.encryption().get_user_devices(&user_id).await {
-                    Ok(crypto_sessions) => Some(crypto_sessions),
-                    Err(error) => {
-                        error!("Could not get crypto sessions for user {user_id}: {error}");
-                        None
-                    }
-                };
-
-                let is_own_user = client.user_id().unwrap() == user_id;
-
-                let mut api_sessions = None;
-                if is_own_user {
-                    // Load the session information, to get the display name and last seen info.
-                    match client.devices().await {
-                        Ok(response) => {
-                            api_sessions = Some(response.devices);
-                        }
-                        Err(error) => {
-                            error!("Could not get sessions list for user {user_id}: {error}");
-                        }
-                    }
-                }
-
-                (api_sessions, crypto_sessions)
-            });
-
-            let (api_sessions, crypto_sessions) = handle.await.unwrap();
-
-            if api_sessions.is_none() && crypto_sessions.is_none() {
-                self.set_loading_state(LoadingState::Error);
-                return;
-            }
-
-            // Convert API sessions to a map.
-            let mut api_sessions = api_sessions
-                .into_iter()
-                .flatten()
-                .map(|d| (d.device_id.clone(), d))
-                .collect::<HashMap<_, _>>();
-
-            let is_own_user = session.user_id() == self.user_id();
-            let own_device_id = session.device_id();
-            let mut current_session_data = None;
-
-            // If we have the API sessions, use their length to reserve the capacity because
-            // it is cheaper. Otherwise we need to count the list of crypto sessions.
-            let api_sessions_len = api_sessions.len();
-            let capacity = if api_sessions_len > 0 {
-                api_sessions_len
-            } else {
-                crypto_sessions.iter().flat_map(UserDevices::keys).count()
-            };
-            let mut other_sessions_data = Vec::with_capacity(capacity);
-
-            // First, handle the list of devices with a cryptographic identity, i.e. devices
-            // that support encryption.
-            for crypto in crypto_sessions.iter().flat_map(UserDevices::devices) {
-                let data = if let Some(api) = api_sessions.remove(crypto.device_id()) {
-                    UserSessionData::Both { api, crypto }
-                } else {
-                    UserSessionData::Crypto(crypto)
-                };
-
-                if is_own_user && data.device_id() == own_device_id {
-                    current_session_data = Some(data);
-                } else {
-                    other_sessions_data.push(data);
-                }
-            }
-
-            // If there are remaining devices through the device information API, they do
-            // not support encryption.
-            for api in api_sessions.into_values() {
-                let data = UserSessionData::DevicesApi(api);
-
-                if is_own_user && data.device_id() == own_device_id {
-                    current_session_data = Some(data);
-                } else {
-                    other_sessions_data.push(data);
-                }
-            }
-
-            if let Some((session, data)) = current_session_data
-                .and_then(|data| self.current_session.borrow().clone().zip(Some(data)))
-            {
-                session.set_data(data);
-            }
 
             let was_empty = self.is_empty();
 
-            self.other_sessions.update(&session, other_sessions_data);
+            let (current, others): (Vec<_>, Vec<_>) =
+                devices.into_iter().partition(|device| device.is_current);
+
+            if let Some((current_session, device)) = self
+                .current_session
+                .borrow()
+                .clone()
+                .zip(current.into_iter().next())
+            {
+                current_session.set_device(&device);
+            }
+
+            self.other_sessions.update(&session, others);
 
             if self.is_empty() != was_empty {
                 self.obj().notify_is_empty();
             }
-
-            self.set_loading_state(LoadingState::Ready);
         }
 
         /// Find the user session with the given device ID, if any.
@@ -289,6 +156,8 @@ mod imp {
 
 glib::wrapper! {
     /// List of active user sessions for a user.
+    ///
+    /// The list itself is the core's; this presents it.
     pub struct UserSessionsList(ObjectSubclass<imp::UserSessionsList>);
 }
 
@@ -299,13 +168,20 @@ impl UserSessionsList {
     }
 
     /// Initialize this list with the given session and user ID.
-    pub(crate) fn init(&self, session: &Session, user_id: OwnedUserId) {
+    pub(crate) fn init(&self, session: &Session, user_id: &UserId) {
         self.imp().init(session, user_id);
     }
 
-    /// Load the list of user sessions.
+    /// Load the list of user sessions again.
     pub(crate) async fn load(&self) {
-        self.imp().load().await;
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let core = session.core().user_sessions().clone();
+        spawn_tokio!(async move { core.load().await })
+            .await
+            .expect("task was not aborted");
     }
 
     /// Find the user session with the given device ID, if any.

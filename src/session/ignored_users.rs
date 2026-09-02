@@ -1,16 +1,11 @@
-use futures_util::StreamExt;
-use gtk::{
-    gio,
-    glib::{self, clone},
-    prelude::*,
-    subclass::prelude::*,
-};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use indexmap::IndexSet;
-use ruma::{OwnedUserId, events::ignored_user_list::IgnoredUserListEventContent};
-use tracing::{debug, error, warn};
+use ruma::OwnedUserId;
+use tokio::task::AbortHandle;
+use tracing::error;
 
 use super::Session;
-use crate::{spawn, spawn_tokio};
+use crate::{core_bridge::ObjectWatcher, spawn_tokio};
 
 mod imp {
     use std::cell::RefCell;
@@ -23,9 +18,10 @@ mod imp {
         /// The current session.
         #[property(get, set = Self::set_session, explicit_notify, nullable)]
         pub session: glib::WeakRef<Session>,
-        /// The content of the ignored user list event.
+        /// The ignored users, mirrored from the core.
         pub list: RefCell<IndexSet<OwnedUserId>>,
-        abort_handle: RefCell<Option<tokio::task::AbortHandle>>,
+        /// The task following the core's list.
+        watch_handle: RefCell<Option<AbortHandle>>,
     }
 
     #[glib::object_subclass]
@@ -38,8 +34,8 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for IgnoredUsers {
         fn dispose(&self) {
-            if let Some(abort_handle) = self.abort_handle.take() {
-                abort_handle.abort();
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
             }
         }
     }
@@ -70,82 +66,31 @@ mod imp {
 
             self.session.set(session);
 
-            self.init();
+            self.watch_core();
             self.obj().notify_session();
         }
 
-        /// Listen to changes of the ignored users list.
-        fn init(&self) {
-            if let Some(abort_handle) = self.abort_handle.take() {
-                abort_handle.abort();
+        /// Follow the core's list.
+        fn watch_core(&self) {
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
             }
 
             let Some(session) = self.session.upgrade() else {
                 return;
             };
-            let obj = self.obj();
+            let core = session.core().ignored_users();
 
-            let obj_weak = glib::SendWeakRef::from(obj.downgrade());
-            let subscriber = session.client().subscribe_to_ignore_user_list_changes();
-            let fut = subscriber.for_each(move |_| {
-                let obj_weak = obj_weak.clone();
-                async move {
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        spawn!(async move {
-                            if let Some(obj) = obj_weak.upgrade() {
-                                obj.imp().load_list().await;
-                            }
-                        });
-                    });
-                }
-            });
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(core.subscribe(), |obj: &super::IgnoredUsers, list| {
+                    obj.imp().update_list(list.into_iter().collect());
+                })
+                .spawn();
+            self.watch_handle.replace(Some(handle));
 
-            let abort_handle = spawn_tokio!(fut).abort_handle();
-            self.abort_handle.replace(Some(abort_handle));
-
-            spawn!(clone!(
-                #[weak(rename_to = imp)]
-                self,
-                async move {
-                    imp.load_list().await;
-                }
-            ));
-        }
-
-        /// Load the list from the store and update it.
-        async fn load_list(&self) {
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-
-            let client = session.client();
-            let handle = spawn_tokio!(async move {
-                client
-                    .account()
-                    .account_data::<IgnoredUserListEventContent>()
-                    .await
-            });
-
-            let raw = match handle.await.unwrap() {
-                Ok(Some(raw)) => raw,
-                Ok(None) => {
-                    debug!("Got no ignored users list");
-                    self.update_list(IndexSet::new());
-                    return;
-                }
-                Err(error) => {
-                    error!("Could not get ignored users list: {error}");
-                    return;
-                }
-            };
-
-            match raw.deserialize() {
-                Ok(content) => self.update_list(content.ignored_users.into_keys().collect()),
-                Err(error) => {
-                    error!("Could not deserialize ignored users list: {error}");
-                }
-            }
+            // What the core already knows, after subscribing so that
+            // nothing between the two is lost.
+            self.update_list(core.snapshot().into_iter().collect());
         }
 
         /// Update the list with the given new list.
@@ -192,6 +137,8 @@ mod imp {
 
 glib::wrapper! {
     /// The list of ignored users of a `Session`.
+    ///
+    /// The list itself is the core's; this presents it.
     pub struct IgnoredUsers(ObjectSubclass<imp::IgnoredUsers>)
         @implements gio::ListModel;
 }
@@ -212,32 +159,16 @@ impl IgnoredUsers {
             return Err(());
         };
 
-        if self.contains(user_id) {
-            warn!(
-                "Trying to add `{user_id}` to the ignored users but they are already in the list, ignoring"
-            );
-            return Ok(());
-        }
+        let core = session.core().ignored_users().clone();
+        let user_id = user_id.clone();
+        let handle = spawn_tokio!(async move { core.add(&user_id).await });
 
-        let client = session.client();
-        let user_id_clone = user_id.clone();
-        let handle =
-            spawn_tokio!(async move { client.account().ignore_user(&user_id_clone).await });
-
-        match handle.await.unwrap() {
-            Ok(()) => {
-                let (pos, added) = self.imp().list.borrow_mut().insert_full(user_id.clone());
-
-                if added {
-                    self.items_changed(pos as u32, 0, 1);
-                }
-                Ok(())
-            }
-            Err(error) => {
-                error!("Could not add `{user_id}` to the ignored users: {error}");
-                Err(())
-            }
-        }
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
+                error!("Could not add to the ignored users: {error}");
+            })
     }
 
     /// Remove the user with the given ID from the list.
@@ -246,32 +177,16 @@ impl IgnoredUsers {
             return Err(());
         };
 
-        if !self.contains(user_id) {
-            warn!(
-                "Trying to remove `{user_id}` from the ignored users but they are not in the list, ignoring"
-            );
-            return Ok(());
-        }
+        let core = session.core().ignored_users().clone();
+        let user_id = user_id.clone();
+        let handle = spawn_tokio!(async move { core.remove(&user_id).await });
 
-        let client = session.client();
-        let user_id_clone = user_id.clone();
-        let handle =
-            spawn_tokio!(async move { client.account().unignore_user(&user_id_clone).await });
-
-        match handle.await.unwrap() {
-            Ok(()) => {
-                let removed = self.imp().list.borrow_mut().shift_remove_full(user_id);
-
-                if let Some((pos, _)) = removed {
-                    self.items_changed(pos as u32, 1, 0);
-                }
-                Ok(())
-            }
-            Err(error) => {
-                error!("Could not remove `{user_id}` from the ignored users: {error}");
-                Err(())
-            }
-        }
+        handle
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| {
+                error!("Could not remove from the ignored users: {error}");
+            })
     }
 }
 

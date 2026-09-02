@@ -1,7 +1,8 @@
+use commune_core::session::Device;
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use ruma::OwnedDeviceId;
 
-use super::{UserSession, UserSessionData};
+use super::UserSession;
 use crate::session::Session;
 
 mod imp {
@@ -44,12 +45,12 @@ mod imp {
     }
 
     impl OtherSessionsList {
-        /// Update this list to match the given list of data.
-        pub(super) fn update(&self, session: &Session, data_list: Vec<UserSessionData>) {
+        /// Update this list to match the given devices.
+        pub(super) fn update(&self, session: &Session, devices: Vec<Device>) {
             let n_items = self.n_items();
 
             // Optimization if the new list is empty.
-            if data_list.is_empty() {
+            if devices.is_empty() {
                 if n_items != 0 {
                     self.map.borrow_mut().clear();
                     self.obj().items_changed(0, n_items, 0);
@@ -63,17 +64,18 @@ mod imp {
                 let mut old_device_ids = map_ref.keys().cloned().collect::<HashSet<_>>();
                 let mut added = 0;
 
-                for data in data_list {
-                    old_device_ids.remove(data.device_id());
+                for device in devices {
+                    old_device_ids.remove(&device.device_id);
 
-                    let session = map_ref
-                        .entry(data.device_id().to_owned())
-                        .or_insert_with_key(|device_id| {
-                            added += 1;
-                            UserSession::new(session, device_id.clone())
-                        });
+                    let user_session =
+                        map_ref
+                            .entry(device.device_id.clone())
+                            .or_insert_with_key(|device_id| {
+                                added += 1;
+                                UserSession::new(session, device_id.clone())
+                            });
 
-                    session.set_data(data);
+                    user_session.set_device(&device);
                 }
 
                 // If there are old device IDs left, it means that some sessions were
@@ -124,9 +126,9 @@ impl OtherSessionsList {
         glib::Object::new()
     }
 
-    /// Update this list to match the given list of data.
-    pub(super) fn update(&self, session: &Session, data_list: Vec<UserSessionData>) {
-        self.imp().update(session, data_list);
+    /// Update this list to match the given devices.
+    pub(super) fn update(&self, session: &Session, devices: Vec<Device>) {
+        self.imp().update(session, devices);
     }
 
     /// Find the user session with the given device ID, if any.
