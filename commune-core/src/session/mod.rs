@@ -950,6 +950,18 @@ impl SessionInner {
                 .spawn(async move {
                     sleep(REACHABILITY_RETRY_DELAY).await;
                     if let Some(inner) = weak.upgrade() {
+                        // This retry is the pending one. The check begins by
+                        // cancelling the pending retry, and cancelling a task
+                        // from inside itself ends it at its next await — the
+                        // probe — with no answer and no further retry, which
+                        // left a session whose first probe failed offline for
+                        // good. The application's `glib` timeout had already
+                        // fired when it was removed, so it never had this.
+                        inner
+                            .reachability_retry_handle
+                            .lock()
+                            .expect("mutex is not poisoned")
+                            .take();
                         update_homeserver_reachable_boxed(inner).await;
                     }
                 })
