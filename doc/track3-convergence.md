@@ -373,7 +373,7 @@ are named in the notes below and are not in the count.
 | 10 | Timeline and messaging | 22 | 862 | `session/room/timeline.rs`, `session/room/composer.rs`, `session/room/mod.rs` | `session/room/timeline/` (3,033), `room_history/message_toolbar/` (the toolbar and `composer_parser.rs`), `room/mod.rs` (redact, report, invite, permalink), `room_details/edit_details_subpage.rs`, `room_history/event_actions/group.rs` | `TimelineError`, `RoomDetailsError` |
 | 11 | Room settings — avatar, join rule, history, addresses | 8 (+ `set_room_details`, taken by group 10) | 559 | `session/room/join_rule.rs`, `session/room/aliases.rs`, `session/room/mod.rs` | `session/room/join_rule.rs` (442), `aliases.rs` (544), `room_details/join_rule_subpage.rs`, `history_visibility_subpage.rs`, `addresses_subpage/`, `edit_details_subpage.rs`, `general_page.rs` (publish) | `RoomSettingsError`, `AliasError` |
 | 12 | Permissions, ACL, upgrade, moderation | 10 | 553 | `session/room/permissions.rs`, `server_acl.rs`, `upgrade.rs` | `session/room/permissions.rs` (733), `room_details/permissions/permissions_subpage.rs`, `server_acl_subpage.rs`, `upgrade_dialog/`, `general_page.rs` (upgrade info) | `PermissionsError`, `ServerAclError`, `AclProblem` |
-| 13 | Calls | 9 | 671 | `session/calls/` | `session/calls/call.rs` (1,607), `mod.rs` (989), `turn.rs` (360) | `CallError` |
+| 13 | Calls | 9 | 671 | `session/calls/{mod,call,state,turn}.rs` | `session/calls/call.rs` (1,607), `mod.rs` (989), `turn.rs` (360), `state.rs` | `CallError` |
 
 Group 3 also carries `session_settings` and its three setters, already
 one-line passthroughs over `commune_core::settings` since leaf 4, and they
@@ -1500,6 +1500,96 @@ The FFI surface is unchanged for the twelfth time and the bindings came
 back byte-identical. The clippy count falls from 8 to 5: two redundant
 closures and one `too_many_lines` sat in the methods this group rewrote.
 
+### Commit 13 — calls, and the state machine the facade had flattened into a map
+
+**Eight of the nine move; the listener stays as a bridge, and
+`CallFlows` is gone.** `session/calls/` is the application's calls module
+headless, file for file: `mod.rs` is `Calls` — the eight event handlers,
+the one active call, the TURN credentials kept until stale, the candidates
+that arrive before their invite, the outcomes the timeline's rows are drawn
+from, and every rule about which invites ring; `call.rs` is `Call`, the
+state machine over the signalling with the pipeline left to the embedder —
+states, the party rule, the invite lifetime, candidate batching,
+renegotiation and its timeout, stream metadata in both directions, and
+every handler for what the other end sends; `state.rs` and `turn.rs` are
+theirs. Where the application hands a description or a candidate to its
+pipeline, the core hands it to the embedder as a `CallEvent`; where the
+pipeline handed the application a description, the embedder calls in with
+it. Twenty-three tests moved with it. `set_call_listener` follows the
+core's active call and turns its events and states into the listener's
+five calls; `turn_servers` reads the core's cached answer. The ringtone,
+the notification and the "is this our own other account" check are the
+embedder's, as the desktop's are the desktop's.
+
+**What the facade did that the application does not, found by the read:**
+
+* **Candidates that arrived while a call rang were lost on the Pixel.**
+  The facade handed them to the listener at once, and the Kotlin engine
+  does not exist until the call is accepted, so `engine?.` dropped them.
+  The application holds them until there is a pipeline; the core holds
+  them until `accept` and replays them then.
+* **Candidates went out one request per batch the embedder made, and at
+  once.** The application batches them two seconds after the invite and
+  half a second after the answer, and the end of gathering sends what is
+  left with the empty candidate that says so. The core batches the same
+  way; the FFI queues.
+* **A call could be placed anywhere, and a second one placed.** The
+  application's `can_call` — two joined members, ourselves joined, allowed
+  to send a message — and its refusal of a second call had no counterpart.
+  The server notices room could be called, and rang for nobody.
+* **An unanswered call rang forever.** The application hangs up with
+  `invite_timeout` after ninety seconds, or lets an incoming invite expire
+  without a word; the facade had no lifetime at all.
+* **Every invite rang.** The application ignores an invite in a public
+  room, one already older than its lifetime, and one during another call —
+  which it answers with the `user_busy` hangup, or settles as glare by the
+  lesser call ID. The facade took them all, and the Kotlin side declined a
+  second call with `m.call.reject`, which is the wrong event. A candidate
+  batch that arrived a sync ahead of its invite was dropped; the
+  application keeps eight of them for thirty seconds.
+* **A renegotiation was handed over whatever the state.** The application
+  ignores one for a call not yet established, an answer to no offer of
+  ours, and a stale one; when two offers cross, the caller's stands and
+  the callee's rolls back; and it refuses to send an offer while one is
+  pending, with a thirty-second timeout. The core applies all of it; the
+  rollback reaches the embedder as an event the listener has no call for.
+* **The `m.call.sdp_stream_metadata_changed` handler was missing**, as
+  the ledger recorded: the core has it now, and the remote mute state is
+  two observables on the call. The listener still has no call for it.
+* **`first_stream_id` read only the media-level `msid`.** The application
+  also reads the `ssrc` form `webrtcbin` writes, with the tests that found
+  it; the core does too, so a desktop embedder announces its mutes.
+* **TURN was asked for on every call and handed over unsorted.** The
+  application asks once and keeps the answer until it goes stale, and
+  sorts the URIs so that a relay over UDP is the one a call gets.
+* **Outcomes were remembered for a hundred calls, not 256.**
+
+**Five gaps found and not filled**, by the standing ruling:
+
+* **No "connected" signal on the FFI.** The application's pipeline
+  reports media flowing; the core has `note_connected`, which nothing on
+  the Kotlin side calls, so a call there never reaches `Connected`,
+  `connected_at` stays zero, and the mute re-announced on connecting never
+  goes.
+* **Glare is answered on the spot by the application; the FFI rings.**
+  `Call::wants_immediate_answer` says so for an embedder with a pipeline.
+* **The listener has three end reasons of the application's seven.**
+  Not answered, no connection, media failed and failed all arrive as hung
+  up.
+* **The rollback and the remote mute have no listener call.**
+* **A member leaving mid-call is not noticed.** `Calls::handle_member_left`
+  is there; nothing in the core watches memberships to call it yet.
+
+**The clippy gate is met.** The three lints left after this group's
+rewrite were the FFI's own shape — a record of four booleans, a closure
+in the verification bridge, the one match per timeline item — and are
+allowed with their reasons or rewritten. `cargo clippy -p commune-core
+--all-targets --features ffi -- -D warnings` is green for the first time
+since the crate existed.
+
+The FFI surface is unchanged for the thirteenth time and the bindings
+came back byte-identical.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -1520,12 +1610,12 @@ recorded here as it is found, with the phase that closes it.
 | Found | Where | Divergence | Closes in |
 |---|---|---|---|
 | 29 Aug 2026 | `facade.rs` call handlers | **No `is_remote_party` guard at all.** The application puts every call handler but `handle_reject` behind `is_remote_party(sender, party_id)` (`src/session/calls/call.rs:354`); the core checked only whether the sender was us. `m.call.hangup` checked nothing whatever, so any participant in the room could end somebody else's call by sending a hangup carrying its ID, and a third party's candidates were fed into a live connection. Surfaced as a `dead_code` warning on the unused `CallFlow::remote_user_id` the moment the crate came under the application's roof — which is the mechanism this whole track exists to build. **Closed 31 Aug**, with the guard ported verbatim and six tests over its truth table. Unit-tested only: it has **not** been put in front of a live call yet, and calls are the one area of this application where that has meant a shipped bug before. The guard only ever rejects events, so it cannot invent behaviour, but it could in principle reject one it should have taken — the case to watch is whether a party ID stays identical across a peer's invite, candidates and hangup, which is what the specification says and what the harness would confirm. | Done, live check owed |
-| 31 Aug 2026 | `facade.rs`, `m.call.sdp_stream_metadata_changed` | The core sends this event but has **no handler for receiving it**. The application has `handle_stream_metadata` (`src/session/calls/call.rs:1298`), which is how the far end muting its microphone or camera reaches the interface. On the Kotlin side a remote mute is currently invisible. | Phase 4, module 9 |
+| 31 Aug 2026 | `facade.rs`, `m.call.sdp_stream_metadata_changed` | The core sends this event but has **no handler for receiving it**. The application has `handle_stream_metadata` (`src/session/calls/call.rs:1298`), which is how the far end muting its microphone or camera reaches the interface. On the Kotlin side a remote mute is currently invisible. **Handler written 1 Sep** in `session/calls/call.rs`: `handle_stream_metadata` behind the party rule, into `is_remote_camera_muted` and `is_remote_microphone_muted`. The FFI listener has no call for it, so a remote mute stays invisible on Kotlin until the bindings grow one; the two-device check stays with Phase 4. | Core done; FFI call and check owed |
 | 31 Aug 2026 | `secret/linux.rs` | **Fifteen translated sentences turned into English on the way past.** The application collapses `oo7`'s errors into fifteen messages a person can act on — "The collection or item is locked", "Make sure xdg-desktop-portal is installed, and it is at least at version 1.5.0" — each of them a `gettext` call. The core's transcription did the collapsing in the same place and dropped the `gettext`, then handed the result over as `SecretError::Service(String)`: a rendered sentence, in English, with nothing left for the UI layer to translate. Nobody would have noticed until a Linux user in a translated locale hit a locked keyring. **Closed 31 Aug**: the core classifies into a `KeyringError` value and renders English only as its own fallback, and `src/secret.rs` holds the fifteen `gettext` calls, with the msgids unchanged so no translation was invalidated. This is the general rule for the rest of Phase 2 — a value crosses, a sentence does not. | Done |
 | 31 Aug 2026 | `klipy.rs` | **The KLIPY API key was hard-coded into a tracked file.** The application takes it from the `klipy-api-key` Meson option, empty by default, into a generated and git-ignored `src/config.rs` — `doc/gif-search.md` explains that this is because the repository is public and a committed key is a published key. The transcription put the literal in `commune-core/src/klipy.rs`, with a comment saying the core has no build system to take an option from. It went to `origin/fractal-kotlin` in `ce5ffbc2` on 28 August and was found on 31 August while pricing this leaf; the key must be treated as compromised whatever happens to the history. The same file dropped `is_available()`, so the Kotlin build could not turn the feature off the way the desktop can. **Closed 31 Aug**: the key is an embedder-supplied `CoreConfig` field like `credential_label`, `is_available()` is back, and `gif_search_available()` is exported so the Kotlin picker can hide its tab. The literal is out of the source and out of the history. | Done, key needs rotating |
 | 31 Aug 2026 | `klipy.rs` | `Gif::title()`'s fallback for a GIF the API gave no title for was `gettext("GIF")` and became a bare `"GIF"`. It is the fallback body of the event, so it is a sentence, and it goes into the room — it is what a client with no image support shows and what a screen reader announces. **Closed 31 Aug** with leaf 2: `Gif::title()` in `src/utils/klipy.rs` shadows the core's method rather than reaching it through `Deref`, and `to_selection()` overwrites the title the core put in, because that is the one that becomes the event body. | Done |
 | 31 Aug 2026 | `secret/linux.rs`, `secret/macos.rs` | **The label on the stored credential lost its translation.** It is the one string either variant writes that a person reads outside the application — Seahorse and Keychain Access both show it — and the application has always run it through `gettext_f`. The core hard-coded the English. It cannot do otherwise, so **closed 31 Aug** from the other end: `CoreConfig` carries the sentence as a template and the core only substitutes `{user_id}` into it. The application passes its translated one at startup; the Kotlin variant passes `None` and gets the English, which is what it wants until it has translations of its own. | Done |
-| 31 Aug 2026 | `facade.rs` candidates and negotiate handlers | Both drop **every** event whose sender is our own user. The application drops only its own party's echo, because a party is a user _and_ a device: another of our own devices answering our invite is a legitimate remote party. Kept as-is deliberately — the broader check is documented in the core as the fix for a real bug where the echo of our own answer ended the call, and narrowing it wants a two-device test rather than a guess. | Phase 4, module 9 |
+| 31 Aug 2026 | `facade.rs` candidates and negotiate handlers | Both drop **every** event whose sender is our own user. The application drops only its own party's echo, because a party is a user _and_ a device: another of our own devices answering our invite is a legitimate remote party. Kept as-is deliberately — the broader check is documented in the core as the fix for a real bug where the echo of our own answer ended the call, and narrowing it wants a two-device test rather than a guess. **Closed 1 Sep**: `Call::is_remote_party` is the application's rule — our own user with our own party ID is the echo, another of our devices is a remote party. The two-device check stays with Phase 4. | Done; check owed |
 | 1 Sep 2026 | `facade.rs` login flows | **The OAuth and SSO redirect is Android's, hardcoded.** `ANDROID_REDIRECT_URI` is `io.github.steeb-k.commune:/oauth2redirect`, and `oauth_client_registration_data()` builds a fixed native-application registration around it. The desktop application does not use a custom scheme at all: `src/login/local_server.rs` runs a loopback HTTP server and registers _its_ address, because a desktop browser has nowhere to send an app scheme. A GTK login through this core would open an authorization URL the browser could never come back from. The redirect and the registration are embedder facts, like `credential_label` and `klipy_api_key` before them, and belong in `CoreConfig`. **Closed 1 Sep**: `CoreConfig::oauth_client` carries each embedder's client URI and redirect URIs — the GTK application's loopback pair, `init_core`'s Android scheme — and every login step that needs the redirect for one login takes it as an argument. The Android constants live in `facade.rs`, which is the Android embedder's Rust half; the core no longer knows them. | Done |
 | 1 Sep 2026 | `facade.rs`, `set_push_gateway` | **The pusher describes an Android device, in English, whatever the embedder is.** `app_display_name` is `"Commune"` and `device_display_name` is `"Commune on Android"`, both literals; the `LEGACY_APP_ID` deletion that runs first cleans up after a specific Android debug build. The device name is what a user sees in another client's session list when they audit what is pushing to them, so a desktop session announcing itself as Android is wrong in the one place the string is read. Embedder values, `CoreConfig` again — and the legacy cleanup is Android's alone and should say so. Commit 4 moved the pusher and left these as they were. **Closed 1 Sep** with the login redirect: `CoreConfig::app_name` names the application on the pusher, on a new device and on the OAuth client, and `CoreConfig::device_display_name` is the Android embedder's to set — the desktop passes none, since it never registers a pusher. The legacy cleanup still runs unconditionally, keyed on this device's pushkey, which is harmless where there is nothing to delete. | Done |
 | 1 Sep 2026 | `facade.rs`, `check_upload_size` | **The upload-size refusal is a rendered English sentence, with a private byte formatter.** The core builds `"This file is too large, the homeserver takes up to {size}"` and formats the number with its own `format_size`. The application says the same thing at `src/session_view/room_history/message_toolbar/mod.rs:1310` as a `gettext_f` over `glib::format_size`. It is the most commonly hit error in the file — every oversized attachment, avatar and pack image goes through it — and it is a sentence, so it must not cross: the core owes a value (`UploadTooLarge { max_bytes }`) and the two embedders own the wording. The two formatters agree on decimal units, so the rendered text is identical today; only the translation is lost. **Closed 1 Sep**: `TimelineError::UploadTooLarge { max_bytes }`, with `format_size` in `utils.rs` as the core's English fallback. | Done |
@@ -1571,6 +1661,13 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `facade.rs`, `can_send_state` | **Every `can_change` asked the store and never asked whether our member is joined.** The application's `Permissions::is_allowed_to` is false for a member not joined, and follows the power-levels event. **Closed 1 Sep**: `session/room/permissions.rs`, `PermissionsState`; the helper goes through the object. The group-10 `@room` gap closes with it. | Done |
 | 1 Sep 2026 | `facade.rs`, `room_permissions_matrix` | **`redact_others` was the stored `redact`, not the page's `max(redact_own, redact)`.** The page shows redacting others as at least redacting one's own. **Closed 1 Sep**: `PowerLevelsMatrix::from_power_levels` and `apply_to`, four tests. | Done |
 | 1 Sep 2026 | `facade.rs`, `cmp_room_versions` | **The version order was a simplification of the application's.** Whole numbers numerically, the rest lexicographically, where the application compares every digit sequence. **Closed 1 Sep**: `session/room/upgrade.rs`, the application's comparison and its test. | Done |
+| 1 Sep 2026 | `facade.rs`, `set_call_listener` (candidates) | **Candidates that arrived while a call rang were lost on the Pixel.** Handed to the listener at once, and the Kotlin engine does not exist until the call is accepted. The application holds them until there is a pipeline. **Closed 1 Sep**: `Call::handle_candidates` holds them while ringing and `accept` replays them. | Done |
+| 1 Sep 2026 | `facade.rs`, `send_call_candidates` | **Sent at once, one request per batch the embedder made.** The application batches two seconds after the invite, half a second after the answer, and sends the rest with the empty candidate when gathering ends. **Closed 1 Sep**: `Call::add_local_candidates`, `local_gathering_done`, the batch timers. | Done |
+| 1 Sep 2026 | `facade.rs`, `place_call` | **No `can_call`, no second-call refusal, no invite lifetime.** The application refuses a room without exactly one other joined member or without the power to send a message, refuses a second call, and hangs up an unanswered invite after ninety seconds. **Closed 1 Sep**: `Calls::place`, `can_call`, `other_member`, `INVITE_LIFETIME`. | Done |
+| 1 Sep 2026 | `facade.rs`, `set_call_listener` (invites) | **Every invite rang; a second call was declined with the wrong event; early candidates were dropped.** The application ignores invites in public rooms, expired ones, and settles a second invite as busy (`user_busy` hangup) or as glare by the lesser call ID; it keeps candidate batches that arrive before their invite. **Closed 1 Sep**: `Calls::handle_invite`, `handle_glare`, `hold_early_candidates`. The glare take-over rings on the FFI where the application answers at once. | Done, auto-answer owed |
+| 1 Sep 2026 | `facade.rs`, `send_call_negotiate`, `on_negotiate` | **Renegotiation had no rules.** The application ignores one for a call not established, an answer to no offer of ours, a stale one; the caller's crossed offer stands and the callee's rolls back; an offer is refused while one is pending, with a thirty-second timeout. **Closed 1 Sep**: `Call::handle_negotiate`, `send_negotiate`, `NEGOTIATE_LIFETIME`. The rollback has no listener call. | Done, FFI call owed |
+| 1 Sep 2026 | `facade.rs`, `turn_servers`, `first_stream_id`, outcomes | **TURN asked for on every call and unsorted; the stream ID read from one of the two SDP forms; a hundred outcomes kept, not 256.** **Closed 1 Sep**: `session/calls/turn.rs` with its cache and its six tests, `first_stream_id` with its seven, `MAX_REMEMBERED_OUTCOMES`. | Done |
+| 1 Sep 2026 | `facade.rs`, `set_call_listener` (connected) | **The FFI has no way to say a call connected.** The application's pipeline reports media flowing; on Kotlin a call never reaches `Connected`, and the mute the application re-announces on connecting never goes. `Call::note_connected` waits for a binding. | FFI method owed |
 
 ## Gates
 
@@ -1651,6 +1748,15 @@ warnings` finds fifteen further errors in `facade.rs`, `too_many_lines` and
 `struct_excessive_bools`. **The core has never been held to `-D warnings` and
 does not pass it.** Phase 3 is where that is settled, because that is the
 phase that rewrites the code all of it is in.
+
+_Settled 1 September, with commit 13._ The nine `result_unit_err` went with
+commit 10, which typed the timeline's errors; the fifteen behind the `ffi`
+feature went group by group as the methods they sat in were rewritten, and
+the three that outlived the rewrite were allowed with their reasons. `cargo
+clippy -p commune-core --all-targets --features ffi -- -D warnings` is green.
+What is left on Linux is the four `result_large_err` on `oo7::Error` in
+`secret/linux.rs`, which are the backend's and not this phase's; the Linux
+gate allows exactly that one lint until they are boxed.
 
 Per module, from Phase 2 on: the module's section of `doc/eyeball-tests.md` on
 the GTK application and of `doc/eyeball-android.md` on the Kotlin one. Calls

@@ -335,6 +335,14 @@ impl From<crate::session::PermissionsError> for CoreError {
     }
 }
 
+impl From<crate::session::CallError> for CoreError {
+    fn from(error: crate::session::CallError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 impl From<crate::session::RecoveryState> for FfiRecoveryState {
     fn from(state: crate::session::RecoveryState) -> Self {
         use crate::session::RecoveryState;
@@ -1023,7 +1031,7 @@ pub struct CoreApp {
     /// step (password, SSO, OAuth, registration, password reset).
     pending_login: Mutex<Option<crate::login::LoginFlow>>,
     /// The calls in flight and the listener following them.
-    calls: Arc<CallFlows>,
+    calls: Arc<CallBridge>,
 }
 
 #[uniffi::export]
@@ -1042,7 +1050,7 @@ impl CoreApp {
             verification: Arc::new(VerificationBridge::default()),
             member_list_listener_handle: Mutex::new(None),
             pending_login: Mutex::new(None),
-            calls: Arc::new(CallFlows::default()),
+            calls: Arc::new(CallBridge::default()),
         })
     }
 
@@ -1278,368 +1286,45 @@ impl CoreApp {
     ///
     /// Replaces any previous listener; registering starts watching.
     pub fn set_call_listener(&self, listener: Arc<dyn CallListener>) {
-        let flows = self.calls.clone();
-        *flows.listener.lock().expect("mutex is not poisoned") = Some(listener);
+        let bridge = self.calls.clone();
+        *bridge.listener.lock().expect("mutex is not poisoned") = Some(listener);
 
+        // The core's `Calls` installs the handlers when the session is
+        // prepared and keeps the one active call; this follows that call
+        // and turns what the core hears into the listener's five calls.
         let list = self.session_list.clone();
-        RUNTIME.spawn(async move {
-            use ruma::events::call::{
-                answer::OriginalSyncCallAnswerEvent, candidates::OriginalSyncCallCandidatesEvent,
-                hangup::OriginalSyncCallHangupEvent, invite::OriginalSyncCallInviteEvent,
-                reject::OriginalSyncCallRejectEvent,
-                select_answer::OriginalSyncCallSelectAnswerEvent,
-            };
+        let followers = bridge.clone();
+        let handle = RUNTIME
+            .spawn(async move {
+                let session = wait_for_ready_session(&list).await;
+                let calls = session.calls().clone();
+                let mut active = calls.subscribe_active_call();
+                let mut followed: Option<String> = None;
 
-            let session = wait_for_ready_session(&list).await;
-            let client = session.client();
-            let own_user_id = client.user_id().expect("logged in").to_owned();
-
-            // Whatever was listening before goes first: the same
-            // handler added twice reports every call twice, and the
-            // duplicate invite looks like a second, competing call.
-            if let Some(previous) = flows.handlers.lock().expect("mutex is not poisoned").take() {
-                previous.remove();
-            }
-            let mut handles = Vec::new();
-            tracing::info!("Call handlers installed for {own_user_id}");
-
-            let invite_flows = flows.clone();
-            let invite_own = own_user_id.clone();
-            handles.push(client.add_event_handler(
-                move |event: OriginalSyncCallInviteEvent, room: matrix_sdk::Room| {
-                    let flows = invite_flows.clone();
-                    let own_user_id = invite_own.clone();
-                    async move {
-                        // Our own invite echoing back is not a call to
-                        // answer, and an invite addressed to somebody
-                        // else is silence, per the specification.
-                        if event.sender == own_user_id {
-                            return;
-                        }
-                        if event
-                            .content
-                            .invitee
-                            .as_ref()
-                            .is_some_and(|invitee| *invitee != own_user_id)
-                        {
-                            return;
-                        }
-                        let call_id = event.content.call_id.to_string();
-                        flows.note_outcome(&call_id, FfiCallOutcome::Ringing);
-                        // The same invite reaches this end more than once —
-                        // a sync replay, or the room's own echo. Registering
-                        // it again mints a fresh party ID, while the answer
-                        // already went out under the old one; the caller's
-                        // select_answer then names a party this end no
-                        // longer claims, and the call we just answered ends
-                        // itself as "answered elsewhere".
-                        if flows.has(&call_id) {
-                            return;
-                        }
-                        tracing::info!("Incoming call {call_id} from {}", event.sender);
-                        flows.insert(
-                            call_id.clone(),
-                            CallFlow {
-                                room_id: room.room_id().to_string(),
-                                party_id: opaque_party_id(),
-                                remote_party_id: event
-                                    .content
-                                    .party_id
-                                    .as_ref()
-                                    .map(ToString::to_string),
-                                outgoing: false,
-                                answer_selected: false,
-                            },
-                        );
-                        flows.emit(|listener| {
-                            listener.on_incoming(
-                                call_id.clone(),
-                                room.room_id().to_string(),
-                                event.sender.to_string(),
-                                event.content.offer.sdp.clone(),
-                            );
-                        });
-                    }
-                },
-            ));
-
-            let answer_flows = flows.clone();
-            let answer_own = own_user_id.clone();
-            handles.push(
-                client.add_event_handler(
-                    move |event: OriginalSyncCallAnswerEvent, room: matrix_sdk::Room| {
-                    let flows = answer_flows.clone();
-                    let own_user_id = answer_own.clone();
-                    async move {
-                        let call_id = event.content.call_id.to_string();
-                        flows.note_outcome(&call_id, FfiCallOutcome::Answered);
-                        if !flows.has(&call_id) {
-                            return;
-                        }
-                        // An answer means something only to the end that
-                        // placed the call: GTK's `handle_answer` returns
-                        // unless the call is outgoing and the answer came
-                        // from the remote party. Our own answer to an
-                        // incoming call echoes back through sync, and
-                        // reading that echo as somebody else picking up
-                        // ended every call this device ever answered.
-                        // Whether another of our own devices got there
-                        // first is what `m.call.select_answer` says, and
-                        // that is the handler that says it.
-                        if !flows.is_outgoing(&call_id) || event.sender == own_user_id {
-                            return;
-                        }
-
-                        let their_party =
-                            event.content.party_id.as_ref().map(ToString::to_string);
-
-                        if flows.is_outgoing(&call_id) {
-                            let Some(our_party) = flows.take_answer_selection(&call_id) else {
-                                // Two of their devices answered. The first
-                                // one won; this one was told so by the
-                                // `m.call.select_answer` already sent. Going
-                                // further would apply a second remote
-                                // description over a live call.
-                                return;
-                            };
-                            // Version 1 asks the caller to say which answer
-                            // it took, so the devices that did not win stop
-                            // ringing.
-                            if let Some(their_party) = their_party.clone() {
-                                let content = ruma::events::call::select_answer::CallSelectAnswerEventContent::version_1(
-                                    ruma::OwnedVoipId::from(call_id.clone()),
-                                    ruma::OwnedVoipId::from(our_party),
-                                    ruma::OwnedVoipId::from(their_party),
-                                );
-                                // The handler is handed the SDK's own room,
-                                // which is what `send_call_event` unwraps
-                                // to anyway.
-                                if let Err(error) = room
-                                    .send(
-                                        ruma::events::AnyMessageLikeEventContent::CallSelectAnswer(
-                                            content,
-                                        ),
-                                    )
-                                    .await
-                                {
-                                    tracing::warn!(
-                                        "Could not select the answer for call {call_id}: {error}"
-                                    );
-                                }
-                            }
-                        }
-
-                        flows.set_remote_party(&call_id, their_party);
-                        flows.emit(|listener| {
-                            listener.on_answer(call_id.clone(), event.content.answer.sdp.clone());
-                        });
-                    }
-                },
-                ),
-            );
-
-            let candidate_flows = flows.clone();
-            let candidate_own = own_user_id.clone();
-            handles.push(client.add_event_handler(
-                move |event: OriginalSyncCallCandidatesEvent| {
-                    let flows = candidate_flows.clone();
-                    let own_user_id = candidate_own.clone();
-                    async move {
-                        if event.sender == own_user_id {
-                            return;
-                        }
-                        let call_id = event.content.call_id.to_string();
-                        if !flows.has(&call_id) {
-                            return;
-                        }
-                        let their_party =
-                            event.content.party_id.as_ref().map(ToString::to_string);
-                        if !flows.is_remote_party(&call_id, false, their_party.as_deref()) {
-                            return;
-                        }
-                        let candidates: Vec<FfiIceCandidate> = event
-                            .content
-                            .candidates
-                            .iter()
-                            // The empty candidate means "that is all of
-                            // them"; WebRTC has nothing to do with it.
-                            .filter(|candidate| !candidate.candidate.is_empty())
-                            .map(|candidate| FfiIceCandidate {
-                                candidate: candidate.candidate.clone(),
-                                sdp_mid: candidate.sdp_mid.clone(),
-                                sdp_m_line_index: candidate
-                                    .sdp_m_line_index
-                                    .map_or(0, |index| u64::from(index) as u32),
-                            })
-                            .collect();
-                        if candidates.is_empty() {
-                            return;
-                        }
-                        flows.emit(|listener| {
-                            listener.on_candidates(call_id.clone(), candidates.clone());
-                        });
-                    }
-                },
-            ));
-
-            let hangup_flows = flows.clone();
-            let hangup_own = own_user_id.clone();
-            handles.push(
-                client.add_event_handler(move |event: OriginalSyncCallHangupEvent| {
-                    let flows = hangup_flows.clone();
-                    let own_user_id = hangup_own.clone();
-                    async move {
-                        use ruma::events::call::hangup::Reason;
-
-                        let call_id = event.content.call_id.to_string();
-                        // A hangup only ever ends a call; whether
-                        // anybody answered first is what the merge
-                        // keeps. The busy signal is the one reason that
-                        // says something on its own — a refusal spelled
-                        // as a hangup.
-                        flows.note_outcome(
-                            &call_id,
-                            if event.content.reason == Reason::UserBusy {
-                                FfiCallOutcome::Declined
-                            } else {
-                                FfiCallOutcome::Missed
-                            },
-                        );
-                        if !flows.has(&call_id) {
-                            return;
-                        }
-                        // Anybody in the room can put this event on the
-                        // wire. Only the party we are actually talking to
-                        // gets to end the call with it.
-                        let their_party =
-                            event.content.party_id.as_ref().map(ToString::to_string);
-                        if !flows.is_remote_party(
-                            &call_id,
-                            event.sender == own_user_id,
-                            their_party.as_deref(),
-                        ) {
-                            return;
-                        }
-                        flows.remove(&call_id);
-                        flows.emit(|listener| {
-                            listener.on_ended(call_id.clone(), FfiCallEnd::HungUp);
-                        });
-                    }
-                }),
-            );
-
-            let reject_flows = flows.clone();
-            let reject_own = own_user_id.clone();
-            handles.push(
-                client.add_event_handler(move |event: OriginalSyncCallRejectEvent| {
-                    let flows = reject_flows.clone();
-                    let own_user_id = reject_own.clone();
-                    async move {
-                        let call_id = event.content.call_id.to_string();
-                        flows.note_outcome(&call_id, FfiCallOutcome::Declined);
-                        if !flows.has(&call_id) {
-                            return;
-                        }
-                        // `handle_reject` is the one handler the
-                        // application does not put behind
-                        // `is_remote_party`, because a reject from our own
-                        // user means something on its own. It still drops
-                        // our own echo: this device declining is not this
-                        // device being told it was declined elsewhere.
-                        let sender_is_own = event.sender == own_user_id;
-                        if sender_is_own
-                            && flows.party_id(&call_id).as_deref()
-                                == Some(event.content.party_id.as_str())
-                        {
-                            return;
-                        }
-                        flows.remove(&call_id);
-                        let end = if sender_is_own {
-                            FfiCallEnd::AnsweredElsewhere
-                        } else {
-                            FfiCallEnd::Declined
-                        };
-                        flows.emit(|listener| {
-                            listener.on_ended(call_id.clone(), end);
-                        });
-                    }
-                }),
-            );
-
-            // A renegotiation: the other end changed what it sends —
-            // a camera coming on partway through a voice call — and the
-            // embedder answers with a fresh description.
-            let negotiate_flows = flows.clone();
-            let negotiate_own = own_user_id.clone();
-            handles.push(client.add_event_handler(
-                move |event: ruma::events::call::negotiate::OriginalSyncCallNegotiateEvent| {
-                    let flows = negotiate_flows.clone();
-                    let own_user_id = negotiate_own.clone();
-                    async move {
-                        if event.sender == own_user_id {
-                            return;
-                        }
-                        let call_id = event.content.call_id.to_string();
-                        if !flows.has(&call_id) {
-                            return;
-                        }
-                        if !flows.is_remote_party(
-                            &call_id,
-                            false,
-                            Some(event.content.party_id.as_str()),
-                        ) {
-                            return;
-                        }
-                        let description = event.content.description;
-                        flows.emit(|listener| {
-                            listener.on_negotiate(
-                                call_id.clone(),
-                                description.sdp.clone(),
-                                description.session_type.to_string(),
-                            );
-                        });
-                    }
-                },
-            ));
-
-            let select_flows = flows.clone();
-            let select_own = own_user_id.clone();
-            handles.push(client.add_event_handler(
-                move |event: OriginalSyncCallSelectAnswerEvent| {
-                    let flows = select_flows.clone();
-                    let own_user_id = select_own.clone();
-                    async move {
-                        // The caller sends this, to tell the callee's other
-                        // devices that they lost. Our own copy echoing back
-                        // through sync names the callee's party, never
-                        // ours, so acting on it tears down the very call we
-                        // just placed.
-                        if event.sender == own_user_id {
-                            return;
-                        }
-                        let call_id = event.content.call_id.to_string();
-                        flows.note_outcome(&call_id, FfiCallOutcome::Answered);
-                        // Only a callee acts on this. The caller sent it.
-                        if flows.is_outgoing(&call_id) {
-                            return;
-                        }
-                        let Some(party_id) = flows.party_id(&call_id) else {
-                            return;
-                        };
-                        // Somebody else's answer was chosen: this end is out.
-                        if event.content.selected_party_id.as_str() != party_id {
-                            flows.remove(&call_id);
-                            flows.emit(|listener| {
-                                listener.on_ended(call_id.clone(), FfiCallEnd::AnsweredElsewhere);
-                            });
+                loop {
+                    if let Some(call) = calls.active_call() {
+                        let call_id = call.call_id().to_string();
+                        if followed.as_ref() != Some(&call_id) {
+                            followed = Some(call_id);
+                            followers.clone().follow(call);
                         }
                     }
-                },
-            ));
 
-            *flows.handlers.lock().expect("mutex is not poisoned") =
-                Some(InstalledHandlers { client, handles });
-        });
+                    if active.next().await.is_none() {
+                        break;
+                    }
+                }
+            })
+            .abort_handle();
+
+        if let Some(previous) = bridge
+            .watch_handle
+            .lock()
+            .expect("mutex is not poisoned")
+            .replace(handle)
+        {
+            previous.abort();
+        }
     }
 
     /// Place a call: send `m.call.invite` with the offer the embedder's
@@ -1650,187 +1335,104 @@ impl CoreApp {
         invitee: String,
         sdp: String,
     ) -> Result<String, CoreError> {
-        use ruma::{
-            UInt,
-            events::{
-                AnyMessageLikeEventContent,
-                call::{SessionDescription, invite::CallInviteEventContent},
-            },
-        };
+        let session = self.session()?;
+        let room = self.room(&room_id)?;
 
-        let Some(session) = self.first_ready_session() else {
-            return Err(CoreError::Failed {
-                msg: "No session".to_owned(),
-            });
-        };
-        let flows = self.calls.clone();
-
-        RUNTIME
-            .spawn(async move {
-                let parsed_room_id =
-                    ruma::RoomId::parse(&room_id).map_err(|_| CoreError::Failed {
-                        msg: "Invalid room ID".to_owned(),
-                    })?;
-                let room =
-                    session
-                        .room_list()
-                        .get(&parsed_room_id)
-                        .ok_or_else(|| CoreError::Failed {
-                            msg: "Unknown room".to_owned(),
-                        })?;
-
-                let call_id = opaque_party_id();
-                let party_id = opaque_party_id();
-                let mut content = CallInviteEventContent::version_1(
-                    ruma::OwnedVoipId::from(call_id.clone()),
-                    ruma::OwnedVoipId::from(party_id.clone()),
-                    UInt::try_from(CALL_INVITE_LIFETIME_MS).unwrap_or(UInt::MAX),
-                    SessionDescription::new("offer".to_owned(), sdp),
-                );
-                // A call placed to one person says so; without it,
-                // anybody in the room could answer.
-                content.invitee = ruma::UserId::parse(&invitee).ok();
-                if let Some(stream_id) = first_stream_id(&content.offer.sdp) {
-                    use ruma::events::call::{StreamMetadata, StreamPurpose};
-
-                    let mut metadata = StreamMetadata::new(StreamPurpose::UserMedia);
-                    metadata.video_muted = !sdp_has_video(&content.offer.sdp);
-                    content.sdp_stream_metadata = [(stream_id, metadata)].into_iter().collect();
-                }
-
-                flows.insert(
-                    call_id.clone(),
-                    CallFlow {
-                        room_id: room_id.clone(),
-                        party_id,
-                        remote_party_id: None,
-                        outgoing: true,
-                        answer_selected: false,
-                    },
-                );
-
-                send_call_event(&room, AnyMessageLikeEventContent::CallInvite(content)).await?;
-                Ok(call_id)
-            })
+        // The invitee is the room's one other member, as the application
+        // addresses it; the one handed over is only checked against it.
+        // The member list may have to load, which spawns onto the runtime.
+        let call = RUNTIME
+            .spawn(async move { session.calls().place(&room, sdp).await })
             .await
             .expect("task was not aborted")
+            .map_err(CoreError::from)?;
+
+        if let Some(remote) = call.remote_user_id()
+            && remote.as_str() != invitee.trim()
+        {
+            tracing::warn!("The call was placed to {remote}, not to the {invitee} asked for");
+        }
+
+        Ok(call.call_id().to_string())
     }
 
     /// Answer a call with the embedder's answer description.
+    #[allow(
+        clippy::unused_async,
+        reason = "the signature is the bindings'; the core answers without waiting"
+    )]
     pub async fn answer_call(&self, call_id: String, sdp: String) -> Result<(), CoreError> {
-        use ruma::events::{
-            AnyMessageLikeEventContent,
-            call::{SessionDescription, answer::CallAnswerEventContent},
-        };
+        let session = self.session()?;
 
-        let (room, party_id) = self.call_room(&call_id)?;
-
-        RUNTIME
-            .spawn(async move {
-                let mut content = CallAnswerEventContent::version_1(
-                    SessionDescription::new("answer".to_owned(), sdp),
-                    ruma::OwnedVoipId::from(call_id),
-                    ruma::OwnedVoipId::from(party_id),
-                );
-                if let Some(stream_id) = first_stream_id(&content.answer.sdp) {
-                    use ruma::events::call::{StreamMetadata, StreamPurpose};
-
-                    let mut metadata = StreamMetadata::new(StreamPurpose::UserMedia);
-                    metadata.video_muted = !sdp_has_video(&content.answer.sdp);
-                    content.sdp_stream_metadata = [(stream_id, metadata)].into_iter().collect();
-                }
-                send_call_event(&room, AnyMessageLikeEventContent::CallAnswer(content)).await
-            })
-            .await
-            .expect("task was not aborted")
+        session
+            .calls()
+            .accept(&call_id, sdp)
+            .map_err(CoreError::from)
     }
 
     /// Send gathered ICE candidates. Both `sdp_mid` and the media-line
     /// index ride along: the specification asks for one, and clients in
     /// the wild want the other.
+    #[allow(
+        clippy::unused_async,
+        reason = "the signature is the bindings'; the core answers without waiting"
+    )]
     pub async fn send_call_candidates(
         &self,
         call_id: String,
         candidates: Vec<FfiIceCandidate>,
         end_of_candidates: bool,
     ) -> Result<(), CoreError> {
-        use ruma::{
-            UInt,
-            events::{
-                AnyMessageLikeEventContent,
-                call::candidates::{CallCandidatesEventContent, Candidate},
-            },
-        };
+        use ruma::{UInt, events::call::candidates::Candidate};
 
-        let (room, party_id) = self.call_room(&call_id)?;
+        let call = self.call(&call_id)?;
 
-        RUNTIME
-            .spawn(async move {
-                let mut list: Vec<Candidate> = candidates
-                    .into_iter()
-                    .map(|candidate| {
-                        let mut queued = Candidate::new(candidate.candidate);
-                        queued.sdp_mid = candidate.sdp_mid;
-                        queued.sdp_m_line_index = Some(UInt::from(candidate.sdp_m_line_index));
-                        queued
-                    })
-                    .collect();
-                if end_of_candidates {
-                    // An empty candidate is how the specification spells
-                    // "that is all of them".
-                    let mut end = Candidate::new(String::new());
-                    end.sdp_m_line_index = Some(UInt::from(0u32));
-                    list.push(end);
-                }
-                if list.is_empty() {
-                    return Ok(());
-                }
-
-                let content = CallCandidatesEventContent::version_1(
-                    ruma::OwnedVoipId::from(call_id),
-                    ruma::OwnedVoipId::from(party_id),
-                    list,
-                );
-                send_call_event(&room, AnyMessageLikeEventContent::CallCandidates(content)).await
+        // Queued rather than sent: the application batches its candidates
+        // after the invite or the answer, and the end of gathering sends
+        // whatever is left with the empty candidate that says so.
+        let list: Vec<Candidate> = candidates
+            .into_iter()
+            .map(|candidate| {
+                let mut queued = Candidate::new(candidate.candidate);
+                queued.sdp_mid = candidate.sdp_mid;
+                queued.sdp_m_line_index = Some(UInt::from(candidate.sdp_m_line_index));
+                queued
             })
-            .await
-            .expect("task was not aborted")
+            .collect();
+        call.add_local_candidates(list);
+
+        if end_of_candidates {
+            call.local_gathering_done();
+        }
+
+        Ok(())
     }
 
     /// Offer or accept a new session description mid-call — what the
     /// application sends when the camera comes on partway through.
+    #[allow(
+        clippy::unused_async,
+        reason = "the signature is the bindings'; the core answers without waiting"
+    )]
     pub async fn send_call_negotiate(
         &self,
         call_id: String,
         sdp: String,
         session_type: String,
     ) -> Result<(), CoreError> {
-        use ruma::{
-            UInt,
-            events::{
-                AnyMessageLikeEventContent,
-                call::{SessionDescription, negotiate::CallNegotiateEventContent},
-            },
-        };
+        let call = self.call(&call_id)?;
 
-        let (room, party_id) = self.call_room(&call_id)?;
+        call.send_negotiate(sdp, session_type == "answer");
 
-        RUNTIME
-            .spawn(async move {
-                let content = CallNegotiateEventContent::version_1(
-                    ruma::OwnedVoipId::from(call_id),
-                    ruma::OwnedVoipId::from(party_id),
-                    UInt::try_from(CALL_NEGOTIATE_LIFETIME_MS).unwrap_or(UInt::MAX),
-                    SessionDescription::new(session_type, sdp),
-                );
-                send_call_event(&room, AnyMessageLikeEventContent::CallNegotiate(content)).await
-            })
-            .await
-            .expect("task was not aborted")
+        Ok(())
     }
 
     /// Tell the other end what this end has muted, as the application's
     /// `send_stream_metadata` does.
+    #[allow(
+        clippy::unused_async,
+        reason = "the signature is the bindings'; the core answers without waiting"
+    )]
     pub async fn send_call_stream_metadata(
         &self,
         call_id: String,
@@ -1838,112 +1440,65 @@ impl CoreApp {
         audio_muted: bool,
         video_muted: bool,
     ) -> Result<(), CoreError> {
-        use ruma::events::{
-            AnyMessageLikeEventContent,
-            call::{
-                StreamMetadata, StreamPurpose,
-                sdp_stream_metadata_changed::CallSdpStreamMetadataChangedEventContent,
-            },
-        };
+        let call = self.call(&call_id)?;
 
-        let (room, party_id) = self.call_room(&call_id)?;
+        // The stream is the one our own description named; the embedder's
+        // name for it is the fallback when the description named none.
+        call.set_local_stream_id_if_missing(stream_id);
+        call.set_muted(audio_muted, video_muted);
 
-        RUNTIME
-            .spawn(async move {
-                let mut metadata = StreamMetadata::new(StreamPurpose::UserMedia);
-                metadata.audio_muted = audio_muted;
-                metadata.video_muted = video_muted;
-
-                let content = CallSdpStreamMetadataChangedEventContent::new(
-                    ruma::OwnedVoipId::from(call_id),
-                    ruma::OwnedVoipId::from(party_id),
-                    ruma::VoipVersionId::V1,
-                    [(stream_id, metadata)].into_iter().collect(),
-                );
-                send_call_event(
-                    &room,
-                    AnyMessageLikeEventContent::CallSdpStreamMetadataChanged(content),
-                )
-                .await
-            })
-            .await
-            .expect("task was not aborted")
+        Ok(())
     }
 
     /// Hang up a call that was placed or answered.
+    #[allow(
+        clippy::unused_async,
+        reason = "the signature is the bindings'; the core answers without waiting"
+    )]
     pub async fn hangup_call(&self, call_id: String) -> Result<(), CoreError> {
-        use ruma::events::{
-            AnyMessageLikeEventContent,
-            call::hangup::{CallHangupEventContent, Reason},
-        };
+        let call = self.call(&call_id)?;
 
-        let (room, party_id) = self.call_room(&call_id)?;
-        let flows = self.calls.clone();
+        call.hangup();
 
-        RUNTIME
-            .spawn(async move {
-                let content = CallHangupEventContent::version_1(
-                    ruma::OwnedVoipId::from(call_id.clone()),
-                    ruma::OwnedVoipId::from(party_id),
-                    Reason::UserHangup,
-                );
-                flows.remove(&call_id);
-                send_call_event(&room, AnyMessageLikeEventContent::CallHangup(content)).await
-            })
-            .await
-            .expect("task was not aborted")
+        Ok(())
     }
 
     /// Decline an incoming call.
+    #[allow(
+        clippy::unused_async,
+        reason = "the signature is the bindings'; the core answers without waiting"
+    )]
     pub async fn reject_call(&self, call_id: String) -> Result<(), CoreError> {
-        use ruma::events::{AnyMessageLikeEventContent, call::reject::CallRejectEventContent};
+        let call = self.call(&call_id)?;
 
-        let (room, party_id) = self.call_room(&call_id)?;
-        let flows = self.calls.clone();
+        // Only a ringing call is declined; the application's `reject` does
+        // nothing for any other state.
+        call.reject();
 
-        RUNTIME
-            .spawn(async move {
-                let content = CallRejectEventContent::version_1(
-                    ruma::OwnedVoipId::from(call_id.clone()),
-                    ruma::OwnedVoipId::from(party_id),
-                );
-                flows.remove(&call_id);
-                send_call_event(&room, AnyMessageLikeEventContent::CallReject(content)).await
-            })
-            .await
-            .expect("task was not aborted")
+        Ok(())
     }
 
     /// The ICE servers the homeserver hands out, with the credentials
     /// that go with them and how long they last.
     pub async fn turn_servers(&self) -> FfiTurnServers {
-        use ruma::api::client::voip::get_turn_server_info;
-
-        let Some(session) = self.first_ready_session() else {
+        let Ok(session) = self.session() else {
             return FfiTurnServers::default();
         };
 
+        // Kept until they go stale, as the application keeps them; the
+        // URIs come sorted so that a relay over UDP is the one a call
+        // gets. No TURN is not no call: a local network often carries one
+        // on host candidates alone.
         RUNTIME
-            .spawn(async move {
-                let Ok(response) = session
-                    .client()
-                    .send(get_turn_server_info::v3::Request::new())
-                    .await
-                else {
-                    // No TURN is not no call: a local network often
-                    // carries one on host candidates alone.
-                    return FfiTurnServers::default();
-                };
-
-                FfiTurnServers {
-                    uris: response.uris,
-                    username: response.username,
-                    password: response.password,
-                    ttl_seconds: response.ttl.as_secs(),
-                }
-            })
+            .spawn(async move { session.calls().turn_credentials_raw().await })
             .await
             .expect("task was not aborted")
+            .map_or_else(FfiTurnServers::default, |raw| FfiTurnServers {
+                uris: raw.uris,
+                username: raw.username,
+                password: raw.password,
+                ttl_seconds: raw.ttl.as_secs(),
+            })
     }
 
     /// The rooms of the first ready session, as of now.
@@ -1988,8 +1543,6 @@ impl CoreApp {
     ///
     /// Replaces any previous pinned listener.
     pub fn set_pinned_listener(&self, room_id: String, listener: Arc<dyn TimelineListener>) {
-        // What became of each call, for the rows they leave behind.
-        let calls = self.calls.clone();
         let session = self.first_ready_session();
 
         let handle = RUNTIME
@@ -2007,7 +1560,7 @@ impl CoreApp {
                     return;
                 };
                 let own_user_id = session.user_id().clone();
-                let outcomes = calls.outcome_snapshot();
+                let outcomes = ffi_call_outcomes(&session);
                 listener.on_update(
                     items
                         .iter()
@@ -2020,7 +1573,7 @@ impl CoreApp {
                     for diff in diffs {
                         diff.apply(&mut items);
                     }
-                    let outcomes = calls.outcome_snapshot();
+                    let outcomes = ffi_call_outcomes(&session);
                     listener.on_update(
                         items
                             .iter()
@@ -2132,8 +1685,6 @@ impl CoreApp {
     /// Replaces any previous timeline listener; v1 watches one room at a
     /// time, which is what one screen shows.
     pub fn set_timeline_listener(&self, room_id: String, listener: Arc<dyn TimelineListener>) {
-        // What became of each call, for the rows they leave behind.
-        let calls = self.calls.clone();
         let session = self.first_ready_session();
 
         let handle = RUNTIME
@@ -2152,7 +1703,7 @@ impl CoreApp {
                 };
                 let own_user_id = session.user_id().clone();
 
-                let outcomes = calls.outcome_snapshot();
+                let outcomes = ffi_call_outcomes(&session);
                 listener.on_update(
                     items
                         .iter()
@@ -2165,7 +1716,7 @@ impl CoreApp {
                     for diff in diffs {
                         diff.apply(&mut items);
                     }
-                    let outcomes = calls.outcome_snapshot();
+                    let outcomes = ffi_call_outcomes(&session);
                     listener.on_update(
                         items
                             .iter()
@@ -2358,8 +1909,6 @@ impl CoreApp {
         root_event_id: String,
         listener: Arc<dyn TimelineListener>,
     ) {
-        // What became of each call, for the rows they leave behind.
-        let calls = self.calls.clone();
         let session = self.first_ready_session();
 
         let handle = RUNTIME
@@ -2381,7 +1930,7 @@ impl CoreApp {
                 };
 
                 let own_user_id = session.user_id().clone();
-                let outcomes = calls.outcome_snapshot();
+                let outcomes = ffi_call_outcomes(&session);
                 listener.on_update(
                     items
                         .iter()
@@ -2394,7 +1943,7 @@ impl CoreApp {
                     for diff in diffs {
                         diff.apply(&mut items);
                     }
-                    let outcomes = calls.outcome_snapshot();
+                    let outcomes = ffi_call_outcomes(&session);
                     listener.on_update(
                         items
                             .iter()
@@ -5379,6 +4928,10 @@ pub enum FfiJoinRuleValue {
 
 /// A room's join rule with what the room's version supports.
 #[derive(uniffi::Record)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "the page's three version flags and one permission, as the bindings carry them"
+)]
 pub struct FfiJoinRuleInfo {
     /// The current rule.
     pub value: FfiJoinRuleValue,
@@ -5770,6 +5323,16 @@ impl CoreApp {
         self.session_list.active_session()
     }
 
+    /// The call with the given ID, if it is the one that is happening.
+    fn call(&self, call_id: &str) -> Result<crate::session::Call, CoreError> {
+        let session = self.session()?;
+
+        session
+            .calls()
+            .call_with_id(call_id)
+            .ok_or_else(|| CoreError::from(crate::session::CallError::NoSuchCall))
+    }
+
     /// The active session, or the error the FFI reports when there is
     /// none.
     ///
@@ -5810,28 +5373,6 @@ impl Drop for CoreApp {
 /// Wait until the session list has a ready session, and return it.
 /// The verification flows in progress and their listener.
 impl CoreApp {
-    /// The room a call lives in, with this end's party ID.
-    fn call_room(&self, call_id: &str) -> Result<(crate::session::Room, String), CoreError> {
-        let flow = self.calls.get(call_id).ok_or_else(|| CoreError::Failed {
-            msg: "Unknown call".to_owned(),
-        })?;
-        let session = self
-            .first_ready_session()
-            .ok_or_else(|| CoreError::Failed {
-                msg: "No session".to_owned(),
-            })?;
-        let room_id = ruma::RoomId::parse(&flow.0).map_err(|_| CoreError::Failed {
-            msg: "Invalid room ID".to_owned(),
-        })?;
-        let room = session
-            .room_list()
-            .get(&room_id)
-            .ok_or_else(|| CoreError::Failed {
-                msg: "Unknown room".to_owned(),
-            })?;
-        Ok((room, flow.1))
-    }
-
     /// The login the discovery step started, for the flow's next step.
     fn pending_login_flow(&self) -> Result<crate::login::LoginFlow, CoreError> {
         self.pending_login
@@ -5879,256 +5420,6 @@ impl CoreApp {
 
         self.set_active_session(session_id);
         Ok(())
-    }
-}
-
-/// How long an invite rings for, as the application sets it.
-const CALL_INVITE_LIFETIME_MS: u64 = 90_000;
-
-/// How long a renegotiation offer stands, as the application sets it.
-const CALL_NEGOTIATE_LIFETIME_MS: u64 = 30_000;
-
-/// A random opaque identifier, for call and party IDs — the eight
-/// characters the application's `opaque_id(8)` produces.
-fn opaque_party_id() -> String {
-    use rand::{
-        distr::{Alphanumeric, SampleString},
-        rng,
-    };
-
-    Alphanumeric.sample_string(&mut rng(), 8)
-}
-
-/// Send a call event straight to the homeserver rather than through the
-/// send queue: a queued invite arrives after the person stopped waiting,
-/// and a queued hangup leaves the other end in a call that is over.
-async fn send_call_event(
-    room: &crate::session::Room,
-    content: ruma::events::AnyMessageLikeEventContent,
-) -> Result<(), CoreError> {
-    room.matrix_room()
-        .send(content)
-        .await
-        .map(|_| ())
-        .map_err(|send_error| CoreError::Failed {
-            msg: format!("Could not send the call event: {send_error}"),
-        })
-}
-
-/// One call in flight.
-struct CallFlow {
-    room_id: String,
-    party_id: String,
-    remote_party_id: Option<String>,
-    outgoing: bool,
-    /// Whether this end, as the caller, has already picked an answer and
-    /// said so. The first answer wins; every later one is ignored.
-    answer_selected: bool,
-}
-
-/// How many calls the timeline remembers the outcome of.
-const MAX_REMEMBERED_OUTCOMES: usize = 100;
-
-/// What one call outcome becomes when another is learned — the
-/// application's `merge_outcome`, whose ordering is the whole logic.
-fn merge_outcome(previous: Option<FfiCallOutcome>, next: FfiCallOutcome) -> FfiCallOutcome {
-    match (previous, next) {
-        // A call that was answered and then hung up ended; it was not
-        // missed. Every call ends with a hangup, so without this every
-        // call in the timeline would say nobody answered.
-        (Some(FfiCallOutcome::Answered), FfiCallOutcome::Missed) => FfiCallOutcome::Answered,
-        // The invite arrives once, and its echo says nothing new.
-        (Some(previous), FfiCallOutcome::Ringing) => previous,
-        (_, next) => next,
-    }
-}
-
-/// Whether an offer describes a video call: a media section for video
-/// in the SDP, which is the only place the answer lives.
-fn sdp_has_video(sdp: &str) -> bool {
-    sdp.contains("\r\nm=video ") || sdp.contains("\nm=video ") || sdp.starts_with("m=video ")
-}
-
-/// The first stream the SDP names, for the metadata that says what is
-/// muted. A stream the far end was not told about is one the
-/// specification asks it to ignore.
-fn first_stream_id(sdp: &str) -> Option<String> {
-    sdp.lines()
-        .filter_map(|line| line.trim().strip_prefix("a=msid:"))
-        .filter_map(|value| value.split_whitespace().next())
-        .map(ToOwned::to_owned)
-        .next()
-}
-
-/// The calls in flight and the listener following them.
-#[derive(Default)]
-struct CallFlows {
-    listener: Mutex<Option<Arc<dyn CallListener>>>,
-    calls: Mutex<std::collections::HashMap<String, CallFlow>>,
-    /// What became of the calls this session saw, for the rows the
-    /// timeline draws afterwards — every call the room saw, not only
-    /// the ones this client was in.
-    outcomes: Mutex<std::collections::HashMap<String, FfiCallOutcome>>,
-    /// The order they were learned in, so the oldest are forgotten.
-    outcome_order: Mutex<std::collections::VecDeque<String>>,
-    /// The client the handlers sit on, and the handles that take them
-    /// off again — an event handler left on a stale client hears
-    /// nothing, and one added twice hears everything twice.
-    handlers: Mutex<Option<InstalledHandlers>>,
-}
-
-/// The event handlers of one listener, on the client they were added to.
-struct InstalledHandlers {
-    client: matrix_sdk::Client,
-    handles: Vec<matrix_sdk::event_handler::EventHandlerHandle>,
-}
-
-impl InstalledHandlers {
-    /// Take these handlers off their client.
-    fn remove(self) {
-        for handle in self.handles {
-            self.client.remove_event_handler(handle);
-        }
-    }
-}
-
-impl CallFlows {
-    fn has(&self, call_id: &str) -> bool {
-        self.calls
-            .lock()
-            .expect("mutex is not poisoned")
-            .contains_key(call_id)
-    }
-
-    fn insert(&self, call_id: String, flow: CallFlow) {
-        self.calls
-            .lock()
-            .expect("mutex is not poisoned")
-            .insert(call_id, flow);
-    }
-
-    fn remove(&self, call_id: &str) {
-        self.calls
-            .lock()
-            .expect("mutex is not poisoned")
-            .remove(call_id);
-    }
-
-    /// The room and party ID of a call, if it is still in flight.
-    fn get(&self, call_id: &str) -> Option<(String, String)> {
-        self.calls
-            .lock()
-            .expect("mutex is not poisoned")
-            .get(call_id)
-            .map(|flow| (flow.room_id.clone(), flow.party_id.clone()))
-    }
-
-    fn party_id(&self, call_id: &str) -> Option<String> {
-        self.calls
-            .lock()
-            .expect("mutex is not poisoned")
-            .get(call_id)
-            .map(|flow| flow.party_id.clone())
-    }
-
-    fn is_outgoing(&self, call_id: &str) -> bool {
-        self.calls
-            .lock()
-            .expect("mutex is not poisoned")
-            .get(call_id)
-            .is_some_and(|flow| flow.outgoing)
-    }
-
-    /// Whether the given party is the one this call is talking to.
-    ///
-    /// The application's `Call::is_remote_party`, which guards every one of
-    /// its handlers but `handle_reject`, and which had no equivalent here.
-    /// A party is a user and a device, and both halves matter, because a
-    /// room holds more than one of each: without this, a third
-    /// participant's hangup ended a call that was none of theirs, and their
-    /// candidates were handed to it.
-    ///
-    /// A call whose flow has already gone is nobody's to act on, so a
-    /// missing one answers `false` rather than letting a late event
-    /// resurrect it.
-    fn is_remote_party(&self, call_id: &str, sender_is_own: bool, party_id: Option<&str>) -> bool {
-        let calls = self.calls.lock().expect("mutex is not poisoned");
-        let Some(flow) = calls.get(call_id) else {
-            return false;
-        };
-
-        if sender_is_own && party_id == Some(flow.party_id.as_str()) {
-            // Our own event, echoed back through the sync.
-            return false;
-        }
-
-        match &flow.remote_party_id {
-            Some(known) => party_id.is_none_or(|id| id == known),
-            None => true,
-        }
-    }
-
-    /// Claim the right to answer for this call: returns our own party ID
-    /// the first time an answer arrives for a call we placed, and nothing
-    /// afterwards. Claiming and marking are one step so that two answers
-    /// landing together cannot both win.
-    fn take_answer_selection(&self, call_id: &str) -> Option<String> {
-        let mut calls = self.calls.lock().expect("mutex is not poisoned");
-        let flow = calls.get_mut(call_id)?;
-        if !flow.outgoing || flow.answer_selected {
-            return None;
-        }
-        flow.answer_selected = true;
-        Some(flow.party_id.clone())
-    }
-
-    fn set_remote_party(&self, call_id: &str, remote_party_id: Option<String>) {
-        if let Some(flow) = self
-            .calls
-            .lock()
-            .expect("mutex is not poisoned")
-            .get_mut(call_id)
-        {
-            flow.remote_party_id = remote_party_id;
-        }
-    }
-
-    /// Note what has happened to a call, for the row the timeline
-    /// draws — including a call answered on another device.
-    fn note_outcome(&self, call_id: &str, outcome: FfiCallOutcome) {
-        let mut outcomes = self.outcomes.lock().expect("mutex is not poisoned");
-        let previous = outcomes.get(call_id).copied();
-        let merged = merge_outcome(previous, outcome);
-
-        if previous == Some(merged) {
-            return;
-        }
-        if previous.is_none() {
-            let mut order = self.outcome_order.lock().expect("mutex is not poisoned");
-            order.push_back(call_id.to_owned());
-            while order.len() > MAX_REMEMBERED_OUTCOMES {
-                if let Some(forgotten) = order.pop_front() {
-                    outcomes.remove(&forgotten);
-                }
-            }
-        }
-        outcomes.insert(call_id.to_owned(), merged);
-    }
-
-    /// A copy of the outcomes, for building timeline items.
-    fn outcome_snapshot(&self) -> std::collections::HashMap<String, FfiCallOutcome> {
-        self.outcomes.lock().expect("mutex is not poisoned").clone()
-    }
-
-    fn emit(&self, f: impl FnOnce(&Arc<dyn CallListener>)) {
-        if let Some(listener) = self
-            .listener
-            .lock()
-            .expect("mutex is not poisoned")
-            .as_ref()
-        {
-            f(listener);
-        }
     }
 }
 
@@ -6195,6 +5486,162 @@ pub trait CallListener: Send + Sync {
     fn on_negotiate(&self, call_id: String, sdp: String, session_type: String);
     /// The call is over.
     fn on_ended(&self, call_id: String, reason: FfiCallEnd);
+}
+
+/// What feeds the foreign call listener from the core's calls.
+///
+/// The core's `Calls` is the state; this follows the one active call and
+/// turns the application's events and states into the listener's five
+/// calls.
+#[derive(Default)]
+struct CallBridge {
+    listener: Mutex<Option<Arc<dyn CallListener>>>,
+    /// The task following the active call.
+    watch_handle: Mutex<Option<tokio::task::AbortHandle>>,
+}
+
+impl CallBridge {
+    fn emit(&self, f: impl FnOnce(&Arc<dyn CallListener>)) {
+        if let Some(listener) = self
+            .listener
+            .lock()
+            .expect("mutex is not poisoned")
+            .as_ref()
+        {
+            f(listener);
+        }
+    }
+
+    /// Follow one call to its end.
+    ///
+    /// An incoming call is reported with its offer; from then on what the
+    /// other end sends is handed over, and the end is reported with the
+    /// closest of the listener's three reasons.
+    fn follow(self: Arc<Self>, call: crate::session::Call) {
+        use crate::session::{CallEvent, CallState};
+
+        RUNTIME.spawn(async move {
+            let call_id = call.call_id().to_string();
+            let mut events = call.subscribe_events();
+            let mut states = call.subscribe_state();
+
+            if !call.is_outgoing()
+                && let Some(offer) = call.pending_offer()
+            {
+                // A call that took over from ours in a glare is one the
+                // application answers on the spot; this side has no way
+                // to say so, and it rings.
+                let room_id = call.room().room_id().to_string();
+                let caller = call
+                    .remote_user_id()
+                    .map(|user_id| user_id.to_string())
+                    .unwrap_or_default();
+                let call_id = call_id.clone();
+                self.emit(move |listener| {
+                    listener.on_incoming(call_id, room_id, caller, offer.sdp);
+                });
+            }
+
+            loop {
+                if call.state().is_ended() {
+                    let reason = ffi_call_end(call.end_reason());
+                    let call_id = call_id.clone();
+                    self.emit(move |listener| listener.on_ended(call_id, reason));
+                    break;
+                }
+
+                tokio::select! {
+                    event = events.recv() => match event {
+                        Ok(CallEvent::Answer { sdp }) => {
+                            let call_id = call_id.clone();
+                            self.emit(move |listener| listener.on_answer(call_id, sdp));
+                        }
+                        Ok(CallEvent::Candidates(candidates)) => {
+                            let candidates: Vec<FfiIceCandidate> = candidates
+                                .iter()
+                                // The empty candidate means "that is all of
+                                // them"; WebRTC has nothing to do with it.
+                                .filter(|candidate| !candidate.candidate.is_empty())
+                                .map(|candidate| FfiIceCandidate {
+                                    candidate: candidate.candidate.clone(),
+                                    sdp_mid: candidate.sdp_mid.clone(),
+                                    sdp_m_line_index: candidate
+                                        .sdp_m_line_index
+                                        .and_then(|index| u32::try_from(u64::from(index)).ok())
+                                        .unwrap_or(0),
+                                })
+                                .collect();
+                            if candidates.is_empty() {
+                                continue;
+                            }
+                            let call_id = call_id.clone();
+                            self.emit(move |listener| listener.on_candidates(call_id, candidates));
+                        }
+                        Ok(CallEvent::Negotiate { sdp, is_answer }) => {
+                            let session_type = if is_answer { "answer" } else { "offer" };
+                            let call_id = call_id.clone();
+                            self.emit(move |listener| {
+                                listener.on_negotiate(call_id, sdp, session_type.to_owned());
+                            });
+                        }
+                        // The callee's crossed offer gives way; the
+                        // listener has no call for a rollback, and the
+                        // embedder's WebRTC settles it on its own.
+                        Ok(CallEvent::RollbackLocalDescription)
+                        | Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {}
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+                    },
+                    state = states.next() => {
+                        if state.is_none() || state == Some(CallState::Ended) {
+                            let reason = ffi_call_end(call.end_reason());
+                            let call_id = call_id.clone();
+                            self.emit(move |listener| listener.on_ended(call_id, reason));
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+/// The listener's reason for a call ending, the closest of its three.
+fn ffi_call_end(reason: crate::session::CallEndReason) -> FfiCallEnd {
+    use crate::session::CallEndReason;
+
+    match reason {
+        CallEndReason::Declined => FfiCallEnd::Declined,
+        CallEndReason::AnsweredElsewhere => FfiCallEnd::AnsweredElsewhere,
+        CallEndReason::HungUp
+        | CallEndReason::NotAnswered
+        | CallEndReason::NoConnection
+        | CallEndReason::MediaFailed
+        | CallEndReason::Failed => FfiCallEnd::HungUp,
+    }
+}
+
+impl From<crate::session::CallOutcome> for FfiCallOutcome {
+    fn from(outcome: crate::session::CallOutcome) -> Self {
+        use crate::session::CallOutcome;
+
+        match outcome {
+            CallOutcome::Ringing => Self::Ringing,
+            CallOutcome::Answered => Self::Answered,
+            CallOutcome::Declined => Self::Declined,
+            CallOutcome::Missed => Self::Missed,
+        }
+    }
+}
+
+/// What became of the calls the session saw, keyed as the timeline items
+/// carry the call ID.
+fn ffi_call_outcomes(session: &Session) -> std::collections::HashMap<String, FfiCallOutcome> {
+    session
+        .calls()
+        .outcomes_snapshot()
+        .into_iter()
+        .map(|(call_id, outcome)| (call_id.to_string(), outcome.into()))
+        .collect()
 }
 
 /// What feeds the foreign verification listener from the core's list.
@@ -6284,8 +5731,7 @@ impl VerificationBridge {
                     | VerificationState::NoSupportedMethods => {
                         let reason = verification
                             .cancel_info()
-                            .map(|info| info.reason().to_owned())
-                            .unwrap_or_else(|| format!("{state:?}"));
+                            .map_or_else(|| format!("{state:?}"), |info| info.reason().to_owned());
                         let flow_id = flow_id.clone();
                         self.emit(move |listener| listener.on_cancelled(flow_id, reason));
                         break;
@@ -6565,6 +6011,10 @@ fn ffi_message_kind(message: &matrix_sdk_ui::timeline::Message) -> (FfiEventKind
     (kind, msgtype.body().to_owned())
 }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "one match arm per kind of timeline item, and the record built from it"
+)]
 fn ffi_timeline_item(
     item: &matrix_sdk_ui::timeline::TimelineItem,
     own_user_id: Option<&ruma::UserId>,
@@ -6632,7 +6082,7 @@ fn ffi_timeline_item(
 
                     (
                         FfiEventKind::Call {
-                            has_video: sdp_has_video(sdp),
+                            has_video: crate::session::sdp_has_video(sdp),
                             outcome: call_id.and_then(|id| outcomes.get(id).copied()),
                         },
                         String::new(),
@@ -6686,77 +6136,5 @@ fn ffi_timeline_item(
             VirtualTimelineItem::ReadMarker => FfiTimelineItem::ReadMarker,
             VirtualTimelineItem::TimelineStart => FfiTimelineItem::TimelineStart,
         },
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{CallFlow, CallFlows};
-
-    /// A call in flight, talking to `remote` if that is known yet.
-    fn flow_with(remote: Option<&str>) -> CallFlows {
-        let flows = CallFlows::default();
-        flows.insert(
-            "call".to_owned(),
-            CallFlow {
-                room_id: "!room:localhost".to_owned(),
-                party_id: "ours".to_owned(),
-                remote_party_id: remote.map(ToOwned::to_owned),
-                outgoing: true,
-                answer_selected: false,
-            },
-        );
-        flows
-    }
-
-    /// A late event for a call that has already ended must not be able to
-    /// bring it back.
-    #[test]
-    fn an_unknown_call_has_no_remote_party() {
-        let flows = CallFlows::default();
-        assert!(!flows.is_remote_party("call", false, Some("theirs")));
-    }
-
-    /// Before an answer names the other party, anybody in the room could
-    /// still turn out to be it — which is what the invite is for.
-    #[test]
-    fn an_unanswered_call_accepts_any_party() {
-        let flows = flow_with(None);
-        assert!(flows.is_remote_party("call", false, Some("theirs")));
-        assert!(flows.is_remote_party("call", false, None));
-    }
-
-    /// The whole point: once the other party is known, a third
-    /// participant's events belong to somebody else's call.
-    #[test]
-    fn a_known_call_refuses_a_stranger() {
-        let flows = flow_with(Some("theirs"));
-        assert!(flows.is_remote_party("call", false, Some("theirs")));
-        assert!(!flows.is_remote_party("call", false, Some("somebody-else")));
-    }
-
-    /// Version 0 of the call events has no party ID at all, and the
-    /// application reads that as "the one party there can be".
-    #[test]
-    fn a_missing_party_id_is_the_known_one() {
-        let flows = flow_with(Some("theirs"));
-        assert!(flows.is_remote_party("call", false, None));
-    }
-
-    /// Our own event coming back through the sync is not the other end
-    /// talking.
-    #[test]
-    fn our_own_echo_is_not_the_remote_party() {
-        let flows = flow_with(None);
-        assert!(!flows.is_remote_party("call", true, Some("ours")));
-    }
-
-    /// A party is a user and a device. Another device of ours answering
-    /// our own invite is a genuine remote party, and the application
-    /// says so.
-    #[test]
-    fn our_other_device_can_be_the_remote_party() {
-        let flows = flow_with(None);
-        assert!(flows.is_remote_party("call", true, Some("our-other-device")));
     }
 }
