@@ -1,47 +1,22 @@
-use std::{collections::BTreeMap, time::Duration};
+use std::time::Duration;
 
+use commune_core::session::{Call as CoreCall, CallEvent, Calls as CoreCalls};
 use futures_util::StreamExt;
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
-use rand::distr::{Alphanumeric, SampleString};
-use ruma::{
-    OwnedUserId, OwnedVoipId, UInt, UserId, VoipVersionId,
-    events::{
-        AnyMessageLikeEventContent, MessageLikeEventContent as _,
-        call::{
-            SessionDescription, StreamMetadata, StreamPurpose,
-            answer::CallAnswerEventContent,
-            candidates::{CallCandidatesEventContent, Candidate},
-            hangup::{CallHangupEventContent, Reason},
-            invite::CallInviteEventContent,
-            negotiate::CallNegotiateEventContent,
-            reject::CallRejectEventContent,
-            sdp_stream_metadata_changed::CallSdpStreamMetadataChangedEventContent,
-            select_answer::CallSelectAnswerEventContent,
-        },
-    },
-};
+use ruma::{OwnedUserId, OwnedVoipId, UInt, events::call::candidates::Candidate};
+use tokio::{sync::broadcast::error::RecvError, task::AbortHandle};
 use tracing::{debug, error, warn};
 
 use super::{
+    IceServers,
     pipeline::{CallPipeline, PipelineEvent},
     state::{CallEndReason, CallState},
-    turn::IceServers,
 };
 use crate::{
-    session::{Member, Room, UserExt},
+    core_bridge::ObjectWatcher,
+    session::{Member, Room},
     spawn, spawn_tokio,
 };
-
-/// The user ID of our own user in the given room.
-fn own_user_id(room: &Room) -> OwnedUserId {
-    room.own_member().user_id().clone()
-}
-
-/// How long an invite of ours is valid for.
-///
-/// The spec's recommended minimum is 90 seconds, on the grounds that the person
-/// on the other end needs time to actually pick up.
-const INVITE_LIFETIME: Duration = Duration::from_secs(90);
 
 /// How long a call that reports ICE failure is given to recover.
 ///
@@ -53,47 +28,8 @@ const INVITE_LIFETIME: Duration = Duration::from_secs(90);
 /// person waiting on it.
 const ICE_FAILURE_GRACE: Duration = Duration::from_secs(15);
 
-/// How long to gather candidates before sending the first batch, after an
-/// invite.
-///
-/// The spec suggests two seconds, since there is a natural pause anyway while
-/// the other end decides whether to answer.
-const CANDIDATE_BATCH_AFTER_INVITE: Duration = Duration::from_secs(2);
-
-/// How long to gather candidates before sending the first batch, after an
-/// answer.
-///
-/// Half a second: here there is no natural pause, and every one of them is
-/// between the two people and hearing each other.
-const CANDIDATE_BATCH_AFTER_ANSWER: Duration = Duration::from_millis(500);
-
-/// How long a renegotiation of ours is valid for.
-///
-/// Shorter than an invite's lifetime, and for the opposite reason: nobody has
-/// to decide anything. The call is already up, both ends are at their screens,
-/// and an offer that goes unanswered for this long has been lost rather than
-/// left to ring.
-const NEGOTIATE_LIFETIME: Duration = Duration::from_secs(30);
-
-/// The `VoIP` version we speak.
-///
-/// Version `1` is what `party_id`, `m.call.select_answer`, `m.call.reject` and
-/// the `invitee` field all belong to. Version `0` has none of them and no way
-/// to tell two answering devices apart.
-fn voip_version() -> VoipVersionId {
-    VoipVersionId::V1
-}
-
-/// Generate an identifier that fits the Opaque Identifier Grammar.
-fn opaque_id(length: usize) -> String {
-    Alphanumeric.sample_string(&mut rand::rng(), length)
-}
-
 mod imp {
-    use std::{
-        cell::{Cell, OnceCell, RefCell},
-        marker::PhantomData,
-    };
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use super::*;
 
@@ -103,14 +39,15 @@ mod imp {
         /// The room the call is taking place in.
         #[property(get, construct_only)]
         pub(super) room: OnceCell<Room>,
+        /// The call, as the core runs it.
+        ///
+        /// A call we place has none until the pipeline has produced the
+        /// offer the core places it with.
+        pub(super) core: RefCell<Option<CoreCall>>,
         /// The ID of the call, shared by both parties.
         #[property(get = Self::call_id_string)]
-        call_id_string: PhantomData<String>,
-        pub(super) call_id: OnceCell<OwnedVoipId>,
-        /// Our own party ID, which identifies this device for this call.
-        pub(super) party_id: OnceCell<OwnedVoipId>,
-        /// The party ID of the other end, once we know it.
-        pub(super) remote_party_id: RefCell<Option<OwnedVoipId>>,
+        call_id_string: std::marker::PhantomData<String>,
+        pub(super) call_id: RefCell<Option<OwnedVoipId>>,
         /// The user on the other end.
         #[property(get)]
         pub(super) remote_member: RefCell<Option<Member>>,
@@ -161,26 +98,16 @@ mod imp {
 
         /// The WebRTC side of the call.
         pub(super) pipeline: RefCell<Option<CallPipeline>>,
-        /// The offer of an incoming call, until it is answered.
-        pub(super) pending_offer: RefCell<Option<SessionDescription>>,
-        /// Candidates that arrived before there was a pipeline to give them to.
-        pub(super) pending_candidates: RefCell<Vec<Candidate>>,
-        /// Candidates of our own that have not been sent yet.
-        pub(super) outgoing_candidates: RefCell<Vec<Candidate>>,
-        /// The timeout that sends the next batch of candidates.
-        pub(super) candidate_batch: RefCell<Option<glib::SourceId>>,
-        /// The timeout that gives up on an unanswered invite.
-        pub(super) lifetime_timeout: RefCell<Option<glib::SourceId>>,
+        /// Candidates of our own gathered before the core had the call.
+        pub(super) early_local_candidates: RefCell<Vec<Candidate>>,
+        /// Whether our own gathering finished before the core had the call.
+        pub(super) early_gathering_done: Cell<bool>,
         /// The timeout that gives up on a call ICE says has failed.
         pub(super) ice_failure_timeout: RefCell<Option<glib::SourceId>>,
-        /// The ID of the stream we send, taken from our own SDP.
-        pub(super) local_stream_id: RefCell<Option<String>>,
-        /// Whether we have chosen which answer to use.
-        pub(super) answer_selected: Cell<bool>,
-        /// Whether a renegotiation offer of ours is waiting for an answer.
-        pub(super) local_offer_pending: Cell<bool>,
-        /// The timeout that gives up on a renegotiation nobody answered.
-        pub(super) negotiation_timeout: RefCell<Option<glib::SourceId>>,
+        /// The task following the core's call.
+        pub(super) watch_handle: RefCell<Option<AbortHandle>>,
+        /// The task carrying what the other end sends to the pipeline.
+        pub(super) events_handle: RefCell<Option<AbortHandle>>,
     }
 
     #[glib::object_subclass]
@@ -192,7 +119,13 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for Call {
         fn dispose(&self) {
-            self.cancel_timeouts();
+            self.cancel_ice_failure_timeout();
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
+            }
+            if let Some(handle) = self.events_handle.take() {
+                handle.abort();
+            }
         }
     }
 
@@ -200,9 +133,15 @@ mod imp {
         /// The ID of the call, as a string.
         fn call_id_string(&self) -> String {
             self.call_id
-                .get()
+                .borrow()
+                .as_ref()
                 .map(ToString::to_string)
                 .unwrap_or_default()
+        }
+
+        /// The call, as the core runs it, if it has it yet.
+        pub(super) fn core(&self) -> Option<CoreCall> {
+            self.core.borrow().clone()
         }
 
         /// Set whether our own microphone is muted.
@@ -218,7 +157,7 @@ mod imp {
             }
 
             self.obj().notify_is_microphone_muted();
-            self.obj().send_stream_metadata();
+            self.tell_core_muted();
         }
 
         /// Set whether our own camera is muted.
@@ -234,34 +173,122 @@ mod imp {
             }
 
             self.obj().notify_is_camera_muted();
-            self.obj().send_stream_metadata();
+            self.tell_core_muted();
         }
 
-        /// Stop both timeouts.
-        pub(super) fn cancel_timeouts(&self) {
-            if let Some(source) = self.candidate_batch.take() {
-                source.remove();
+        /// Tell the core what we muted, so that it tells the other party.
+        pub(super) fn tell_core_muted(&self) {
+            if let Some(core) = self.core() {
+                core.set_muted(self.is_microphone_muted.get(), self.is_camera_muted.get());
             }
-            if let Some(source) = self.lifetime_timeout.take() {
-                source.remove();
-            }
+        }
+
+        /// Stop waiting for ICE to recover.
+        pub(super) fn cancel_ice_failure_timeout(&self) {
             if let Some(source) = self.ice_failure_timeout.take() {
                 source.remove();
             }
-            if let Some(source) = self.negotiation_timeout.take() {
-                source.remove();
+        }
+
+        /// Mirror where the core says the call has got to.
+        pub(super) fn set_state(&self, state: CallState) {
+            if self.state.get() == state {
+                return;
             }
+
+            self.state.set(state);
+
+            if state.is_ended() {
+                self.cancel_ice_failure_timeout();
+                // Dropping the pipeline closes the microphone and the camera.
+                self.pipeline.take();
+                self.early_local_candidates.take();
+            }
+
+            self.obj().notify_state();
+        }
+
+        /// Mirror why the call ended.
+        pub(super) fn set_end_reason(&self, reason: CallEndReason) {
+            if self.end_reason.get() == reason {
+                return;
+            }
+
+            self.end_reason.set(reason);
+            self.obj().notify_end_reason();
+        }
+
+        /// Mirror whether the call carries video.
+        pub(super) fn set_has_video(&self, has_video: bool) {
+            if self.has_video.get() == has_video {
+                return;
+            }
+
+            self.has_video.set(has_video);
+            self.obj().notify_has_video();
+        }
+
+        /// Mirror whether the other party muted their camera.
+        pub(super) fn set_remote_camera_muted(&self, muted: bool) {
+            if self.is_remote_camera_muted.get() == muted {
+                return;
+            }
+
+            self.is_remote_camera_muted.set(muted);
+            self.obj().notify_is_remote_camera_muted();
+        }
+
+        /// Mirror whether the other party muted their microphone.
+        pub(super) fn set_remote_microphone_muted(&self, muted: bool) {
+            if self.is_remote_microphone_muted.get() == muted {
+                return;
+            }
+
+            self.is_remote_microphone_muted.set(muted);
+            self.obj().notify_is_remote_microphone_muted();
+        }
+
+        /// Mirror when the call connected.
+        pub(super) fn set_connected_at(&self, connected_at: u64) {
+            if self.connected_at.get() == connected_at {
+                return;
+            }
+
+            self.connected_at.set(connected_at);
+            self.obj().notify_connected_at();
+        }
+
+        /// Present the given user as the other end.
+        pub(super) fn set_remote_user(&self, user_id: Option<OwnedUserId>) {
+            let member = user_id.map(|user_id| {
+                let room = self.room.get().expect("room is set");
+                room.get_or_create_members().get_or_create(user_id)
+            });
+
+            if self.remote_member.borrow().as_ref() == member.as_ref() {
+                return;
+            }
+
+            self.remote_member.replace(member);
+            self.obj().notify_remote_member();
         }
     }
 }
 
 glib::wrapper! {
     /// A one-to-one voice or video call.
+    ///
+    /// The signalling is the core's; this drives the `webrtcbin` pipeline
+    /// with what the core says arrived, and hands the core what the
+    /// pipeline produced.
     pub struct Call(ObjectSubclass<imp::Call>);
 }
 
 impl Call {
     /// Place a call in the given room.
+    ///
+    /// The pipeline is built and asked for an offer; the core places the
+    /// call with that offer when it arrives.
     pub(crate) fn place(room: &Room, with_video: bool, servers: &IceServers) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
@@ -269,8 +296,6 @@ impl Call {
             .build();
         let imp = obj.imp();
 
-        let _ = imp.call_id.set(OwnedVoipId::from(opaque_id(16)));
-        let _ = imp.party_id.set(OwnedVoipId::from(opaque_id(8)));
         imp.state.set(CallState::Dialing);
         imp.has_video.set(with_video);
 
@@ -280,7 +305,7 @@ impl Call {
             Ok(pipeline) => pipeline,
             Err(error) => {
                 error!("Could not set up the call: {error}");
-                obj.end(CallEndReason::MediaFailed);
+                obj.end_locally(CallEndReason::MediaFailed);
                 return obj;
             }
         };
@@ -296,73 +321,130 @@ impl Call {
 
         if let Err(error) = started {
             error!("Could not start the call: {error}");
-            obj.end(CallEndReason::MediaFailed);
+            obj.end_locally(CallEndReason::MediaFailed);
             return obj;
         }
 
         obj.create_local_description(false);
-        obj.arm_lifetime_timeout();
 
         obj
     }
 
-    /// Take note of a call somebody is placing to us.
+    /// Present a call the core has: one somebody is placing to us, or one
+    /// that took over from ours in a glare.
     ///
-    /// The pipeline is not built here. Building it opens the microphone and the
-    /// camera, and a call that is only ringing has not been accepted.
-    pub(crate) fn receive(
-        room: &Room,
-        call_id: OwnedVoipId,
-        remote_party_id: Option<OwnedVoipId>,
-        sender: &UserId,
-        content: &CallInviteEventContent,
-    ) -> Self {
+    /// The pipeline is not built here. Building it opens the microphone and
+    /// the camera, and a call that is only ringing has not been accepted.
+    pub(super) fn from_core(room: &Room, core: &CoreCall) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
-            .property("is-outgoing", false)
+            .property("is-outgoing", core.is_outgoing())
             .build();
-        let imp = obj.imp();
 
-        let _ = imp.call_id.set(call_id);
-        let _ = imp.party_id.set(OwnedVoipId::from(opaque_id(8)));
-        imp.remote_party_id.replace(remote_party_id);
-        imp.state.set(CallState::Ringing);
-        imp.pending_offer.replace(Some(content.offer.clone()));
-        imp.has_video.set(super::sdp_has_video(&content.offer.sdp));
-
-        obj.set_remote_member_from(sender);
-        obj.apply_stream_metadata(&content.sdp_stream_metadata);
-        obj.arm_lifetime_timeout();
+        obj.attach(core);
 
         obj
     }
 
-    /// The ID of the call.
-    pub(crate) fn call_id(&self) -> &OwnedVoipId {
-        self.imp().call_id.get().expect("call ID is set")
+    /// Whether this presents the given call of the core.
+    pub(super) fn presents(&self, core: &CoreCall) -> bool {
+        self.imp().core().as_ref() == Some(core)
     }
 
-    /// Our own party ID.
-    fn party_id(&self) -> &OwnedVoipId {
-        self.imp().party_id.get().expect("party ID is set")
+    /// Follow the given call of the core, and carry what the other end
+    /// sends to the pipeline.
+    fn attach(&self, core: &CoreCall) {
+        type C = Call;
+
+        let imp = self.imp();
+        imp.core.replace(Some(core.clone()));
+        imp.call_id.replace(Some(core.call_id().clone()));
+        self.notify_call_id_string();
+
+        let handle = ObjectWatcher::new(self)
+            .follow(core.subscribe_state(), |obj: &C, state| {
+                obj.imp().set_state(state.into());
+            })
+            .follow(core.subscribe_end_reason(), |obj: &C, reason| {
+                obj.imp().set_end_reason(reason.into());
+            })
+            .follow(core.subscribe_has_video(), |obj: &C, has_video| {
+                obj.imp().set_has_video(has_video);
+            })
+            .follow(core.subscribe_is_remote_camera_muted(), |obj: &C, muted| {
+                obj.imp().set_remote_camera_muted(muted);
+            })
+            .follow(
+                core.subscribe_is_remote_microphone_muted(),
+                |obj: &C, muted| {
+                    obj.imp().set_remote_microphone_muted(muted);
+                },
+            )
+            .follow(core.subscribe_connected_at(), |obj: &C, connected_at| {
+                obj.imp().set_connected_at(connected_at);
+            })
+            .follow(core.subscribe_remote_user_id(), |obj: &C, user_id| {
+                obj.imp().set_remote_user(user_id);
+            })
+            .spawn();
+        imp.watch_handle.replace(Some(handle));
+
+        // What the other end sends, carried to the pipeline on the main
+        // thread. A receiver that fell behind skips what it missed: a
+        // candidate lost this way is one the next batch does not carry
+        // again, so the buffer is sized for a call and this is the
+        // fallback.
+        let obj_weak = glib::SendWeakRef::from(self.downgrade());
+        let mut receiver = core.subscribe_events();
+        let events_handle = spawn_tokio!(async move {
+            loop {
+                let event = match receiver.recv().await {
+                    Ok(event) => event,
+                    Err(RecvError::Lagged(missed)) => {
+                        warn!("Missed {missed} call event(s) from the core");
+                        continue;
+                    }
+                    Err(RecvError::Closed) => break,
+                };
+
+                let obj_weak = obj_weak.clone();
+                let ctx = glib::MainContext::default();
+                ctx.spawn(async move {
+                    if let Some(obj) = obj_weak.upgrade() {
+                        obj.handle_call_event(event);
+                    }
+                });
+            }
+        })
+        .abort_handle();
+        imp.events_handle.replace(Some(events_handle));
+
+        // What the core already knows, after subscribing so that nothing
+        // between the two is lost.
+        imp.set_remote_user(core.remote_user_id());
+        imp.set_has_video(core.has_video());
+        imp.set_remote_camera_muted(core.is_remote_camera_muted());
+        imp.set_remote_microphone_muted(core.is_remote_microphone_muted());
+        imp.set_connected_at(core.connected_at());
+        imp.set_end_reason(core.end_reason().into());
+        imp.set_state(core.state().into());
+
+        // What the pipeline gathered while the core had no call yet.
+        let early = imp.early_local_candidates.take();
+        if !early.is_empty() {
+            core.add_local_candidates(early);
+        }
+        if imp.early_gathering_done.replace(false) {
+            core.local_gathering_done();
+        }
+
+        // A mute made before the core had the call.
+        imp.tell_core_muted();
     }
 
-    /// Whether the given party is the one we are talking to.
-    ///
-    /// A party is a user and a device, and both halves matter: a user can call
-    /// themselves, and two of their devices can answer the same invite.
-    fn is_remote_party(&self, sender: &UserId, party_id: Option<&OwnedVoipId>) -> bool {
-        let own_user_id = own_user_id(&self.room());
-
-        if *sender == own_user_id && party_id == Some(self.party_id()) {
-            // Our own event, echoed back through the sync.
-            return false;
-        }
-
-        match &*self.imp().remote_party_id.borrow() {
-            Some(known) => party_id.is_none_or(|id| id == known),
-            None => true,
-        }
+    /// The ID of the call, once the core has it.
+    pub(crate) fn call_id(&self) -> Option<OwnedVoipId> {
+        self.imp().call_id.borrow().clone()
     }
 
     /// Answer the call.
@@ -373,8 +455,12 @@ impl Call {
             return;
         }
 
-        let Some(offer) = imp.pending_offer.take() else {
-            self.end(CallEndReason::Failed);
+        let Some(core) = imp.core() else {
+            return;
+        };
+
+        let Some(offer) = core.pending_offer() else {
+            core.hangup_failed();
             return;
         };
 
@@ -382,7 +468,7 @@ impl Call {
             Ok(pipeline) => pipeline,
             Err(error) => {
                 error!("Could not set up the call: {error}");
-                self.hangup_with(Reason::UserMediaFailed, CallEndReason::MediaFailed);
+                core.hangup_media_failed();
                 return;
             }
         };
@@ -397,7 +483,7 @@ impl Call {
         if let Err(error) = pipeline.start() {
             error!("Could not start the call: {error}");
             drop(borrowed);
-            self.hangup_with(Reason::UserMediaFailed, CallEndReason::MediaFailed);
+            core.hangup_media_failed();
             return;
         }
 
@@ -405,22 +491,15 @@ impl Call {
         // sequence: `set-remote-description` is asynchronous, and answering an
         // offer that has not been applied yet gets an empty answer back — which
         // is never sent, so the caller waits until its invite expires. The
-        // answer is created from inside the description's promise.
+        // answer is created from inside the description's promise, and the
+        // core accepts the call with it when it arrives.
         let (sender, mut events) = futures_channel::mpsc::unbounded();
 
         if let Err(error) = pipeline.answer_remote_offer(&offer.sdp, sender) {
             error!("Could not take the offer: {error}");
             drop(borrowed);
-            self.hangup_with(Reason::UnknownError, CallEndReason::Failed);
+            core.hangup_failed();
             return;
-        }
-
-        // Candidates that arrived while it was ringing now have somewhere to go.
-        for candidate in imp.pending_candidates.take() {
-            pipeline.add_ice_candidate(
-                candidate.sdp_m_line_index.map_or(0, u64::from) as u32,
-                &candidate.candidate,
-            );
         }
         drop(borrowed);
 
@@ -433,9 +512,6 @@ impl Call {
                 }
             }
         ));
-
-        self.set_state(CallState::Connecting);
-        self.cancel_lifetime_timeout();
     }
 
     /// Decline the call, everywhere.
@@ -444,44 +520,19 @@ impl Call {
     /// and tells the caller that we said no. Simply closing the window does
     /// neither.
     pub(crate) fn reject(&self) {
-        if self.imp().state.get() != CallState::Ringing {
-            return;
+        if let Some(core) = self.imp().core() {
+            core.reject();
         }
-
-        let content =
-            CallRejectEventContent::version_1(self.call_id().clone(), self.party_id().clone());
-        self.send(AnyMessageLikeEventContent::CallReject(content));
-
-        self.end(CallEndReason::Declined);
-    }
-
-    /// Refuse the call because another one is already happening.
-    ///
-    /// The spec has no busy signal of its own; `user_busy` is a hangup reason,
-    /// so that is what this is. It goes out without a pipeline ever being
-    /// built, which is the point: the microphone is already in use.
-    pub(crate) fn decline_as_busy(&self) {
-        self.hangup_with(Reason::UserBusy, CallEndReason::HungUp);
     }
 
     /// End the call.
     pub(crate) fn hangup(&self) {
-        self.hangup_with(Reason::UserHangup, CallEndReason::HungUp);
-    }
-
-    fn hangup_with(&self, reason: Reason, end_reason: CallEndReason) {
-        if self.imp().state.get().is_ended() {
-            return;
+        match self.imp().core() {
+            Some(core) => core.hangup(),
+            // The core never had it: nothing was sent, so there is nothing
+            // to hang up but the microphone.
+            None => self.end_locally(CallEndReason::HungUp),
         }
-
-        let content = CallHangupEventContent::version_1(
-            self.call_id().clone(),
-            self.party_id().clone(),
-            reason,
-        );
-        self.send(AnyMessageLikeEventContent::CallHangup(content));
-
-        self.end(end_reason);
     }
 
     /// Turn the camera on partway through a call placed without one.
@@ -582,16 +633,89 @@ impl Call {
         ));
     }
 
+    /// Act on something the other end sent, as the core relays it.
+    fn handle_call_event(&self, event: CallEvent) {
+        let imp = self.imp();
+        let borrowed = imp.pipeline.borrow();
+        let Some(pipeline) = &*borrowed else {
+            return;
+        };
+
+        match event {
+            CallEvent::Answer { sdp } => {
+                if let Err(error) = pipeline.set_remote_description(&sdp, true) {
+                    error!("Could not take the answer: {error}");
+                    drop(borrowed);
+                    if let Some(core) = imp.core() {
+                        core.hangup_failed();
+                    }
+                }
+            }
+            CallEvent::Candidates(candidates) => {
+                for candidate in &candidates {
+                    pipeline.add_ice_candidate(
+                        candidate.sdp_m_line_index.map_or(0, u64::from) as u32,
+                        &candidate.candidate,
+                    );
+                }
+            }
+            CallEvent::Negotiate {
+                sdp,
+                is_answer: true,
+            } => {
+                if let Err(error) = pipeline.set_remote_description(&sdp, true) {
+                    // A renegotiation that fails is not a call that fails. What
+                    // was flowing before it is still flowing, and hanging up
+                    // would take away a working call over a camera that could
+                    // not be added.
+                    warn!("Could not take the renegotiation answer: {error}");
+                }
+            }
+            CallEvent::Negotiate {
+                sdp,
+                is_answer: false,
+            } => {
+                let (event_sender, mut events) = futures_channel::mpsc::unbounded();
+
+                if let Err(error) = pipeline.answer_remote_offer(&sdp, event_sender) {
+                    warn!("Could not take the renegotiation offer: {error}");
+                    return;
+                }
+                drop(borrowed);
+
+                spawn!(clone!(
+                    #[weak(rename_to = obj)]
+                    self,
+                    async move {
+                        while let Some(event) = events.next().await {
+                            match event {
+                                PipelineEvent::LocalDescription { sdp, .. } => {
+                                    if let Some(core) = obj.imp().core() {
+                                        core.send_negotiate(sdp, true);
+                                    }
+                                }
+                                other => obj.handle_pipeline_event(other),
+                            }
+                        }
+                    }
+                ));
+            }
+            CallEvent::RollbackLocalDescription => pipeline.rollback_local_description(),
+        }
+    }
+
     /// Act on something the pipeline said.
     fn handle_pipeline_event(&self, event: PipelineEvent) {
+        let imp = self.imp();
+
         match event {
             PipelineEvent::LocalDescription { sdp, is_answer } => {
-                self.imp().local_stream_id.replace(first_stream_id(&sdp));
-
                 if is_answer {
-                    self.send_answer(sdp);
+                    if let Some(core) = imp.core() {
+                        core.accept(sdp);
+                    }
                 } else {
-                    self.send_invite(sdp);
+                    self.place_with_offer(sdp);
                 }
             }
             PipelineEvent::IceCandidate {
@@ -609,20 +733,18 @@ impl Call {
                 let mut queued = Candidate::new(candidate);
                 queued.sdp_m_line_index = Some(UInt::from(sdp_m_line_index));
                 queued.sdp_mid = sdp_mid;
-                self.queue_candidate(queued);
+
+                match imp.core() {
+                    Some(core) => core.add_local_candidates(vec![queued]),
+                    None => imp.early_local_candidates.borrow_mut().push(queued),
+                }
             }
-            PipelineEvent::IceGatheringDone => {
-                // An empty candidate is how the spec spells "that is all of
-                // them", so that a bridge can stop waiting for more. Neither
-                // field is required for it, and the index is sent anyway
-                // because a client that insists on one gets one.
-                let mut end = Candidate::new(String::new());
-                end.sdp_m_line_index = Some(UInt::from(0u32));
-                self.queue_candidate(end);
-                self.flush_candidates();
-            }
+            PipelineEvent::IceGatheringDone => match imp.core() {
+                Some(core) => core.local_gathering_done(),
+                None => imp.early_gathering_done.set(true),
+            },
             PipelineEvent::Connected => {
-                if let Some(pipeline) = &mut *self.imp().pipeline.borrow_mut() {
+                if let Some(pipeline) = &mut *imp.pipeline.borrow_mut() {
                     pipeline.note_media();
                     // From here on, `webrtcbin` asking for a negotiation is a
                     // renegotiation, and this client answers those.
@@ -631,44 +753,63 @@ impl Call {
 
                 // A failure it recovered from, which is the whole reason the
                 // first one is not acted on.
-                if let Some(source) = self.imp().ice_failure_timeout.take() {
-                    source.remove();
-                }
+                imp.cancel_ice_failure_timeout();
 
-                // Two state machines can both say connected — the aggregate
-                // peer connection state and the ICE one — so whichever gets
-                // there first wins and the second is a no-op.
-                if self.state() != CallState::Connected && !self.state().is_ended() {
-                    self.imp().connected_at.set(
-                        glib::DateTime::now_utc()
-                            .map(|now| now.to_unix().unsigned_abs())
-                            .unwrap_or_default(),
-                    );
-                    self.notify_connected_at();
-                    self.set_state(CallState::Connected);
-
-                    // A mute made while it was still ringing went out to
-                    // nobody: the invite or the answer carried the state as it
-                    // was when the description was made, and
-                    // `send_stream_metadata()` refuses to send before there is
-                    // somebody to send to. Say it once now that there is.
-                    if self.is_microphone_muted() || self.is_camera_muted() {
-                        self.send_stream_metadata();
-                    }
+                if let Some(core) = imp.core() {
+                    core.note_connected();
                 }
             }
             PipelineEvent::NegotiationNeeded => self.send_renegotiation_offer(),
             PipelineEvent::RemoteVideo => {
-                if !self.imp().has_remote_video.replace(true) {
+                if !imp.has_remote_video.replace(true) {
                     self.notify_has_remote_video();
                 }
             }
             PipelineEvent::ConnectionFailed => self.handle_connection_failed(),
             PipelineEvent::Error(error) => {
                 error!("The call pipeline failed: {error}");
-                self.hangup_with(Reason::UnknownError, CallEndReason::Failed);
+                match imp.core() {
+                    Some(core) => core.hangup_failed(),
+                    None => self.end_locally(CallEndReason::Failed),
+                }
             }
         }
+    }
+
+    /// Hand the core the offer the pipeline produced, which places the call.
+    fn place_with_offer(&self, sdp: String) {
+        let room = self.room();
+        let Some(session) = room.session() else {
+            self.end_locally(CallEndReason::Failed);
+            return;
+        };
+        let core_calls: CoreCalls = session.core().calls().clone();
+        let core_room = room.core().clone();
+
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                let placed = spawn_tokio!(async move { core_calls.place(&core_room, sdp).await })
+                    .await
+                    .expect("task was not aborted");
+
+                match placed {
+                    Ok(core) => {
+                        if obj.state().is_ended() {
+                            // Hung up before the offer was ready.
+                            core.hangup();
+                            return;
+                        }
+                        obj.attach(&core);
+                    }
+                    Err(error) => {
+                        error!("Could not place the call: {error}");
+                        obj.end_locally(CallEndReason::Failed);
+                    }
+                }
+            }
+        ));
     }
 
     /// Act on ICE reporting that it has failed.
@@ -688,10 +829,9 @@ impl Call {
             .is_some_and(CallPipeline::had_media);
 
         if had_media {
-            // The spec asks for these two to be told apart: a connection that
-            // never came up is `ice_failed`, and one that came up and then
-            // died is `ice_timeout`.
-            self.hangup_with(Reason::IceTimeout, CallEndReason::NoConnection);
+            if let Some(core) = imp.core() {
+                core.hangup_no_connection();
+            }
             return;
         }
 
@@ -715,55 +855,14 @@ impl Call {
                         return;
                     }
 
-                    obj.hangup_with(Reason::IceFailed, CallEndReason::NoConnection);
+                    match obj.imp().core() {
+                        Some(core) => core.hangup_no_connection(),
+                        None => obj.end_locally(CallEndReason::NoConnection),
+                    }
                 }
             ),
         );
         imp.ice_failure_timeout.replace(Some(source));
-    }
-
-    /// Send the invite that starts an outgoing call.
-    fn send_invite(&self, sdp: String) {
-        let mut content = CallInviteEventContent::version_1(
-            self.call_id().clone(),
-            self.party_id().clone(),
-            UInt::try_from(INVITE_LIFETIME.as_millis() as u64).unwrap_or(UInt::MAX),
-            SessionDescription::new("offer".to_owned(), sdp),
-        );
-
-        // A call placed to a room without an invitee is a call anybody in that
-        // room may answer. Ours are placed to one person, so say so.
-        content.invitee = self.remote_member().map(|member| member.user_id().clone());
-        content.sdp_stream_metadata = self.stream_metadata();
-
-        // A call that never rings is usually a call addressed to the wrong
-        // person: "the invite should be ignored if the invitee is set and
-        // doesn't match the user's ID", so a wrong `invitee` is silence rather
-        // than an error.
-        debug!(
-            "Placing call {} in {} to {:?} with {} media section(s)",
-            self.call_id(),
-            self.room().room_id(),
-            content.invitee,
-            content.offer.sdp.matches("\r\nm=").count()
-                + usize::from(content.offer.sdp.starts_with("m="))
-        );
-
-        self.send(AnyMessageLikeEventContent::CallInvite(content));
-        self.schedule_candidate_batch(CANDIDATE_BATCH_AFTER_INVITE);
-    }
-
-    /// Send the answer that accepts an incoming call.
-    fn send_answer(&self, sdp: String) {
-        let mut content = CallAnswerEventContent::version_1(
-            SessionDescription::new("answer".to_owned(), sdp),
-            self.call_id().clone(),
-            self.party_id().clone(),
-        );
-        content.sdp_stream_metadata = self.stream_metadata();
-
-        self.send(AnyMessageLikeEventContent::CallAnswer(content));
-        self.schedule_candidate_batch(CANDIDATE_BATCH_AFTER_ANSWER);
     }
 
     /// Offer the other end a new session description.
@@ -774,11 +873,11 @@ impl Call {
     fn send_renegotiation_offer(&self) {
         let imp = self.imp();
 
-        if !matches!(self.state(), CallState::Connecting | CallState::Connected) {
+        let Some(core) = imp.core() else {
             return;
-        }
+        };
 
-        if imp.local_offer_pending.get() {
+        if !core.can_send_negotiate_offer() {
             debug!("A renegotiation of ours is already waiting for an answer");
             return;
         }
@@ -795,8 +894,6 @@ impl Call {
         pipeline.create_offer(event_sender);
         drop(borrowed);
 
-        imp.local_offer_pending.set(true);
-
         spawn!(clone!(
             #[weak(rename_to = obj)]
             self,
@@ -804,7 +901,9 @@ impl Call {
                 while let Some(event) = events.next().await {
                     match event {
                         PipelineEvent::LocalDescription { sdp, .. } => {
-                            obj.send_negotiate(sdp, false);
+                            if let Some(core) = obj.imp().core() {
+                                core.send_negotiate(sdp, false);
+                            }
                         }
                         other => obj.handle_pipeline_event(other),
                     }
@@ -813,656 +912,28 @@ impl Call {
         ));
     }
 
-    /// Send one half of a renegotiation.
+    /// End the call here, without telling anybody.
     ///
-    /// `m.call.negotiate` carries both halves: an offer first, and the answer
-    /// to it in an event of the same type. The two are told apart by the
-    /// `type` of the description, which is the only thing that says which one
-    /// this is.
-    fn send_negotiate(&self, sdp: String, is_answer: bool) {
-        let kind = if is_answer { "answer" } else { "offer" };
-        let mut content = CallNegotiateEventContent::version_1(
-            self.call_id().clone(),
-            self.party_id().clone(),
-            UInt::try_from(NEGOTIATE_LIFETIME.as_millis() as u64).unwrap_or(UInt::MAX),
-            SessionDescription::new(kind.to_owned(), sdp),
-        );
-        content.sdp_stream_metadata = self.stream_metadata();
-
-        debug!(
-            "Sending a renegotiation {kind} for call {} with {} media section(s)",
-            self.call_id(),
-            content.description.sdp.matches("\r\nm=").count()
-                + usize::from(content.description.sdp.starts_with("m="))
-        );
-
-        self.send(AnyMessageLikeEventContent::CallNegotiate(content));
-
-        // A new section can bring new candidates with it, and nothing else
-        // would ever send them: the batch that followed the invite has long
-        // since gone out and gathering finished with it.
-        self.schedule_candidate_batch(CANDIDATE_BATCH_AFTER_ANSWER);
-
-        if !is_answer {
-            self.arm_negotiation_timeout();
-        }
-    }
-
-    /// Stop waiting for an answer to a renegotiation of ours.
-    ///
-    /// Without this, a renegotiation the other end never answers leaves the
-    /// call unable to attempt another one for as long as it lasts — and the
-    /// call itself carries on perfectly well, so nothing else would ever
-    /// notice.
-    fn arm_negotiation_timeout(&self) {
-        let imp = self.imp();
-
-        if let Some(source) = imp.negotiation_timeout.take() {
-            source.remove();
-        }
-
-        let source = glib::timeout_add_local_once(
-            NEGOTIATE_LIFETIME,
-            clone!(
-                #[weak(rename_to = obj)]
-                self,
-                move || {
-                    let imp = obj.imp();
-                    imp.negotiation_timeout.take();
-
-                    if imp.local_offer_pending.replace(false) {
-                        warn!("A renegotiation of ours went unanswered");
-                    }
-                }
-            ),
-        );
-        imp.negotiation_timeout.replace(Some(source));
-    }
-
-    /// The metadata for the one stream we send.
-    ///
-    /// One stream, always `m.usermedia`. Screen sharing would be a second one,
-    /// and is not implemented; a client that receives a stream it was not told
-    /// about is asked by the spec to ignore it, so sending one silently would
-    /// be worse than sending none.
-    fn stream_metadata(&self) -> BTreeMap<String, StreamMetadata> {
-        let Some(stream_id) = self.imp().local_stream_id.borrow().clone() else {
-            return Default::default();
-        };
-
-        let mut metadata = StreamMetadata::new(StreamPurpose::UserMedia);
-        metadata.audio_muted = self.is_microphone_muted();
-        metadata.video_muted = self.is_camera_muted();
-
-        [(stream_id, metadata)].into_iter().collect()
-    }
-
-    /// Tell the other party that we muted something.
-    fn send_stream_metadata(&self) {
-        if !matches!(self.state(), CallState::Connecting | CallState::Connected) {
-            return;
-        }
-
-        let metadata = self.stream_metadata();
-        if metadata.is_empty() {
-            return;
-        }
-
-        debug!(
-            "Telling the other party that our microphone is {} and our camera is {}",
-            if self.is_microphone_muted() {
-                "muted"
-            } else {
-                "live"
-            },
-            if self.is_camera_muted() { "off" } else { "on" },
-        );
-
-        let content = CallSdpStreamMetadataChangedEventContent::new(
-            self.call_id().clone(),
-            self.party_id().clone(),
-            voip_version(),
-            metadata,
-        );
-        self.send(AnyMessageLikeEventContent::CallSdpStreamMetadataChanged(
-            content,
-        ));
-    }
-
-    /// Hold on to a candidate until the next batch goes out.
-    fn queue_candidate(&self, candidate: Candidate) {
-        self.imp().outgoing_candidates.borrow_mut().push(candidate);
-    }
-
-    /// Send the candidates gathered so far, if there are any.
-    fn flush_candidates(&self) {
-        let imp = self.imp();
-
-        if let Some(source) = imp.candidate_batch.take() {
-            source.remove();
-        }
-
-        let candidates = imp.outgoing_candidates.take();
-        if candidates.is_empty() || self.state().is_ended() {
-            return;
-        }
-
-        // The m-line indices matter as much as the count: with `max-bundle`
-        // every candidate belongs to the first section, and one that says
-        // otherwise lands on a `bundle-only` section with no transport of its
-        // own.
-        debug!(
-            "{}: sending {} ICE candidate(s) for call {} on m-line(s) {:?}",
-            own_user_id(&self.room()),
-            candidates.len(),
-            self.call_id(),
-            candidates
-                .iter()
-                .map(|c| c.sdp_m_line_index.map_or(0, u64::from))
-                .collect::<std::collections::BTreeSet<_>>(),
-        );
-
-        let content = CallCandidatesEventContent::version_1(
-            self.call_id().clone(),
-            self.party_id().clone(),
-            candidates,
-        );
-        self.send(AnyMessageLikeEventContent::CallCandidates(content));
-    }
-
-    /// Send the next batch of candidates after the given delay.
-    ///
-    /// Batching is the spec's ask, and it is worth following: a candidate per
-    /// event is a dozen events into the room for one call, all of which the
-    /// other end has to sync before it can use any of them.
-    fn schedule_candidate_batch(&self, after: Duration) {
-        let imp = self.imp();
-
-        if imp.candidate_batch.borrow().is_some() {
-            return;
-        }
-
-        let source = glib::timeout_add_local_once(
-            after,
-            clone!(
-                #[weak(rename_to = obj)]
-                self,
-                move || {
-                    obj.imp().candidate_batch.take();
-                    obj.flush_candidates();
-                }
-            ),
-        );
-        imp.candidate_batch.replace(Some(source));
-    }
-
-    /// Give up on an invite that nobody answered.
-    fn arm_lifetime_timeout(&self) {
-        let source = glib::timeout_add_local_once(
-            INVITE_LIFETIME,
-            clone!(
-                #[weak(rename_to = obj)]
-                self,
-                move || {
-                    obj.imp().lifetime_timeout.take();
-
-                    if !obj.state().is_pending() {
-                        return;
-                    }
-
-                    if obj.is_outgoing() {
-                        // The other end never picked up, and the spec has a
-                        // reason that says exactly that.
-                        obj.hangup_with(Reason::InviteTimeout, CallEndReason::NotAnswered);
-                    } else {
-                        // An invite we let expire is one we neither answered
-                        // nor declined. Sending nothing is the third thing the
-                        // spec allows, and it leaves the caller's other
-                        // devices ringing.
-                        obj.end(CallEndReason::NotAnswered);
-                    }
-                }
-            ),
-        );
-        self.imp().lifetime_timeout.replace(Some(source));
-    }
-
-    fn cancel_lifetime_timeout(&self) {
-        if let Some(source) = self.imp().lifetime_timeout.take() {
-            source.remove();
-        }
-    }
-
-    /// Handle an `m.call.answer` from the other end.
-    pub(super) fn handle_answer(
-        &self,
-        sender: &UserId,
-        party_id: Option<&OwnedVoipId>,
-        content: &CallAnswerEventContent,
-    ) {
-        if !self.is_outgoing() || self.state() != CallState::Dialing {
-            return;
-        }
-        if !self.is_remote_party(sender, party_id) {
-            return;
-        }
-
-        let imp = self.imp();
-        let answer = &content.answer;
-
-        // What they say about their own microphone and camera arrives with the
-        // answer, before either of them has been muted.
-        self.apply_stream_metadata(&content.sdp_stream_metadata);
-
-        debug!(
-            "Answer for call {} from party {:?}",
-            self.call_id(),
-            party_id
-        );
-
-        if imp.answer_selected.get() {
-            // Two of their devices answered. The first one won; this one is
-            // told so by the `m.call.select_answer` we already sent.
-            debug!("Ignoring a second answer to our call");
-            return;
-        }
-
-        let borrowed = imp.pipeline.borrow();
-        let Some(pipeline) = &*borrowed else {
-            return;
-        };
-
-        if let Err(error) = pipeline.set_remote_description(&answer.sdp, true) {
-            error!("Could not take the answer: {error}");
-            drop(borrowed);
-            self.hangup_with(Reason::UnknownError, CallEndReason::Failed);
-            return;
-        }
-        drop(borrowed);
-
-        if let Some(party_id) = party_id {
-            imp.remote_party_id.replace(Some(party_id.clone()));
-
-            // Version 1 asks the caller to say which answer it took, so that
-            // the devices that did not win stop ringing.
-            let content = CallSelectAnswerEventContent::version_1(
-                self.call_id().clone(),
-                self.party_id().clone(),
-                party_id.clone(),
-            );
-            self.send(AnyMessageLikeEventContent::CallSelectAnswer(content));
-        }
-
-        imp.answer_selected.set(true);
-        self.cancel_lifetime_timeout();
-        self.set_state(CallState::Connecting);
-    }
-
-    /// Handle an `m.call.negotiate` from the other end.
-    ///
-    /// A call that is already up, described again: this is what adding video to
-    /// a voice call, putting a call on hold or restarting ICE looks like from
-    /// the other end. Both halves of it are this event — an offer first, then
-    /// an answer of the same type — and which half this is comes from the
-    /// `type` of the description.
-    pub(super) fn handle_negotiate(
-        &self,
-        sender: &UserId,
-        party_id: &OwnedVoipId,
-        content: &CallNegotiateEventContent,
-    ) {
-        if !self.is_remote_party(sender, Some(party_id)) {
-            return;
-        }
-
-        if !matches!(self.state(), CallState::Connecting | CallState::Connected) {
-            // "This event is sent by either party after the call is
-            // established": before that there is a description in flight
-            // already, and applying a second one on top of it is how a call
-            // that was about to connect stops.
-            debug!("Ignoring a renegotiation of a call that is not established yet");
-            return;
-        }
-
-        self.apply_stream_metadata(&content.sdp_stream_metadata);
-
-        let imp = self.imp();
-        let is_answer = content.description.session_type == "answer";
-        let borrowed = imp.pipeline.borrow();
-        let Some(pipeline) = &*borrowed else {
-            return;
-        };
-
-        debug!(
-            "Renegotiation {} for call {} from party {party_id}",
-            content.description.session_type,
-            self.call_id()
-        );
-
-        if is_answer {
-            if !imp.local_offer_pending.replace(false) {
-                debug!("Ignoring a renegotiation answer to an offer that is not ours");
-                return;
-            }
-
-            if let Some(source) = imp.negotiation_timeout.take() {
-                source.remove();
-            }
-
-            if let Err(error) = pipeline.set_remote_description(&content.description.sdp, true) {
-                // A renegotiation that fails is not a call that fails. What
-                // was flowing before it is still flowing, and hanging up
-                // would take away a working call over a camera that could not
-                // be added.
-                warn!("Could not take the renegotiation answer: {error}");
-            }
-
-            return;
-        }
-
-        // An offer, and possibly one that crossed an offer of ours. Perfect
-        // negotiation settles that without either end asking the other: "the
-        // callee is always the polite party", and the polite party is the one
-        // that gives way.
-        if imp.local_offer_pending.get() {
-            if self.is_outgoing() {
-                debug!("A renegotiation offer crossed ours; as the caller, ours stands");
-                return;
-            }
-
-            debug!("A renegotiation offer crossed ours; as the callee, ours gives way");
-            pipeline.rollback_local_description();
-            imp.local_offer_pending.set(false);
-        }
-
-        let (event_sender, mut events) = futures_channel::mpsc::unbounded();
-
-        if let Err(error) = pipeline.answer_remote_offer(&content.description.sdp, event_sender) {
-            warn!("Could not take the renegotiation offer: {error}");
-            return;
-        }
-        drop(borrowed);
-
-        spawn!(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            async move {
-                while let Some(event) = events.next().await {
-                    match event {
-                        PipelineEvent::LocalDescription { sdp, .. } => {
-                            obj.send_negotiate(sdp, true);
-                        }
-                        other => obj.handle_pipeline_event(other),
-                    }
-                }
-            }
-        ));
-    }
-
-    /// Handle an `m.call.candidates` from the other end.
-    pub(super) fn handle_candidates(
-        &self,
-        sender: &UserId,
-        party_id: Option<&OwnedVoipId>,
-        candidates: &[Candidate],
-    ) {
-        if !self.is_remote_party(sender, party_id) {
-            // Silently dropping these is indistinguishable from none arriving.
-            debug!(
-                "Ignoring {} ICE candidate(s) from a party we are not talking to",
-                candidates.len()
-            );
-            return;
-        }
-
-        let imp = self.imp();
-        let borrowed = imp.pipeline.borrow();
-
-        let Some(pipeline) = &*borrowed else {
-            // Still ringing: keep them for when there is a pipeline. Dropping
-            // them would mean the call takes an extra round trip to connect,
-            // or does not connect at all.
-            debug!(
-                "Holding {} ICE candidate(s) until the call is answered",
-                candidates.len()
-            );
-            imp.pending_candidates
-                .borrow_mut()
-                .extend_from_slice(candidates);
-            return;
-        };
-
-        debug!(
-            "{}: received {} ICE candidate(s) for call {} from party {:?} on m-line(s) {:?}",
-            own_user_id(&self.room()),
-            candidates.len(),
-            self.call_id(),
-            party_id,
-            candidates
-                .iter()
-                .map(|c| c.sdp_m_line_index.map_or(0, u64::from))
-                .collect::<std::collections::BTreeSet<_>>(),
-        );
-
-        for candidate in candidates {
-            pipeline.add_ice_candidate(
-                candidate.sdp_m_line_index.map_or(0, u64::from) as u32,
-                &candidate.candidate,
-            );
-        }
-    }
-
-    /// Handle an `m.call.select_answer` from the other end.
-    pub(super) fn handle_select_answer(&self, sender: &UserId, selected_party_id: &OwnedVoipId) {
-        if self.is_outgoing() {
-            return;
-        }
-        // Only the caller sends this, and only about our own answer.
-        if *sender == own_user_id(&self.room()) {
-            return;
-        }
-
-        if selected_party_id != self.party_id() {
-            // Another of our devices took the call.
-            self.end(CallEndReason::AnsweredElsewhere);
-        }
-    }
-
-    /// Handle an `m.call.hangup` from the other end.
-    pub(super) fn handle_hangup(&self, sender: &UserId, party_id: Option<&OwnedVoipId>) {
-        if !self.is_remote_party(sender, party_id) {
-            return;
-        }
-
-        self.end(CallEndReason::HungUp);
-    }
-
-    /// Handle an `m.call.reject` from the other end.
-    pub(super) fn handle_reject(&self, sender: &UserId, party_id: &OwnedVoipId) {
-        let own_user_id = own_user_id(&self.room());
-
-        if *sender == own_user_id && party_id == self.party_id() {
-            return;
-        }
-
-        if *sender == own_user_id {
-            // We declined it on another device.
-            self.end(CallEndReason::AnsweredElsewhere);
-            return;
-        }
-
-        self.end(CallEndReason::Declined);
-    }
-
-    /// Handle an `m.call.sdp_stream_metadata_changed` from the other end.
-    pub(super) fn handle_stream_metadata(
-        &self,
-        sender: &UserId,
-        party_id: &OwnedVoipId,
-        metadata: &BTreeMap<String, StreamMetadata>,
-    ) {
-        if !self.is_remote_party(sender, Some(party_id)) {
-            return;
-        }
-
-        self.apply_stream_metadata(metadata);
-    }
-
-    /// Take what the other end says about the streams it is sending.
-    ///
-    /// Four events carry this and all four mean the same thing: the invite,
-    /// the answer, a renegotiation, and the one whose only job is to carry it
-    /// when nothing else has to be negotiated.
-    fn apply_stream_metadata(&self, metadata: &BTreeMap<String, StreamMetadata>) {
-        // Logged including the empty case, because "they muted and we did not
-        // notice" and "they never said anything" are the same silence from
-        // here, and only one of them is ours to fix.
-        debug!(
-            "The other party describes {} stream(s): {:?}",
-            metadata.len(),
-            metadata
-                .iter()
-                .map(|(id, stream)| (
-                    id.as_str(),
-                    stream.purpose.as_str(),
-                    stream.audio_muted,
-                    stream.video_muted
-                ))
-                .collect::<Vec<_>>()
-        );
-
-        if metadata.is_empty() {
-            // "For backwards compatibility, if `sdp_stream_metadata` is not
-            // present ... the client should assume that this property is not
-            // supported by the other party." Not "everything is unmuted": a
-            // client that never sends this has told us nothing, and forgetting
-            // what an earlier event said would be inventing an answer.
-            return;
-        }
-
-        // "If a stream has a `purpose` of an unknown type, it should also be
-        // ignored." Screen sharing is the other purpose the spec names and is
-        // not implemented here, so the only stream this client has an opinion
-        // about is the one with the person in it.
-        let mut video_muted = false;
-        let mut audio_muted = false;
-
-        for stream in metadata
-            .values()
-            .filter(|stream| stream.purpose == StreamPurpose::UserMedia)
-        {
-            video_muted |= stream.video_muted;
-            audio_muted |= stream.audio_muted;
-        }
-
-        let imp = self.imp();
-
-        // The spec asks that a muted camera be muted locally too, so that the
-        // other person sees an avatar rather than the last frame we were sent
-        // or a black rectangle. It asks the opposite for audio, because
-        // unmuting takes a round trip and the words in between would be lost —
-        // so their microphone is shown and not acted on.
-        if imp.is_remote_camera_muted.get() != video_muted {
-            imp.is_remote_camera_muted.set(video_muted);
-            self.notify_is_remote_camera_muted();
-        }
-
-        if imp.is_remote_microphone_muted.get() != audio_muted {
-            imp.is_remote_microphone_muted.set(audio_muted);
-            self.notify_is_remote_microphone_muted();
-        }
-    }
-
-    /// The other party left the room.
-    ///
-    /// The spec asks that this be treated as a hangup, which it effectively is:
-    /// they cannot send one from outside the room.
-    pub(super) fn handle_remote_left(&self) {
-        self.end(CallEndReason::HungUp);
-    }
-
-    /// Send a call event into the room.
-    ///
-    /// Straight to the homeserver rather than through the send queue. A queued
-    /// invite is one that arrives after the person has stopped waiting, and a
-    /// queued hangup is a call the other end thinks is still running.
-    fn send(&self, content: AnyMessageLikeEventContent) {
-        let matrix_room = self.room().matrix_room().clone();
-        let room_id = matrix_room.room_id().to_owned();
-        let event_type = content.event_type().to_string();
-
-        spawn!(async move {
-            let handle = spawn_tokio!(async move { matrix_room.send(content).await });
-
-            // The event ID, because a call that rings for nobody is a call
-            // whose events have to be looked for in the room, and this is the
-            // only place their IDs exist.
-            match handle.await.expect("task was not aborted") {
-                Ok(result) => debug!(
-                    "Sent {event_type} into {room_id} as {}{}",
-                    result.response.event_id,
-                    if result.encryption_info.is_some() {
-                        ", encrypted"
-                    } else {
-                        ""
-                    }
-                ),
-                Err(error) => warn!("Could not send a call event: {error}"),
-            }
-        });
-    }
-
-    /// Set the state, unless the call is already over.
-    fn set_state(&self, state: CallState) {
-        let imp = self.imp();
-
-        if imp.state.get() == state || imp.state.get().is_ended() {
-            return;
-        }
-
-        imp.state.set(state);
-        self.notify_state();
-    }
-
-    /// End the call locally, without telling anybody.
-    fn end(&self, reason: CallEndReason) {
+    /// For a call the core never had: nothing was sent about it, so there
+    /// is nothing to send about its end. A call the core has ends through
+    /// the core.
+    fn end_locally(&self, reason: CallEndReason) {
         let imp = self.imp();
 
         if imp.state.get().is_ended() {
             return;
         }
 
-        imp.cancel_timeouts();
-        // Dropping the pipeline closes the microphone and the camera.
-        imp.pipeline.take();
-        imp.pending_offer.take();
-        imp.pending_candidates.take();
-        imp.outgoing_candidates.take();
-
-        imp.end_reason.set(reason);
-        imp.state.set(CallState::Ended);
-
-        self.notify_end_reason();
-        self.notify_state();
-    }
-
-    /// Find the member on the other end of an incoming call.
-    fn set_remote_member_from(&self, user_id: &UserId) {
-        let room = self.room();
-        let user_id = user_id.to_owned();
-
-        let member = room.get_or_create_members().get_or_create(user_id);
-
-        self.imp().remote_member.replace(Some(member));
-        self.notify_remote_member();
+        imp.set_end_reason(reason);
+        imp.set_state(CallState::Ended);
     }
 
     /// Find the one other member of the room we are calling.
     ///
     /// A call is placed to a room, and the room has to have exactly one other
     /// person in it for that to mean anything. The caller checks that before
-    /// getting here; this decides whose name is on the window and who the
-    /// invite is addressed to.
+    /// getting here; this decides whose name is on the window until the core
+    /// has the call and says who it went to.
     fn load_remote_member(&self) {
         let Some(member) = super::other_member(&self.room()) else {
             return;
@@ -1470,138 +941,5 @@ impl Call {
 
         self.imp().remote_member.replace(Some(member));
         self.notify_remote_member();
-    }
-}
-
-/// The ID of the first media stream in an SDP.
-///
-/// `sdp_stream_metadata` is keyed on the stream ID, which is the first field of
-/// an `msid`. There are two places an SDP can carry one, and this reads both
-/// because the one the spec's examples show is not the one we write.
-///
-/// A browser puts it at media level:
-///
-/// ```text
-/// a=msid:<stream id> <track id>
-/// ```
-///
-/// `webrtcbin` writes no such line anywhere. What it writes is the per-source
-/// form, once for each `ssrc`:
-///
-/// ```text
-/// a=ssrc:2181993077 msid:user217149580@host-e5ab91bf webrtctransceiver0
-/// ```
-///
-/// Reading only the first form is what left `local_stream_id` empty, and an
-/// empty one means `stream_metadata()` returns nothing, and nothing means
-/// muting was never announced to the other end at all — the microphone and the
-/// camera stopped, and the far side was never told why.
-///
-/// Both media sections share one stream ID, which is what a single
-/// `m.usermedia` stream should look like, so the first one found is the one.
-fn first_stream_id(sdp: &str) -> Option<String> {
-    sdp.lines()
-        .filter_map(stream_id_of_line)
-        .find(|stream_id| *stream_id != "-")
-        .map(ToOwned::to_owned)
-}
-
-/// The stream ID carried by one SDP attribute line, if it carries one.
-fn stream_id_of_line(line: &str) -> Option<&str> {
-    let attribute = line.trim_end().strip_prefix("a=")?;
-
-    let msid = if let Some(msid) = attribute.strip_prefix("msid:") {
-        msid
-    } else {
-        // `ssrc:<id> msid:<stream id> <track id>`. The same line shape also
-        // carries `cname:`, which is not an msid and must not be read as one.
-        let (_, rest) = attribute
-            .strip_prefix("ssrc:")?
-            .split_once(char::is_whitespace)?;
-        rest.trim_start().strip_prefix("msid:")?
-    };
-
-    msid.split_whitespace().next()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// An offer as `webrtcbin` 1.28.6 actually writes one, trimmed to the
-    /// lines that matter here. There is no media-level `a=msid:` anywhere in
-    /// it; the msid is an attribute of the source.
-    const WEBRTCBIN_OFFER: &str = "\
-v=0\r\n\
-o=- 8423898717797077664 0 IN IP4 0.0.0.0\r\n\
-a=group:BUNDLE audio0 video1\r\n\
-m=audio 9 UDP/TLS/RTP/SAVPF 111\r\n\
-a=sendrecv\r\n\
-a=rtpmap:111 OPUS/48000/2\r\n\
-a=ssrc:2181993077 msid:user217149580@host-e5ab91bf webrtctransceiver0\r\n\
-a=ssrc:2181993077 cname:user217149580@host-e5ab91bf\r\n\
-a=mid:audio0\r\n\
-m=video 0 UDP/TLS/RTP/SAVPF 96\r\n\
-a=sendrecv\r\n\
-a=rtpmap:96 VP8/90000\r\n\
-a=ssrc:3666412715 msid:user217149580@host-e5ab91bf webrtctransceiver1\r\n\
-a=ssrc:3666412715 cname:user217149580@host-e5ab91bf\r\n\
-a=mid:video1\r\n";
-
-    #[test]
-    fn the_stream_id_comes_from_the_msid_attribute() {
-        let sdp = "v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\na=msid:stream0 track0\r\n";
-        assert_eq!(first_stream_id(sdp), Some("stream0".to_owned()));
-    }
-
-    #[test]
-    fn the_stream_id_is_found_in_what_webrtcbin_writes() {
-        // This is the case that was broken: no media-level `a=msid:` line, so
-        // the whole of `sdp_stream_metadata` was silently empty and muting was
-        // never announced.
-        assert_eq!(
-            first_stream_id(WEBRTCBIN_OFFER),
-            Some("user217149580@host-e5ab91bf".to_owned())
-        );
-    }
-
-    #[test]
-    fn both_sections_of_that_offer_name_one_stream() {
-        // One `m.usermedia` stream carrying audio and video, which is what the
-        // single entry in `sdp_stream_metadata` is supposed to describe.
-        let ids = WEBRTCBIN_OFFER
-            .lines()
-            .filter_map(stream_id_of_line)
-            .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(ids.len(), 1);
-    }
-
-    #[test]
-    fn a_cname_on_the_same_ssrc_is_not_a_stream_id() {
-        // `a=ssrc:N cname:…` has the shape of the line we read and is not one.
-        assert_eq!(
-            stream_id_of_line("a=ssrc:2181993077 cname:user217149580@host-e5ab91bf"),
-            None
-        );
-    }
-
-    #[test]
-    fn a_placeholder_stream_id_is_not_one() {
-        // `a=msid:- <track>` means the track belongs to no stream, which is
-        // not a thing `sdp_stream_metadata` can be keyed on.
-        let sdp = "a=msid:- track0\r\na=msid:stream1 track1\r\n";
-        assert_eq!(first_stream_id(sdp), Some("stream1".to_owned()));
-    }
-
-    #[test]
-    fn an_sdp_without_msid_has_no_stream_id() {
-        assert_eq!(first_stream_id("v=0\r\nm=audio 9 RTP/AVP 111\r\n"), None);
-    }
-
-    #[test]
-    fn an_opaque_id_is_the_length_it_was_asked_for() {
-        let id = opaque_id(8);
-        assert_eq!(id.len(), 8);
-        assert!(id.chars().all(|c| c.is_ascii_alphanumeric()));
     }
 }

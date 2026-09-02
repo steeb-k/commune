@@ -17,7 +17,7 @@ use gst::prelude::*;
 use gtk::{gdk, glib};
 use tracing::{debug, error, warn};
 
-use super::turn::IceServers;
+use super::IceServers;
 
 /// Remote ICE candidate lines, waiting for somewhere to go.
 type PendingCandidates = Arc<Mutex<Vec<String>>>;

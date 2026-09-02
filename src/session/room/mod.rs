@@ -12,18 +12,14 @@ use gtk::{
 };
 use matrix_sdk::{
     Result as MatrixResult, RoomState, deserialized_responses::RawSyncOrStrippedState,
-    event_handler::EventHandlerDropGuard, room::Room as MatrixRoom,
+    room::Room as MatrixRoom,
 };
 use ruma::{
     EventId, MatrixToUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
     api::{client::receipt::create_receipt::v3::ReceiptType as ApiReceiptType, error::ErrorKind},
     events::{
         SyncStateEvent,
-        room::{
-            history_visibility::HistoryVisibility,
-            member::{MembershipState, SyncRoomMemberEvent},
-            server_acl::RoomServerAclEventContent,
-        },
+        room::{history_visibility::HistoryVisibility, server_acl::RoomServerAclEventContent},
     },
     room_version_rules::RoomVersionRules,
 };
@@ -172,7 +168,6 @@ mod imp {
         /// The members of this room.
         #[property(get)]
         pub(super) members: glib::WeakRef<MemberList>,
-        members_drop_guard: OnceCell<EventHandlerDropGuard>,
         /// The number of joined members in the room, according to the
         /// homeserver.
         #[property(get)]
@@ -332,8 +327,6 @@ mod imp {
 
             self.init_live_timeline();
             self.aliases.init(&obj);
-            #[cfg(not(target_os = "android"))]
-            self.watch_members();
             self.join_rule.init(&obj);
 
             spawn!(
@@ -988,50 +981,6 @@ mod imp {
 
             self.successor.set(Some(successor));
             self.obj().notify_successor();
-        }
-
-        /// Watch the room's member events for the one thing the
-        /// application's calls still need from them.
-        ///
-        /// The core's room handles member events for the member list and
-        /// the direct member; the desktop's calls are the application's
-        /// own until their module, and a call has to hear that the other
-        /// party left. Goes with module 11.
-        #[cfg(not(target_os = "android"))]
-        fn watch_members(&self) {
-            let matrix_room = self.matrix_room();
-
-            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
-            let handle = matrix_room.add_event_handler(move |event: SyncRoomMemberEvent| {
-                let obj_weak = obj_weak.clone();
-                async move {
-                    // "If the client sees the user it is in a call with leave
-                    // the room, the client should treat this as a hangup
-                    // event for any calls that are in progress."
-                    if !matches!(
-                        event.membership(),
-                        MembershipState::Leave | MembershipState::Ban
-                    ) {
-                        return;
-                    }
-
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        spawn!(async move {
-                            if let Some(obj) = obj_weak.upgrade()
-                                && let Some(session) = obj.session()
-                            {
-                                session.calls().handle_member_left(&obj, event.state_key());
-                            }
-                        });
-                    });
-                }
-            });
-
-            let drop_guard = matrix_room.client().event_handler_drop_guard(handle);
-            self.members_drop_guard
-                .set(drop_guard)
-                .expect("members drop guard is uninitialized");
         }
 
         /// Set the number of joined members in the room, according to the

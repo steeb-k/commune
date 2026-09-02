@@ -320,6 +320,11 @@ impl Call {
         self.inner.remote_user_id.get()
     }
 
+    /// Subscribe to the user on the other end.
+    pub fn subscribe_remote_user_id(&self) -> Subscriber<Option<OwnedUserId>> {
+        self.inner.remote_user_id.subscribe()
+    }
+
     /// Whether we placed this call.
     #[must_use]
     pub fn is_outgoing(&self) -> bool {
@@ -343,10 +348,20 @@ impl Call {
         self.inner.end_reason.get()
     }
 
+    /// Subscribe to why the call ended.
+    pub fn subscribe_end_reason(&self) -> Subscriber<CallEndReason> {
+        self.inner.end_reason.subscribe()
+    }
+
     /// Whether this call carries video.
     #[must_use]
     pub fn has_video(&self) -> bool {
         self.inner.has_video.get()
+    }
+
+    /// Subscribe to whether this call carries video.
+    pub fn subscribe_has_video(&self) -> Subscriber<bool> {
+        self.inner.has_video.subscribe()
     }
 
     /// Whether our own microphone is muted.
@@ -387,6 +402,11 @@ impl Call {
     #[must_use]
     pub fn connected_at(&self) -> u64 {
         self.inner.connected_at.get()
+    }
+
+    /// Subscribe to when the call connected.
+    pub fn subscribe_connected_at(&self) -> Subscriber<u64> {
+        self.inner.connected_at.subscribe()
     }
 
     /// Whether this call took over from one of ours in a glare, and so
@@ -527,6 +547,24 @@ impl Call {
     /// WebRTC lives outside the core says so here.
     pub fn hangup_media_failed(&self) {
         self.hangup_with(Reason::UserMediaFailed, CallEndReason::MediaFailed);
+    }
+
+    /// End the call because something else went wrong on our side: the
+    /// embedder's WebRTC could not take a description it was handed.
+    pub fn hangup_failed(&self) {
+        self.hangup_with(Reason::UnknownError, CallEndReason::Failed);
+    }
+
+    /// Whether a renegotiation offer of ours would be sent now.
+    ///
+    /// The application asks before it has its pipeline make one, because
+    /// an offer made and not sent leaves the pipeline waiting on it: the
+    /// call has to be established, and no offer of ours still waiting for
+    /// an answer.
+    #[must_use]
+    pub fn can_send_negotiate_offer(&self) -> bool {
+        matches!(self.state(), CallState::Connecting | CallState::Connected)
+            && !self.inner.local_offer_pending.load(Ordering::SeqCst)
     }
 
     /// End the call because the two ends could not find a path to each

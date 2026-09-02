@@ -217,7 +217,7 @@ mod imp {
             let is_ongoing = calls
                 .as_ref()
                 .and_then(Calls::active_call)
-                .is_some_and(|call| call.call_id().as_str() == call_id);
+                .is_some_and(|call| call.call_id().is_some_and(|id| id.as_str() == call_id));
             let outcome = calls.as_ref().and_then(|calls| calls.outcome(call_id));
 
             // "As a starting point, it is RECOMMENDED that clients ignore call
