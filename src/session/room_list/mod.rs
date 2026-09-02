@@ -1,6 +1,5 @@
 use std::{cell::Cell, collections::HashMap, rc::Rc, time::Duration};
 
-pub use commune_core::session::RoomMetainfo;
 use commune_core::{
     VectorDiff,
     session::{Room as CoreRoom, RoomList as CoreRoomList},
@@ -28,7 +27,7 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::RefCell, collections::HashSet, sync::LazyLock};
+    use std::{cell::RefCell, sync::LazyLock};
 
     use glib::subclass::Signal;
 
@@ -43,9 +42,6 @@ mod imp {
         /// across every diff, so that identity survives for the sidebar's
         /// filter and sort stacks and every binding.
         pub(super) list: RefCell<IndexMap<OwnedRoomId, Room>>,
-        /// The list of rooms that were upgraded and for which we have not
-        /// joined the successor yet.
-        tombstoned_rooms: RefCell<HashSet<OwnedRoomId>>,
         /// The current session.
         #[property(get, construct_only)]
         session: glib::WeakRef<Session>,
@@ -111,16 +107,6 @@ mod imp {
             self.list.borrow().get(room_id).cloned()
         }
 
-        /// Add a room that was tombstoned but for which we have not joined the
-        /// successor yet.
-        pub(super) fn add_tombstoned_room(&self, room_id: OwnedRoomId) {
-            if let Some(core) = self.core() {
-                core.add_tombstoned_room(room_id.clone());
-            }
-
-            self.tombstoned_rooms.borrow_mut().insert(room_id);
-        }
-
         /// Follow the core's list.
         pub(super) fn load(&self) {
             let Some(core) = self.core() else {
@@ -136,10 +122,7 @@ mod imp {
                 .map(|room| self.wrap(room))
                 .collect::<Vec<_>>();
             let added = wrapped.len();
-            self.list
-                .borrow_mut()
-                .extend(wrapped.iter().map(|(id, room)| (id.clone(), room.clone())));
-            self.rooms_added(wrapped.into_iter().map(|(_, room)| room));
+            self.list.borrow_mut().extend(wrapped);
             self.obj().items_changed(0, 0, added as u32);
 
             let handle = ObjectWatcher::new(&*self.obj())
@@ -183,44 +166,6 @@ mod imp {
             let obj = self.obj();
             for change in &changes {
                 obj.items_changed(change.position, change.removed, change.added);
-            }
-
-            let new_rooms = {
-                let list = self.list.borrow();
-                changes
-                    .iter()
-                    .filter(|change| change.added > 0)
-                    .flat_map(|change| change.position..change.position + change.added)
-                    .filter_map(|index| list.get_index(index as usize))
-                    .map(|(_, room)| room.clone())
-                    .collect::<Vec<_>>()
-            };
-            if !new_rooms.is_empty() {
-                self.rooms_added(new_rooms.into_iter());
-            }
-        }
-
-        /// Handle rooms that were added to the list.
-        ///
-        /// A new room may be the successor of a tombstoned one.
-        fn rooms_added(&self, rooms: impl Iterator<Item = Room>) {
-            let mut tombstoned_rooms_to_remove = Vec::new();
-
-            for room in rooms {
-                if let Some(predecessor_id) = room.predecessor_id()
-                    && self.tombstoned_rooms.borrow().contains(predecessor_id)
-                    && let Some(predecessor) = self.get(predecessor_id)
-                {
-                    predecessor.update_successor();
-                    tombstoned_rooms_to_remove.push(predecessor_id.clone());
-                }
-            }
-
-            if !tombstoned_rooms_to_remove.is_empty() {
-                let mut tombstoned_rooms = self.tombstoned_rooms.borrow_mut();
-                for room_id in tombstoned_rooms_to_remove {
-                    tombstoned_rooms.remove(&room_id);
-                }
             }
         }
 
@@ -449,12 +394,6 @@ impl RoomList {
             // Take the room with the latest activity.
             .max_by(|x, y| x.latest_activity().cmp(&y.latest_activity()))
             .cloned()
-    }
-
-    /// Add a room that was tombstoned but for which we haven't joined the
-    /// successor yet.
-    pub(crate) fn add_tombstoned_room(&self, room_id: OwnedRoomId) {
-        self.imp().add_tombstoned_room(room_id);
     }
 
     /// Join the room with the given identifier.

@@ -1879,6 +1879,92 @@ sidebar — every section fills, join by alias, knock, forget, the
 tombstone successor — are owed, and only a person at the desktop can run
 them; the sessions compiled it, linted it, and ran the core's tests.
 
+### Module 2 — the room's properties are mirrors
+
+**Done 1 September, the same day as module 1.** `src/session/room/mod.rs`
+goes from 2,763 lines to 2,169 and the core's `session/room/mod.rs` gains
+511; across the eight files it is 1,073 lines in and 1,249 out. The plan's
+"split 2a/2b if the read says so" was not needed: the read said the split
+runs between what the core already observed and what it did not, and the
+second half was small enough to move in the same commit.
+
+**Twenty-six observables become mirrors, in one task per room.** The
+application's `Room` keeps every property and every `notify_*()` and
+loses every computation behind them: `update_name`, the SDK display-name
+call, `update_topic`, `update_category` with the server-notice tag read
+and the tag order, `update_is_direct` and the direct-user rule,
+`update_tombstone`, `update_is_invite` and `was_membership` with its
+three-step walk through the member event, `update_inviter`,
+`update_is_marked_unread`, `update_highlight`, `update_is_encrypted`,
+`update_guests_allowed`, `update_history_visibility`, the typing
+subscription, the send-queue watcher, and `change_category`'s body — all
+of it the core's now, reached through `watch_core()`, one `ObjectWatcher`
+following twenty-six streams and the ambiguity broadcast and reading each
+value once after subscribing. The display name is the one mirror that
+renders: the core's `RoomDisplayName` carries `EmptyWas`, `Empty` and
+`Unknown` as values and the three sentences stay here with their
+translator comments. `RoomCategory`, `RoomHighlight` and
+`HistoryVisibilityValue` cross through `From` impls on the application's
+`glib` enums, as `SessionState` did.
+
+**What the core had to gain first, because the application had it and
+the core did not.** Guest access. The pinned event IDs, excluded in the
+server notices room. The active server notice as a value —
+`ServerNotice { body, admin_contact }` — computed from the pinned events
+the way the application computed it, the most recent one first. The
+inviter, from `invite_details()`, and with it the category the core had
+left as a comment: an invite from an ignored user reads `Ignored`, and a
+task on the session's ignored-user list re-reads the category of every
+invited room when that list changes — the application did the same
+through a `notify` on the inviter's `is-ignored`. The send-queue watcher,
+which re-enables the queue after the delay a rate limit names or a
+default, unless the session is offline. And `successor_id` became an
+observable, because the application notifies a property from it.
+
+**The read state is reported, not approximated.** Module 1 handed the
+metainfo persistence to the core, and the core's `is_read` was an
+approximation — "notifications pending means unread" — until its own
+timeline was built, which the desktop never builds. So from module 1 to
+this commit the bold rooms after a restart were the core's guess rather
+than the application's MSC2654 walk: a regression the ledger records and
+this closes. The application's timeline still does the walk, and reports
+the answer through `Room::note_is_read`; its item batches still find the
+latest activity, and report it through `note_latest_activity`. From the
+first report on, the core's approximation stands aside
+(`read_state_reported`), so a room read a moment ago does not flicker
+back to bold on the next room-info update while the receipt is still in
+flight. Module 8 removes the report when the core's timeline is the one.
+
+**Two things the writing found.** The merged streams are not ordered
+across each other: an `ObjectWatcher` polls its streams round-robin, so
+a category change and the `is_room_info_initialized` flag that follows
+it can be delivered in either order. The preload decision that waits for
+the category therefore reads it from the core directly rather than from
+the mirror. And the application's tombstone bookkeeping in `RoomList` —
+the set of rooms waiting for a successor, and the successor search when
+a room arrives — was dead once the core did it: the core finds the
+successor, sets `Outdated`, and the mirror's `set_category` resolves the
+`GObject`. Both deleted, with `UserExt::is_ignored`, whose one caller was
+the inviter check.
+
+**What this commit knowingly leaves.** The room still subscribes to the
+SDK's room info itself, for the aliases and the join rule — module 4's
+objects, which read it directly. The members, the own member and the
+`SyncRoomMemberEvent` handler are module 3's; the timeline and the
+read-state report are module 8's; the notifications setting and the
+verification are modules 9 and 10. The action methods the core already
+carries — redact, report, invite, the server ACL — still go to the SDK
+from here, because their signatures hand back borrowed IDs their callers
+use; forwarding them is a callers' change for a later module. The Kotlin
+side gains the server notice, the pinned events, the inviter and the
+ignored-invite rule in the core and none of them on the FFI yet; the
+ledger has the rows. The eyeball section owed is the sidebar row in every
+state — name, avatar, topic, category moves, tag order, bold and
+highlighted counts, typing, the direct chat's avatar and presence, an
+invite with its inviter, an invite from an ignored user, a tombstoned
+room and its successor, the server notice banner, the pinned count, the
+guest access and history visibility rows, the encryption badge.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -1961,6 +2047,9 @@ recorded here as it is found, with the phase that closes it.
 | 1 Sep 2026 | `session/mod.rs`, `log_out` | **`Result<(), String>` with an English sentence in it** — the leaf-1 rule broken inside the core, where every other module of Phase 3 got an error enum. `LogoutError` carrying the SDK error; the application keeps its `gettext`. **Closed 1 Sep**, module 1. | Done |
 | 1 Sep 2026 | `session/mod.rs`, `probe_homeserver` | **The core dials the homeserver's port where the application asks `gio::NetworkMonitor::can_reach`.** The monitor knows about captive portals, metered links and proxies the dial does not. Once the core owns the sync loop the desktop's answer has to reach it: `network_changed()` triggers the core's probe today; a `report_homeserver_reachable(bool)` for an embedder with a better instrument is the likely shape. **Closed 1 Sep**, module 1: that method, and the desktop's `NetworkMonitor` reports through it; the core dials once at `prepare()` and never again where nothing calls `network_changed()`. | Done |
 | 1 Sep 2026 | `src/session/room/mod.rs`, `forget` | **The application forgot a room past whoever owned the list.** `Room::forget()` called the SDK directly and emitted `room-forgotten`, which its own `RoomList` heard; once the list is the core's, the row would have stayed in the sidebar forever. Found writing module 1. **Closed 1 Sep**: `forget()` goes through the core room, whose `forgotten` observable the core's list removes on. | Done |
+| 1 Sep 2026 | `session/room/mod.rs`, `is_read` after module 1 | **Module 1 made the core persist an approximation.** The metainfo the sidebar restores from became the core's, whose `is_read` was "notifications pending means unread" until its own timeline existed — which the desktop never builds. For the hours between module 1 and module 2, the bold rooms after a restart were the guess, not the application's MSC2654 walk. **Closed 1 Sep**, module 2: the application's timeline reports through `Room::note_is_read` and `note_latest_activity`, and the approximation stands aside from the first report. Module 8 removes the report. | Done; module 8 retires the seam |
+| 1 Sep 2026 | `session/room/mod.rs`, `update_category` | **The core never read an invite from an ignored user as `Ignored`.** The application does, and re-reads when the inviter becomes ignored; the core left a comment where the check goes, so the Kotlin sidebar showed the invites the specification says to ignore. **Closed 1 Sep**, module 2: `inviter_user_id`, `is_inviter_ignored`, and a watcher on the ignored-user list. | Done |
+| 1 Sep 2026 | `session/room/mod.rs`, guest access, pinned events, server notice, inviter, send queue | **Five things the application's room computed and the core's did not**: `guests_allowed`, the pinned event IDs (excluded in the notices room), the active server notice with its admin contact, the inviter, and the send-queue watcher that re-enables sending after a rate limit. **Moved in 1 Sep**, module 2, as observables and a task. None of them is on the FFI: Kotlin shows no server notice banner, no pinned count, no inviter, and a rate-limited send queue there stays stopped until the session goes offline and back. | Core done; FFI owed |
 
 ## Gates
 

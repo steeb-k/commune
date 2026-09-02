@@ -515,11 +515,6 @@ pub trait UserExt: IsA<User> {
         }
     }
 
-    /// Whether this user is currently ignored.
-    fn is_ignored(&self) -> bool {
-        self.upcast_ref().is_ignored()
-    }
-
     /// Connect to the signal emitted when the `is-ignored` property changes.
     fn connect_is_ignored_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.upcast_ref().connect_is_ignored_notify(move |user| {
