@@ -63,7 +63,7 @@ use ruma::{
             avatar::ImageInfo as AvatarImageInfo,
             guest_access::GuestAccess,
             history_visibility::{HistoryVisibility, RoomHistoryVisibilityEventContent},
-            member::{MembershipState, RoomMemberEventContent},
+            member::{MembershipState, RoomMemberEventContent, SyncRoomMemberEvent},
             message::MessageType,
         },
         tag::TagName,
@@ -73,7 +73,7 @@ use ruma::{
     serde::Raw,
 };
 use serde::Deserialize;
-use tokio::{sync::broadcast, task::AbortHandle, time::sleep};
+use tokio::{task::AbortHandle, time::sleep};
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
@@ -107,9 +107,6 @@ use crate::{
 /// The specification keeps real orders in `[0, 1]` and asks that ordered
 /// rooms come first, so anything past 1 sorts a room after all of them.
 const NO_TAG_ORDER: f64 = 2.0;
-
-/// How many batches of ambiguous members a slow subscriber may fall behind.
-const AMBIGUITY_CHANNEL_CAPACITY: usize = 16;
 
 /// The default duration in seconds that we wait for before retrying failed
 /// sending requests.
@@ -402,12 +399,8 @@ struct RoomInner {
     history_visibility: SharedObservable<HistoryVisibilityValue>,
     /// Whether this room was forgotten.
     forgotten: SharedObservable<bool>,
-    /// The members each sync marked ambiguous, for whoever shows names.
-    ///
-    /// The application refreshes the members named so that two "Alice"s
-    /// are told apart the moment the second joins. Until the core's member
-    /// list consumes this itself, the embedder's does.
-    ambiguous_members: broadcast::Sender<Vec<OwnedUserId>>,
+    /// The guard of the handler following the room's member events.
+    members_guard: Mutex<Option<matrix_sdk::event_handler::EventHandlerDropGuard>>,
     /// Whether the room info is initialized.
     ///
     /// Used to silence logs during initialization.
@@ -490,7 +483,7 @@ impl Room {
             ignored_users_handle: Mutex::new(None),
             history_visibility: SharedObservable::new(HistoryVisibilityValue::default()),
             forgotten: SharedObservable::new(false),
-            ambiguous_members: broadcast::channel(AMBIGUITY_CHANNEL_CAPACITY).0,
+            members_guard: Mutex::new(None),
             is_room_info_initialized: SharedObservable::new(false),
             attempted_auto_join: AtomicBool::new(false),
             room_info_handle: Mutex::new(None),
@@ -526,6 +519,7 @@ impl Room {
 
         RoomInner::watch_send_queue(inner);
         RoomInner::watch_ignored_users(inner);
+        RoomInner::watch_members(inner);
 
         {
             let weak = Arc::downgrade(inner);
@@ -914,18 +908,10 @@ impl Room {
         self.inner.forgotten.subscribe()
     }
 
-    /// Subscribe to the members each sync marks ambiguous.
+    /// Handle the members a sync marked ambiguous.
     ///
-    /// Every item is the set of users whose display name stopped or
-    /// started being unique in this room; whoever shows names refreshes
-    /// those members. A slow subscriber loses the oldest batches, which
-    /// is fine: the names are re-read from the store either way.
-    #[must_use]
-    pub fn subscribe_ambiguous_members(&self) -> broadcast::Receiver<Vec<OwnedUserId>> {
-        self.inner.ambiguous_members.subscribe()
-    }
-
-    /// Note the members a sync marked ambiguous.
+    /// The application refreshes the members named so that two "Alice"s
+    /// are told apart the moment the second joins.
     pub(crate) fn note_ambiguity_changes<'a>(
         &self,
         changes: impl Iterator<Item = &'a AmbiguityChange>,
@@ -936,15 +922,9 @@ impl Room {
             .map(ToOwned::to_owned)
             .collect::<HashSet<_>>();
 
-        if user_ids.is_empty() {
-            return;
+        if let Some(member_list) = self.inner.member_list.get() {
+            member_list.update_members(user_ids.into_iter().collect());
         }
-
-        // A send only fails when nobody listens, which is fine.
-        let _ = self
-            .inner
-            .ambiguous_members
-            .send(user_ids.into_iter().collect());
     }
 
     /// The live timeline of this room, created on first use.
@@ -1837,6 +1817,10 @@ impl RoomInner {
             return;
         };
 
+        if let Some(member_list) = self.member_list.get() {
+            let _direct_index = member_list.ensure(&direct_user_id);
+        }
+
         // The one bit of member data the sidebar needs today: the person's
         // name and picture. The full member model comes with its chunk.
         let matrix_room = self.matrix_room.clone();
@@ -2311,6 +2295,52 @@ impl RoomInner {
         self.permissions.update_is_joined();
         self.update_history_visibility();
         self.update_guests_allowed();
+    }
+
+    /// Watch the room's member events.
+    fn watch_members(self: &Arc<Self>) {
+        let weak = Arc::downgrade(self);
+        let handle = self
+            .matrix_room
+            .add_event_handler(move |event: SyncRoomMemberEvent| {
+                let weak = weak.clone();
+                async move {
+                    if let Some(inner) = weak.upgrade() {
+                        inner.handle_member_event(&event).await;
+                    }
+                }
+            });
+
+        let guard = self.matrix_room.client().event_handler_drop_guard(handle);
+        *self.members_guard.lock().expect("mutex is not poisoned") = Some(guard);
+    }
+
+    /// Handle a member event received via sync.
+    async fn handle_member_event(self: &Arc<Self>, event: &SyncRoomMemberEvent) {
+        let user_id = event.state_key();
+
+        // "If the client sees the user it is in a call with leave the
+        // room, the client should treat this as a hangup event for any
+        // calls that are in progress." They cannot send one from outside
+        // the room, so nothing else is coming.
+        if matches!(
+            event.membership(),
+            MembershipState::Leave | MembershipState::Ban
+        ) && let Some(session) = self.session.upgrade()
+        {
+            let room = Room {
+                inner: self.clone(),
+            };
+            session.calls().handle_member_left(&room, user_id);
+        }
+
+        if let Some(member_list) = self.member_list.get() {
+            member_list.update_member(user_id.to_owned());
+        }
+
+        // It might change the direct member if the number of members
+        // changed.
+        self.update_direct_member().await;
     }
 
     /// Update whether guests are allowed.

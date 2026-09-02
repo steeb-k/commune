@@ -1,18 +1,20 @@
 use std::collections::HashMap;
 
-use gtk::{
-    gio, glib,
-    glib::{clone, closure},
-    prelude::*,
-    subclass::prelude::*,
+use commune_core::{
+    VectorDiff,
+    session::{Member as CoreMember, MemberList as CoreMemberList},
 };
+use gtk::{gio, glib, glib::closure, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
-use matrix_sdk::RoomMemberships;
-use ruma::{OwnedUserId, UserId, events::room::power_levels::RoomPowerLevels};
-use tracing::error;
+use ruma::{OwnedUserId, UserId};
+use tokio::task::AbortHandle;
 
 use super::{Event, Member, Membership, Room};
-use crate::{prelude::*, spawn, spawn_tokio, utils::LoadingState};
+use crate::{
+    core_bridge::{ObjectWatcher, list_model::apply_diff},
+    prelude::*,
+    utils::LoadingState,
+};
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -22,7 +24,10 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::MemberList)]
     pub struct MemberList {
-        /// The list of known members.
+        /// The known members, in the core's order.
+        ///
+        /// Also the wrapper cache: the same `Member` for the same user
+        /// across every diff.
         pub(super) members: RefCell<IndexMap<OwnedUserId, Member>>,
         /// The room these members belong to.
         #[property(get, set = Self::set_room, construct_only)]
@@ -32,6 +37,8 @@ mod imp {
         /// The loading state of the list.
         #[property(get, builder(LoadingState::default()))]
         state: Cell<LoadingState>,
+        /// The task following the core's list.
+        watch_handle: RefCell<Option<AbortHandle>>,
     }
 
     #[glib::object_subclass]
@@ -42,7 +49,13 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MemberList {}
+    impl ObjectImpl for MemberList {
+        fn dispose(&self) {
+            if let Some(handle) = self.watch_handle.take() {
+                handle.abort();
+            }
+        }
+    }
 
     impl ListModelImpl for MemberList {
         fn item_type(&self) -> glib::Type {
@@ -62,31 +75,117 @@ mod imp {
     }
 
     impl MemberList {
-        /// Set the room these members belong to.
+        /// Set the room these members belong to, and follow its core list.
         fn set_room(&self, room: &Room) {
-            {
-                let mut members = self.members.borrow_mut();
-                let own_member = room.own_member();
-                members.insert(own_member.user_id().clone(), own_member);
-
-                if let Some(member) = room.direct_member() {
-                    members.insert(member.user_id().clone(), member);
-                }
-            }
-
             self.room.set(Some(room));
             self.obj().notify_room();
 
-            spawn!(
-                glib::Priority::LOW,
-                clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    async move {
-                        imp.load().await;
-                    }
-                )
-            );
+            let core = room.core().member_list();
+            let (members, stream) = core.subscribe();
+
+            // The core's list holds our own member from the start; the
+            // room's own object stands in for it, as before.
+            let wrapped = members
+                .into_iter()
+                .map(|member| self.wrap(&member))
+                .collect::<Vec<_>>();
+            let added = wrapped.len();
+            self.members.borrow_mut().extend(wrapped);
+            self.restore_latest_activity();
+            if added > 0 {
+                self.obj().items_changed(0, 0, added as u32);
+            }
+
+            let handle = ObjectWatcher::new(&*self.obj())
+                .follow(stream, |obj: &super::MemberList, diffs| {
+                    obj.imp().apply_diffs(diffs);
+                })
+                .follow(core.subscribe_state(), |obj: &super::MemberList, state| {
+                    obj.imp().set_state(state.into());
+                })
+                .spawn();
+            self.watch_handle.replace(Some(handle));
+
+            self.set_state(core.state().into());
+        }
+
+        /// The core's list.
+        pub(super) fn core(&self) -> Option<CoreMemberList> {
+            self.room.upgrade().map(|room| room.core().member_list())
+        }
+
+        /// The wrapper for the given core member, brought up to date with
+        /// it: the one this list has, the room's own or direct member, or
+        /// a new one.
+        fn wrap(&self, member: &CoreMember) -> (OwnedUserId, Member) {
+            let user_id = member.user_id.clone();
+
+            let existing = self.members.borrow().get(&user_id).cloned();
+            let wrapper = existing.unwrap_or_else(|| {
+                let room = self.room.upgrade().expect("a member list outlives no room");
+
+                if *room.own_member().user_id() == user_id {
+                    room.own_member()
+                } else if let Some(direct) = room
+                    .direct_member()
+                    .filter(|direct| *direct.user_id() == user_id)
+                {
+                    direct
+                } else {
+                    Member::new(&room, user_id.clone())
+                }
+            });
+
+            wrapper.update_from_snapshot(member);
+            (user_id, wrapper)
+        }
+
+        /// Apply a batch of changes from the core's list.
+        fn apply_diffs(&self, diffs: Vec<VectorDiff<CoreMember>>) {
+            let mut added = 0;
+
+            for diff in diffs {
+                // Wrap first, outside the borrow: a wrapper's constructor
+                // may look the list up.
+                let diff = diff.map(|member| self.wrap(&member));
+                let changes = apply_diff(&mut self.members.borrow_mut(), diff);
+
+                let obj = self.obj();
+                for change in changes {
+                    obj.items_changed(change.position, change.removed, change.added);
+                    added += change.added;
+                }
+            }
+
+            if added > 0 {
+                self.restore_latest_activity();
+            }
+        }
+
+        /// Restore the members' activity according to the known live
+        /// timeline events.
+        fn restore_latest_activity(&self) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+
+            for item in room.live_timeline().items().iter::<glib::Object>().rev() {
+                let Ok(item) = item else {
+                    // The iterator is broken, stop.
+                    break;
+                };
+                let Ok(event) = item.downcast::<Event>() else {
+                    continue;
+                };
+                if !event.counts_as_unread() {
+                    continue;
+                }
+
+                let member = self.members.borrow().get(&event.sender_id()).cloned();
+                if let Some(member) = member {
+                    member.set_latest_activity(u64::from(event.origin_server_ts().get()));
+                }
+            }
         }
 
         /// Get the list filtered by membership for the given kind.
@@ -103,7 +202,7 @@ mod imp {
             list
         }
 
-        /// Set whether this list is being loaded.
+        /// Set the loading state of the list, from the core.
         pub(super) fn set_state(&self, state: LoadingState) {
             if self.state.get() == state {
                 return;
@@ -112,127 +211,6 @@ mod imp {
             self.state.set(state);
             self.obj().notify_state();
         }
-
-        /// Load this list.
-        pub(super) async fn load(&self) {
-            let Some(room) = self.room.upgrade() else {
-                return;
-            };
-            if matches!(
-                self.state.get(),
-                LoadingState::Loading | LoadingState::Ready
-            ) {
-                return;
-            }
-
-            self.set_state(LoadingState::Loading);
-
-            let matrix_room = room.matrix_room();
-
-            // First load what we have locally.
-            let matrix_room_clone = matrix_room.clone();
-            let handle = spawn_tokio!(async move {
-                let mut memberships = RoomMemberships::all();
-                memberships.remove(RoomMemberships::LEAVE);
-
-                matrix_room_clone.members_no_sync(memberships).await
-            });
-
-            match handle.await.expect("task was not aborted") {
-                Ok(members) => {
-                    self.update_from_room_members(&members);
-
-                    if matrix_room.are_members_synced() {
-                        // Nothing more to do, we can stop here.
-                        self.set_state(LoadingState::Ready);
-                        return;
-                    }
-                }
-                Err(error) => {
-                    error!("Could not load room members from store: {error}");
-                }
-            }
-
-            // We do not have everything locally, request the rest from the server.
-            let matrix_room = matrix_room.clone();
-            let handle = spawn_tokio!(async move {
-                let mut memberships = RoomMemberships::all();
-                memberships.remove(RoomMemberships::LEAVE);
-
-                matrix_room.members(memberships).await
-            });
-
-            // FIXME: We should retry to load the room members if the request failed
-            match handle.await.expect("task was not aborted") {
-                Ok(members) => {
-                    // Add all members needed to display room events.
-                    self.update_from_room_members(&members);
-                    self.set_state(LoadingState::Ready);
-                }
-                Err(error) => {
-                    self.set_state(LoadingState::Error);
-                    error!(%error, "Could not load room members from server");
-                }
-            }
-        }
-
-        /// Updates members with the given SDK room member structs.
-        ///
-        /// If some of the new members do not correspond to existing members,
-        /// they are created.
-        fn update_from_room_members(&self, new_members: &[matrix_sdk::room::RoomMember]) {
-            let Some(room) = self.room.upgrade() else {
-                return;
-            };
-
-            let mut members = self.members.borrow_mut();
-            let prev_len = members.len();
-            for member in new_members {
-                members
-                    .entry(member.user_id().to_owned())
-                    .or_insert_with_key(|user_id| Member::new(&room, user_id.clone()));
-            }
-            let num_members_added = members.len().saturating_sub(prev_len);
-
-            // We cannot have the mut borrow active when members are updated or
-            // items_changed is emitted because that will probably cause reads of
-            // the members field.
-            std::mem::drop(members);
-
-            {
-                for room_member in new_members {
-                    let member = self.members.borrow().get(room_member.user_id()).cloned();
-                    if let Some(member) = member {
-                        member.update_from_room_member(room_member);
-                    }
-                }
-
-                // Restore the members activity according to the known live timeline events.
-                for item in room.live_timeline().items().iter::<glib::Object>().rev() {
-                    let Ok(item) = item else {
-                        // The iterator is broken, stop.
-                        break;
-                    };
-                    let Ok(event) = item.downcast::<Event>() else {
-                        continue;
-                    };
-                    if !event.counts_as_unread() {
-                        continue;
-                    }
-
-                    let member = self.members.borrow().get(&event.sender_id()).cloned();
-                    if let Some(member) = member {
-                        member.set_latest_activity(u64::from(event.origin_server_ts().get()));
-                    }
-                }
-            }
-
-            if num_members_added > 0 {
-                // IndexMap preserves insertion order, so all the new items will be at the end.
-                self.obj()
-                    .items_changed(prev_len as u32, 0, num_members_added as u32);
-            }
-        }
     }
 }
 
@@ -240,6 +218,9 @@ glib::wrapper! {
     /// List of all Members in a room. Implements ListModel.
     ///
     /// Members are sorted in "insertion order", not anything useful.
+    ///
+    /// The list itself is the core's; this presents it, one `Member` per
+    /// core member, in the core's order.
     pub struct MemberList(ObjectSubclass<imp::MemberList>)
         @implements gio::ListModel;
 }
@@ -253,16 +234,9 @@ impl MemberList {
 
     /// Reload this list.
     pub(crate) fn reload(&self) {
-        let imp = self.imp();
-        imp.set_state(LoadingState::Initial);
-
-        spawn!(clone!(
-            #[weak]
-            imp,
-            async move {
-                imp.load().await;
-            }
-        ));
+        if let Some(core) = self.imp().core() {
+            core.reload();
+        }
     }
 
     /// Returns the member with the given ID, if it exists in the list.
@@ -272,26 +246,32 @@ impl MemberList {
 
     /// Returns the member with the given ID.
     ///
-    /// Creates a new member first if there is no member with the given ID.
+    /// Creates a new member first if there is no member with the given ID:
+    /// the core's list gets a placeholder it fills in from the store, and
+    /// this list gets the wrapper at the same index right away.
     pub(crate) fn get_or_create(&self, user_id: OwnedUserId) -> Member {
-        let mut members = self.imp().members.borrow_mut();
-        let mut was_member_added = false;
-        let prev_len = members.len();
-        let member = members
-            .entry(user_id)
-            .or_insert_with_key(|user_id| {
-                was_member_added = true;
-                Member::new(&self.room().expect("room exists"), user_id.clone())
-            })
-            .clone();
+        if let Some(member) = self.get(&user_id) {
+            return member;
+        }
+
+        let imp = self.imp();
+        let room = self.room().expect("room exists");
+        let member = Member::new(&room, user_id.clone());
+
+        let index = imp
+            .core()
+            .map_or_else(|| imp.members.borrow().len(), |core| core.ensure(&user_id));
+
+        let position = {
+            let mut members = imp.members.borrow_mut();
+            let position = index.min(members.len());
+            members.shift_insert(position, user_id, member.clone());
+            position
+        };
 
         // We can't have the borrow active when items_changed is emitted because that
         // will probably cause reads of the members field.
-        std::mem::drop(members);
-        if was_member_added {
-            // IndexMap preserves insertion order so the new member will be at the end.
-            self.items_changed(prev_len as u32, 0, 1);
-        }
+        self.items_changed(position as u32, 0, 1);
 
         member
     }
@@ -299,23 +279,6 @@ impl MemberList {
     /// Get the list filtered by membership for the given kind.
     pub(crate) fn membership_list(&self, kind: MembershipListKind) -> gio::ListModel {
         self.imp().membership_list(kind)
-    }
-
-    /// Update a room member with the SDK's data.
-    ///
-    /// Creates a new member first if there is no member matching the given
-    /// event.
-    pub(super) fn update_member(&self, user_id: OwnedUserId) {
-        self.get_or_create(user_id).update();
-    }
-
-    /// Updates the room members' power level.
-    pub(super) fn update_power_levels(&self, power_levels: &RoomPowerLevels) {
-        // We need to go through the whole list because we don't know who was
-        // added/removed.
-        for (user_id, member) in &*self.imp().members.borrow() {
-            member.set_power_level(power_levels.for_user(user_id));
-        }
     }
 }
 

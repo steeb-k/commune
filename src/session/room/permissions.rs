@@ -57,6 +57,21 @@ pub enum MemberRole {
     Muted,
 }
 
+impl From<commune_core::session::MemberRole> for MemberRole {
+    fn from(role: commune_core::session::MemberRole) -> Self {
+        use commune_core::session::MemberRole as Core;
+
+        match role {
+            Core::Default => Self::Default,
+            Core::Custom => Self::Custom,
+            Core::Moderator => Self::Moderator,
+            Core::Administrator => Self::Administrator,
+            Core::Creator => Self::Creator,
+            Core::Muted => Self::Muted,
+        }
+    }
+}
+
 impl fmt::Display for MemberRole {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
@@ -282,13 +297,11 @@ mod imp {
             self.power_levels.replace(power_levels.clone());
             self.permissions_changed();
 
-            if let Some(members) = room.members() {
-                members.update_power_levels(&power_levels);
-            } else {
-                let own_member = room.own_member();
-                let own_user_id = own_member.user_id();
-                own_member.set_power_level(power_levels.for_user(own_user_id));
-            }
+            // A listed member's power level arrives with the core's
+            // snapshot; our own member is here before any list is.
+            let own_member = room.own_member();
+            let own_user_id = own_member.user_id();
+            own_member.set_power_level(power_levels.for_user(own_user_id));
         }
 
         /// Trigger updates when the permissions changed.

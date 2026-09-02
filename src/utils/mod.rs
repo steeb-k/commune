@@ -637,6 +637,19 @@ pub enum LoadingState {
     Error,
 }
 
+impl From<commune_core::utils::LoadingState> for LoadingState {
+    fn from(state: commune_core::utils::LoadingState) -> Self {
+        use commune_core::utils::LoadingState as Core;
+
+        match state {
+            Core::Initial => Self::Initial,
+            Core::Loading => Self::Loading,
+            Core::Ready => Self::Ready,
+            Core::Error => Self::Error,
+        }
+    }
+}
+
 /// Convert the given checked `bool` to a `GtkAccessibleTristate`.
 pub(crate) fn bool_to_accessible_tristate(checked: bool) -> gtk::AccessibleTristate {
     if checked {

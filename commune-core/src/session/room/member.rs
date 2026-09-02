@@ -20,8 +20,9 @@ use ruma::{
         member::MembershipState,
         power_levels::{RoomPowerLevels, UserPowerLevel},
     },
+    int,
 };
-use tracing::error;
+use tracing::{debug, error};
 
 use crate::{RUNTIME, spawn_tokio, utils::LoadingState};
 
@@ -150,6 +151,19 @@ impl Member {
         }
     }
 
+    /// A member nothing is known about yet, until the store answers.
+    fn placeholder(user_id: OwnedUserId) -> Self {
+        Self {
+            user_id,
+            display_name: None,
+            is_name_ambiguous: false,
+            avatar_url: None,
+            power_level: UserPowerLevel::Int(int!(0)),
+            role: MemberRole::default(),
+            membership: Membership::default(),
+        }
+    }
+
     /// The name this member displays as.
     #[must_use]
     pub fn display_name_or_localpart(&self) -> String {
@@ -195,16 +209,110 @@ impl MemberStore {
             self.list.push_back(member);
         }
     }
+
+    /// The index of the member with the given ID, adding a placeholder
+    /// at the end if there is none.
+    fn ensure(&mut self, user_id: &UserId) -> (usize, bool) {
+        if let Some(&index) = self.index.get(user_id) {
+            return (index, false);
+        }
+
+        let index = self.list.len();
+        self.index.insert(user_id.to_owned(), index);
+        self.list.push_back(Member::placeholder(user_id.to_owned()));
+        (index, true)
+    }
 }
 
 impl MemberList {
+    /// A list for the given room, holding our own member from the start,
+    /// as the application's does.
     pub(crate) fn new(matrix_room: matrix_sdk::room::Room) -> Self {
-        Self {
+        let own_user_id = matrix_room.own_user_id().to_owned();
+        let list = Self {
             inner: Arc::new(MemberListInner {
                 matrix_room,
                 members: Mutex::new(MemberStore::default()),
                 state: SharedObservable::new(LoadingState::Initial),
             }),
+        };
+        let _own_index = list.ensure(&own_user_id);
+        list
+    }
+
+    /// The index of the member with the given ID, adding one if there is
+    /// none — the application's `get_or_create`.
+    ///
+    /// A member added this way starts as a placeholder and is filled in
+    /// from the store; it is at this index from now on, since the list
+    /// only ever appends.
+    #[must_use]
+    pub fn ensure(&self, user_id: &UserId) -> usize {
+        let (index, added) = self
+            .inner
+            .members
+            .lock()
+            .expect("mutex is not poisoned")
+            .ensure(user_id);
+
+        if added {
+            self.update_member(user_id.to_owned());
+        }
+
+        index
+    }
+
+    /// Re-read the member with the given ID from the store.
+    ///
+    /// Creates the member first if there is none, as the application's
+    /// `update_member` does.
+    pub fn update_member(&self, user_id: OwnedUserId) {
+        let list = self.clone();
+        RUNTIME.spawn(async move {
+            list.fetch_members(vec![user_id]).await;
+        });
+    }
+
+    /// Re-read the members with the given IDs from the store.
+    pub fn update_members(&self, user_ids: Vec<OwnedUserId>) {
+        if user_ids.is_empty() {
+            return;
+        }
+
+        let list = self.clone();
+        RUNTIME.spawn(async move {
+            list.fetch_members(user_ids).await;
+        });
+    }
+
+    /// Read the given members from the store and fold them in.
+    async fn fetch_members(&self, user_ids: Vec<OwnedUserId>) {
+        let matrix_room = self.inner.matrix_room.clone();
+
+        let power_levels = match matrix_room.power_levels().await {
+            Ok(power_levels) => power_levels,
+            Err(levels_error) => {
+                error!("Could not load room power levels: {levels_error}");
+                return;
+            }
+        };
+
+        for user_id in user_ids {
+            match matrix_room.get_member_no_sync(&user_id).await {
+                Ok(Some(member)) => {
+                    self.inner
+                        .members
+                        .lock()
+                        .expect("mutex is not poisoned")
+                        .upsert(Member::from_room_member(&member, &power_levels));
+                }
+                Ok(None) => {
+                    debug!("Room member {user_id} not found");
+                }
+                Err(member_error) => {
+                    error!("Could not load room member {user_id}: {member_error}");
+                }
+            }
         }
     }
 
