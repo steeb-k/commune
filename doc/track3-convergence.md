@@ -1697,7 +1697,7 @@ from `wc -l`, and the core column names what the module becomes a view of.
 | 7 | `remote/` | 2,031 | `session::remote::{RemoteRoom, SpaceChildren}`, `url_preview` | **Done 2 Sep.** `cache.rs` (with entries a page follows), `room_peek.rs`, `url_preview.rs` and `user.rs` moved in; the six objects are views. FFI for the cache, the peek, the preview and the profile owed. |
 | 8 | `room/timeline/`, `thread_list.rs`, `search.rs` | 1,893 + 433 + 767 | `session::Timeline`, `RoomSearch` | **Done 2 Sep.** The timeline, thread list and search are views; the core's timeline gains the event focus, forward pagination and the category watch; `ThreadList` moves in; `MediaMessage` is the core's with `MediaMessageExt` for the sentences and the dialog (the Phase 2 question, answered). |
 | 9 | `notifications/` | 1,916 | `session::notifications` (170) | **Done 2 Sep.** The settings model moved in as `notifications/settings.rs` and the core room gained its setting; the `GObject` is a view. The push handling was the core's already; the notification bodies and back ends stay, being sentences and platforms. |
-| 10 | `verification/` | 1,538 | `VerificationList`, `IdentityVerification` | Over Phase 3's state machine; the two-device check the ledger owes runs in this section. |
+| 10 | `verification/` | 1,538 | `VerificationList`, `IdentityVerification` | **Done 2 Sep.** Views over Phase 3's state machine; the application's copy of the machine is deleted. The two-device check the ledger owes is an eyeball item. |
 | 11 | `calls/{mod,call,state,turn}.rs` | 3,033 | Phase 3's `Calls`, `Call` | The signalling half becomes a view; `pipeline.rs` and `ringtone.rs` stay, and give the core's `note_connected`, the rollback and the remote mute their first embedder. The member-left watcher gets its caller. |
 | 12 | `sidebar_data/` | 1,241 | `session::sidebar`, `room::category` | The category rules and section filters over the core's. |
 | 13 | `session_list/` | 786 | `SessionList` | The list Phase 2 could not touch; closes the spine. `secret/`'s `StoredSession` newtype is reviewed here. |
@@ -2380,6 +2380,51 @@ switches, each surviving a reopen and a change made from another
 client; a room's notification setting from its details page, and the
 sidebar's muted state following it.
 
+### Module 10 — the verifications are views over Phase 3's state machine
+
+**Done 2 September.** Phase 3 wrote the state machine headless, and the
+application kept a second copy of it in its `GObject`s; this deletes the
+copy. `src/session/verification/` goes from 1,538 lines to 1,195 — 419
+in, 749 out — and the core gains two subscribers, 13 lines.
+
+**`IdentityVerification` presents the core's.** It follows four
+observables — the state, whether the request was accepted, the methods
+both sides support, and the dismissal — and keeps every property and
+all six signals its pages bind to. The two signals the application
+raised on the way to a state, `sas-data-changed` before `SasConfirm` and
+`cancel-info-changed` before `Cancelled`, are raised on the same
+transitions, from the mirror. The `done` signal that lets a page stop
+the state from reaching `Done` stays where it was, in the mirror's
+setter. What it keeps of its own: the user it is shown as and the
+display name made from it, which is a sentence; the QR code, rendered
+from the core's `qr_to_show` when `QrCodeShowV1` is among the supported
+methods; the scanner, which is a camera. What leaves: the request and
+verification streams, the two-minute timeout, the room-left watch, the
+method intersection, the SAS auto-accept, the cancel-code rules and the
+QR generation — every line of the machine, all of which Phase 3 had
+transcribed and this module now trusts.
+
+**`VerificationList` presents the core's list.** It follows the core's
+change counter and brings its rows level with the core's snapshot: a
+verification the core dropped goes, with its notification; one it
+gained is presented with the user it is shown as. For an in-room
+request that is the member, brought up to date from the room first, as
+the application did on arrival, and the room is told it has a
+verification; a request the user has not answered raises the
+notification. The SDK's event handlers, the finished-request and
+left-room refusals, and the crypto-identity fetch on `create` are the
+core's, and `User::ensure_crypto_identity` goes with it. `create` asks
+the core, syncs, and returns the row. What the application still decides
+is which methods this system supports, since that is a look at the
+cameras, and it tells the core on `init`.
+
+**Eyeball owed:** a session verification started from the setup view
+and from another device — accepted, the emoji compared, matched and
+mismatched, cancelled from either side, and left unanswered for two
+minutes; a QR code shown and scanned both ways; an in-room verification
+of another user, with the room left mid-way; the notification for each
+kind of request, and its withdrawal.
+
 ## What never enters the core
 
 * `timeline_diff_minimizer/` — it exists to minimise `GListModel` splices, and
@@ -2483,6 +2528,8 @@ recorded here as it is found, with the phase that closes it.
 | 2 Sep 2026 | `session/room/search.rs`, `reindex` | **The core's `reindex` does not restart the search; the application's did.** The core says the caller loads the first page again; the application's view restarts by clearing and restoring the term, which is the core's own restart, then loads. Recorded because an embedder that calls `reindex` and waits will wait forever. | Accepted 2 Sep, module 8; FFI note owed |
 | 2 Sep 2026 | `session/notifications/settings.rs`, `set_*` | **The application returned the SDK's `NotificationSettingsError`; the core returns its own, with `NotLoaded` for a change asked before the rules were read.** The application logged that case and returned `UnableToUpdatePushRule`, which is a different sentence for the same thing. Its pages only ask `is_err()`. | Accepted 2 Sep, module 9 |
 | 2 Sep 2026 | `facade.rs`, `room_notification_mode` and the keyword calls | **The facade reads and writes the push rules on its own, per call, watching nothing.** The core's `NotificationsSettings` follows the rules and tells every room its setting; the facade should hand its callers those observables and read a room's setting off the core room. | FFI owed, module 9 |
+| 2 Sep 2026 | `session/verification/verification_list.rs`, `dismiss` | **The application emitted `dismiss` and `remove-from-list` synchronously from `dismiss()`; the view emits them when the core's `dismissed` observable says so, a main-loop turn later.** Every listener closes a view or drops a row, none reads state in between. Recorded with module 5's `changed` row as the same shape. | Accepted 2 Sep, module 10 |
+| 2 Sep 2026 | `session/verification/verification_list.rs`, `sync` | **A request that arrives while its member is being fetched is presented after the fetch, not before.** The application did the same, one request at a time; the view does it per sync and asks the core again for a request that was dropped meanwhile. | Accepted 2 Sep, module 10 |
 
 ## Gates
 

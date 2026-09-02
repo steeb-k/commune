@@ -404,10 +404,23 @@ impl IdentityVerification {
         self.inner.was_accepted.get()
     }
 
+    /// Subscribe to whether the request was accepted.
+    pub fn subscribe_was_accepted(&self) -> Subscriber<bool> {
+        self.inner.was_accepted.subscribe()
+    }
+
     /// The methods supported by both sides.
     #[must_use]
     pub fn supported_methods(&self) -> Vec<VerificationMethod> {
         self.inner.supported_methods.get()
+    }
+
+    /// Subscribe to the methods supported by both sides.
+    ///
+    /// They are known once the request is ready; a `QrCodeShowV1` among
+    /// them means [`Self::qr_to_show`] has the code.
+    pub fn subscribe_supported_methods(&self) -> Subscriber<Vec<VerificationMethod>> {
+        self.inner.supported_methods.subscribe()
     }
 
     /// When the request was received.
