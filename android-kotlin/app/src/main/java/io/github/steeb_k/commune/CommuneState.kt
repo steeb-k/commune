@@ -66,7 +66,12 @@ class CommuneState(context: Context) {
             // connectivity knowledge went stale: the background froze the
             // process mid-claim, and the claim would otherwise be sleeping
             // out a backoff against a network that no longer exists.
-            if (value) app.recheckConnectivity()
+            if (value) {
+                app.recheckConnectivity()
+                // On screen now, a pending verification shows as its sheet,
+                // so its notification has done its job.
+                if (verificationFlowId != null) VerificationNotification.dismiss(appContext)
+            }
         }
 
     /// Set by the activity: opens the system file picker for an attachment.
@@ -2537,6 +2542,12 @@ class CommuneState(context: Context) {
                     verificationEmojis = emptyList()
                     verificationDone = false
                     verificationOutgoing = false
+                    // The sheet is already showing when the app is on
+                    // screen; when it is not, this is the only sign the
+                    // request arrived, the way the desktop posts one.
+                    if (!uiVisible) {
+                        VerificationNotification.show(appContext, userId)
+                    }
                 }
             }
 
@@ -2548,7 +2559,10 @@ class CommuneState(context: Context) {
 
             override fun onDone(flowId: String) {
                 main.post {
-                    if (verificationFlowId == flowId) verificationDone = true
+                    if (verificationFlowId == flowId) {
+                        verificationDone = true
+                        VerificationNotification.dismiss(appContext)
+                    }
                 }
             }
 
@@ -2635,6 +2649,7 @@ class CommuneState(context: Context) {
         verificationEmojis = emptyList()
         verificationDone = false
         verificationOutgoing = false
+        VerificationNotification.dismiss(appContext)
     }
 
     var recoveryState by mutableStateOf(FfiRecoveryState.UNKNOWN)

@@ -86,11 +86,19 @@ class Notifier(private val context: Context) {
         val name = io.github.steeb_k.commune.ui.roomName(room)
         val countText = if (count == 1uL) "1 new message" else "$count new messages"
         // The latest message, when it is readable: "sender: body". A
-        // direct chat's name already names the sender.
-        val preview = room.latestEventBody?.let { body ->
-            val sender = room.latestEventSender
-                ?.substringAfter("@")?.substringBefore(":")
-            if (sender != null && !room.isDirect) "$sender: $body" else body
+        // direct chat's name already names the sender. Our own message is
+        // never shown: the count that raised this notification is always
+        // for someone else, but the room list can carry a reply we just
+        // sent as the latest event before that message settles, which is
+        // how our own words came to appear on an incoming notification.
+        val preview = if (room.latestEventIsOwn) {
+            null
+        } else {
+            room.latestEventBody?.let { body ->
+                val sender = room.latestEventSender
+                    ?.substringAfter("@")?.substringBefore(":")
+                if (sender != null && !room.isDirect) "$sender: $body" else body
+            }
         }
 
         return Notification.Builder(context, CHANNEL_ID)

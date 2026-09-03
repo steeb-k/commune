@@ -10429,6 +10429,17 @@ data class FfiRoom (
      * The body of the latest message, when one is known and readable.
      */
     var `latestEventBody`: kotlin.String?
+    , 
+    /**
+     * Whether the latest message was sent by our own user.
+     *
+     * The server's notification count never counts our own messages, so a
+     * notification a room raises is always for someone else; but the
+     * latest event can still be ours — a reply sent from here that the
+     * room list carried before the message that raised the count settled.
+     * The embedder uses this to keep our own message out of the preview.
+     */
+    var `latestEventIsOwn`: kotlin.Boolean
     
 ){
     
@@ -10458,6 +10469,7 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
@@ -10474,7 +10486,8 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterULong.allocationSize(value.`joinedMembersCount`) +
             FfiConverterOptionalString.allocationSize(value.`topic`) +
             FfiConverterOptionalString.allocationSize(value.`latestEventSender`) +
-            FfiConverterOptionalString.allocationSize(value.`latestEventBody`)
+            FfiConverterOptionalString.allocationSize(value.`latestEventBody`) +
+            FfiConverterBoolean.allocationSize(value.`latestEventIsOwn`)
     )
 
     override fun write(value: FfiRoom, buf: ByteBuffer) {
@@ -10491,6 +10504,7 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterOptionalString.write(value.`topic`, buf)
             FfiConverterOptionalString.write(value.`latestEventSender`, buf)
             FfiConverterOptionalString.write(value.`latestEventBody`, buf)
+            FfiConverterBoolean.write(value.`latestEventIsOwn`, buf)
     }
 }
 
