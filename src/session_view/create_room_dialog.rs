@@ -20,7 +20,7 @@ use ruma::{
 use tracing::error;
 
 use crate::{
-    Window,
+    Application,
     components::{LoadingButton, SubstringEntryRow, ToastableDialog},
     prelude::*,
     session::Session,
@@ -281,13 +281,11 @@ mod imp {
                 Ok(matrix_room) => {
                     let obj = self.obj();
 
-                    let Some(window) = obj.root().and_downcast::<Window>() else {
-                        return;
-                    };
-                    if let Some(room) = session
-                        .room_list()
-                        .get_wait(matrix_room.room_id(), None)
-                        .await
+                    if let Some(window) = Application::default().main_window()
+                        && let Some(room) = session
+                            .room_list()
+                            .get_wait(matrix_room.room_id(), None)
+                            .await
                     {
                         window.session_view().select_room(room);
                     }

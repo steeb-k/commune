@@ -967,6 +967,20 @@ impl Application {
         self.imp().settings.clone()
     }
 
+    /// The application's main window, if it exists.
+    ///
+    /// Found through the application's own window list rather than the
+    /// widget tree: on the GTK Windows backend a presented dialog is a
+    /// separate native window, so a widget inside it has no `Window`
+    /// ancestor and its `root()` is the dialog's own window. Prefer this to
+    /// `widget.root()` from inside a dialog. Not `active_window()`, which
+    /// there is that dialog.
+    pub(crate) fn main_window(&self) -> Option<Window> {
+        self.windows()
+            .into_iter()
+            .find_map(|window| window.downcast::<Window>().ok())
+    }
+
     /// Re-evaluate how messages are delivered while the app is not on screen.
     ///
     /// Called by `utils::android_push` when push delivery becomes available or
