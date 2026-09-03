@@ -5,7 +5,7 @@ use tracing::error;
 
 use super::{ToastableDialog, peek_row::RoomPeekRow};
 use crate::{
-    Window,
+    Application, Window,
     components::{Avatar, LoadingButton},
     i18n::ngettext_f,
     prelude::*,
@@ -23,6 +23,19 @@ mod imp {
     use glib::subclass::InitializingObject;
 
     use super::*;
+
+    /// The application's main window.
+    ///
+    /// Reached through the application rather than the widget tree: on the
+    /// GTK Windows backend a presented dialog is a separate native window,
+    /// so a widget inside it has no `Window` ancestor and its `root()` is
+    /// the dialog's own window. The application knows its real window.
+    fn app_window() -> Option<Window> {
+        Application::default()
+            .windows()
+            .into_iter()
+            .find_map(|window| window.downcast::<Window>().ok())
+    }
 
     #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/room_preview.ui")]
@@ -100,27 +113,18 @@ mod imp {
     impl ObjectImpl for RoomPreviewDialog {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
 
-            self.room_topic.connect_activate_link(clone!(
-                #[weak]
-                obj,
-                #[upgrade_or]
-                glib::Propagation::Proceed,
-                move |_, uri| {
-                    let Ok(uri) = MatrixIdUri::parse(uri) else {
-                        return glib::Propagation::Proceed;
-                    };
-                    let Some(parent_window) =
-                        obj.ancestor(Window::static_type()).and_downcast::<Window>()
-                    else {
-                        return glib::Propagation::Proceed;
-                    };
+            self.room_topic.connect_activate_link(move |_, uri| {
+                let Ok(uri) = MatrixIdUri::parse(uri) else {
+                    return glib::Propagation::Proceed;
+                };
+                let Some(parent_window) = app_window() else {
+                    return glib::Propagation::Proceed;
+                };
 
-                    parent_window.session_view().show_matrix_uri(uri);
-                    glib::Propagation::Stop
-                }
-            ));
+                parent_window.session_view().show_matrix_uri(uri);
+                glib::Propagation::Stop
+            });
 
             self.peek_list.bind_model(Some(&self.peek.list()), |item| {
                 let row = RoomPeekRow::new();
@@ -314,23 +318,24 @@ mod imp {
         #[template_callback]
         fn look_up_room(&self) {
             let Some(uri) = self.uri.borrow().clone() else {
+                tracing::warn!("look_up_room: no parsed URI to look up");
                 return;
             };
             let obj = self.obj();
 
-            let Some(window) = obj.root().and_downcast::<Window>() else {
-                return;
-            };
-
             self.look_up_btn.set_is_loading(true);
             self.entry_page.set_sensitive(false);
 
-            // Join or view the room with the given identifier.
-            if window.session_view().select_room_if_exists(&uri.id) {
+            // If the room is one we are already in, open it directly rather
+            // than previewing it.
+            if let Some(window) = app_window()
+                && window.session_view().select_room_if_exists(&uri.id)
+            {
                 obj.close();
-            } else {
-                self.look_up_room_inner(uri);
+                return;
             }
+
+            self.look_up_room_inner(uri);
         }
 
         fn look_up_room_inner(&self, uri: MatrixRoomIdUri) {
@@ -513,7 +518,7 @@ mod imp {
             if let Some(local_room) = room.room_list_info().local_room() {
                 let obj = self.obj();
 
-                if let Some(window) = obj.root().and_downcast_ref::<Window>() {
+                if let Some(window) = app_window() {
                     window.session_view().select_room(local_room);
                     obj.close();
                 }
@@ -545,7 +550,7 @@ mod imp {
                     let obj = self.obj();
 
                     if let Some(local_room) = room_list.get_wait(&room_id, None).await
-                        && let Some(window) = obj.root().and_downcast_ref::<Window>()
+                        && let Some(window) = app_window()
                     {
                         window.session_view().select_room(local_room);
                     }
