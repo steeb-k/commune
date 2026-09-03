@@ -23,7 +23,7 @@ use tracing::error;
 
 use super::{MemberRow, RoomDetails, UpgradeDialog, UpgradeInfo};
 use crate::{
-    Window,
+    Application,
     components::{
         Avatar, ButtonCountRow, CheckLoadingRow, CopyableRow, LoadingButton, SpacePickerDialog,
         SpaceRequirement, SwitchLoadingRow,
@@ -180,7 +180,7 @@ mod imp {
                     else {
                         return glib::Propagation::Proceed;
                     };
-                    let Some(parent_window) = room_details.root().and_downcast::<Window>() else {
+                    let Some(parent_window) = Application::default().main_window() else {
                         return glib::Propagation::Proceed;
                     };
 

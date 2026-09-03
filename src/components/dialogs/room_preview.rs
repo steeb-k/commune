@@ -31,10 +31,7 @@ mod imp {
     /// so a widget inside it has no `Window` ancestor and its `root()` is
     /// the dialog's own window. The application knows its real window.
     fn app_window() -> Option<Window> {
-        Application::default()
-            .windows()
-            .into_iter()
-            .find_map(|window| window.downcast::<Window>().ok())
+        Application::default().main_window()
     }
 
     #[derive(Debug, Default, gtk::CompositeTemplate, glib::Properties)]
