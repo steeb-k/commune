@@ -500,10 +500,20 @@ pub struct FfiRoom {
     pub latest_event_sender: Option<String>,
     /// The body of the latest message, when one is known and readable.
     pub latest_event_body: Option<String>,
+    /// Whether the latest message was sent by our own user.
+    ///
+    /// The server's notification count never counts our own messages, so a
+    /// notification a room raises is always for someone else; but the
+    /// latest event can still be ours — a reply sent from here that the
+    /// room list carried before the message that raised the count settled.
+    /// The embedder uses this to keep our own message out of the preview.
+    pub latest_event_is_own: bool,
 }
 
 impl From<&Room> for FfiRoom {
     fn from(room: &Room) -> Self {
+        let latest = latest_preview(room);
+
         Self {
             room_id: room.room_id().to_string(),
             display_name: room.display_name().into(),
@@ -516,25 +526,40 @@ impl From<&Room> for FfiRoom {
             avatar_url: room.avatar_url().map(|uri| uri.to_string()),
             joined_members_count: room.joined_members_count(),
             topic: room.topic(),
-            latest_event_sender: latest_preview(room).map(|(sender, _)| sender),
-            latest_event_body: latest_preview(room).map(|(_, body)| body),
+            latest_event_sender: latest.as_ref().map(|preview| preview.sender.clone()),
+            latest_event_body: latest.as_ref().map(|preview| preview.body.clone()),
+            latest_event_is_own: latest.is_some_and(|preview| preview.is_own),
         }
     }
 }
 
-/// The latest message of the room as a (sender, body) pair, when the
-/// stored latest event is a readable message.
-fn latest_preview(room: &Room) -> Option<(String, String)> {
+/// The latest message of a room, when the stored latest event is a
+/// readable message.
+struct LatestPreview {
+    /// Who sent it.
+    sender: String,
+    /// Its body.
+    body: String,
+    /// Whether our own user sent it.
+    is_own: bool,
+}
+
+/// The room's latest message, when the stored latest event is a readable
+/// message.
+fn latest_preview(room: &Room) -> Option<LatestPreview> {
     let matrix_sdk::latest_events::LatestEventValue::Remote(event) =
         room.matrix_room().latest_event()
     else {
         return None;
     };
     let message = crate::matrix::original_message_event_from_raw(event.raw())?;
-    Some((
-        message.sender.to_string(),
-        message.content.msgtype.body().to_owned(),
-    ))
+    let is_own = message.sender == room.matrix_room().own_user_id();
+
+    Some(LatestPreview {
+        sender: message.sender.to_string(),
+        body: message.content.msgtype.body().to_owned(),
+        is_own,
+    })
 }
 
 /// Something on the foreign side that wants to know when the room list
