@@ -24,6 +24,54 @@ running this against.
 
 ---
 
+## Results so far — 2 and 3 September 2026
+
+The sweep was run on the MSYS2 build of `fractal-kotlin` against the local
+harness, and the Kotlin build on the Pixel. The following are confirmed;
+the checklist below is kept for a formal pass.
+
+**Confirmed working** (by the run, the user, or both):
+
+* Sessions: restore, login and the hand-off; the profile follows after a
+  restart; the offline banner and reachability, after the three fixes in
+  `ca757824` and `f7ddf29c`.
+* Sidebar: every section in the core's order; name, topic and category
+  mirror from the wire; counts and highlights; typing; an invite with its
+  inviter; server notices; **dragging a room between sections works** (the
+  user confirmed the real drop).
+* Rooms: the member list with names, IDs, the changed display name, the
+  Admin power-level label and the verification shield; room details with
+  the notification rows, public addresses, guests, history visibility and
+  image packs; the join-rule subpage in the restricted value naming the
+  space, with the knock switch.
+* Timeline and search: the mention highlight, read receipts, in-room
+  search; **encrypted rooms load and reindexing makes search work** (user).
+* Settings: **presence works with a homeserver that has presence enabled**
+  (user); notification settings.
+* **Media** works, **notifications work**, **verification works** (user).
+* Destructive: **leaving, forgetting and logging out all work** (user).
+
+**Owed to a person** (automation could not drive these):
+
+* Join by alias and knock — the modal's Look Up/View button does not take
+  synthetic clicks; the address parser is verified. What the checks look
+  like is in the module records.
+* Calls — an RDP session cannot carry audio or a camera; run later with
+  the harness and a device.
+
+**One open finding — verification notification on Android.** A verification
+request reached the desktop as a system notification but not the Pixel. The
+desktop did not "grab" it: a verification request is a to-device event that
+every one of the account's devices receives on its next sync. The gap is on
+the Android side — the Kotlin app's `watchVerifications` only updates the
+in-app sheet (`onRequest` sets the flow state) and never posts a system
+notification, whereas the GTK app's `show_to_device_identity_verification`
+and `show_in_room_identity_verification` do. So a backgrounded Pixel shows
+nothing. Fixing it means posting an Android notification in `onRequest`
+(with a channel, a tap intent into the verification UI, and withdrawal on
+`onDone`/`onCancelled`), and it only fires while the app is syncing in the
+background, since to-device events are not delivered by push.
+
 ## How to run this
 
 Build the `fractal-kotlin` branch on the Linux desktop as before; the binary
