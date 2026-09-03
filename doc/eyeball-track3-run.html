@@ -196,7 +196,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </style>
 
 <div class="bar"><div class="bar-in">
-<div class="mark"><b>Eyeball Run</b><span>Commune on the core &middot; 3cbb3c18</span></div>
+<div class="mark"><b>Eyeball Run</b><span>Commune on the core &middot; ca757824</span></div>
 <div class="tally">
 <div class="n-pass"><b id="t-pass">0</b><span>Passed</span></div>
 <div class="n-fail"><b id="t-fail">0</b><span>Failed</span></div>
@@ -211,7 +211,7 @@ th { font-family:var(--f-mono); font-size:10.5px; letter-spacing:.09em;
 </div></div>
 
 <div class="wrap">
-<nav class="rail"><a href="#s1" data-for="s1"><span>Calls — module 11, with the harness</span><b>8</b></a><a href="#s2" data-for="s2"><span>Sessions — modules 1 and 13</span><b>11</b></a><a href="#s3" data-for="s3"><span>The sidebar — modules 1, 2 and 12</span><b>17</b></a><a href="#s4" data-for="s4"><span>Rooms and their members — modules 3 and 4</span><b>8</b></a><a href="#s5" data-for="s5"><span>The timeline, threads and search — module 8, and the audit</span><b>11</b></a><a href="#s6" data-for="s6"><span>Rooms and people not joined — module 7</span><b>6</b></a><a href="#s7" data-for="s7"><span>Settings — modules 5, 6 and 9</span><b>12</b></a><a href="#s8" data-for="s8"><span>Notifications — the audit</span><b>5</b></a><a href="#s9" data-for="s9"><span>Verification — module 10</span><b>8</b></a></nav>
+<nav class="rail"><a href="#s1" data-for="s1"><span>Calls — module 11, with the harness</span><b>8</b></a><a href="#s3" data-for="s3"><span>Sessions — modules 1 and 13</span><b>11</b></a><a href="#s4" data-for="s4"><span>The sidebar — modules 1, 2 and 12</span><b>17</b></a><a href="#s5" data-for="s5"><span>Rooms and their members — modules 3 and 4</span><b>8</b></a><a href="#s6" data-for="s6"><span>The timeline, threads and search — module 8, and the audit</span><b>11</b></a><a href="#s7" data-for="s7"><span>Rooms and people not joined — module 7</span><b>6</b></a><a href="#s8" data-for="s8"><span>Settings — modules 5, 6 and 9</span><b>12</b></a><a href="#s9" data-for="s9"><span>Notifications — the audit</span><b>5</b></a><a href="#s10" data-for="s10"><span>Verification — module 10</span><b>8</b></a></nav>
 <main>
 <p class="lede">Every check here passes the compiler, clippy, the tests and all fifteen
 of <code>checks-bin</code>, and none of them can judge it. Work top to bottom &mdash;
@@ -324,7 +324,7 @@ testing/local-homeserver.sh verify</code></pre><p>Log in as <strong>alice</stron
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s2" data-open="1" data-checks="11"><header><h2>Sessions — modules 1 and 13</h2><span class="cnt" data-count>11 left</span></header><div class="body"><p>The session list is a list model over the core&#x27;s entries now, and the session itself mirrors its state, connectivity and profile from the core. This is where the first defect was.</p><div class="chk" data-id="k26e4a88750" data-state="" data-lead="A restored session comes up.">
+</div></div></section><section id="s2" data-open="1" data-checks="0"><header><h2>Results so far — 2 and 3 September 2026</h2></header><div class="body"><p>The sweep was run on the MSYS2 build of <code>fractal-kotlin</code> against the local harness, and the Kotlin build on the Pixel. The following are confirmed; the checklist below is kept for a formal pass.</p><p><strong>Confirmed working</strong> (by the run, the user, or both):</p><p>* Sessions: restore, login and the hand-off; the profile follows after a restart; the offline banner and reachability, after the three fixes in <code>ca757824</code> and <code>f7ddf29c</code>. * Sidebar: every section in the core&#x27;s order; name, topic and category mirror from the wire; counts and highlights; typing; an invite with its inviter; server notices; <strong>dragging a room between sections works</strong> (the user confirmed the real drop). * Rooms: the member list with names, IDs, the changed display name, the Admin power-level label and the verification shield; room details with the notification rows, public addresses, guests, history visibility and image packs; the join-rule subpage in the restricted value naming the space, with the knock switch. * Timeline and search: the mention highlight, read receipts, in-room search; <strong>encrypted rooms load and reindexing makes search work</strong> (user). * Settings: <strong>presence works with a homeserver that has presence enabled</strong> (user); notification settings. * <strong>Media</strong> works, <strong>notifications work</strong>, <strong>verification works</strong> (user). * Destructive: <strong>leaving, forgetting and logging out all work</strong> (user).</p><p><strong>Owed to a person</strong> (automation could not drive these):</p><p>* Join by alias and knock — the modal&#x27;s Look Up/View button does not take synthetic clicks; the address parser is verified. What the checks look like is in the module records. * Calls — an RDP session cannot carry audio or a camera; run later with the harness and a device.</p><p><strong>One open finding — verification notification on Android.</strong> A verification request reached the desktop as a system notification but not the Pixel. The desktop did not &quot;grab&quot; it: a verification request is a to-device event that every one of the account&#x27;s devices receives on its next sync. The gap is on the Android side — the Kotlin app&#x27;s <code>watchVerifications</code> only updates the in-app sheet (<code>onRequest</code> sets the flow state) and never posts a system notification, whereas the GTK app&#x27;s <code>show_to_device_identity_verification</code> and <code>show_in_room_identity_verification</code> do. So a backgrounded Pixel shows nothing. Fixing it means posting an Android notification in <code>onRequest</code> (with a channel, a tap intent into the verification UI, and withdrawal on <code>onDone</code>/<code>onCancelled</code>), and it only fires while the app is syncing in the background, since to-device events are not delivered by push.</p></div></section><section id="s3" data-open="1" data-checks="11"><header><h2>Sessions — modules 1 and 13</h2><span class="cnt" data-count>11 left</span></header><div class="body"><p>The session list is a list model over the core&#x27;s entries now, and the session itself mirrors its state, connectivity and profile from the core. This is where the first defect was.</p><div class="chk" data-id="k26e4a88750" data-state="" data-lead="A restored session comes up.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -467,7 +467,7 @@ testing/local-homeserver.sh verify</code></pre><p>Log in as <strong>alice</stron
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s3" data-open="1" data-checks="17"><header><h2>The sidebar — modules 1, 2 and 12</h2><span class="cnt" data-count>17 left</span></header><div class="body"><p>Every row is a mirror of the core&#x27;s room, every section a filter over the core&#x27;s category, and the rows and their drop targets are the core&#x27;s list.</p><div class="chk" data-id="k2194aacd89" data-state="" data-lead="Every section fills.">
+</div></div></section><section id="s4" data-open="1" data-checks="17"><header><h2>The sidebar — modules 1, 2 and 12</h2><span class="cnt" data-count>17 left</span></header><div class="body"><p>Every row is a mirror of the core&#x27;s room, every section a filter over the core&#x27;s category, and the rows and their drop targets are the core&#x27;s list.</p><div class="chk" data-id="k2194aacd89" data-state="" data-lead="Every section fills.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -688,7 +688,7 @@ testing/local-homeserver.sh verify</code></pre><p>Log in as <strong>alice</stron
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s4" data-open="1" data-checks="8"><header><h2>Rooms and their members — modules 3 and 4</h2><span class="cnt" data-count>8 left</span></header><div class="body"><p>The member list is a list model over the core&#x27;s members, and the permissions, join rule and addresses are mirrors.</p><div class="chk" data-id="k8ec59fe5cf" data-state="" data-lead="The member list, in every membership kind.">
+</div></div></section><section id="s5" data-open="1" data-checks="8"><header><h2>Rooms and their members — modules 3 and 4</h2><span class="cnt" data-count>8 left</span></header><div class="body"><p>The member list is a list model over the core&#x27;s members, and the permissions, join rule and addresses are mirrors.</p><div class="chk" data-id="k8ec59fe5cf" data-state="" data-lead="The member list, in every membership kind.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -792,7 +792,7 @@ testing/local-homeserver.sh verify</code></pre><p>Log in as <strong>alice</stron
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s5" data-open="1" data-checks="11"><header><h2>The timeline, threads and search — module 8, and the audit</h2><span class="cnt" data-count>11 left</span></header><div class="body"><p>The timeline&#x27;s read state and the sidebar&#x27;s activity order come from the core now; a thread row&#x27;s preview is the core&#x27;s value put into words.</p><div class="chk" data-id="kfd57d26aa3" data-state="" data-lead="A room scrolled to its start.">
+</div></div></section><section id="s6" data-open="1" data-checks="11"><header><h2>The timeline, threads and search — module 8, and the audit</h2><span class="cnt" data-count>11 left</span></header><div class="body"><p>The timeline&#x27;s read state and the sidebar&#x27;s activity order come from the core now; a thread row&#x27;s preview is the core&#x27;s value put into words.</p><div class="chk" data-id="kfd57d26aa3" data-state="" data-lead="A room scrolled to its start.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -935,7 +935,7 @@ testing/local-homeserver.sh verify</code></pre><p>Log in as <strong>alice</stron
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s6" data-open="1" data-checks="6"><header><h2>Rooms and people not joined — module 7</h2><span class="cnt" data-count>6 left</span></header><div class="body"><p>The remote cache — previews, peeks, profiles, link cards — is the core&#x27;s.</p><div class="chk" data-id="ka40d0b0cd9" data-state="" data-lead="A preview by alias, then by ID, is one request.">
+</div></div></section><section id="s7" data-open="1" data-checks="6"><header><h2>Rooms and people not joined — module 7</h2><span class="cnt" data-count>6 left</span></header><div class="body"><p>The remote cache — previews, peeks, profiles, link cards — is the core&#x27;s.</p><div class="chk" data-id="ka40d0b0cd9" data-state="" data-lead="A preview by alias, then by ID, is one request.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1013,7 +1013,7 @@ testing/local-homeserver.sh verify</code></pre><p>Log in as <strong>alice</stron
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s7" data-open="1" data-checks="12"><header><h2>Settings — modules 5, 6 and 9</h2><span class="cnt" data-count>12 left</span></header><div class="body"><p>The ignored users, sessions, security, image packs, global account data, presence and notification settings are all mirrors of the core&#x27;s.</p><div class="chk" data-id="k190b8e6378" data-state="" data-lead="Ignore and unignore.">
+</div></div></section><section id="s8" data-open="1" data-checks="12"><header><h2>Settings — modules 5, 6 and 9</h2><span class="cnt" data-count>12 left</span></header><div class="body"><p>The ignored users, sessions, security, image packs, global account data, presence and notification settings are all mirrors of the core&#x27;s.</p><div class="chk" data-id="k190b8e6378" data-state="" data-lead="Ignore and unignore.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1169,7 +1169,7 @@ testing/local-homeserver.sh verify</code></pre><p>Log in as <strong>alice</stron
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s8" data-open="1" data-checks="5"><header><h2>Notifications — the audit</h2><span class="cnt" data-count>5 left</span></header><div class="body"><p>The message, invite and call bodies are the core&#x27;s <code>NotificationBody</code>; the sentences are unchanged.</p><div class="chk" data-id="ke17539ee53" data-state="" data-lead="A text, an image, an emote.">
+</div></div></section><section id="s9" data-open="1" data-checks="5"><header><h2>Notifications — the audit</h2><span class="cnt" data-count>5 left</span></header><div class="body"><p>The message, invite and call bodies are the core&#x27;s <code>NotificationBody</code>; the sentences are unchanged.</p><div class="chk" data-id="ke17539ee53" data-state="" data-lead="A text, an image, an emote.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
@@ -1234,7 +1234,7 @@ testing/local-homeserver.sh verify</code></pre><p>Log in as <strong>alice</stron
 <div class="shot-acts"></div>
 </div>
 </div>
-</div></div></section><section id="s9" data-open="1" data-checks="8"><header><h2>Verification — module 10</h2><span class="cnt" data-count>8 left</span></header><div class="body"><div class="chk" data-id="kd3584729ed" data-state="" data-lead="From the setup view.">
+</div></div></section><section id="s10" data-open="1" data-checks="8"><header><h2>Verification — module 10</h2><span class="cnt" data-count>8 left</span></header><div class="body"><div class="chk" data-id="kd3584729ed" data-state="" data-lead="From the setup view.">
 <div class="ctl">
 <button type="button" data-act="pass" title="Behaves as described" aria-label="Passed">&#10003;</button>
 <button type="button" data-act="fail" title="Does not behave as described" aria-label="Failed">&#10007;</button>
