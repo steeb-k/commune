@@ -126,6 +126,8 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
                     onLocation = { state.shareLocation() },
                     members = state.composerMembers,
                     emoticons = state.composerEmoticons,
+                    loadDraft = { state.app.loadDraft(room.roomId) },
+                    saveDraft = { text -> state.app.saveDraft(room.roomId, text) },
                 )
             }
         }
@@ -1654,9 +1656,33 @@ internal fun Composer(
     onLocation: (() -> Unit)? = null,
     members: List<io.github.steeb_k.commune.core.FfiMember> = emptyList(),
     emoticons: List<io.github.steeb_k.commune.core.FfiSticker> = emptyList(),
+    // The room's saved draft, and where to keep it: the GTK composer
+    // keeps one per room in the SDK's store, and so does this.
+    loadDraft: (suspend () -> String?)? = null,
+    saveDraft: (suspend (String) -> Unit)? = null,
 ) {
     var draft by remember {
         mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(""))
+    }
+    var draftLoaded by remember { mutableStateOf(loadDraft == null) }
+    LaunchedEffect(Unit) {
+        val saved = loadDraft?.invoke()
+        if (saved != null && draft.text.isEmpty()) {
+            draft = androidx.compose.ui.text.input.TextFieldValue(
+                saved,
+                androidx.compose.ui.text.TextRange(saved.length),
+            )
+        }
+        draftLoaded = true
+    }
+    LaunchedEffect(draft.text) {
+        if (!draftLoaded) return@LaunchedEffect
+        // A moment after typing stops, not every keystroke.
+        kotlinx.coroutines.delay(800)
+        try {
+            saveDraft?.invoke(draft.text)
+        } catch (_: Exception) {
+        }
     }
 
     // Mention completion: the word being typed, when it starts with @.

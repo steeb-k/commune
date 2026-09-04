@@ -114,6 +114,12 @@ fun SettingsScreen(state: CommuneState) {
             onChange = { state.setTypingEnabled(it) },
         )
         SettingSwitch(
+            title = "Share Presence",
+            subtitle = "Let others see when you are online",
+            checked = settings?.sharePresence == true,
+            onChange = { state.setSharePresence(it) },
+        )
+        SettingSwitch(
             title = "Show Link Previews",
             subtitle = "In rooms that are not encrypted; the homeserver reads the page",
             checked = settings?.urlPreviewsEnabled == true,

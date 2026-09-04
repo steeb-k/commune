@@ -4,6 +4,7 @@
 package io.github.steeb_k.commune.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -126,8 +127,24 @@ private fun MemberRow(state: CommuneState, member: FfiMember, onClick: () -> Uni
     ) {
         MemberAvatar(state, member, size = 40.dp)
         Spacer(Modifier.size(12.dp))
+        // The presence badge the GTK avatar carries, read when the row
+        // shows; the list refreshes with the members.
+        val presence by androidx.compose.runtime.produceState<
+            io.github.steeb_k.commune.core.FfiUserPresence?,
+        >(null, member.userId) {
+            value = state.app.userPresence(member.userId)
+        }
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                presenceColor(presence?.presence)?.let { color ->
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(color),
+                    )
+                    Spacer(Modifier.size(6.dp))
+                }
                 Text(
                     member.displayName,
                     style = MaterialTheme.typography.bodyLarge,
@@ -150,8 +167,28 @@ private fun MemberRow(state: CommuneState, member: FfiMember, onClick: () -> Uni
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
             )
+            presence?.statusMessage?.takeIf { it.isNotBlank() }?.let { status ->
+                Text(
+                    status,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
         }
     }
+}
+
+/// The badge colour for a presence, as the GTK avatar paints it; nothing
+/// for a presence nobody told us about.
+@Composable
+private fun presenceColor(
+    presence: io.github.steeb_k.commune.core.FfiPresence?,
+): androidx.compose.ui.graphics.Color? = when (presence) {
+    io.github.steeb_k.commune.core.FfiPresence.ONLINE -> androidx.compose.ui.graphics.Color(0xFF2EC27E)
+    io.github.steeb_k.commune.core.FfiPresence.UNAVAILABLE -> androidx.compose.ui.graphics.Color(0xFFF5C211)
+    io.github.steeb_k.commune.core.FfiPresence.OFFLINE -> MaterialTheme.colorScheme.outlineVariant
+    else -> null
 }
 
 /// The word for a role, when it carries one — default members go untagged.
