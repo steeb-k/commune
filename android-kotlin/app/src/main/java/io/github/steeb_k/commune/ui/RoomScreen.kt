@@ -59,6 +59,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -91,6 +92,12 @@ private val DATE = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
 
 @Composable
 fun RoomScreen(state: CommuneState, room: FfiRoom) {
+    // This screen is composed only while it is the one on the display,
+    // so its presence is what "mapped" means for read receipts.
+    DisposableEffect(room.roomId) {
+        state.roomScreenShown(true)
+        onDispose { state.roomScreenShown(false) }
+    }
     Column(modifier = Modifier.fillMaxSize().imePadding()) {
         if (state.selectMode) {
             SelectionBar(state)
