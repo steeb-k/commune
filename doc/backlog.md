@@ -129,24 +129,40 @@ was abandoned). The GTK app is the desktop target and is now a view over
 
 ## B. Desktop / GTK
 
-From the August gap-closing run; the Track 3 rewrite may have closed some, so
-each is RE-VERIFY unless noted.
+Re-verified 3 Sep 2026 on a Linux build of this branch (WSL archlinux under
+WSLg, `meson setup` needs `GIT_DIR`/`GIT_WORK_TREE` pointed at the worktree's
+gitdir because the `.git` file carries a Windows path; the app runs inside
+`dbus-run-session` with an unlocked `gnome-keyring-daemon`, or the Linux
+secret store has no bus).
 
-* **RE-VERIFY — Threads list inserting new roots.** `thread_list.rs`'s
-  `apply_diff` now handles Append and Insert; likely fixed, confirm with a live
-  new thread.
-* **RE-VERIFY — Start a thread.** The threaded timeline exists
-  (`Timeline::new_threaded`); confirm the create-a-thread affordance the empty
-  state advertises actually exists.
-* **LIKELY MISSING — `m.room.policy` set/unset render nowhere.** No policy-rule
-  rendering found in the room history. See `doc/policy-lists.md`,
-  `doc/policy-servers.md`.
-* **RE-VERIFY — four minors:** the redacted-rule sentence, the thread-view root
-  chip, identity-server row staleness, the no-microphone toast branch.
+* **FIXED 3 Sep — Threads list inserting new roots.** Confirmed broken
+  first: the SDK's `ThreadListService` only refreshes roots it already
+  lists, so a thread that begins while the list is open never appears. The
+  core's `ThreadList` now presents a mirror of the SDK's list and puts a
+  new thread in front the moment its first reply arrives (root fetched,
+  reply as latest event), following later replies itself. Verified: a
+  third thread appeared live at the top and its second reply made it
+  "2 replies".
+* **CONFIRMED — Start a thread.** The affordance is the "Reply in Thread"
+  entry of the message actions group (`event_actions/group.rs`), which the
+  empty threads list names. The popover could not be captured under WSLg's
+  X server, so this stands on the code path.
+* **CONFIRMED, NOT MISSING — `m.room.policy` set/unset render.** The state
+  rows read "{sender} made localhost check the messages of this room." for
+  a valid set (the content needs `public_keys`; one without parses as the
+  unset, which the spec says is right) and "{sender} stopped the checking
+  of this room's messages." for the unset. The redacted rule reads
+  "{sender} removed a moderation rule about users."
+* **The four minors:** the redacted-rule sentence renders (above); the
+  thread view hides the root's chip, as intended; the identity-server row
+  is refreshed when the dialog opens but goes stale while it stays open
+  (changed the account data live: the row kept the old server until the
+  dialog was reopened — a small follow-up: an `m.identity_server`
+  observable on the core's global account data, and the row bound to it);
+  the no-microphone toast branch cannot be reached under WSLg, which offers
+  an audio source (the recording started instead).
 * **Ideas floated for the next build:** a storage settings page; a move to
   sliding sync (the 2.0 direction).
-
----
 
 ## C. Platform ports and infrastructure
 
@@ -162,9 +178,15 @@ each is RE-VERIFY unless noted.
 
 ## D. Owed verification (not features)
 
-* **Desktop sweep tail:** calls (need a device and the local Synapse harness),
-  and a second logged-in client for the verification emoji and QR flows. The
-  rest of the Track 3 sweep is confirmed. Sheet: `doc/eyeball-track3.md`.
+* **Desktop sweep tail:** calls (need a device and the local Synapse harness).
+  The verification flows were tried 3 Sep between the Linux GTK build and the
+  emulator (alice on both): the GTK side showed its QR and the emoji, both
+  sides listed the same seven emoji, both confirmed — and the emulator's SDK
+  then cancelled with `m.timeout` seconds later (GTK: "reached a timeout"),
+  with the clocks in agreement. A first attempt was cancelled by the GTK
+  side (`m.user`) right after the emulator accepted. Both are open defects
+  in the flow, not in the UIs. The rest of the Track 3 sweep is confirmed.
+  Sheet: `doc/eyeball-track3.md`.
 * **Device eyeball for the two 3 September Android fixes:** the verification
   request notification, and our own message staying out of notification
   previews.
