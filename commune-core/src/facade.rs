@@ -104,6 +104,64 @@ pub fn gif_search_available() -> bool {
     crate::klipy::is_available()
 }
 
+/// What a Matrix link points at, or `None` if the string is not one.
+///
+/// Both forms the application accepts are taken: a `matrix:` URI and a
+/// `https://matrix.to/#/…` permalink, each with its `via` servers. The
+/// embedder hands every link it is asked to open through here, the way
+/// the application's `process_uri` does.
+#[uniffi::export]
+#[must_use]
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "the FFI hands over an owned string"
+)]
+pub fn parse_matrix_link(uri: String) -> Option<FfiMatrixLink> {
+    use crate::matrix::MatrixIdUri;
+
+    let link = match MatrixIdUri::parse(uri.trim()).ok()? {
+        MatrixIdUri::Room(room_uri) => FfiMatrixLink::Room {
+            room_id_or_alias: room_uri.id.to_string(),
+            via: room_uri.via.iter().map(ToString::to_string).collect(),
+            event_id: None,
+        },
+        MatrixIdUri::Event(event_uri) => FfiMatrixLink::Room {
+            room_id_or_alias: event_uri.room_uri.id.to_string(),
+            via: event_uri
+                .room_uri
+                .via
+                .iter()
+                .map(ToString::to_string)
+                .collect(),
+            event_id: Some(event_uri.event_id.to_string()),
+        },
+        MatrixIdUri::User(user_id) => FfiMatrixLink::User {
+            user_id: user_id.to_string(),
+        },
+    };
+
+    Some(link)
+}
+
+/// What a Matrix link points at.
+#[derive(uniffi::Enum)]
+pub enum FfiMatrixLink {
+    /// A room, and possibly an event in it.
+    Room {
+        /// The ID or alias of the room.
+        room_id_or_alias: String,
+        /// The servers that can route to it, from the link.
+        via: Vec<String>,
+        /// The event the link points at inside the room, if it names one.
+        event_id: Option<String>,
+    },
+    /// A user.
+    User {
+        /// The ID of the user.
+        user_id: String,
+    },
+}
+
 /// An error handed across the FFI.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum CoreError {
@@ -714,6 +772,234 @@ pub struct FfiInReplyTo {
     pub body: Option<String>,
 }
 
+/// One block of the document a text message presents.
+///
+/// The tree of quotes and lists is flattened, the way
+/// [`crate::matrix::rich_text::Block`] describes: each block knows how deep
+/// it sits, and the first block of a list item carries the item's marker.
+#[derive(uniffi::Record)]
+pub struct FfiRichBlock {
+    /// What the block is.
+    pub kind: FfiRichBlockKind,
+    /// How many quotes the block sits in.
+    pub quote_depth: u8,
+    /// How many lists and disclosures the block sits in.
+    pub indent: u8,
+    /// The list marker, on the first block of a list item.
+    pub marker: Option<String>,
+    /// The runs of the block; empty for a rule or a code block.
+    pub inlines: Vec<FfiRichInline>,
+    /// Whether the block holds nothing but custom emoticons, which are then
+    /// presented large, like a sticker.
+    pub is_emoticons_only: bool,
+}
+
+/// What a block of a message is.
+#[derive(uniffi::Enum)]
+pub enum FfiRichBlockKind {
+    /// A line of runs.
+    Paragraph,
+    /// A heading.
+    Heading {
+        /// The level, 1 to 6.
+        level: u8,
+    },
+    /// Preformatted text, as a code block.
+    Code {
+        /// The language, if the message named one.
+        language: Option<String>,
+        /// The text, whitespace untouched.
+        text: String,
+    },
+    /// A horizontal rule.
+    Rule,
+    /// The summary of a details disclosure; the blocks that follow at one
+    /// more level of indentation are its content.
+    Summary,
+}
+
+/// One run of a line of a message.
+#[derive(uniffi::Enum)]
+pub enum FfiRichInline {
+    /// Text with one appearance, possibly a link.
+    Text {
+        /// The text.
+        text: String,
+        /// Bold, from `b` and `strong`.
+        bold: bool,
+        /// Italic, from `i` and `em`.
+        italic: bool,
+        /// Underlined, from `u`.
+        underline: bool,
+        /// Struck through, from `s` and `del`.
+        strikethrough: bool,
+        /// Monospace, from `code`.
+        code: bool,
+        /// Superscript, from `sup`.
+        superscript: bool,
+        /// Subscript, from `sub`.
+        subscript: bool,
+        /// The foreground color of a `span`, as the message wrote it.
+        color: Option<String>,
+        /// The background color of a `span`, as the message wrote it.
+        bg_color: Option<String>,
+        /// The URI the run links to, if it is a link.
+        link: Option<String>,
+    },
+    /// A mention, presented as a pill.
+    Mention {
+        /// What is mentioned.
+        kind: FfiRichMention,
+        /// The name to show on the pill.
+        name: String,
+    },
+    /// A custom emoticon, presented as an image among the words.
+    Emoticon {
+        /// The `mxc:` URI of the image.
+        uri: String,
+        /// Its textual description.
+        body: String,
+    },
+}
+
+/// The authenticity shield of a message in an encrypted room.
+///
+/// A warning is the application's red shield — an unverified or mismatched
+/// sender, a message sent in the clear — and a caveat its grey one. Most
+/// messages carry neither, which is what keeps the two readable.
+#[derive(uniffi::Record)]
+pub struct FfiShield {
+    /// Whether this is a warning rather than a caveat.
+    pub is_warning: bool,
+    /// Why the shield is shown.
+    pub code: FfiShieldCode,
+}
+
+/// Why a message carries an authenticity shield.
+#[derive(uniffi::Enum, Clone, Copy)]
+pub enum FfiShieldCode {
+    /// The authenticity of this message cannot be guaranteed on this
+    /// device.
+    AuthenticityNotGuaranteed,
+    /// The device that sent this message is not known.
+    UnknownDevice,
+    /// The device that sent this message has not been verified by its
+    /// owner.
+    UnsignedDevice,
+    /// The sender of this message has not been verified.
+    UnverifiedIdentity,
+    /// The sender of this message was verified once, and has changed
+    /// identity since.
+    VerificationViolation,
+    /// The sender of this message does not match the device that encrypted
+    /// it.
+    MismatchedSender,
+    /// This message was not encrypted, in a room that is.
+    SentInClear,
+}
+
+/// Map the SDK's shield state to the FFI's.
+fn ffi_shield(state: matrix_sdk_ui::timeline::TimelineEventShieldState) -> Option<FfiShield> {
+    use matrix_sdk_ui::timeline::{TimelineEventShieldState, TimelineEventShieldStateCode as Code};
+
+    let (is_warning, code) = match state {
+        TimelineEventShieldState::Red { code } => (true, code),
+        TimelineEventShieldState::Grey { code } => (false, code),
+        TimelineEventShieldState::None => return None,
+    };
+
+    let code = match code {
+        Code::AuthenticityNotGuaranteed => FfiShieldCode::AuthenticityNotGuaranteed,
+        Code::UnknownDevice => FfiShieldCode::UnknownDevice,
+        Code::UnsignedDevice => FfiShieldCode::UnsignedDevice,
+        Code::UnverifiedIdentity => FfiShieldCode::UnverifiedIdentity,
+        Code::VerificationViolation => FfiShieldCode::VerificationViolation,
+        Code::MismatchedSender => FfiShieldCode::MismatchedSender,
+        Code::SentInClear => FfiShieldCode::SentInClear,
+    };
+
+    Some(FfiShield { is_warning, code })
+}
+
+/// Who or what a mention in a message points at.
+#[derive(uniffi::Enum)]
+pub enum FfiRichMention {
+    /// A user.
+    User {
+        /// The ID of the user.
+        user_id: String,
+    },
+    /// A room, by ID or alias.
+    Room {
+        /// The ID or alias of the room.
+        room_id_or_alias: String,
+        /// The servers that can route to it, from the link.
+        via: Vec<String>,
+    },
+    /// Everyone in the room.
+    AtRoom,
+}
+
+impl From<crate::matrix::rich_text::Block> for FfiRichBlock {
+    fn from(block: crate::matrix::rich_text::Block) -> Self {
+        use crate::matrix::rich_text::{BlockKind, Inline, Mention};
+
+        let is_emoticons_only = block.is_emoticons_only();
+        let kind = match block.kind {
+            BlockKind::Paragraph => FfiRichBlockKind::Paragraph,
+            BlockKind::Heading { level } => FfiRichBlockKind::Heading { level },
+            BlockKind::Code { language, text } => FfiRichBlockKind::Code { language, text },
+            BlockKind::Rule => FfiRichBlockKind::Rule,
+            BlockKind::Summary => FfiRichBlockKind::Summary,
+        };
+        let inlines = block
+            .inlines
+            .into_iter()
+            .map(|inline| match inline {
+                Inline::Text { text, style, link } => FfiRichInline::Text {
+                    text,
+                    bold: style.bold,
+                    italic: style.italic,
+                    underline: style.underline,
+                    strikethrough: style.strikethrough,
+                    code: style.code,
+                    superscript: style.superscript,
+                    subscript: style.subscript,
+                    color: style.color,
+                    bg_color: style.bg_color,
+                    link,
+                },
+                Inline::Mention { mention, name } => FfiRichInline::Mention {
+                    kind: match mention {
+                        Mention::User { user_id } => FfiRichMention::User {
+                            user_id: user_id.to_string(),
+                        },
+                        Mention::Room { uri } => FfiRichMention::Room {
+                            room_id_or_alias: uri.id.to_string(),
+                            via: uri.via.iter().map(ToString::to_string).collect(),
+                        },
+                        Mention::AtRoom => FfiRichMention::AtRoom,
+                    },
+                    name,
+                },
+                Inline::Emoticon { uri, body } => FfiRichInline::Emoticon {
+                    uri: uri.to_string(),
+                    body,
+                },
+            })
+            .collect();
+
+        Self {
+            kind,
+            quote_depth: block.quote_depth,
+            indent: block.indent,
+            marker: block.marker,
+            inlines,
+            is_emoticons_only,
+        }
+    }
+}
+
 /// What a state event changed — the ones the timeline words, with the
 /// strings the sentence needs.
 #[derive(uniffi::Enum)]
@@ -874,6 +1160,14 @@ pub enum FfiTimelineItem {
         kind: FfiEventKind,
         /// The text of the event, as far as it has one.
         body: String,
+        /// The document a text message presents — its formatted body when
+        /// that is usable HTML, its plain body otherwise, with links and
+        /// mentions detected either way. Empty for anything but a text
+        /// message.
+        rich: Vec<FfiRichBlock>,
+        /// The authenticity shield, in an encrypted room, when the message
+        /// deserves one.
+        shield: Option<FfiShield>,
         /// How far a locally sent event got, `None` for remote echoes.
         send_state: Option<FfiSendState>,
     },
@@ -1597,7 +1891,9 @@ impl CoreApp {
                 listener.on_update(
                     items
                         .iter()
-                        .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
+                        .map(|item| {
+                            ffi_timeline_item(item, &session, &room, Some(&own_user_id), &outcomes)
+                        })
                         .collect(),
                 );
 
@@ -1610,7 +1906,15 @@ impl CoreApp {
                     listener.on_update(
                         items
                             .iter()
-                            .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
+                            .map(|item| {
+                                ffi_timeline_item(
+                                    item,
+                                    &session,
+                                    &room,
+                                    Some(&own_user_id),
+                                    &outcomes,
+                                )
+                            })
                             .collect(),
                     );
                 }
@@ -1740,7 +2044,9 @@ impl CoreApp {
                 listener.on_update(
                     items
                         .iter()
-                        .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
+                        .map(|item| {
+                            ffi_timeline_item(item, &session, &room, Some(&own_user_id), &outcomes)
+                        })
                         .collect(),
                 );
 
@@ -1753,7 +2059,15 @@ impl CoreApp {
                     listener.on_update(
                         items
                             .iter()
-                            .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
+                            .map(|item| {
+                                ffi_timeline_item(
+                                    item,
+                                    &session,
+                                    &room,
+                                    Some(&own_user_id),
+                                    &outcomes,
+                                )
+                            })
                             .collect(),
                     );
                 }
@@ -1979,7 +2293,9 @@ impl CoreApp {
                 listener.on_update(
                     items
                         .iter()
-                        .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
+                        .map(|item| {
+                            ffi_timeline_item(item, &session, &room, Some(&own_user_id), &outcomes)
+                        })
                         .collect(),
                 );
 
@@ -1992,7 +2308,15 @@ impl CoreApp {
                     listener.on_update(
                         items
                             .iter()
-                            .map(|item| ffi_timeline_item(item, Some(&own_user_id), &outcomes))
+                            .map(|item| {
+                                ffi_timeline_item(
+                                    item,
+                                    &session,
+                                    &room,
+                                    Some(&own_user_id),
+                                    &outcomes,
+                                )
+                            })
                             .collect(),
                     );
                 }
@@ -2848,6 +3172,37 @@ impl CoreApp {
             display_name: profile.display_name,
             avatar_url: profile.avatar_url.map(|url| url.to_string()),
         })
+    }
+
+    /// Search the user directory for the given term, as the application's
+    /// invite page and direct chat dialog do.
+    ///
+    /// The homeserver decides what matches; `limit` caps how many it says.
+    pub async fn search_users(
+        &self,
+        search_term: String,
+        limit: u64,
+    ) -> Result<Vec<FfiUserSearchResult>, CoreError> {
+        let session = self.session()?;
+        let client = session.client();
+
+        let response = RUNTIME
+            .spawn(async move { client.search_users(&search_term, limit).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| CoreError::Failed {
+                msg: error.to_string(),
+            })?;
+
+        Ok(response
+            .results
+            .into_iter()
+            .map(|user| FfiUserSearchResult {
+                user_id: user.user_id.to_string(),
+                display_name: user.display_name,
+                avatar_url: user.avatar_url.map(|url| url.to_string()),
+            })
+            .collect())
     }
 
     /// Change the account's display name.
@@ -5245,6 +5600,17 @@ pub struct FfiProfile {
     pub avatar_url: Option<String>,
 }
 
+/// One user the directory found for a search term.
+#[derive(uniffi::Record)]
+pub struct FfiUserSearchResult {
+    /// The ID of the user.
+    pub user_id: String,
+    /// The display name, when one is set.
+    pub display_name: Option<String>,
+    /// The avatar, as an `mxc:` URI, when one is set.
+    pub avatar_url: Option<String>,
+}
+
 /// One room of the public directory.
 #[derive(uniffi::Record)]
 pub struct FfiPublicRoom {
@@ -6051,12 +6417,94 @@ fn ffi_message_kind(message: &matrix_sdk_ui::timeline::Message) -> (FfiEventKind
     (kind, msgtype.body().to_owned())
 }
 
+/// The names a mention shows, looked up in the room the message was sent
+/// in, the way the application's pills name themselves.
+struct RoomMentionNames<'a> {
+    /// The session the room belongs to.
+    session: &'a Session,
+    /// The room the message was sent in.
+    room: &'a Room,
+}
+
+impl crate::matrix::rich_text::MentionResolver for RoomMentionNames<'_> {
+    fn user_name(&self, user_id: &ruma::UserId) -> String {
+        self.room.member_list().get(user_id).map_or_else(
+            || user_id.localpart().to_owned(),
+            |member| member.display_name_or_localpart(),
+        )
+    }
+
+    fn room_name(&self, uri: &crate::matrix::MatrixRoomIdUri) -> String {
+        let named = self
+            .session
+            .room_list()
+            .get_by_identifier(&uri.id)
+            .and_then(|room| match room.display_name() {
+                RoomDisplayName::Named(name) | RoomDisplayName::EmptyWas(name) => Some(name),
+                RoomDisplayName::Empty | RoomDisplayName::Unknown => None,
+            });
+
+        named.unwrap_or_else(|| uri.id.to_string())
+    }
+}
+
+/// The document of the given message, for the FFI.
+///
+/// Empty for anything but a text message.
+fn ffi_rich_blocks(
+    message: &matrix_sdk_ui::timeline::Message,
+    sender: &ruma::UserId,
+    sender_display_name: Option<&str>,
+    session: &Session,
+    room: &Room,
+) -> Vec<FfiRichBlock> {
+    use ruma::events::room::{
+        message::MessageType,
+        power_levels::{NotificationPowerLevelType, PowerLevelAction},
+    };
+
+    use crate::matrix::ext_traits::AtMentionExt;
+
+    let (body, formatted, is_emote) = match message.msgtype() {
+        MessageType::Text(content) => (&content.body, content.formatted.as_ref(), false),
+        MessageType::Notice(content) => (&content.body, content.formatted.as_ref(), false),
+        MessageType::Emote(content) => (&content.body, content.formatted.as_ref(), true),
+        MessageType::ServerNotice(content) => (&content.body, None, false),
+        _ => return Vec::new(),
+    };
+
+    // The application detects `@room` where the message may carry one and
+    // its sender may notify the room.
+    let detect_at_room = message.can_contain_at_room()
+        && room.permissions().user_is_allowed_to(
+            sender,
+            PowerLevelAction::TriggerNotification(NotificationPowerLevelType::Room),
+        );
+
+    // An emote opens with its sender's name.
+    let sender_name = is_emote.then(|| sender_display_name.unwrap_or_else(|| sender.localpart()));
+
+    let resolver = RoomMentionNames { session, room };
+    crate::matrix::rich_text::message_blocks(
+        formatted,
+        body,
+        &resolver,
+        detect_at_room,
+        sender_name,
+    )
+    .into_iter()
+    .map(Into::into)
+    .collect()
+}
+
 #[allow(
     clippy::too_many_lines,
     reason = "one match arm per kind of timeline item, and the record built from it"
 )]
 fn ffi_timeline_item(
     item: &matrix_sdk_ui::timeline::TimelineItem,
+    session: &Session,
+    room: &Room,
     own_user_id: Option<&ruma::UserId>,
     outcomes: &std::collections::HashMap<String, FfiCallOutcome>,
 ) -> FfiTimelineItem {
@@ -6137,6 +6585,20 @@ fn ffi_timeline_item(
                 _ => (FfiEventKind::Unsupported, String::new()),
             };
 
+            let rich = match event.content() {
+                TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
+                    MsgLikeKind::Message(message) => ffi_rich_blocks(
+                        message,
+                        event.sender(),
+                        sender_display_name.as_deref(),
+                        session,
+                        room,
+                    ),
+                    _ => Vec::new(),
+                },
+                _ => Vec::new(),
+            };
+
             let thread_replies = ffi_thread_replies(event.content());
 
             let reactions = ffi_reactions(event.content(), own_user_id);
@@ -6166,6 +6628,8 @@ fn ffi_timeline_item(
                 is_own: event.is_own(),
                 kind,
                 body,
+                rich,
+                shield: ffi_shield(event.get_shield(false)),
                 send_state: ffi_send_state(event.send_state()),
             }
         }

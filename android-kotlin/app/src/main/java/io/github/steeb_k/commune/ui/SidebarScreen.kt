@@ -332,6 +332,7 @@ private fun PrimaryMenu(state: CommuneState) {
             title = "New Direct Chat",
             placeholder = "@user:example.org",
             confirm = "Chat",
+            suggestUsers = true,
             onConfirm = { input, done -> state.startDirectChat(input, done) },
             onDismiss = { dialog = MenuDialog.None },
         )
@@ -356,6 +357,9 @@ private fun ConversationDialog(
     confirm: String,
     onConfirm: (String, () -> Unit) -> Unit,
     onDismiss: () -> Unit,
+    // Whether what is typed searches the user directory, as the GTK
+    // app's direct chat dialog does.
+    suggestUsers: Boolean = false,
 ) {
     var input by remember { mutableStateOf("") }
     val close = {
@@ -374,6 +378,9 @@ private fun ConversationDialog(
                     placeholder = { Text(placeholder) },
                     singleLine = true,
                 )
+                if (suggestUsers) {
+                    UserSuggestions(state, input, exclude = emptySet()) { input = it }
+                }
                 state.conversationError?.let { error ->
                     Text(
                         error,

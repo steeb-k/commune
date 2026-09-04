@@ -22,10 +22,16 @@ was abandoned). The GTK app is the desktop target and is now a view over
 
 ### Tier 1 — the gaps that most limit it as a Matrix client
 
-1. **MISSING — Formatted (HTML) message bodies.** `formatted_body` appears zero
-   times in the facade; bold, code, quotes, links and mention pills all render
-   and send as raw text. The single largest gap. Needs both a send path and a
-   render path, and a decision on the markup subset.
+1. **DONE 3 Sep — Formatted (HTML) message bodies.** The send path already
+   existed (`compose_message` writes Markdown, mentions and emoticons as the
+   GTK composer does); the render path was the gap. `commune-core/src/matrix/rich_text.rs`
+   is the GTK text pipeline without the widgets: the same sanitizer and
+   element subset, blocks and runs, link/identifier/`@room` detection, mention
+   pills named from the room, custom emoticons, emote name prefix. The facade
+   puts it on every text event as `rich` (flat blocks with quote depth, indent
+   and list marker); `RichText.kt` draws it. Verified on the emulator against
+   a posted batch (markup, quote, lists, code block, pills, plain-text links,
+   emote, heading, colours, rule, details).
 2. **MISSING — Push notifications never decrypt.** `Push.kt` posts straight from
    the gateway JSON (`content.body`), so an encrypted room's push is the literal
    "New message". Decrypting needs the SDK's `NotificationClient` on the push
@@ -33,14 +39,20 @@ was abandoned). The GTK app is the desktop target and is now a view over
 3. **PARTIAL — Search in encrypted rooms.** `search_room` exists, but there is no
    reindex or local index exposed; server `/search` returns nothing for
    encrypted rooms. The desktop reindex is not on the FFI. RE-VERIFY on device.
-4. **MISSING — Per-message encryption authenticity shield.** `FfiTimelineItem`
-   has no shield/verified-sender field; nothing marks an unverified or
-   unencrypted message.
-5. **MISSING — Open `matrix:` / matrix.to links.** The manifest carries only the
-   login-redirect custom scheme and LAUNCHER; no intent filter claims matrix.to
-   or `matrix:` URIs, so a Matrix link from elsewhere cannot open the app.
-6. **MISSING — User-directory search.** No `search_users` on the facade; an
-   invite needs a literal `@user:server`.
+4. **DONE 3 Sep — Per-message encryption authenticity shield.** `shield` on
+   the event (warning/caveat + the SDK's code); the bubble shows the GTK
+   icons' equivalents beside the timestamp row and a tap says the GTK
+   sentence. Verified with a clear-text message in an encrypted room.
+5. **DONE 3 Sep — Open `matrix:` / matrix.to links.** Intent filters for the
+   `matrix` scheme and the matrix.to host; `parse_matrix_link` on the facade
+   (the GTK `MatrixIdUri` parser); a joined room opens in place, anything
+   else asks in a dialog (Join / Chat) — the reduced form of the GTK room
+   preview and profile dialog. Links and pills inside messages take the same
+   route. Event links open the room; there is no jump-to-event yet.
+6. **DONE 3 Sep — User-directory search.** `search_users` on the facade; the
+   invite dialog and the direct chat dialog list matches under the field as
+   one types (invite hides current members). Note Synapse's default only
+   returns users who share a room.
 7. **MISSING — Account management while logged in.** No change-password,
    deactivate, or third-party IDs (email/phone). `reset_password` is the
    pre-login forgotten-password flow only.
