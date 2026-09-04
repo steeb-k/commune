@@ -8,9 +8,7 @@ package io.github.steeb_k.commune
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import io.github.steeb_k.commune.core.FfiRoom
 
 class Notifier(private val context: Context) {
@@ -65,60 +63,41 @@ class Notifier(private val context: Context) {
                 // count after a restart is not.
                 count > known -> {
                     posted.edit().putLong(postedKey(room.roomId), count).apply()
-                    manager.notify(
-                        room.roomId.hashCode(),
-                        build(room, room.notificationCount),
-                    )
+                    post(room, room.notificationCount)
                 }
             }
         }
     }
 
-    private fun build(room: FfiRoom, count: ULong): Notification {
-        val openApp = PendingIntent.getActivity(
-            context,
-            room.roomId.hashCode(),
-            Intent(context, MainActivity::class.java)
-                .putExtra("room_id", room.roomId)
-                .setAction("io.github.steeb_k.commune.OPEN_ROOM"),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
+    private fun post(room: FfiRoom, count: ULong) {
         val name = io.github.steeb_k.commune.ui.roomName(room)
         val countText = if (count == 1uL) "1 new message" else "$count new messages"
-        // The latest message, when it is readable: "sender: body". A
-        // direct chat's name already names the sender. Our own message is
-        // never shown: the count that raised this notification is always
-        // for someone else, but the room list can carry a reply we just
-        // sent as the latest event before that message settles, which is
-        // how our own words came to appear on an incoming notification.
-        val preview = if (room.latestEventIsOwn) {
-            null
+        // The latest message, when it is readable, with its sender. Our
+        // own message is never shown: the count that raised this
+        // notification is always for someone else, but the room list can
+        // carry a reply we just sent as the latest event before that
+        // message settles, which is how our own words came to appear on
+        // an incoming notification. Without a readable message the count
+        // itself is the line.
+        val body = room.latestEventBody?.takeIf { !room.latestEventIsOwn }
+        val sender = if (body != null && !room.isDirect) {
+            room.latestEventSender?.substringAfter("@")?.substringBefore(":")
         } else {
-            room.latestEventBody?.let { body ->
-                val sender = room.latestEventSender
-                    ?.substringAfter("@")?.substringBefore(":")
-                if (sender != null && !room.isDirect) "$sender: $body" else body
-            }
+            null
         }
-
-        return Notification.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notify_symbolic)
-            .setContentTitle(name)
-            .setContentText(preview ?: countText)
-            .setStyle(Notification.BigTextStyle().bigText(preview ?: countText))
-            .setSubText(if (preview != null) countText else null)
-            .setContentIntent(openApp)
-            .setAutoCancel(true)
-            .setNumber(count.toInt())
-            // Message content stays off the lock screen when the user
-            // hides sensitive notifications; the OS shows this instead.
-            .setVisibility(Notification.VISIBILITY_PRIVATE)
-            .setPublicVersion(redactedNotification(context, CHANNEL_ID))
-            .build()
+        postRoomMessage(
+            context,
+            room.roomId,
+            name,
+            room.isDirect,
+            sender,
+            body ?: countText,
+            count.toInt(),
+        )
     }
 
     companion object {
-        private const val CHANNEL_ID = "messages"
+        private const val CHANNEL_ID = MESSAGES_CHANNEL_ID
     }
 }
 
