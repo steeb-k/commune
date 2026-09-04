@@ -15,6 +15,10 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import io.github.steeb_k.commune.core.FfiNotificationBody
+import io.github.steeb_k.commune.core.FfiPushedNotification
+import kotlin.concurrent.thread
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.unifiedpush.android.connector.FailedReason
 import org.unifiedpush.android.connector.PushService
@@ -130,12 +134,81 @@ private fun postFromPayload(context: Context, payload: String) {
     val body = notification?.optJSONObject("content")?.optString("body")
         ?.takeIf { it.isNotBlank() }
 
+    // An encrypted room's push carries ciphertext and no body: the event
+    // is fetched and decrypted on the device, as the GTK Android build
+    // does, and shown from what it says. That takes a request, so it
+    // leaves this callback for a thread of its own.
+    if (body == null || eventType == "m.room.encrypted") {
+        thread {
+            var failed = false
+            val words = try {
+                runBlocking {
+                    (context.applicationContext as CommuneApplication).state.app
+                        .fetchPushedNotification(roomId, eventId)
+                }
+            } catch (_: Exception) {
+                failed = true
+                null
+            }
+            when {
+                // The fetch itself broke: say what the payload allows.
+                words == null && failed ->
+                    postMessage(context, roomId, roomName ?: sender ?: "Commune", "New message")
+                // Nothing to show: filtered, redacted, gone, or a call.
+                words == null -> {}
+                // Our own message from another device is not news.
+                words.isOwn -> {}
+                else -> {
+                    val sentence = pushedSentence(words)
+                    val text = if (words.isDirect || words.body is FfiNotificationBody.Emote) {
+                        sentence
+                    } else {
+                        "${words.senderName}: $sentence"
+                    }
+                    postMessage(context, roomId, words.roomName, text)
+                }
+            }
+        }
+        return
+    }
+
     val title = roomName ?: sender ?: "Commune"
     val text = when {
         body != null && sender != null && roomName != null -> "$sender: $body"
-        body != null -> body
-        else -> "New message"
+        else -> body
     }
+    postMessage(context, roomId, title, text)
+}
+
+/// The words for a fetched event — the GTK app's notification sentences.
+private fun pushedSentence(words: FfiPushedNotification): String = when (val body = words.body) {
+    is FfiNotificationBody.Text -> body.body
+    is FfiNotificationBody.Emote -> "${words.senderName} ${body.body}"
+    is FfiNotificationBody.Audio -> "${words.senderName} sent an audio file."
+    is FfiNotificationBody.File -> "${words.senderName} sent a file."
+    is FfiNotificationBody.Image -> "${words.senderName} sent an image."
+    is FfiNotificationBody.Location -> "${words.senderName} sent their location."
+    is FfiNotificationBody.Video -> "${words.senderName} sent a video."
+    is FfiNotificationBody.Sticker -> "${words.senderName} sent a sticker."
+    is FfiNotificationBody.Invite -> "${words.senderName} invited you"
+    is FfiNotificationBody.IncomingCall -> if (body.video) {
+        if (words.isDirect) {
+            "Incoming video call. Use another client to answer."
+        } else {
+            "Incoming video call from ${words.senderName}. Use another client to answer."
+        }
+    } else {
+        if (words.isDirect) {
+            "Incoming call. Use another client to answer."
+        } else {
+            "Incoming call from ${words.senderName}. Use another client to answer."
+        }
+    }
+}
+
+/// Post one message notification for the room, replacing the room's
+/// previous one.
+private fun postMessage(context: Context, roomId: String, title: String, text: String) {
 
     val manager = context.getSystemService(NotificationManager::class.java)
     manager.createNotificationChannel(

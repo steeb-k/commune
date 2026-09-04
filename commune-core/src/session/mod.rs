@@ -26,6 +26,7 @@
 //! sync loop sleeps and dials sockets). `SessionList` already does; the FFI
 //! facade will wrap calls in `RUNTIME.spawn`.
 
+mod account;
 mod calls;
 mod create_room;
 mod directory;
@@ -79,6 +80,9 @@ use url::Url;
 #[cfg(feature = "ffi")]
 pub(crate) use self::image_packs::room_state_packs_including_empty;
 pub use self::{
+    account::{
+        AccountManagementError, PendingEmail, ThirdPartyId, ThirdPartyIds, ThirdPartyMedium,
+    },
     calls::{
         Call, CallEndReason, CallError, CallEvent, CallOutcome, CallState, Calls, INVITE_LIFETIME,
         IceServers, NEGOTIATE_LIFETIME, RawTurnCredentials, TurnCredentials, TurnServer, can_call,
@@ -97,7 +101,8 @@ pub use self::{
     },
     notifications::{
         NotificationBody, NotificationsError, NotificationsGlobalSetting, NotificationsRoomSetting,
-        NotificationsSettings, NotificationsSpecialRule, PushError,
+        NotificationsSettings, NotificationsSpecialRule, PushError, PushedNotification,
+        fetch_pushed_event,
     },
     presence::{Presence, PresenceError, PresenceList, UserPresence},
     remote::{

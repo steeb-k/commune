@@ -845,6 +845,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_add_notification_keywor
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_add_pack_image(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_add_pending_email(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_answer_call(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_ban_user(
@@ -852,6 +854,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_ban_user(
 external fun uniffi_commune_core_checksum_method_coreapp_bootstrap_cross_signing(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_cancel_verification(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_change_password(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_change_room_category(
 ): Short
@@ -869,7 +873,11 @@ external fun uniffi_commune_core_checksum_method_coreapp_create_image_pack(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_create_room(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_deactivate_account(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_delete_image_pack(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_delete_third_party_id(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_discard_local_echo(
 ): Short
@@ -890,6 +898,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_explore_rooms(
 external fun uniffi_commune_core_checksum_method_coreapp_export_room_keys(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_fetch_gif_preview(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_fetch_pushed_notification(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_finish_oauth_login(
 ): Short
@@ -953,6 +963,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_redact_event(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_register_user(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_reindex_room_search(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_reject_call(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_remove_notification_keyword(
@@ -968,6 +980,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_rename_device(
 external fun uniffi_commune_core_checksum_method_coreapp_rename_image_pack(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_report_event(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_request_email_validation(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_request_password_reset(
 ): Short
@@ -1101,6 +1115,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_sso_login_url(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_sticker_packs(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_third_party_ids(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_toggle_reaction(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_turn_servers(
@@ -1181,6 +1197,8 @@ external fun uniffi_commune_core_fn_method_coreapp_add_notification_keyword(`ptr
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_add_pack_image(`ptr`: Long,`stateKey`: RustBuffer.ByValue,`shortcode`: RustBuffer.ByValue,`body`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_add_pending_email(`ptr`: Long,`pending`: RustBuffer.ByValue,`currentPassword`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_answer_call(`ptr`: Long,`callId`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_ban_user(`ptr`: Long,`roomId`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,
@@ -1188,6 +1206,8 @@ external fun uniffi_commune_core_fn_method_coreapp_ban_user(`ptr`: Long,`roomId`
 external fun uniffi_commune_core_fn_method_coreapp_bootstrap_cross_signing(`ptr`: Long,`password`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_cancel_verification(`ptr`: Long,`flowId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_change_password(`ptr`: Long,`newPassword`: RustBuffer.ByValue,`currentPassword`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_change_room_category(`ptr`: Long,`roomId`: RustBuffer.ByValue,`category`: RustBuffer.ByValue,
 ): Long
@@ -1205,7 +1225,11 @@ external fun uniffi_commune_core_fn_method_coreapp_create_image_pack(`ptr`: Long
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_create_room(`ptr`: Long,`name`: RustBuffer.ByValue,`topic`: RustBuffer.ByValue,`public`: Byte,`encrypted`: Byte,`alias`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_deactivate_account(`ptr`: Long,`currentPassword`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_delete_image_pack(`ptr`: Long,`stateKey`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_delete_third_party_id(`ptr`: Long,`address`: RustBuffer.ByValue,`isEmail`: Byte,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_discard_local_echo(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,
 ): Long
@@ -1226,6 +1250,8 @@ external fun uniffi_commune_core_fn_method_coreapp_explore_rooms(`ptr`: Long,`se
 external fun uniffi_commune_core_fn_method_coreapp_export_room_keys(`ptr`: Long,`path`: RustBuffer.ByValue,`passphrase`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_fetch_gif_preview(`ptr`: Long,`url`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_fetch_pushed_notification(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_finish_oauth_login(`ptr`: Long,`redirectQuery`: RustBuffer.ByValue,
 ): Long
@@ -1289,6 +1315,8 @@ external fun uniffi_commune_core_fn_method_coreapp_redact_event(`ptr`: Long,`roo
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_register_user(`ptr`: Long,`username`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_reindex_room_search(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_reject_call(`ptr`: Long,`callId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_remove_notification_keyword(`ptr`: Long,`keyword`: RustBuffer.ByValue,
@@ -1304,6 +1332,8 @@ external fun uniffi_commune_core_fn_method_coreapp_rename_device(`ptr`: Long,`de
 external fun uniffi_commune_core_fn_method_coreapp_rename_image_pack(`ptr`: Long,`stateKey`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_report_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`reason`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_request_email_validation(`ptr`: Long,`address`: RustBuffer.ByValue,`previous`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_request_password_reset(`ptr`: Long,`email`: RustBuffer.ByValue,
 ): Long
@@ -1436,6 +1466,8 @@ external fun uniffi_commune_core_fn_method_coreapp_space_children(`ptr`: Long,`s
 external fun uniffi_commune_core_fn_method_coreapp_sso_login_url(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_sticker_packs(`ptr`: Long,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_third_party_ids(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_toggle_reaction(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`key`: RustBuffer.ByValue,
 ): Long
@@ -1662,6 +1694,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_add_pack_image() != 49379.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_add_pending_email() != 17234.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_answer_call() != 10293.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1672,6 +1707,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_cancel_verification() != 42296.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_change_password() != 22323.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_change_room_category() != 21179.toShort()) {
@@ -1698,7 +1736,13 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_create_room() != 41384.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_deactivate_account() != 43424.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_delete_image_pack() != 28159.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_delete_third_party_id() != 30448.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_discard_local_echo() != 49737.toShort()) {
@@ -1729,6 +1773,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_fetch_gif_preview() != 17739.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_fetch_pushed_notification() != 32103.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_finish_oauth_login() != 59415.toShort()) {
@@ -1824,6 +1871,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_register_user() != 30294.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_reindex_room_search() != 46451.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_reject_call() != 54839.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1846,6 +1896,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_report_event() != 3178.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_request_email_validation() != 36329.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_request_password_reset() != 2498.toShort()) {
@@ -2044,6 +2097,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_sticker_packs() != 31430.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_third_party_ids() != 12248.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_toggle_reaction() != 55807.toShort()) {
@@ -3093,6 +3149,12 @@ public interface CoreAppInterface {
     suspend fun `addPackImage`(`stateKey`: kotlin.String, `shortcode`: kotlin.String, `body`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String)
     
     /**
+     * Add the pending email address to the account, once its validation
+     * link was opened. `current_password` answers the password stage.
+     */
+    suspend fun `addPendingEmail`(`pending`: FfiPendingEmail, `currentPassword`: kotlin.String?)
+    
+    /**
      * Answer a call with the embedder's answer description.
      */
     suspend fun `answerCall`(`callId`: kotlin.String, `sdp`: kotlin.String)
@@ -3114,6 +3176,12 @@ public interface CoreAppInterface {
      * declined.
      */
     suspend fun `cancelVerification`(`flowId`: kotlin.String)
+    
+    /**
+     * Change the account's password. `current_password` answers the
+     * homeserver's password stage, which it asks for as a rule.
+     */
+    suspend fun `changePassword`(`newPassword`: kotlin.String, `currentPassword`: kotlin.String?)
     
     /**
      * Move the given room to the given category: accepting an invite is a
@@ -3164,11 +3232,22 @@ public interface CoreAppInterface {
     suspend fun `createRoom`(`name`: kotlin.String, `topic`: kotlin.String?, `public`: kotlin.Boolean, `encrypted`: kotlin.Boolean, `alias`: kotlin.String?): kotlin.String
     
     /**
+     * Deactivate the account, keeping its messages, then clean the
+     * session off this device: the homeserver has already forgotten it.
+     */
+    suspend fun `deactivateAccount`(`currentPassword`: kotlin.String?)
+    
+    /**
      * Delete a pack. A state event cannot be removed, so a deleted
      * pack is one with no images — what a redacted pack looks like
      * too — and it stops being enabled everywhere.
      */
     suspend fun `deleteImagePack`(`stateKey`: kotlin.String)
+    
+    /**
+     * Remove the given third-party identifier from the account.
+     */
+    suspend fun `deleteThirdPartyId`(`address`: kotlin.String, `isEmail`: kotlin.Boolean)
     
     /**
      * Discard a message that never sent: redact its local echo, as the
@@ -3231,6 +3310,18 @@ public interface CoreAppInterface {
      * configuration and one size guard for everything the app fetches.
      */
     suspend fun `fetchGifPreview`(`url`: kotlin.String): kotlin.ByteArray
+    
+    /**
+     * Fetch, and where needed decrypt, the one event a push names, and
+     * say what a notification for it would say — the application's
+     * Android push path. Waits, bounded, for the sessions of a process
+     * the push itself started.
+     *
+     * `None` means nothing should be shown: no session knows the room,
+     * the push rules filtered the event out, it was redacted or is gone,
+     * or it is a call invite, which the calls module rings for.
+     */
+    suspend fun `fetchPushedNotification`(`roomId`: kotlin.String, `eventId`: kotlin.String): FfiPushedNotification?
     
     /**
      * Finish an OAuth 2.0 login with the query string the redirect
@@ -3423,6 +3514,13 @@ public interface CoreAppInterface {
     suspend fun `registerUser`(`username`: kotlin.String, `password`: kotlin.String)
     
     /**
+     * Add the messages the room has loaded to its local search index, so
+     * a search in an encrypted room finds what arrived before the index
+     * existed. Loading more of the history and doing it again covers more.
+     */
+    suspend fun `reindexRoomSearch`(`roomId`: kotlin.String)
+    
+    /**
      * Decline an incoming call.
      */
     suspend fun `rejectCall`(`callId`: kotlin.String)
@@ -3464,6 +3562,12 @@ public interface CoreAppInterface {
      * application's report action does.
      */
     suspend fun `reportEvent`(`roomId`: kotlin.String, `eventId`: kotlin.String, `reason`: kotlin.String?)
+    
+    /**
+     * Ask the homeserver to send a validation link to the given email
+     * address. Passing the previous answer for the same address resends.
+     */
+    suspend fun `requestEmailValidation`(`address`: kotlin.String, `previous`: FfiPendingEmail?): FfiPendingEmail
     
     /**
      * Ask the homeserver to email a password-reset link.
@@ -3892,6 +3996,11 @@ public interface CoreAppInterface {
     suspend fun `stickerPacks`(): List<FfiStickerPack>
     
     /**
+     * The third-party identifiers on the account.
+     */
+    suspend fun `thirdPartyIds`(): FfiThirdPartyIds
+    
+    /**
      * Toggle the given reaction on the given event in the given room.
      */
     suspend fun `toggleReaction`(`roomId`: kotlin.String, `eventId`: kotlin.String, `key`: kotlin.String)
@@ -4129,6 +4238,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Add the pending email address to the account, once its validation
+     * link was opened. `current_password` answers the password stage.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `addPendingEmail`(`pending`: FfiPendingEmail, `currentPassword`: kotlin.String?) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_add_pending_email(
+                uniffiHandle,
+                FfiConverterTypeFfiPendingEmail.lower(`pending`),FfiConverterOptionalString.lower(`currentPassword`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Answer a call with the embedder's answer description.
      */
     @Throws(CoreException::class)
@@ -4226,6 +4361,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Change the account's password. `current_password` answers the
+     * homeserver's password stage, which it asks for as a rule.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `changePassword`(`newPassword`: kotlin.String, `currentPassword`: kotlin.String?) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_change_password(
+                uniffiHandle,
+                FfiConverterString.lower(`newPassword`),FfiConverterOptionalString.lower(`currentPassword`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
     )
     }
 
@@ -4405,6 +4566,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Deactivate the account, keeping its messages, then clean the
+     * session off this device: the homeserver has already forgotten it.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `deactivateAccount`(`currentPassword`: kotlin.String?) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_deactivate_account(
+                uniffiHandle,
+                FfiConverterOptionalString.lower(`currentPassword`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Delete a pack. A state event cannot be removed, so a deleted
      * pack is one with no images — what a redacted pack looks like
      * too — and it stops being enabled everywhere.
@@ -4417,6 +4604,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_delete_image_pack(
                 uniffiHandle,
                 FfiConverterString.lower(`stateKey`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Remove the given third-party identifier from the account.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `deleteThirdPartyId`(`address`: kotlin.String, `isEmail`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_delete_third_party_id(
+                uniffiHandle,
+                FfiConverterString.lower(`address`),FfiConverterBoolean.lower(`isEmail`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -4681,6 +4893,36 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { FfiConverterByteArray.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Fetch, and where needed decrypt, the one event a push names, and
+     * say what a notification for it would say — the application's
+     * Android push path. Waits, bounded, for the sessions of a process
+     * the push itself started.
+     *
+     * `None` means nothing should be shown: no session knows the room,
+     * the push rules filtered the event out, it was redacted or is gone,
+     * or it is a call invite, which the calls module rings for.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `fetchPushedNotification`(`roomId`: kotlin.String, `eventId`: kotlin.String) : FfiPushedNotification? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_fetch_pushed_notification(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeFfiPushedNotification.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
     )
     }
 
@@ -5443,6 +5685,33 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Add the messages the room has loaded to its local search index, so
+     * a search in an encrypted room finds what arrived before the index
+     * existed. Loading more of the history and doing it again covers more.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `reindexRoomSearch`(`roomId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_reindex_room_search(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Decline an incoming call.
      */
     @Throws(CoreException::class)
@@ -5638,6 +5907,31 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         // lift function
         { Unit },
         
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Ask the homeserver to send a validation link to the given email
+     * address. Passing the previous answer for the same address resends.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `requestEmailValidation`(`address`: kotlin.String, `previous`: FfiPendingEmail?) : FfiPendingEmail {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_request_email_validation(
+                uniffiHandle,
+                FfiConverterString.lower(`address`),FfiConverterOptionalTypeFfiPendingEmail.lower(`previous`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiPendingEmail.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -7186,6 +7480,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { FfiConverterSequenceTypeFfiStickerPack.lift(it) },
         // Error FFI converter
         UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The third-party identifiers on the account.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `thirdPartyIds`() : FfiThirdPartyIds {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_third_party_ids(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiThirdPartyIds.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
     )
     }
 
@@ -9973,6 +10291,69 @@ public object FfiConverterTypeFfiOwnedPack: FfiConverterRustBuffer<FfiOwnedPack>
 
 
 /**
+ * An email address whose validation link was sent, waiting to be added.
+ */
+data class FfiPendingEmail (
+    /**
+     * The address.
+     */
+    var `address`: kotlin.String
+    , 
+    /**
+     * The secret this validation session was opened with.
+     */
+    var `clientSecret`: kotlin.String
+    , 
+    /**
+     * The validation session on the homeserver.
+     */
+    var `sid`: kotlin.String
+    , 
+    /**
+     * How many times the email was requested for this address.
+     */
+    var `sendAttempt`: kotlin.UInt
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiPendingEmail: FfiConverterRustBuffer<FfiPendingEmail> {
+    override fun read(buf: ByteBuffer): FfiPendingEmail {
+        return FfiPendingEmail(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiPendingEmail) = (
+            FfiConverterString.allocationSize(value.`address`) +
+            FfiConverterString.allocationSize(value.`clientSecret`) +
+            FfiConverterString.allocationSize(value.`sid`) +
+            FfiConverterUInt.allocationSize(value.`sendAttempt`)
+    )
+
+    override fun write(value: FfiPendingEmail, buf: ByteBuffer) {
+            FfiConverterString.write(value.`address`, buf)
+            FfiConverterString.write(value.`clientSecret`, buf)
+            FfiConverterString.write(value.`sid`, buf)
+            FfiConverterUInt.write(value.`sendAttempt`, buf)
+    }
+}
+
+
+
+/**
  * A room's permission thresholds, flattened the way the application's
  * permissions page lays them out.
  */
@@ -10330,6 +10711,95 @@ public object FfiConverterTypeFfiPublicRoomPage: FfiConverterRustBuffer<FfiPubli
 
 
 /**
+ * What a pushed event says, fetched and decrypted on the device.
+ */
+data class FfiPushedNotification (
+    /**
+     * The name of the room, as the SDK computes it.
+     */
+    var `roomName`: kotlin.String
+    , 
+    /**
+     * The name of the sender, disambiguated with the user ID when another
+     * member shares it, or the localpart when there is none.
+     */
+    var `senderName`: kotlin.String
+    , 
+    /**
+     * The ID of the sender.
+     */
+    var `senderId`: kotlin.String
+    , 
+    /**
+     * Whether our own user sent the event.
+     */
+    var `isOwn`: kotlin.Boolean
+    , 
+    /**
+     * Whether the room is a direct chat.
+     */
+    var `isDirect`: kotlin.Boolean
+    , 
+    /**
+     * What the notification says; the embedder words it.
+     */
+    var `body`: FfiNotificationBody
+    , 
+    /**
+     * When the event was sent, in milliseconds since the Unix epoch;
+     * zero for an invite.
+     */
+    var `timestamp`: kotlin.ULong
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiPushedNotification: FfiConverterRustBuffer<FfiPushedNotification> {
+    override fun read(buf: ByteBuffer): FfiPushedNotification {
+        return FfiPushedNotification(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterTypeFfiNotificationBody.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiPushedNotification) = (
+            FfiConverterString.allocationSize(value.`roomName`) +
+            FfiConverterString.allocationSize(value.`senderName`) +
+            FfiConverterString.allocationSize(value.`senderId`) +
+            FfiConverterBoolean.allocationSize(value.`isOwn`) +
+            FfiConverterBoolean.allocationSize(value.`isDirect`) +
+            FfiConverterTypeFfiNotificationBody.allocationSize(value.`body`) +
+            FfiConverterULong.allocationSize(value.`timestamp`)
+    )
+
+    override fun write(value: FfiPushedNotification, buf: ByteBuffer) {
+            FfiConverterString.write(value.`roomName`, buf)
+            FfiConverterString.write(value.`senderName`, buf)
+            FfiConverterString.write(value.`senderId`, buf)
+            FfiConverterBoolean.write(value.`isOwn`, buf)
+            FfiConverterBoolean.write(value.`isDirect`, buf)
+            FfiConverterTypeFfiNotificationBody.write(value.`body`, buf)
+            FfiConverterULong.write(value.`timestamp`, buf)
+    }
+}
+
+
+
+/**
  * One reaction key on an event, aggregated over its senders.
  */
 data class FfiReaction (
@@ -10596,6 +11066,11 @@ data class FfiRoom (
      * The embedder uses this to keep our own message out of the preview.
      */
     var `latestEventIsOwn`: kotlin.Boolean
+    , 
+    /**
+     * Whether the room is encrypted.
+     */
+    var `isEncrypted`: kotlin.Boolean
     
 ){
     
@@ -10626,6 +11101,7 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
@@ -10643,7 +11119,8 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterOptionalString.allocationSize(value.`topic`) +
             FfiConverterOptionalString.allocationSize(value.`latestEventSender`) +
             FfiConverterOptionalString.allocationSize(value.`latestEventBody`) +
-            FfiConverterBoolean.allocationSize(value.`latestEventIsOwn`)
+            FfiConverterBoolean.allocationSize(value.`latestEventIsOwn`) +
+            FfiConverterBoolean.allocationSize(value.`isEncrypted`)
     )
 
     override fun write(value: FfiRoom, buf: ByteBuffer) {
@@ -10661,6 +11138,7 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterOptionalString.write(value.`latestEventSender`, buf)
             FfiConverterOptionalString.write(value.`latestEventBody`, buf)
             FfiConverterBoolean.write(value.`latestEventIsOwn`, buf)
+            FfiConverterBoolean.write(value.`isEncrypted`, buf)
     }
 }
 
@@ -11352,6 +11830,101 @@ public object FfiConverterTypeFfiStickerPack: FfiConverterRustBuffer<FfiStickerP
     override fun write(value: FfiStickerPack, buf: ByteBuffer) {
             FfiConverterString.write(value.`name`, buf)
             FfiConverterSequenceTypeFfiSticker.write(value.`stickers`, buf)
+    }
+}
+
+
+
+/**
+ * A third-party identifier linked to the account.
+ */
+data class FfiThirdPartyId (
+    /**
+     * The address.
+     */
+    var `address`: kotlin.String
+    , 
+    /**
+     * Whether it is an email address; otherwise a phone number.
+     */
+    var `isEmail`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiThirdPartyId: FfiConverterRustBuffer<FfiThirdPartyId> {
+    override fun read(buf: ByteBuffer): FfiThirdPartyId {
+        return FfiThirdPartyId(
+            FfiConverterString.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiThirdPartyId) = (
+            FfiConverterString.allocationSize(value.`address`) +
+            FfiConverterBoolean.allocationSize(value.`isEmail`)
+    )
+
+    override fun write(value: FfiThirdPartyId, buf: ByteBuffer) {
+            FfiConverterString.write(value.`address`, buf)
+            FfiConverterBoolean.write(value.`isEmail`, buf)
+    }
+}
+
+
+
+/**
+ * The third-party identifiers on the account, and whether the homeserver
+ * lets them change.
+ */
+data class FfiThirdPartyIds (
+    /**
+     * The identifiers.
+     */
+    var `ids`: List<FfiThirdPartyId>
+    , 
+    /**
+     * Whether adding and removing them is allowed.
+     */
+    var `canChange`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiThirdPartyIds: FfiConverterRustBuffer<FfiThirdPartyIds> {
+    override fun read(buf: ByteBuffer): FfiThirdPartyIds {
+        return FfiThirdPartyIds(
+            FfiConverterSequenceTypeFfiThirdPartyId.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiThirdPartyIds) = (
+            FfiConverterSequenceTypeFfiThirdPartyId.allocationSize(value.`ids`) +
+            FfiConverterBoolean.allocationSize(value.`canChange`)
+    )
+
+    override fun write(value: FfiThirdPartyIds, buf: ByteBuffer) {
+            FfiConverterSequenceTypeFfiThirdPartyId.write(value.`ids`, buf)
+            FfiConverterBoolean.write(value.`canChange`, buf)
     }
 }
 
@@ -12812,6 +13385,255 @@ public object FfiConverterTypeFfiMembershipChange: FfiConverterRustBuffer<FfiMem
 
     override fun write(value: FfiMembershipChange, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * What a notification says — the application's `NotificationBody`.
+ */
+sealed class FfiNotificationBody {
+    
+    /**
+     * A text, notice or server notice, with its body.
+     */
+    data class Text(
+        /**
+         * The body, the reply fallback removed.
+         */
+        val `body`: kotlin.String) : FfiNotificationBody()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * An emote, with its body; it reads as the sender followed by the
+     * body.
+     */
+    data class Emote(
+        /**
+         * The body.
+         */
+        val `body`: kotlin.String) : FfiNotificationBody()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * An audio file.
+     */
+    object Audio : FfiNotificationBody()
+    
+    
+    /**
+     * A file.
+     */
+    object File : FfiNotificationBody()
+    
+    
+    /**
+     * An image.
+     */
+    object Image : FfiNotificationBody()
+    
+    
+    /**
+     * A location.
+     */
+    object Location : FfiNotificationBody()
+    
+    
+    /**
+     * A video.
+     */
+    object Video : FfiNotificationBody()
+    
+    
+    /**
+     * A sticker.
+     */
+    object Sticker : FfiNotificationBody()
+    
+    
+    /**
+     * An invite to our own user.
+     */
+    object Invite : FfiNotificationBody()
+    
+    
+    /**
+     * An incoming call announced by an RTC notification, which another
+     * client has to answer.
+     */
+    data class IncomingCall(
+        /**
+         * Whether the call has video.
+         */
+        val `video`: kotlin.Boolean) : FfiNotificationBody()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+
+    
+    
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiNotificationBody : FfiConverterRustBuffer<FfiNotificationBody>{
+    override fun read(buf: ByteBuffer): FfiNotificationBody {
+        return when(buf.getInt()) {
+            1 -> FfiNotificationBody.Text(
+                FfiConverterString.read(buf),
+                )
+            2 -> FfiNotificationBody.Emote(
+                FfiConverterString.read(buf),
+                )
+            3 -> FfiNotificationBody.Audio
+            4 -> FfiNotificationBody.File
+            5 -> FfiNotificationBody.Image
+            6 -> FfiNotificationBody.Location
+            7 -> FfiNotificationBody.Video
+            8 -> FfiNotificationBody.Sticker
+            9 -> FfiNotificationBody.Invite
+            10 -> FfiNotificationBody.IncomingCall(
+                FfiConverterBoolean.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: FfiNotificationBody) = when(value) {
+        is FfiNotificationBody.Text -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`body`)
+            )
+        }
+        is FfiNotificationBody.Emote -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`body`)
+            )
+        }
+        is FfiNotificationBody.Audio -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiNotificationBody.File -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiNotificationBody.Image -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiNotificationBody.Location -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiNotificationBody.Video -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiNotificationBody.Sticker -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiNotificationBody.Invite -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiNotificationBody.IncomingCall -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterBoolean.allocationSize(value.`video`)
+            )
+        }
+    }
+
+    override fun write(value: FfiNotificationBody, buf: ByteBuffer) {
+        when(value) {
+            is FfiNotificationBody.Text -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`body`, buf)
+                Unit
+            }
+            is FfiNotificationBody.Emote -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`body`, buf)
+                Unit
+            }
+            is FfiNotificationBody.Audio -> {
+                buf.putInt(3)
+                Unit
+            }
+            is FfiNotificationBody.File -> {
+                buf.putInt(4)
+                Unit
+            }
+            is FfiNotificationBody.Image -> {
+                buf.putInt(5)
+                Unit
+            }
+            is FfiNotificationBody.Location -> {
+                buf.putInt(6)
+                Unit
+            }
+            is FfiNotificationBody.Video -> {
+                buf.putInt(7)
+                Unit
+            }
+            is FfiNotificationBody.Sticker -> {
+                buf.putInt(8)
+                Unit
+            }
+            is FfiNotificationBody.Invite -> {
+                buf.putInt(9)
+                Unit
+            }
+            is FfiNotificationBody.IncomingCall -> {
+                buf.putInt(10)
+                FfiConverterBoolean.write(value.`video`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
 }
 
@@ -14490,6 +15312,38 @@ public object FfiConverterOptionalTypeFfiInReplyTo: FfiConverterRustBuffer<FfiIn
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeFfiPendingEmail: FfiConverterRustBuffer<FfiPendingEmail?> {
+    override fun read(buf: ByteBuffer): FfiPendingEmail? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiPendingEmail.read(buf)
+    }
+
+    override fun allocationSize(value: FfiPendingEmail?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiPendingEmail.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiPendingEmail?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiPendingEmail.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeFfiProfile: FfiConverterRustBuffer<FfiProfile?> {
     override fun read(buf: ByteBuffer): FfiProfile? {
         if (buf.get().toInt() == 0) {
@@ -14512,6 +15366,38 @@ public object FfiConverterOptionalTypeFfiProfile: FfiConverterRustBuffer<FfiProf
         } else {
             buf.put(1)
             FfiConverterTypeFfiProfile.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiPushedNotification: FfiConverterRustBuffer<FfiPushedNotification?> {
+    override fun read(buf: ByteBuffer): FfiPushedNotification? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiPushedNotification.read(buf)
+    }
+
+    override fun allocationSize(value: FfiPushedNotification?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiPushedNotification.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiPushedNotification?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiPushedNotification.write(value, buf)
         }
     }
 }
@@ -15176,6 +16062,34 @@ public object FfiConverterSequenceTypeFfiStickerPack: FfiConverterRustBuffer<Lis
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeFfiStickerPack.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiThirdPartyId: FfiConverterRustBuffer<List<FfiThirdPartyId>> {
+    override fun read(buf: ByteBuffer): List<FfiThirdPartyId> {
+        val len = buf.getInt()
+        return List<FfiThirdPartyId>(len) {
+            FfiConverterTypeFfiThirdPartyId.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiThirdPartyId>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiThirdPartyId.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiThirdPartyId>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiThirdPartyId.write(it, buf)
         }
     }
 }
