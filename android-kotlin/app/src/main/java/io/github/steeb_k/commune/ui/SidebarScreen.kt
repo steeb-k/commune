@@ -179,12 +179,27 @@ private fun AccountSwitcherSheet(state: CommuneState) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    // A session that could not be restored says why, as
+                    // the GTK switcher's row does, and can be forgotten.
+                    account.error?.let { error ->
+                        Text(
+                            error,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
-                androidx.compose.material3.RadioButton(
-                    selected = account.active,
-                    onClick = { state.switchAccount(account.sessionId) },
-                    enabled = account.ready,
-                )
+                if (account.error != null) {
+                    androidx.compose.material3.TextButton(
+                        onClick = { state.removeSession(account.sessionId) },
+                    ) { Text("Remove", color = MaterialTheme.colorScheme.error) }
+                } else {
+                    androidx.compose.material3.RadioButton(
+                        selected = account.active,
+                        onClick = { state.switchAccount(account.sessionId) },
+                        enabled = account.ready,
+                    )
+                }
             }
         }
         androidx.compose.material3.HorizontalDivider(

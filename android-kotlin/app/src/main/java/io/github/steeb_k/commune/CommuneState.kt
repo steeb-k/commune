@@ -340,6 +340,20 @@ class CommuneState(context: Context) {
     var addingAccount by mutableStateOf(false)
         private set
 
+    /// Forget a session that could not be restored — the GTK account
+    /// switcher's way out of a broken one.
+    fun removeSession(sessionId: String) {
+        thread {
+            runBlocking {
+                try {
+                    app.removeSession(sessionId)
+                } catch (_: Exception) {
+                }
+            }
+            refreshAccounts()
+        }
+    }
+
     fun refreshAccounts() {
         thread {
             val list = app.sessions()
@@ -3771,6 +3785,19 @@ class CommuneState(context: Context) {
     fun setPublicReadReceiptsEnabled(enabled: Boolean) {
         app.setPublicReadReceiptsEnabled(enabled)
         settings = app.sessionSettings()
+    }
+
+    fun setSharePresence(share: Boolean) {
+        thread {
+            runBlocking {
+                try {
+                    app.setSharePresence(share)
+                } catch (_: Exception) {
+                }
+                val fresh = app.sessionSettings()
+                main.post { settings = fresh }
+            }
+        }
     }
 
     fun setUrlPreviewsEnabled(enabled: Boolean) {

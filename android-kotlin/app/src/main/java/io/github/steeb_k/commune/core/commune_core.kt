@@ -941,6 +941,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_kick_user(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_list_devices(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_load_draft(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_login_with_password(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_logout(
@@ -985,6 +987,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_remove_room_avatar(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_remove_room_from_space(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_remove_session(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_rename_device(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_rename_image_pack(
@@ -1026,6 +1030,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_room_server_acl(
 external fun uniffi_commune_core_checksum_method_coreapp_room_upgrade_info(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_rooms(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_save_draft(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_scan_qr(
 ): Short
@@ -1109,6 +1115,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_set_room_permissions_ma
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_set_room_server_acl(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_set_share_presence(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_set_thread_listener(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_set_timeline_listener(
@@ -1144,6 +1152,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_unpin_event(
 external fun uniffi_commune_core_checksum_method_coreapp_upgrade_room(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_url_preview(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_user_presence(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_verification_qr_code(
 ): Short
@@ -1315,6 +1325,8 @@ external fun uniffi_commune_core_fn_method_coreapp_kick_user(`ptr`: Long,`roomId
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_list_devices(`ptr`: Long,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_load_draft(`ptr`: Long,`roomId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_login_with_password(`ptr`: Long,`homeserver`: RustBuffer.ByValue,`username`: RustBuffer.ByValue,`password`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_logout(`ptr`: Long,
@@ -1359,6 +1371,8 @@ external fun uniffi_commune_core_fn_method_coreapp_remove_room_avatar(`ptr`: Lon
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_remove_room_from_space(`ptr`: Long,`roomId`: RustBuffer.ByValue,`spaceId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_remove_session(`ptr`: Long,`sessionId`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_rename_device(`ptr`: Long,`deviceId`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_rename_image_pack(`ptr`: Long,`stateKey`: RustBuffer.ByValue,`name`: RustBuffer.ByValue,
@@ -1401,6 +1415,8 @@ external fun uniffi_commune_core_fn_method_coreapp_room_upgrade_info(`ptr`: Long
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_rooms(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_method_coreapp_save_draft(`ptr`: Long,`roomId`: RustBuffer.ByValue,`text`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_scan_qr(`ptr`: Long,`flowId`: RustBuffer.ByValue,`data`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_search_gifs(`ptr`: Long,`query`: RustBuffer.ByValue,`page`: Int,
@@ -1483,6 +1499,8 @@ external fun uniffi_commune_core_fn_method_coreapp_set_room_permissions_matrix(`
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_room_server_acl(`ptr`: Long,`roomId`: RustBuffer.ByValue,`allow`: RustBuffer.ByValue,`deny`: RustBuffer.ByValue,`allowIpLiterals`: Byte,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_set_share_presence(`ptr`: Long,`share`: Byte,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_set_thread_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`rootEventId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_method_coreapp_set_timeline_listener(`ptr`: Long,`roomId`: RustBuffer.ByValue,`listener`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1519,6 +1537,8 @@ external fun uniffi_commune_core_fn_method_coreapp_upgrade_room(`ptr`: Long,`roo
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_url_preview(`ptr`: Long,`url`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_user_presence(`ptr`: Long,`userId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_method_coreapp_verification_qr_code(`ptr`: Long,`flowId`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_clone_memberlistlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1882,6 +1902,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_list_devices() != 50576.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_load_draft() != 3373.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_login_with_password() != 16278.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1948,6 +1971,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_remove_room_from_space() != 9435.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_remove_session() != 15425.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_rename_device() != 388.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2009,6 +2035,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_rooms() != 14668.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_save_draft() != 19897.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_scan_qr() != 10266.toShort()) {
@@ -2134,6 +2163,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_room_server_acl() != 40907.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_set_share_presence() != 18609.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_set_thread_listener() != 15320.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2186,6 +2218,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_url_preview() != 19226.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_user_presence() != 4819.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_verification_qr_code() != 19264.toShort()) {
@@ -3520,6 +3555,11 @@ public interface CoreAppInterface {
     suspend fun `listDevices`(): List<FfiDevice>
     
     /**
+     * The composer's saved draft for the given room, if any.
+     */
+    suspend fun `loadDraft`(`roomId`: kotlin.String): kotlin.String?
+    
+    /**
      * Log in with a password on the given homeserver.
      */
     suspend fun `loginWithPassword`(`homeserver`: kotlin.String, `username`: kotlin.String, `password`: kotlin.String)
@@ -3648,6 +3688,12 @@ public interface CoreAppInterface {
      * Take the given room back out of the given space.
      */
     suspend fun `removeRoomFromSpace`(`roomId`: kotlin.String, `spaceId`: kotlin.String)
+    
+    /**
+     * Forget a session that could not be restored: its stored secret and
+     * data go, and it leaves the list. A ready session logs out instead.
+     */
+    suspend fun `removeSession`(`sessionId`: kotlin.String)
     
     /**
      * Rename one of the account's sessions.
@@ -3780,6 +3826,12 @@ public interface CoreAppInterface {
      * The rooms of the first ready session, as of now.
      */
     fun `rooms`(): List<FfiRoom>
+    
+    /**
+     * Save the composer's draft for the given room, so it is there when
+     * the room is opened again — the application saves it the same way.
+     */
+    suspend fun `saveDraft`(`roomId`: kotlin.String, `text`: kotlin.String)
     
     /**
      * Feed a scanned QR code into the verification with the given flow
@@ -4043,6 +4095,12 @@ public interface CoreAppInterface {
     suspend fun `setRoomServerAcl`(`roomId`: kotlin.String, `allow`: List<kotlin.String>, `deny`: List<kotlin.String>, `allowIpLiterals`: kotlin.Boolean)
     
     /**
+     * Set whether our own presence is shared with the homeserver, and
+     * tell the homeserver so.
+     */
+    suspend fun `setSharePresence`(`share`: kotlin.Boolean)
+    
+    /**
      * Give the thread rooted at the given event to the given listener,
      * now and on every change. Replaces any previous thread listener.
      */
@@ -4149,6 +4207,11 @@ public interface CoreAppInterface {
      * a message. `None` when it says nothing, or cannot preview at all.
      */
     suspend fun `urlPreview`(`url`: kotlin.String): FfiUrlPreview?
+    
+    /**
+     * The presence of the given user, as far as sync has told us.
+     */
+    fun `userPresence`(`userId`: kotlin.String): FfiUserPresence
     
     /**
      * The QR code to show for the verification with the given flow ID,
@@ -5549,6 +5612,29 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * The composer's saved draft for the given room, if any.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `loadDraft`(`roomId`: kotlin.String) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_load_draft(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
      * Log in with a password on the given homeserver.
      */
     @Throws(CoreException::class)
@@ -6097,6 +6183,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Forget a session that could not be restored: its stored secret and
+     * data go, and it leaves the list. A ready session logs out instead.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `removeSession`(`sessionId`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_remove_session(
+                uniffiHandle,
+                FfiConverterString.lower(`sessionId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Rename one of the account's sessions.
      */
     @Throws(CoreException::class)
@@ -6620,6 +6732,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     )
     }
     
+
+    
+    /**
+     * Save the composer's draft for the given room, so it is there when
+     * the room is opened again — the application saves it the same way.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `saveDraft`(`roomId`: kotlin.String, `text`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_save_draft(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`text`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
     
     /**
@@ -7583,6 +7721,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Set whether our own presence is shared with the homeserver, and
+     * tell the homeserver so.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setSharePresence`(`share`: kotlin.Boolean) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_set_share_presence(
+                uniffiHandle,
+                FfiConverterBoolean.lower(`share`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
      * Give the thread rooted at the given event to the given listener,
      * now and on every change. Replaces any previous thread listener.
      */override fun `setThreadListener`(`roomId`: kotlin.String, `rootEventId`: kotlin.String, `listener`: TimelineListener)
@@ -7979,6 +8143,22 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         UniffiNullRustCallStatusErrorHandler,
     )
     }
+
+    
+    /**
+     * The presence of the given user, as far as sync has told us.
+     */override fun `userPresence`(`userId`: kotlin.String): FfiUserPresence {
+            return FfiConverterTypeFfiUserPresence.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_coreapp_user_presence(
+        it,
+        FfiConverterString.lower(`userId`),_status)
+}
+    }
+    )
+    }
+    
 
     
     /**
@@ -11844,6 +12024,12 @@ data class FfiSessionInfo (
     var `sessionId`: kotlin.String
     , 
     /**
+     * Why the session could not be restored, when it could not; the
+     * application's account switcher shows it on the row.
+     */
+    var `error`: kotlin.String?
+    , 
+    /**
      * The user the session belongs to (empty until it is ready).
      */
     var `userId`: kotlin.String
@@ -11879,6 +12065,7 @@ public object FfiConverterTypeFfiSessionInfo: FfiConverterRustBuffer<FfiSessionI
     override fun read(buf: ByteBuffer): FfiSessionInfo {
         return FfiSessionInfo(
             FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
             FfiConverterBoolean.read(buf),
@@ -11888,6 +12075,7 @@ public object FfiConverterTypeFfiSessionInfo: FfiConverterRustBuffer<FfiSessionI
 
     override fun allocationSize(value: FfiSessionInfo) = (
             FfiConverterString.allocationSize(value.`sessionId`) +
+            FfiConverterOptionalString.allocationSize(value.`error`) +
             FfiConverterString.allocationSize(value.`userId`) +
             FfiConverterString.allocationSize(value.`homeserver`) +
             FfiConverterBoolean.allocationSize(value.`ready`) +
@@ -11896,6 +12084,7 @@ public object FfiConverterTypeFfiSessionInfo: FfiConverterRustBuffer<FfiSessionI
 
     override fun write(value: FfiSessionInfo, buf: ByteBuffer) {
             FfiConverterString.write(value.`sessionId`, buf)
+            FfiConverterOptionalString.write(value.`error`, buf)
             FfiConverterString.write(value.`userId`, buf)
             FfiConverterString.write(value.`homeserver`, buf)
             FfiConverterBoolean.write(value.`ready`, buf)
@@ -11929,6 +12118,11 @@ data class FfiSessionSettings (
      * Whether URL previews are shown under messages in unencrypted rooms.
      */
     var `urlPreviewsEnabled`: kotlin.Boolean
+    , 
+    /**
+     * Whether our own presence is shared with the homeserver.
+     */
+    var `sharePresence`: kotlin.Boolean
     
 ){
     
@@ -11949,6 +12143,7 @@ public object FfiConverterTypeFfiSessionSettings: FfiConverterRustBuffer<FfiSess
             FfiConverterBoolean.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
@@ -11956,7 +12151,8 @@ public object FfiConverterTypeFfiSessionSettings: FfiConverterRustBuffer<FfiSess
             FfiConverterBoolean.allocationSize(value.`notificationsEnabled`) +
             FfiConverterBoolean.allocationSize(value.`publicReadReceiptsEnabled`) +
             FfiConverterBoolean.allocationSize(value.`typingEnabled`) +
-            FfiConverterBoolean.allocationSize(value.`urlPreviewsEnabled`)
+            FfiConverterBoolean.allocationSize(value.`urlPreviewsEnabled`) +
+            FfiConverterBoolean.allocationSize(value.`sharePresence`)
     )
 
     override fun write(value: FfiSessionSettings, buf: ByteBuffer) {
@@ -11964,6 +12160,7 @@ public object FfiConverterTypeFfiSessionSettings: FfiConverterRustBuffer<FfiSess
             FfiConverterBoolean.write(value.`publicReadReceiptsEnabled`, buf)
             FfiConverterBoolean.write(value.`typingEnabled`, buf)
             FfiConverterBoolean.write(value.`urlPreviewsEnabled`, buf)
+            FfiConverterBoolean.write(value.`sharePresence`, buf)
     }
 }
 
@@ -12530,6 +12727,69 @@ public object FfiConverterTypeFfiUrlPreview: FfiConverterRustBuffer<FfiUrlPrevie
             FfiConverterOptionalString.write(value.`description`, buf)
             FfiConverterString.write(value.`siteName`, buf)
             FfiConverterOptionalString.write(value.`imageUrl`, buf)
+    }
+}
+
+
+
+/**
+ * The presence of a user, as sync told us.
+ */
+data class FfiUserPresence (
+    /**
+     * How present the user is.
+     */
+    var `presence`: FfiPresence
+    , 
+    /**
+     * The status message the user set, if any.
+     */
+    var `statusMessage`: kotlin.String?
+    , 
+    /**
+     * How long ago the user was last active, in milliseconds, if known.
+     */
+    var `lastActiveAgo`: kotlin.ULong?
+    , 
+    /**
+     * Whether the user is active right now.
+     */
+    var `currentlyActive`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiUserPresence: FfiConverterRustBuffer<FfiUserPresence> {
+    override fun read(buf: ByteBuffer): FfiUserPresence {
+        return FfiUserPresence(
+            FfiConverterTypeFfiPresence.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiUserPresence) = (
+            FfiConverterTypeFfiPresence.allocationSize(value.`presence`) +
+            FfiConverterOptionalString.allocationSize(value.`statusMessage`) +
+            FfiConverterOptionalULong.allocationSize(value.`lastActiveAgo`) +
+            FfiConverterBoolean.allocationSize(value.`currentlyActive`)
+    )
+
+    override fun write(value: FfiUserPresence, buf: ByteBuffer) {
+            FfiConverterTypeFfiPresence.write(value.`presence`, buf)
+            FfiConverterOptionalString.write(value.`statusMessage`, buf)
+            FfiConverterOptionalULong.write(value.`lastActiveAgo`, buf)
+            FfiConverterBoolean.write(value.`currentlyActive`, buf)
     }
 }
 
@@ -14104,6 +14364,57 @@ public object FfiConverterTypeFfiNotificationBody : FfiConverterRustBuffer<FfiNo
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * How present a user is, as the application's avatar badge shows it.
+ */
+
+enum class FfiPresence {
+    
+    /**
+     * Nothing is known.
+     */
+    UNKNOWN,
+    /**
+     * Online.
+     */
+    ONLINE,
+    /**
+     * Online but away.
+     */
+    UNAVAILABLE,
+    /**
+     * Offline.
+     */
+    OFFLINE;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiPresence: FfiConverterRustBuffer<FfiPresence> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiPresence.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiPresence) = 4UL
+
+    override fun write(value: FfiPresence, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 

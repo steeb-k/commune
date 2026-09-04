@@ -1359,6 +1359,8 @@ pub struct FfiSessionSettings {
     pub typing_enabled: bool,
     /// Whether URL previews are shown under messages in unencrypted rooms.
     pub url_previews_enabled: bool,
+    /// Whether our own presence is shared with the homeserver.
+    pub share_presence: bool,
 }
 
 /// The core, as one object the foreign side holds.
@@ -2121,6 +2123,7 @@ impl CoreApp {
             public_read_receipts_enabled: settings.public_read_receipts_enabled(),
             typing_enabled: settings.typing_enabled(),
             url_previews_enabled: settings.url_previews_enabled(),
+            share_presence: settings.share_presence(),
         })
     }
 
@@ -2162,6 +2165,121 @@ impl CoreApp {
         if let Some(session) = self.first_ready_session() {
             session.settings().set_url_previews_enabled(enabled);
         }
+    }
+
+    /// Set whether our own presence is shared with the homeserver, and
+    /// tell the homeserver so.
+    pub async fn set_share_presence(&self, share: bool) -> Result<(), CoreError> {
+        let session = self.session()?;
+        session.settings().set_share_presence(share);
+
+        RUNTIME
+            .spawn(async move { session.presence_list().share_own_presence(share).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| CoreError::Failed {
+                msg: format!("Could not change presence sharing: {error}"),
+            })
+    }
+
+    /// The presence of the given user, as far as sync has told us.
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "the FFI hands over an owned string"
+    )]
+    pub fn user_presence(&self, user_id: String) -> FfiUserPresence {
+        use crate::session::Presence;
+
+        let Some(session) = self.first_ready_session() else {
+            return FfiUserPresence::default();
+        };
+        let Ok(user_id) = ruma::UserId::parse(&user_id) else {
+            return FfiUserPresence::default();
+        };
+
+        let presence = session.presence_list().get(&user_id);
+        FfiUserPresence {
+            presence: match presence.presence {
+                Presence::Unknown => FfiPresence::Unknown,
+                Presence::Online => FfiPresence::Online,
+                Presence::Unavailable => FfiPresence::Unavailable,
+                Presence::Offline => FfiPresence::Offline,
+            },
+            status_message: presence.status_message,
+            last_active_ago: presence.last_active_ago,
+            currently_active: presence.currently_active,
+        }
+    }
+
+    /// Save the composer's draft for the given room, so it is there when
+    /// the room is opened again — the application saves it the same way.
+    pub async fn save_draft(&self, room_id: String, text: String) -> Result<(), CoreError> {
+        use matrix_sdk::{ComposerDraft, ComposerDraftType};
+
+        let room = self.room(&room_id)?;
+        let matrix_room = room.matrix_room().clone();
+
+        RUNTIME
+            .spawn(async move {
+                if text.trim().is_empty() {
+                    matrix_room.clear_composer_draft(None).await
+                } else {
+                    matrix_room
+                        .save_composer_draft(
+                            ComposerDraft {
+                                plain_text: text,
+                                html_text: None,
+                                draft_type: ComposerDraftType::NewMessage,
+                                attachments: Vec::new(),
+                            },
+                            None,
+                        )
+                        .await
+                }
+            })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| CoreError::Failed {
+                msg: format!("Could not save the draft: {error}"),
+            })
+    }
+
+    /// The composer's saved draft for the given room, if any.
+    pub async fn load_draft(&self, room_id: String) -> Option<String> {
+        let room = self.room(&room_id).ok()?;
+        let matrix_room = room.matrix_room().clone();
+
+        RUNTIME
+            .spawn(async move { matrix_room.load_composer_draft(None).await })
+            .await
+            .expect("task was not aborted")
+            .ok()
+            .flatten()
+            .map(|draft| draft.plain_text)
+            .filter(|text| !text.is_empty())
+    }
+
+    /// Forget a session that could not be restored: its stored secret and
+    /// data go, and it leaves the list. A ready session logs out instead.
+    pub async fn remove_session(&self, session_id: String) -> Result<(), CoreError> {
+        let Some(entry) = self.session_list.get(&session_id) else {
+            return Err(CoreError::Failed {
+                msg: "No such session".to_owned(),
+            });
+        };
+        if entry.session().is_some() {
+            return Err(CoreError::Failed {
+                msg: "The session is running; log out instead".to_owned(),
+            });
+        }
+
+        let stored = entry.info().clone();
+        RUNTIME
+            .spawn(async move { stored.delete().await })
+            .await
+            .expect("task was not aborted");
+        self.session_list.remove(&session_id);
+        Ok(())
     }
 
     /// Give the typing users of the given room to the given listener, now
@@ -3168,7 +3286,16 @@ impl CoreApp {
                         session.user_id().to_string(),
                         session.info().homeserver.to_string(),
                     ),
-                    None => (String::new(), String::new()),
+                    None => (
+                        entry.info().user_id.to_string(),
+                        entry.info().homeserver.to_string(),
+                    ),
+                };
+                let error = match entry {
+                    crate::session_list::SessionEntry::Failed { error, .. } => {
+                        Some(crate::UserFacingError::to_user_facing(error.as_ref()))
+                    }
+                    _ => None,
                 };
                 FfiSessionInfo {
                     session_id: entry.session_id().to_owned(),
@@ -3176,6 +3303,7 @@ impl CoreApp {
                     homeserver,
                     ready,
                     active: active.as_deref() == Some(entry.session_id()),
+                    error,
                 }
             })
             .collect()
@@ -5965,6 +6093,9 @@ pub struct FfiSecurityState {
 pub struct FfiSessionInfo {
     /// The local identifier of the session.
     pub session_id: String,
+    /// Why the session could not be restored, when it could not; the
+    /// application's account switcher shows it on the row.
+    pub error: Option<String>,
     /// The user the session belongs to (empty until it is ready).
     pub user_id: String,
     /// The homeserver the session lives on (empty until it is ready).
@@ -6082,6 +6213,33 @@ impl From<crate::session::NotificationBody> for FfiNotificationBody {
             Body::IncomingCall { video } => Self::IncomingCall { video },
         }
     }
+}
+
+/// How present a user is, as the application's avatar badge shows it.
+#[derive(uniffi::Enum, Clone, Copy, Default)]
+pub enum FfiPresence {
+    /// Nothing is known.
+    #[default]
+    Unknown,
+    /// Online.
+    Online,
+    /// Online but away.
+    Unavailable,
+    /// Offline.
+    Offline,
+}
+
+/// The presence of a user, as sync told us.
+#[derive(uniffi::Record, Default)]
+pub struct FfiUserPresence {
+    /// How present the user is.
+    pub presence: FfiPresence,
+    /// The status message the user set, if any.
+    pub status_message: Option<String>,
+    /// How long ago the user was last active, in milliseconds, if known.
+    pub last_active_ago: Option<u64>,
+    /// Whether the user is active right now.
+    pub currently_active: bool,
 }
 
 /// What the homeserver says about a link, for the card under a message.

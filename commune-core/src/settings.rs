@@ -150,6 +150,14 @@ pub struct StoredSessionSettings {
     )]
     typing_enabled: bool,
 
+    /// Whether our own presence is shared with the homeserver — the
+    /// application's `share-presence` setting.
+    #[serde(
+        default = "ruma::serde::default_true",
+        skip_serializing_if = "ruma::serde::is_true"
+    )]
+    share_presence: bool,
+
     /// Whether URL previews are shown under messages, in rooms that are
     /// not encrypted.
     #[serde(
@@ -209,6 +217,7 @@ impl Default for StoredSessionSettings {
             public_read_receipts_enabled: true,
             typing_enabled: true,
             url_previews_enabled: true,
+            share_presence: true,
             sections_expanded: Default::default(),
             media_previews_enabled: Default::default(),
             invite_avatars_enabled: Default::default(),
@@ -395,6 +404,20 @@ impl SessionSettings {
             return;
         }
         self.write(|s| s.typing_enabled = enabled);
+    }
+
+    /// Whether our own presence is shared with the homeserver.
+    #[must_use]
+    pub fn share_presence(&self) -> bool {
+        self.read(|s| s.share_presence)
+    }
+
+    /// Set whether our own presence is shared with the homeserver.
+    pub fn set_share_presence(&self, share: bool) {
+        if self.share_presence() == share {
+            return;
+        }
+        self.write(|s| s.share_presence = share);
     }
 
     /// Whether URL previews are shown under messages.

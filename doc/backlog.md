@@ -105,13 +105,27 @@ was abandoned). The GTK app is the desktop target and is now a view over
   pinned-events list, notification keywords (add/remove) and per-room mode,
   `set_power_levels`, kick, ban, report event, ignore/unignore.
 
-### Tier 3 — polish (from the audit; RE-VERIFY each)
+### Tier 3 — polish (re-verified against the code 3 Sep)
 
-Waveforms on voice messages, avatar cropping, media-viewer paging, per-room
-drafts, presence on Android (the core has it; the facade does not expose it for
-Kotlin), tombstone banner, verify-a-specific-device, a failed-session page.
-
----
+* **DONE 3 Sep — Per-room drafts.** `save_draft`/`load_draft` on the facade
+  keep the composer's text in the SDK store, as the GTK composer does; the
+  composer loads it on open and saves a moment after typing stops. Verified.
+* **DONE 3 Sep — Presence on Android.** `user_presence` on the facade (the
+  core's `PresenceList`), a badge and the status message on member rows, a
+  "Share Presence" switch (the GTK `share-presence` setting, default on).
+  Verified with bob's status message.
+* **DONE 3 Sep — A failed-session page.** `error` on `FfiSessionInfo` and
+  `remove_session`; the account switcher's row says why a session could not
+  be restored and offers Remove, as the GTK switcher row shows the error.
+  Not exercised (no failed session on the emulator).
+* **NOT PARITY — waveforms on voice messages, media-viewer paging, a
+  tombstone banner, verify-a-specific-device.** The GTK app has none of
+  these either (its audio row draws no waveform, its media viewer shows one
+  item, a tombstoned room only changes category, its session rows show the
+  verified state without a per-device request). They stay as ideas, not
+  gaps.
+* **RE-VERIFY — avatar cropping.** Some cropping code exists in the Kotlin
+  app; nobody has checked it against the GTK avatar editor.
 
 ## B. Desktop / GTK
 
