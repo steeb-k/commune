@@ -2368,6 +2368,34 @@ impl CoreApp {
             .expect("task was not aborted")
     }
 
+    /// Fetch the picture attached to the given timeline item into a file,
+    /// scaled to fit `size`, returning its path.
+    ///
+    /// This is the still a video event carries, as the application's
+    /// history draws it — never a frame of the video. An item without
+    /// one yields `None`.
+    pub async fn get_timeline_media_thumbnail(
+        &self,
+        room_id: String,
+        unique_id: String,
+        size: u32,
+    ) -> Option<String> {
+        let session = self.first_ready_session()?;
+        let room = self.room(&room_id).ok()?;
+
+        RUNTIME
+            .spawn(async move {
+                room.live_timeline()
+                    .media_message(&unique_id)
+                    .await?
+                    .into_thumbnail_file(&session.client(), size)
+                    .await
+                    .map(|path| path.to_string_lossy().into_owned())
+            })
+            .await
+            .expect("task was not aborted")
+    }
+
     /// Fetch the avatar of the given room into a file, returning its path.
     pub async fn get_room_avatar(&self, room_id: String, size: u32) -> Option<String> {
         let session = self.first_ready_session()?;
@@ -5317,6 +5345,36 @@ impl CoreApp {
 
         crate::matrix::media::MediaMessage::from_message(&message.content.msgtype)?
             .into_file(&session.client())
+            .await
+            .map(|path| path.to_string_lossy().into_owned())
+    }
+
+    /// Fetch the picture attached to the given media-history event into
+    /// a file, scaled to fit `size`, returning its path.
+    ///
+    /// This is the still a video event carries, as the application's
+    /// media history draws it — never a frame of the video. An event
+    /// without one yields `None`.
+    pub async fn get_history_media_thumbnail(
+        &self,
+        room_id: String,
+        event_id: String,
+        size: u32,
+    ) -> Option<String> {
+        let session = self.first_ready_session()?;
+        let room = self.room(&room_id).ok()?;
+        let event_id = ruma::EventId::parse(&event_id).ok()?;
+
+        let matrix_room = room.matrix_room().clone();
+        let event = RUNTIME
+            .spawn(async move { matrix_room.event(&event_id, None).await })
+            .await
+            .expect("task was not aborted")
+            .ok()?;
+        let message = crate::matrix::original_message_event_from_raw(event.raw())?;
+
+        crate::matrix::media::MediaMessage::from_message(&message.content.msgtype)?
+            .into_thumbnail_file(&session.client(), size)
             .await
             .map(|path| path.to_string_lossy().into_owned())
     }

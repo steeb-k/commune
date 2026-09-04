@@ -151,6 +151,54 @@ impl MediaMessage {
 
         get_media_file(client, request).await
     }
+
+    /// The source of the still picture the sender attached to this media,
+    /// if any: the `thumbnail_source` of its info.
+    ///
+    /// This is what the application's history viewer draws for a video
+    /// (`VisualMediaMessage::thumbnail`): the picture the event carries,
+    /// never a frame of the video, which would mean fetching the video.
+    #[must_use]
+    pub fn thumbnail_source(&self) -> Option<MediaSource> {
+        match self {
+            Self::Image(c) => c.info.as_deref()?.thumbnail_source.clone(),
+            Self::Video(c) => c.info.as_deref()?.thumbnail_source.clone(),
+            Self::Sticker(c) => c.info.thumbnail_source.clone(),
+            Self::Audio(_) | Self::File(_) => None,
+        }
+    }
+
+    /// Fetch the picture the sender attached to this media into a file,
+    /// scaled by the media repo to fit `size` when it can, returning the
+    /// path.
+    ///
+    /// The application's `ThumbnailDownloader` asks the media repo for a
+    /// scaled copy of a plain source, since it cannot scale an encrypted
+    /// one, and falls back to the whole source; so does this. A media
+    /// without an attached picture yields `None`, as the application
+    /// leaves its placeholder.
+    pub async fn into_thumbnail_file(self, client: &Client, size: u32) -> Option<PathBuf> {
+        let source = self.thumbnail_source()?;
+
+        if !matches!(source, MediaSource::Encrypted(_)) {
+            let request = MediaRequestParameters {
+                source: source.clone(),
+                format: MediaFormat::Thumbnail(MediaThumbnailSettings::new(
+                    UInt::from(size),
+                    UInt::from(size),
+                )),
+            };
+            if let Some(path) = get_media_file(client, request).await {
+                return Some(path);
+            }
+        }
+
+        let request = MediaRequestParameters {
+            source,
+            format: MediaFormat::File,
+        };
+        get_media_file(client, request).await
+    }
 }
 
 impl From<AudioMessageEventContent> for MediaMessage {
