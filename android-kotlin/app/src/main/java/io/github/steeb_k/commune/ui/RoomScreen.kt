@@ -147,10 +147,13 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
 @Composable
 private fun AttachmentPreviewDialog(state: CommuneState) {
     val pending = state.pendingAttachment ?: return
+    val remaining = state.remainingAttachments
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = { state.cancelPendingAttachment() },
-        title = { Text("Send File?") },
+        title = {
+            Text(if (remaining > 0) "Send File? (${remaining + 1} picked)" else "Send File?")
+        },
         text = {
             Column {
                 if (pending.mime.startsWith("image/")) {
@@ -175,9 +178,18 @@ private fun AttachmentPreviewDialog(state: CommuneState) {
             }
         },
         confirmButton = {
-            androidx.compose.material3.TextButton(
-                onClick = { state.confirmPendingAttachment() },
-            ) { Text("Send") }
+            Row {
+                // With more behind this one, the GTK dialog offers to send
+                // them all rather than ask about each.
+                if (remaining > 0) {
+                    androidx.compose.material3.TextButton(
+                        onClick = { state.confirmPendingAttachment(all = true) },
+                    ) { Text("Send All (${remaining + 1})") }
+                }
+                androidx.compose.material3.TextButton(
+                    onClick = { state.confirmPendingAttachment() },
+                ) { Text("Send") }
+            }
         },
         dismissButton = {
             androidx.compose.material3.TextButton(

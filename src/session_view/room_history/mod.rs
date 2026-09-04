@@ -777,6 +777,9 @@ mod imp {
                 gio::File::static_type(),
                 gdk::DragAction::COPY | gdk::DragAction::MOVE,
             );
+            // A drop of several files arrives as a list; one file still
+            // arrives on its own.
+            target.set_types(&[gdk::FileList::static_type(), gio::File::static_type()]);
 
             target.connect_drop(clone!(
                 #[weak(rename_to = imp)]
@@ -784,6 +787,17 @@ mod imp {
                 #[upgrade_or]
                 false,
                 move |_, value, _, _| {
+                    if let Ok(list) = value.get::<gdk::FileList>() {
+                        let files = list.files();
+                        if files.is_empty() {
+                            return false;
+                        }
+                        spawn!(async move {
+                            imp.message_toolbar.send_files(files).await;
+                        });
+                        return true;
+                    }
+
                     match value.get::<gio::File>() {
                         Ok(file) => {
                             spawn!(async move {

@@ -35,7 +35,7 @@ mod voice_recorder;
 
 pub(crate) use self::composer_state::{ComposerState, MessageEventSource, RelationInfo};
 use self::{
-    attachment_dialog::AttachmentDialog,
+    attachment_dialog::{AttachmentDialog, AttachmentResponse},
     completion::CompletionPopover,
     composer_parser::ComposerParser,
     sticker_picker::StickerPicker,
@@ -105,6 +105,19 @@ impl MessageToolbarPage {
             _ => panic!("Unknown MessageToolbarPage: {name}"),
         }
     }
+}
+
+/// How sending one file of a batch ended.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SendOutcome {
+    /// Sent; the next file is previewed.
+    Sent,
+    /// Sent, and the rest go without a preview.
+    SentAll,
+    /// Could not be read; the next file is still previewed.
+    Failed,
+    /// The person cancelled; the rest are dropped.
+    Cancelled,
 }
 
 mod imp {
@@ -1386,17 +1399,22 @@ mod imp {
 
             let obj = self.obj();
             let dialog = gtk::FileDialog::builder()
-                .title(gettext("Select File"))
+                .title(gettext("Select Files"))
                 .modal(true)
                 .accept_label(gettext("Select"))
                 .build();
 
+            // Several at once: a message per file, in the order they were
+            // picked, as every client sends a batch of photos.
             match dialog
-                .open_future(obj.root().and_downcast_ref::<gtk::Window>())
+                .open_multiple_future(obj.root().and_downcast_ref::<gtk::Window>())
                 .await
             {
-                Ok(file) => {
-                    self.send_file_inner(file).await;
+                Ok(files) => {
+                    let files = (0..files.n_items())
+                        .filter_map(|position| files.item(position).and_downcast::<gio::File>())
+                        .collect::<Vec<_>>();
+                    self.send_files_inner(files).await;
                 }
                 Err(error) => {
                     if error.matches(gtk::DialogError::Dismissed) {
@@ -1410,10 +1428,12 @@ mod imp {
         }
 
         /// Send the given file.
-        ///
-        /// Shows a preview of the file first, if possible, and asks the user to
-        /// confirm the action.
         pub(super) async fn send_file(&self, file: gio::File) {
+            self.send_files(vec![file]).await;
+        }
+
+        /// Send the given files, one message each, in order.
+        pub(super) async fn send_files(&self, files: Vec<gio::File>) {
             let Some(_send_guard) = self.send_guard.try_lock() else {
                 return;
             };
@@ -1421,10 +1441,38 @@ mod imp {
                 return;
             }
 
-            self.send_file_inner(file).await;
+            self.send_files_inner(files).await;
         }
 
-        async fn send_file_inner(&self, file: gio::File) {
+        /// Send the given files, previewing each in turn until the person
+        /// sends them all in one go, and stopping at the first cancel.
+        ///
+        /// Each upload is awaited before the next is previewed, so the
+        /// messages land in the order the files were picked.
+        async fn send_files_inner(&self, files: Vec<gio::File>) {
+            let total = files.len();
+            let mut ask = true;
+
+            for (position, file) in files.into_iter().enumerate() {
+                let remaining = total - position - 1;
+                match self.send_file_inner(file, remaining, ask).await {
+                    SendOutcome::Cancelled => break,
+                    SendOutcome::SentAll => ask = false,
+                    SendOutcome::Sent | SendOutcome::Failed => {}
+                }
+            }
+        }
+
+        /// Send the given file, after previewing it when `ask` is set.
+        ///
+        /// `remaining` is how many files wait behind this one; the preview
+        /// offers to send them all with it.
+        async fn send_file_inner(
+            &self,
+            file: gio::File,
+            remaining: usize,
+            ask: bool,
+        ) -> SendOutcome {
             let obj = self.obj();
 
             #[cfg(target_os = "macos")]
@@ -1435,7 +1483,7 @@ mod imp {
                 Err(error) => {
                     warn!("Could not read file info: {error}");
                     toast!(obj, gettext("Error reading file"));
-                    return;
+                    return SendOutcome::Failed;
                 }
             };
 
@@ -1459,7 +1507,7 @@ mod imp {
                     Err(error) => {
                         warn!("Could not read file: {error}");
                         toast!(obj, gettext("Error reading file"));
-                        return;
+                        return SendOutcome::Failed;
                     }
                 };
 
@@ -1479,17 +1527,23 @@ mod imp {
                     Err(error) => {
                         warn!("Could not copy the file to a temporary file: {error}");
                         toast!(obj, gettext("Error reading file"));
-                        return;
+                        return SendOutcome::Failed;
                     }
                 }
             };
             let file = source_file.as_gfile();
 
-            let dialog = AttachmentDialog::new(&file_info.filename);
-            dialog.set_file(file.clone(), file_info.mime.type_().as_str().into());
+            let mut send_all = false;
+            if ask {
+                let dialog = AttachmentDialog::new(&file_info.filename);
+                dialog.set_file(file.clone(), file_info.mime.type_().as_str().into());
+                dialog.set_remaining(remaining);
 
-            if dialog.response_future(&*obj).await != gtk::ResponseType::Ok {
-                return;
+                match dialog.queue_response_future(&*obj).await {
+                    AttachmentResponse::Cancel => return SendOutcome::Cancelled,
+                    AttachmentResponse::SendAll => send_all = true,
+                    AttachmentResponse::Send => {}
+                }
             }
 
             let size = file_info.size.map(Into::into);
@@ -1517,6 +1571,12 @@ mod imp {
 
             self.send_attachment(source, file_info.mime, info, thumbnail)
                 .await;
+
+            if send_all {
+                SendOutcome::SentAll
+            } else {
+                SendOutcome::Sent
+            }
         }
 
         /// Read the file data from the clipboard and send it.
@@ -1762,6 +1822,11 @@ impl MessageToolbar {
     /// confirm the action.
     pub(crate) async fn send_file(&self, file: gio::File) {
         self.imp().send_file(file).await;
+    }
+
+    /// Send the given files, one message each, in order.
+    pub(crate) async fn send_files(&self, files: Vec<gio::File>) {
+        self.imp().send_files(files).await;
     }
 
     /// Handle a paste action.

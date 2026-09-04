@@ -3,9 +3,20 @@ use gtk::{gdk, gio, glib, glib::clone};
 
 use crate::{
     components::{ContentType, MediaContentViewer},
-    spawn,
+    gettext_f, spawn,
     utils::OneshotNotifier,
 };
+
+/// What the person decided about the attachment being previewed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum AttachmentResponse {
+    /// Send this one, and ask again about the next.
+    Send,
+    /// Send this one and every one waiting behind it, without asking.
+    SendAll,
+    /// Send nothing, this one included.
+    Cancel,
+}
 
 mod imp {
     use std::cell::OnceCell;
@@ -22,8 +33,12 @@ mod imp {
         #[template_child]
         send_button: TemplateChild<gtk::Button>,
         #[template_child]
+        send_all_button: TemplateChild<gtk::Button>,
+        #[template_child]
         media: TemplateChild<MediaContentViewer>,
-        notifier: OnceCell<OneshotNotifier<Option<()>>>,
+        /// The answer, once given: whether everything waiting is to be
+        /// sent too.
+        notifier: OnceCell<OneshotNotifier<Option<bool>>>,
     }
 
     #[glib::object_subclass]
@@ -73,11 +88,25 @@ mod imp {
         /// Set whether this dialog is loading.
         fn set_loading(&self, loading: bool) {
             self.send_button.set_sensitive(!loading);
+            self.send_all_button.set_sensitive(!loading);
             self.grab_focus();
         }
 
+        /// Say how many files wait behind this one. With any, the person
+        /// can send them all in one go rather than be asked about each.
+        pub(super) fn set_remaining(&self, remaining: usize) {
+            let total = remaining + 1;
+            self.send_all_button.set_label(&gettext_f(
+                // Translators: Do NOT translate the content between '{' and
+                // '}', this is a variable name.
+                "Send All ({n})",
+                &[("n", &total.to_string())],
+            ));
+            self.send_all_button.set_visible(remaining > 0);
+        }
+
         /// The notifier to send the response.
-        fn notifier(&self) -> &OneshotNotifier<Option<()>> {
+        fn notifier(&self) -> &OneshotNotifier<Option<bool>> {
             self.notifier
                 .get_or_init(|| OneshotNotifier::new("AttachmentDialog"))
         }
@@ -103,8 +132,32 @@ mod imp {
         /// Emit the signal that the user wants to send the attachment.
         #[template_callback]
         fn send(&self) {
-            self.notifier().notify_value(Some(()));
+            self.notifier().notify_value(Some(false));
             self.obj().close();
+        }
+
+        /// Emit the signal that the user wants to send this attachment and
+        /// every one waiting behind it.
+        #[template_callback]
+        fn send_all(&self) {
+            self.notifier().notify_value(Some(true));
+            self.obj().close();
+        }
+
+        /// Present the dialog and wait for the user to select a response.
+        pub(super) async fn queue_response_future(
+            &self,
+            parent: &gtk::Widget,
+        ) -> AttachmentResponse {
+            let receiver = self.notifier().listen();
+
+            self.obj().present(Some(parent));
+
+            match receiver.await {
+                Some(true) => AttachmentResponse::SendAll,
+                Some(false) => AttachmentResponse::Send,
+                None => AttachmentResponse::Cancel,
+            }
         }
 
         /// Present the dialog and wait for the user to select a response.
@@ -112,14 +165,9 @@ mod imp {
         /// The response is [`gtk::ResponseType::Ok`] if the user clicked on
         /// send, otherwise it is [`gtk::ResponseType::Cancel`].
         pub(super) async fn response_future(&self, parent: &gtk::Widget) -> gtk::ResponseType {
-            let receiver = self.notifier().listen();
-
-            self.obj().present(Some(parent));
-
-            if receiver.await.is_some() {
-                gtk::ResponseType::Ok
-            } else {
-                gtk::ResponseType::Cancel
+            match self.queue_response_future(parent).await {
+                AttachmentResponse::Send | AttachmentResponse::SendAll => gtk::ResponseType::Ok,
+                AttachmentResponse::Cancel => gtk::ResponseType::Cancel,
             }
         }
     }
@@ -167,6 +215,21 @@ impl AttachmentDialog {
     /// Create an attachment dialog to preview and send a location.
     pub(crate) fn set_location(&self, geo_uri: &geo_uri::GeoUri) {
         self.imp().set_location(geo_uri);
+    }
+
+    /// Say how many files wait behind this one, so the person can send
+    /// them all at once.
+    pub(super) fn set_remaining(&self, remaining: usize) {
+        self.imp().set_remaining(remaining);
+    }
+
+    /// Present the dialog and wait for the user to select a response,
+    /// which says whether the files waiting behind this one go too.
+    pub(super) async fn queue_response_future(
+        &self,
+        parent: &impl IsA<gtk::Widget>,
+    ) -> AttachmentResponse {
+        self.imp().queue_response_future(parent.upcast_ref()).await
     }
 
     /// Present the dialog and wait for the user to select a response.

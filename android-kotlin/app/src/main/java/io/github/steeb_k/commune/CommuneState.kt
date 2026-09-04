@@ -2723,41 +2723,87 @@ class CommuneState(context: Context) {
     }
 
     fun sendAttachmentFromUri(uri: android.net.Uri) {
-        val room = openRoom ?: return
+        queueAttachmentsFromUris(listOf(uri))
+    }
+
+    /// Copy the picked files under the cache and queue them for the open
+    /// room: the first is previewed, the rest wait behind it, each to be
+    /// its own message in the order picked — the GTK toolbar's batch.
+    fun queueAttachmentsFromUris(uris: List<android.net.Uri>) {
+        if (openRoom == null) return
         val resolver = appContext.contentResolver
-        val mime = resolver.getType(uri) ?: "application/octet-stream"
 
         thread {
-            try {
-                var name = "attachment"
-                resolver.query(uri, null, null, null, null)?.use { cursor ->
-                    val index =
-                        cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                    if (index >= 0 && cursor.moveToFirst()) {
-                        name = cursor.getString(index) ?: name
+            val picked = mutableListOf<PendingAttachment>()
+            for (uri in uris) {
+                try {
+                    val mime = resolver.getType(uri) ?: "application/octet-stream"
+                    var name = "attachment"
+                    resolver.query(uri, null, null, null, null)?.use { cursor ->
+                        val index =
+                            cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (index >= 0 && cursor.moveToFirst()) {
+                            name = cursor.getString(index) ?: name
+                        }
                     }
-                }
 
-                val dir = java.io.File(appContext.cacheDir, "outgoing")
-                dir.mkdirs()
-                val file = java.io.File(dir, name)
-                resolver.openInputStream(uri)?.use { input ->
-                    file.outputStream().use { output -> input.copyTo(output) }
-                } ?: return@thread
+                    val dir = java.io.File(appContext.cacheDir, "outgoing")
+                    dir.mkdirs()
+                    // Two picks with one name must not overwrite each other
+                    // while both wait in the queue.
+                    var file = java.io.File(dir, name)
+                    var attempt = 1
+                    while (file.exists() || picked.any { it.path == file.absolutePath }) {
+                        file = java.io.File(dir, "${attempt++}-$name")
+                    }
+                    resolver.openInputStream(uri)?.use { input ->
+                        file.outputStream().use { output -> input.copyTo(output) }
+                    } ?: continue
 
-                // Show the preview first; sending is its confirm.
-                main.post {
-                    pendingAttachment = PendingAttachment(
+                    picked += PendingAttachment(
                         path = file.absolutePath,
                         name = name,
                         mime = mime,
                         size = file.length(),
                     )
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not read the file"))
                 }
-            } catch (e: Exception) {
-                toast(coreMessage(e, "Could not read the file"))
+            }
+
+            // Show the preview first; sending is its confirm.
+            main.post {
+                attachmentQueue = attachmentQueue + picked
+                pendingAttachment = attachmentQueue.firstOrNull()
             }
         }
+    }
+
+    /// Files shared from another app, waiting for a room when none is open.
+    var pendingShare by mutableStateOf<List<android.net.Uri>>(emptyList())
+        private set
+
+    /// Take files shared from another app: into the open room, or into the
+    /// room picked next.
+    fun receiveShare(uris: List<android.net.Uri>) {
+        if (openRoom != null) {
+            queueAttachmentsFromUris(uris)
+        } else {
+            pendingShare = uris
+        }
+    }
+
+    /// The room the shared files go to.
+    fun shareTo(roomId: String) {
+        val uris = pendingShare
+        pendingShare = emptyList()
+        val room = rooms.find { it.roomId == roomId } ?: return
+        openRoom(room)
+        queueAttachmentsFromUris(uris)
+    }
+
+    fun cancelShare() {
+        pendingShare = emptyList()
     }
 
     fun sendInThread(body: String) {
@@ -3868,9 +3914,17 @@ class CommuneState(context: Context) {
         }
     }
 
-    /// The pending attachment preview: picked, not yet sent.
+    /// The pending attachment preview: picked, not yet sent — the first of
+    /// the queue.
     var pendingAttachment by mutableStateOf<PendingAttachment?>(null)
         private set
+
+    /// Everything picked and not yet sent, the previewed one first.
+    private var attachmentQueue by mutableStateOf<List<PendingAttachment>>(emptyList())
+
+    /// How many files wait behind the previewed one.
+    val remainingAttachments: Int
+        get() = (attachmentQueue.size - 1).coerceAtLeast(0)
 
     data class PendingAttachment(
         val path: String,
@@ -3879,20 +3933,29 @@ class CommuneState(context: Context) {
         val size: Long,
     )
 
-    fun confirmPendingAttachment() {
-        val pending = pendingAttachment ?: return
+    /// Send the previewed file, or with `all` every file waiting behind it
+    /// too, in order — each awaited before the next so the messages land
+    /// in the order the files were picked.
+    fun confirmPendingAttachment(all: Boolean = false) {
         val room = openRoom ?: return
-        pendingAttachment = null
+        val batch = if (all) attachmentQueue else attachmentQueue.take(1)
+        if (batch.isEmpty()) return
+        attachmentQueue = attachmentQueue.drop(batch.size)
+        pendingAttachment = attachmentQueue.firstOrNull()
         thread {
-            try {
-                runBlocking { app.sendAttachment(room.roomId, pending.path, pending.mime) }
-            } catch (e: Exception) {
-                toast(coreMessage(e, "Could not send the file"))
+            for (pending in batch) {
+                try {
+                    runBlocking { app.sendAttachment(room.roomId, pending.path, pending.mime) }
+                } catch (e: Exception) {
+                    toast(coreMessage(e, "Could not send the file"))
+                }
             }
         }
     }
 
+    /// Drop the previewed file and everything waiting behind it.
     fun cancelPendingAttachment() {
+        attachmentQueue = emptyList()
         pendingAttachment = null
     }
 
