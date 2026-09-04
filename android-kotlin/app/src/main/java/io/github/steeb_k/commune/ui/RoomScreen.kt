@@ -1114,24 +1114,72 @@ internal fun MessageBubble(
                     AudioBubblePlayer(state, event.uniqueId)
                 }
                 if (mediaKind == FfiMediaKind.VIDEO) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .padding(bottom = 4.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .clickable { state.openMediaPlayer(event.uniqueId) }
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                    ) {
-                        Icon(
-                            androidx.compose.ui.res.painterResource(
-                                io.github.steeb_k.commune.R.drawable.ic_play_symbolic
-                            ),
-                            contentDescription = "Play",
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                        Spacer(Modifier.size(8.dp))
-                        Text("Play video", style = MaterialTheme.typography.bodyMedium)
+                    // The still the event carries, with the play button
+                    // over it, as the GTK history shows a video; a video
+                    // without one keeps the plain button. The video itself
+                    // is fetched only when it is played.
+                    var poster by remember(event.uniqueId) {
+                        mutableStateOf<String?>(null)
+                    }
+                    LaunchedEffect(event.uniqueId) {
+                        poster = try {
+                            state.app.getTimelineMediaThumbnail(room.roomId, event.uniqueId, 720u)
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
+                    val posterPath = poster
+                    if (posterPath != null) {
+                        Box(
+                            modifier = Modifier
+                                .padding(bottom = 4.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { state.openMediaPlayer(event.uniqueId) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            MediaImage(
+                                posterPath,
+                                contentDescription = event.body,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 420.dp),
+                                targetSizePx = 720,
+                            )
+                            Icon(
+                                androidx.compose.ui.res.painterResource(
+                                    io.github.steeb_k.commune.R.drawable.ic_play_symbolic
+                                ),
+                                contentDescription = "Play",
+                                tint = androidx.compose.ui.graphics.Color.White,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)
+                                    )
+                                    .padding(12.dp),
+                            )
+                        }
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .padding(bottom = 4.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clickable { state.openMediaPlayer(event.uniqueId) }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                        ) {
+                            Icon(
+                                androidx.compose.ui.res.painterResource(
+                                    io.github.steeb_k.commune.R.drawable.ic_play_symbolic
+                                ),
+                                contentDescription = "Play",
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                            Spacer(Modifier.size(8.dp))
+                            Text("Play video", style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                 }
                 if (mediaKind == FfiMediaKind.IMAGE) {

@@ -307,8 +307,20 @@ private fun MediaCell(
     selected: Set<String>,
     toggle: (String) -> Unit,
 ) {
-    val path = state.historyMedia[event.eventId]
-    LaunchedEffect(event.eventId) { state.fetchHistoryMedia(event.eventId) }
+    // A picture fetches itself; a video shows the still it carries, as the
+    // GTK media history does, and never the video.
+    val path = if (event.isVideo) {
+        state.historyThumbnails[event.eventId]
+    } else {
+        state.historyMedia[event.eventId]
+    }
+    LaunchedEffect(event.eventId) {
+        if (event.isVideo) {
+            state.fetchHistoryThumbnail(event.eventId)
+        } else {
+            state.fetchHistoryMedia(event.eventId)
+        }
+    }
     val isSelected = event.eventId in selected
 
     Box(
@@ -339,20 +351,25 @@ private fun MediaCell(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        when {
-            event.isVideo -> Icon(
-                painterResource(R.drawable.ic_play_symbolic),
-                contentDescription = event.body,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(36.dp),
-            )
-
-            path != null -> MediaImage(
+        if (path != null) {
+            MediaImage(
                 path,
                 contentDescription = event.body,
                 modifier = Modifier.fillMaxSize(),
                 targetSizePx = 360,
                 fill = true,
+            )
+        }
+        if (event.isVideo) {
+            Icon(
+                painterResource(R.drawable.ic_play_symbolic),
+                contentDescription = event.body,
+                tint = if (path != null) {
+                    androidx.compose.ui.graphics.Color.White
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.size(36.dp),
             )
         }
         if (isSelected) {

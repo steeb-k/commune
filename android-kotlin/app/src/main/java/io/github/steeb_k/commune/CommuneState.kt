@@ -1144,6 +1144,25 @@ class CommuneState(context: Context) {
         }
     }
 
+    /// The pictures video events carry, by event ID, once fetched; an
+    /// event without one is remembered as absent so it is not asked twice.
+    val historyThumbnails = mutableStateMapOf<String, String?>()
+
+    fun fetchHistoryThumbnail(eventId: String) {
+        val room = openRoom ?: return
+        if (historyThumbnails.containsKey(eventId)) return
+        thread {
+            runBlocking {
+                val path = try {
+                    app.getHistoryMediaThumbnail(room.roomId, eventId, 360u)
+                } catch (_: Exception) {
+                    null
+                }
+                main.post { historyThumbnails[eventId] = path }
+            }
+        }
+    }
+
     // The public room directory — the GTK Explore page.
     var exploreOpen by mutableStateOf(false)
         private set

@@ -915,11 +915,15 @@ external fun uniffi_commune_core_checksum_method_coreapp_get_avatar(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_get_history_media(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_get_history_media_thumbnail(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_get_mxc_media(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_get_room_avatar(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_get_timeline_media(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_get_timeline_media_thumbnail(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_hangup_call(
 ): Short
@@ -1299,11 +1303,15 @@ external fun uniffi_commune_core_fn_method_coreapp_get_avatar(`ptr`: Long,`mxcUr
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_history_media(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_get_history_media_thumbnail(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,`size`: Int,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_mxc_media(`ptr`: Long,`mxc`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_room_avatar(`ptr`: Long,`roomId`: RustBuffer.ByValue,`size`: Int,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_get_timeline_media(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_get_timeline_media_thumbnail(`ptr`: Long,`roomId`: RustBuffer.ByValue,`uniqueId`: RustBuffer.ByValue,`size`: Int,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_hangup_call(`ptr`: Long,`callId`: RustBuffer.ByValue,
 ): Long
@@ -1863,6 +1871,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_history_media() != 7757.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_get_history_media_thumbnail() != 22101.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_mxc_media() != 5652.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1870,6 +1881,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_get_timeline_media() != 55281.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_get_timeline_media_thumbnail() != 57405.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_hangup_call() != 10141.toShort()) {
@@ -3478,6 +3492,16 @@ public interface CoreAppInterface {
     suspend fun `getHistoryMedia`(`roomId`: kotlin.String, `eventId`: kotlin.String): kotlin.String?
     
     /**
+     * Fetch the picture attached to the given media-history event into
+     * a file, scaled to fit `size`, returning its path.
+     *
+     * This is the still a video event carries, as the application's
+     * media history draws it — never a frame of the video. An event
+     * without one yields `None`.
+     */
+    suspend fun `getHistoryMediaThumbnail`(`roomId`: kotlin.String, `eventId`: kotlin.String, `size`: kotlin.UInt): kotlin.String?
+    
+    /**
      * Fetch the media behind a plain `mxc:` URI into a file, returning
      * its path — sticker previews, mostly.
      */
@@ -3497,6 +3521,16 @@ public interface CoreAppInterface {
      * now.
      */
     suspend fun `getTimelineMedia`(`roomId`: kotlin.String, `uniqueId`: kotlin.String): kotlin.String?
+    
+    /**
+     * Fetch the picture attached to the given timeline item into a file,
+     * scaled to fit `size`, returning its path.
+     *
+     * This is the still a video event carries, as the application's
+     * history draws it — never a frame of the video. An item without
+     * one yields `None`.
+     */
+    suspend fun `getTimelineMediaThumbnail`(`roomId`: kotlin.String, `uniqueId`: kotlin.String, `size`: kotlin.UInt): kotlin.String?
     
     /**
      * Hang up a call that was placed or answered.
@@ -5304,6 +5338,34 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
 
     
     /**
+     * Fetch the picture attached to the given media-history event into
+     * a file, scaled to fit `size`, returning its path.
+     *
+     * This is the still a video event carries, as the application's
+     * media history draws it — never a frame of the video. An event
+     * without one yields `None`.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getHistoryMediaThumbnail`(`roomId`: kotlin.String, `eventId`: kotlin.String, `size`: kotlin.UInt) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_get_history_media_thumbnail(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`eventId`),FfiConverterUInt.lower(`size`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
      * Fetch the media behind a plain `mxc:` URI into a file, returning
      * its path — sticker previews, mostly.
      */
@@ -5365,6 +5427,34 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
             UniffiLib.uniffi_commune_core_fn_method_coreapp_get_timeline_media(
                 uniffiHandle,
                 FfiConverterString.lower(`roomId`),FfiConverterString.lower(`uniqueId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Fetch the picture attached to the given timeline item into a file,
+     * scaled to fit `size`, returning its path.
+     *
+     * This is the still a video event carries, as the application's
+     * history draws it — never a frame of the video. An item without
+     * one yields `None`.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getTimelineMediaThumbnail`(`roomId`: kotlin.String, `uniqueId`: kotlin.String, `size`: kotlin.UInt) : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_get_timeline_media_thumbnail(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`uniqueId`),FfiConverterUInt.lower(`size`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
