@@ -150,6 +150,14 @@ pub struct StoredSessionSettings {
     )]
     typing_enabled: bool,
 
+    /// Whether URL previews are shown under messages, in rooms that are
+    /// not encrypted.
+    #[serde(
+        default = "ruma::serde::default_true",
+        skip_serializing_if = "ruma::serde::is_true"
+    )]
+    url_previews_enabled: bool,
+
     /// The sections that are expanded.
     #[serde(default)]
     sections_expanded: SectionsExpanded,
@@ -200,6 +208,7 @@ impl Default for StoredSessionSettings {
             notifications_enabled: true,
             public_read_receipts_enabled: true,
             typing_enabled: true,
+            url_previews_enabled: true,
             sections_expanded: Default::default(),
             media_previews_enabled: Default::default(),
             invite_avatars_enabled: Default::default(),
@@ -386,6 +395,20 @@ impl SessionSettings {
             return;
         }
         self.write(|s| s.typing_enabled = enabled);
+    }
+
+    /// Whether URL previews are shown under messages.
+    #[must_use]
+    pub fn url_previews_enabled(&self) -> bool {
+        self.read(|s| s.url_previews_enabled)
+    }
+
+    /// Set whether URL previews are shown under messages.
+    pub fn set_url_previews_enabled(&self, enabled: bool) {
+        if self.url_previews_enabled() == enabled {
+            return;
+        }
+        self.write(|s| s.url_previews_enabled = enabled);
     }
 
     /// Custom servers to explore.

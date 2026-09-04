@@ -74,16 +74,32 @@ was abandoned). The GTK app is the desktop target and is now a view over
 
 ### Tier 2
 
-* **MISSING — Spaces are read-only.** Only `space_children` (read); no create a
-  space, no add/remove a room to a space on the facade.
-* **MISSING — Pin/unpin write path.** Only `set_pinned_listener` (read the pinned
-  list); no toggle-pin.
-* **MISSING — Enable encryption on a room** from Android — not on the facade.
-* **MISSING — URL preview cards.** Not exposed to Android.
-* **MISSING — Crypto: display your own QR, and reset/rotate identity.** Scanning
-  a QR exists (`qr_code_scanned`); showing one for the other side, and resetting
-  cross-signing, do not.
-* **MISSING — Unban a member.** `kick_user` and `ban_user` exist; no unban.
+* **DONE 3 Sep — Spaces write.** `session/room/spaces.rs` is the GTK module
+  (child event in the space counts, parent claim in the room is best effort,
+  parents listed only when believable); facade `add_room_to_space`,
+  `remove_room_from_space`, `parent_spaces`; the create dialog has a
+  "Create a space" switch (`create_room` takes `is_space`); the room details
+  page lists the room's spaces with Remove and an Add picker. Verified:
+  `m.space.child` written with `via`, a created room carries `m.space`.
+* **DONE 3 Sep — Pin/unpin write path.** `pin_event`/`unpin_event` on the
+  facade, `is_pinned` on every event, Pin/Unpin in the message sheet.
+  Verified against `m.room.pinned_events`.
+* **DONE 3 Sep — Enable encryption on a room.** `enable_room_encryption`;
+  an Encryption row on the room details with the GTK warning. Verified
+  (`m.room.encryption` written).
+* **DONE 3 Sep — URL preview cards.** `preview_url` on a text event by the
+  GTK rule (never in a room that is or may be encrypted; a "Show Link
+  Previews" session setting); `url_preview` asks the remote cache;
+  `UrlPreviewCard.kt` draws site, title, description, image. Verified with
+  gnome.org in the DM.
+* **DONE 3 Sep — Crypto: show your own QR, and reset identity.**
+  `verification_qr_code` (the flow's `QrVerification` bytes) drawn with the
+  zxing encoder while waiting after accepting a request; `reset_cross_signing`
+  (password-answered UIA, the OAuth stage refused as unsupported) behind a
+  "Reset Crypto Identity" settings row. Reset verified (alice's master key
+  appeared); the QR needs a second real session to verify — owed.
+* **DONE 3 Sep — Unban a member.** `unban_user`; the member sheet shows
+  Unban for a banned member. Not exercised (no banned member on the harness).
 * **DONE since the audit** (verify only if touching them): image packs
   (create/rename/delete, sticker and emoticon usage), thread timeline and the
   pinned-events list, notification keywords (add/remove) and per-room mode,

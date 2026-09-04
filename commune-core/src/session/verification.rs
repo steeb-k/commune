@@ -730,6 +730,13 @@ impl IdentityVerification {
         }
     }
 
+    /// The QR code to show, as the bytes a QR renderer encodes, if
+    /// `QrCodeShowV1` is supported.
+    #[must_use]
+    pub fn qr_code_bytes(&self) -> Option<Vec<u8>> {
+        self.qr_to_show().and_then(|qr| qr.to_bytes().ok())
+    }
+
     /// The QR verification to show, if `QrCodeShowV1` is supported; the
     /// embedder renders it.
     #[must_use]

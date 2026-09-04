@@ -103,6 +103,10 @@ pub enum BootstrapError {
     /// Boxed because the info carries every flow the homeserver offers.
     #[error("the homeserver wants an authentication stage completed")]
     Uiaa(Box<UiaaInfo>),
+    /// The homeserver asked for a stage this core cannot answer: the
+    /// application opens a browser page for it.
+    #[error("this homeserver asks for a sign-in step this app cannot answer")]
+    UnsupportedAuth,
     /// The homeserver refused for another reason.
     ///
     /// Boxed because `matrix_sdk::Error` is large enough that carrying it
@@ -116,6 +120,9 @@ impl UserFacingError for BootstrapError {
         match self {
             Self::NoSession => "The session is no longer available.".to_owned(),
             Self::Uiaa(_) | Self::Server(_) => "Could not create the crypto identity".to_owned(),
+            Self::UnsupportedAuth => {
+                "This homeserver asks for a step this app cannot answer yet.".to_owned()
+            }
         }
     }
 }
@@ -634,6 +641,47 @@ impl SessionSecurity {
                 Err(BootstrapError::Server(Box::new(bootstrap_error)))
             }
         }
+    }
+
+    /// Reset the crypto identity: new cross-signing keys, signed by
+    /// nobody yet. The application's recovery setup offers it when the
+    /// old identity is lost.
+    ///
+    /// The homeserver guards it with user-interactive authentication;
+    /// `auth` answers the stage the first call reported.
+    pub async fn reset_cross_signing(&self, auth: Option<AuthData>) -> Result<(), BootstrapError> {
+        use matrix_sdk::encryption::CrossSigningResetAuthType;
+
+        let session = self
+            .inner
+            .session
+            .upgrade()
+            .ok_or(BootstrapError::NoSession)?;
+        let encryption = session.client().encryption();
+
+        let handle = spawn_tokio!(async move {
+            let Some(reset) = encryption
+                .reset_cross_signing()
+                .await
+                .map_err(|error| BootstrapError::Server(Box::new(error)))?
+            else {
+                // No authentication was needed.
+                return Ok(());
+            };
+
+            match reset.auth_type().clone() {
+                CrossSigningResetAuthType::Uiaa(uiaa_info) => match auth {
+                    Some(auth) => reset
+                        .auth(Some(auth))
+                        .await
+                        .map_err(|error| BootstrapError::Server(Box::new(error))),
+                    None => Err(BootstrapError::Uiaa(Box::new(uiaa_info))),
+                },
+                CrossSigningResetAuthType::OAuth(_) => Err(BootstrapError::UnsupportedAuth),
+            }
+        });
+
+        handle.await.expect("task was not aborted")
     }
 
     /// Enable recovery, with the given passphrase when there is one,

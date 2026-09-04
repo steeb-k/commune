@@ -196,6 +196,10 @@ fun RoomDetailsScreen(state: CommuneState, room: FfiRoom) {
             value = "",
             onClick = { state.openPermissions() },
         )
+        EncryptionRow(state, room)
+        if (!room.isDirect) {
+            SpacesRows(state, room)
+        }
         var upgradeOpen by remember { mutableStateOf(false) }
         DetailsRow(
             icon = { Icon(Icons.Filled.Upgrade, contentDescription = null) },

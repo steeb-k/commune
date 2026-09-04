@@ -113,6 +113,12 @@ fun SettingsScreen(state: CommuneState) {
             checked = settings?.typingEnabled == true,
             onChange = { state.setTypingEnabled(it) },
         )
+        SettingSwitch(
+            title = "Show Link Previews",
+            subtitle = "In rooms that are not encrypted; the homeserver reads the page",
+            checked = settings?.urlPreviewsEnabled == true,
+            onChange = { state.setUrlPreviewsEnabled(it) },
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -169,6 +175,7 @@ fun SettingsScreen(state: CommuneState) {
         SettingsGroup("Encryption")
         KeyBackupRows(state)
         RecoveryRow(state)
+        ResetIdentityRow(state)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -387,6 +394,90 @@ private fun ProfileRows(state: CommuneState) {
             },
             dismissButton = {
                 TextButton(onClick = { editOpen = false }) { Text("Cancel") }
+            },
+        )
+    }
+}
+
+/// Reset the crypto identity: new cross-signing keys, which every other
+/// session will have to verify again. The GTK recovery setup offers it
+/// when the old identity is lost.
+@Composable
+private fun ResetIdentityRow(state: CommuneState) {
+    var open by remember { mutableStateOf(false) }
+    var password by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Reset Crypto Identity", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                "New cross-signing keys; other sessions must verify this one again",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(onClick = {
+            // A fresh dialog each time: nothing typed before survives it.
+            password = ""
+            error = null
+            open = true
+        }) { Text("Reset") }
+    }
+
+    if (open) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { open = false },
+            title = { Text("Reset Crypto Identity?") },
+            text = {
+                Column {
+                    Text(
+                        "Your other sessions will no longer trust this one until you " +
+                            "verify it again. Enter your password to confirm.",
+                    )
+                    androidx.compose.material3.OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Password") },
+                        singleLine = true,
+                        visualTransformation =
+                            androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    )
+                    error?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !busy && password.isNotEmpty(),
+                    onClick = {
+                        busy = true
+                        error = null
+                        state.resetCrossSigning(password) { failure ->
+                            busy = false
+                            if (failure == null) {
+                                state.toast("Crypto identity reset")
+                                open = false
+                            } else {
+                                error = failure
+                            }
+                        }
+                    },
+                ) { Text(if (busy) "…" else "Reset", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { open = false }) { Text("Cancel") }
             },
         )
     }

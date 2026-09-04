@@ -12,6 +12,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import io.github.steeb_k.commune.CommuneState
@@ -65,6 +67,40 @@ fun VerificationDialog(state: CommuneState) {
                 TextButton(onClick = { state.cancelVerification() }) { Text("No Match") }
             },
         )
+
+        state.verificationAccepted -> {
+            // The flow says when a QR code is worth showing; ask until it
+            // does, or until the emoji arrive and this branch is left.
+            var qr by androidx.compose.runtime.remember(flowId) {
+                androidx.compose.runtime.mutableStateOf<ByteArray?>(null)
+            }
+            androidx.compose.runtime.LaunchedEffect(flowId) {
+                while (qr == null) {
+                    qr = state.app.verificationQrCode(flowId)
+                    kotlinx.coroutines.delay(500)
+                }
+            }
+            AlertDialog(
+                onDismissRequest = {},
+                title = { Text("Waiting for the Other Session") },
+                text = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            "Scan this QR code from the other session, or wait for " +
+                                "it to start the emoji comparison.",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        qr?.let { QrCodeImage(it, modifier = Modifier.fillMaxWidth()) }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { state.scanQrCode?.invoke() }) { Text("Scan Theirs") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { state.cancelVerification() }) { Text("Cancel") }
+                },
+            )
+        }
 
         state.verificationOutgoing -> AlertDialog(
             onDismissRequest = {},

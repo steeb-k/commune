@@ -285,9 +285,15 @@ private fun MemberActionsDialog(
                 androidx.compose.material3.TextButton(
                     onClick = { state.kickUser(member.userId, done) },
                 ) { Text("Kick", color = MaterialTheme.colorScheme.error) }
-                androidx.compose.material3.TextButton(
-                    onClick = { state.banUser(member.userId, done) },
-                ) { Text("Ban", color = MaterialTheme.colorScheme.error) }
+                if (member.membership == FfiMembership.BAN) {
+                    androidx.compose.material3.TextButton(
+                        onClick = { state.unbanUser(member.userId, done) },
+                    ) { Text("Unban") }
+                } else {
+                    androidx.compose.material3.TextButton(
+                        onClick = { state.banUser(member.userId, done) },
+                    ) { Text("Ban", color = MaterialTheme.colorScheme.error) }
+                }
                 androidx.compose.material3.TextButton(
                     onClick = {
                         state.requestUserVerification(member.userId)

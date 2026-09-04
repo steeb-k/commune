@@ -121,8 +121,8 @@ pub use self::{
         RoomDetailsError, RoomDisplayName, RoomHighlight, RoomSearch, RoomSettingsError,
         SearchError, SearchResult, ServerAclError, ServerNotice, TargetRoomCategory, ThreadList,
         ThreadListError, Timeline, TimelineError, TimelineFocusKind, UpgradeInfo, acls_are_equal,
-        check_acl, check_upload_size, cmp_room_versions, compose_message, compute_join_rule,
-        emoticon_plain, unrestricted_acl,
+        add_room_to_space, check_acl, check_upload_size, cmp_room_versions, compose_message,
+        compute_join_rule, emoticon_plain, parent_spaces, remove_room_from_space, unrestricted_acl,
     },
     room_list::{DirectChatError, JoinError, RoomList, RoomMetainfo},
     security::{
