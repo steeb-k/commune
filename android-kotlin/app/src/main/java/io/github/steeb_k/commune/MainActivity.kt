@@ -96,7 +96,17 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         intent.getStringExtra("room_id")?.let { state.openRoomById(it) }
         handleRedirect(intent)
+        handleMatrixLink(intent)
         handleCallAction(intent)
+    }
+
+    /// A Matrix link handed to the app: a matrix: URI or a matrix.to
+    /// permalink. What it points at decides what opens.
+    private fun handleMatrixLink(intent: android.content.Intent?) {
+        val uri = intent?.data ?: return
+        if (uri.scheme == "matrix" || uri.host == "matrix.to") {
+            state.openMatrixLink(uri.toString())
+        }
     }
 
     /// The answer and decline buttons on an incoming-call notification.
@@ -207,6 +217,7 @@ class MainActivity : ComponentActivity() {
         }
         intent?.getStringExtra("room_id")?.let { state.openRoomById(it) }
         handleRedirect(intent)
+        handleMatrixLink(intent)
         handleCallAction(intent)
 
         setContent {
@@ -259,6 +270,7 @@ private fun CommuneApp(state: CommuneState) {
                 return
             }
             VerificationDialog(state)
+            io.github.steeb_k.commune.ui.MatrixLinkDialog(state)
             val room = state.openRoom
             val viewerPath = state.viewerImagePath
             // A key produced from the setup screen takes over the

@@ -42,6 +42,8 @@ import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.GppBad
+import androidx.compose.material.icons.outlined.GppMaybe
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.heightIn
@@ -863,6 +865,53 @@ internal fun FfiEventKind.isMessageLike(): Boolean = when (this) {
     is FfiEventKind.Unsupported -> false
 }
 
+/// The authenticity shield of a message in an encrypted room: red for a
+/// warning, grey for a caveat, as the GTK history draws them. A tap says
+/// why, where the desktop shows a tooltip.
+@Composable
+private fun ShieldIcon(shield: io.github.steeb_k.commune.core.FfiShield) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val message = shieldMessage(shield.code)
+    Icon(
+        if (shield.isWarning) {
+            androidx.compose.material.icons.Icons.Outlined.GppBad
+        } else {
+            androidx.compose.material.icons.Icons.Outlined.GppMaybe
+        },
+        contentDescription = message,
+        tint = if (shield.isWarning) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        modifier = Modifier
+            .size(16.dp)
+            .clickable {
+                android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG)
+                    .show()
+            },
+    )
+}
+
+/// The sentence for a shield code — the GTK app's words.
+internal fun shieldMessage(code: io.github.steeb_k.commune.core.FfiShieldCode): String =
+    when (code) {
+        io.github.steeb_k.commune.core.FfiShieldCode.AUTHENTICITY_NOT_GUARANTEED ->
+            "The authenticity of this message cannot be guaranteed on this device."
+        io.github.steeb_k.commune.core.FfiShieldCode.UNKNOWN_DEVICE ->
+            "The device that sent this message is not known."
+        io.github.steeb_k.commune.core.FfiShieldCode.UNSIGNED_DEVICE ->
+            "The device that sent this message has not been verified by its owner."
+        io.github.steeb_k.commune.core.FfiShieldCode.UNVERIFIED_IDENTITY ->
+            "The sender of this message has not been verified."
+        io.github.steeb_k.commune.core.FfiShieldCode.VERIFICATION_VIOLATION ->
+            "The sender of this message was verified once, and has changed identity since."
+        io.github.steeb_k.commune.core.FfiShieldCode.MISMATCHED_SENDER ->
+            "The sender of this message does not match the device that encrypted it."
+        io.github.steeb_k.commune.core.FfiShieldCode.SENT_IN_CLEAR ->
+            "This message was not encrypted, in a room that is."
+    }
+
 /// A short name for a Matrix user ID: the localpart.
 internal fun localpart(userId: String): String =
     userId.removePrefix("@").substringBefore(':')
@@ -1097,17 +1146,31 @@ internal fun MessageBubble(
             }
 
             Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    body,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontStyle = if (muted) FontStyle.Italic else FontStyle.Normal,
-                    color = if (muted) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                    modifier = Modifier.weight(1f, fill = false),
-                )
+                // A text message is the document the core built from its
+                // formatted body: markup, links, mentions and emoticons
+                // drawn as the GTK history draws them. Everything else
+                // shows its plain body.
+                if (event.rich.isNotEmpty()) {
+                    RichBody(
+                        state,
+                        event.rich,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                } else {
+                    Text(
+                        body,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontStyle = if (muted) FontStyle.Italic else FontStyle.Normal,
+                        color = if (muted) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                }
                 if (event.isEdited) {
                     Spacer(Modifier.size(4.dp))
                     Text(
@@ -1115,6 +1178,10 @@ internal fun MessageBubble(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+                event.shield?.let { shield ->
+                    Spacer(Modifier.size(4.dp))
+                    ShieldIcon(shield)
                 }
             }
 

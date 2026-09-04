@@ -213,6 +213,10 @@ private fun InviteDialog(state: CommuneState, onDismiss: () -> Unit) {
                     placeholder = { Text("@user:example.org") },
                     singleLine = true,
                 )
+                // The directory, minus everyone already in the room, as
+                // the GTK invite page filters it.
+                val present = remember(state.members) { state.members.map { it.userId }.toSet() }
+                UserSuggestions(state, userId, exclude = present) { userId = it }
                 error?.let {
                     Text(
                         it,

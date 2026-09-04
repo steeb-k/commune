@@ -42,6 +42,21 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="io.github.steeb-k.commune" />
             </intent-filter>
+            <!-- A Matrix link from anywhere else: a matrix: URI or a
+                 matrix.to permalink, which the application's process_uri
+                 takes the same way. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="matrix" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="matrix.to" />
+            </intent-filter>
         </activity>
 
         <!-- A call keeps the process alive for as long as it lasts. -->

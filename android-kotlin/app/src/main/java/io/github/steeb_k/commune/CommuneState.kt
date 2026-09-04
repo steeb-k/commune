@@ -132,6 +132,11 @@ class CommuneState(context: Context) {
     var actionSheetEvent by mutableStateOf<FfiTimelineItem.Event?>(null)
         private set
 
+    /// A Matrix link waiting on the person: a room to join or a user to
+    /// chat with, as the GTK app's room preview and profile dialog ask.
+    var pendingLink by mutableStateOf<io.github.steeb_k.commune.core.FfiMatrixLink?>(null)
+        private set
+
     /// The event a reply is being composed to, if any.
     var replyingTo by mutableStateOf<FfiTimelineItem.Event?>(null)
         private set
@@ -2329,6 +2334,55 @@ class CommuneState(context: Context) {
 
     fun clearConversationError() {
         conversationError = null
+    }
+
+    /// Open what the given Matrix link points at: a room we are in opens
+    /// in place; anything else waits on the person in a dialog. Returns
+    /// `false` if the string is not a Matrix link at all.
+    fun openMatrixLink(uri: String): Boolean {
+        val link = io.github.steeb_k.commune.core.parseMatrixLink(uri) ?: return false
+
+        if (link is io.github.steeb_k.commune.core.FfiMatrixLink.Room) {
+            val room = rooms.find { it.roomId == link.roomIdOrAlias }
+            if (room != null) {
+                closeSettings()
+                closeImagePacks()
+                closeIgnoredUsers()
+                closeDevices()
+                closeExplore()
+                closeAccountSwitcher()
+                pendingLink = null
+                openRoom(room)
+                return true
+            }
+        }
+
+        pendingLink = link
+        return true
+    }
+
+    /// Put the pending Matrix link away.
+    fun dismissLink() {
+        pendingLink = null
+        clearConversationError()
+    }
+
+    /// Search the user directory for the given term, as the GTK app's
+    /// invite page and direct chat dialog do while one types.
+    fun searchUsers(
+        term: String,
+        onResult: (List<io.github.steeb_k.commune.core.FfiUserSearchResult>) -> Unit,
+    ) {
+        thread {
+            runBlocking {
+                val results = try {
+                    app.searchUsers(term, 10u)
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                main.post { onResult(results) }
+            }
+        }
     }
 
     /// Open (or create) the direct chat with the given user, then show it

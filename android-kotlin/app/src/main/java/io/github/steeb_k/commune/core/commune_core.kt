@@ -825,6 +825,8 @@ external fun uniffi_commune_core_checksum_func_gif_search_available(
 ): Short
 external fun uniffi_commune_core_checksum_func_init_core(
 ): Short
+external fun uniffi_commune_core_checksum_func_parse_matrix_link(
+): Short
 external fun uniffi_commune_core_checksum_method_calllistener_on_incoming(
 ): Short
 external fun uniffi_commune_core_checksum_method_calllistener_on_answer(
@@ -1004,6 +1006,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_scan_qr(
 external fun uniffi_commune_core_checksum_method_coreapp_search_gifs(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_search_room(
+): Short
+external fun uniffi_commune_core_checksum_method_coreapp_search_users(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_security_state(
 ): Short
@@ -1339,6 +1343,8 @@ external fun uniffi_commune_core_fn_method_coreapp_search_gifs(`ptr`: Long,`quer
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_search_room(`ptr`: Long,`roomId`: RustBuffer.ByValue,`searchTerm`: RustBuffer.ByValue,
 ): Long
+external fun uniffi_commune_core_fn_method_coreapp_search_users(`ptr`: Long,`searchTerm`: RustBuffer.ByValue,`limit`: Long,
+): Long
 external fun uniffi_commune_core_fn_method_coreapp_security_state(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
@@ -1493,6 +1499,8 @@ external fun uniffi_commune_core_fn_func_gif_search_available(uniffi_out_err: Un
 ): Byte
 external fun uniffi_commune_core_fn_func_init_core(`ffiConfig`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_func_parse_matrix_link(`uri`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
 external fun ffi_commune_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun ffi_commune_core_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1622,6 +1630,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_func_init_core() != 39848.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_func_parse_matrix_link() != 12875.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_calllistener_on_incoming() != 8405.toShort()) {
@@ -1892,6 +1903,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_search_room() != 20054.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_search_users() != 9451.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_security_state() != 41217.toShort()) {
@@ -2297,6 +2311,29 @@ private class JavaLangRefCleanable(
     val cleanable: java.lang.ref.Cleaner.Cleanable
 ) : UniffiCleaner.Cleanable {
     override fun clean() = cleanable.clean()
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterUByte: FfiConverter<UByte, Byte> {
+    override fun lift(value: Byte): UByte {
+        return value.toUByte()
+    }
+
+    override fun read(buf: ByteBuffer): UByte {
+        return lift(buf.get())
+    }
+
+    override fun lower(value: UByte): Byte {
+        return value.toByte()
+    }
+
+    override fun allocationSize(value: UByte) = 1UL
+
+    override fun write(value: UByte, buf: ByteBuffer) {
+        buf.put(value.toByte())
+    }
 }
 
 /**
@@ -3553,6 +3590,14 @@ public interface CoreAppInterface {
      * rooms cannot be searched by the server.
      */
     suspend fun `searchRoom`(`roomId`: kotlin.String, `searchTerm`: kotlin.String): List<FfiSearchResult>
+    
+    /**
+     * Search the user directory for the given term, as the application's
+     * invite page and direct chat dialog do.
+     *
+     * The homeserver decides what matches; `limit` caps how many it says.
+     */
+    suspend fun `searchUsers`(`searchTerm`: kotlin.String, `limit`: kotlin.ULong): List<FfiUserSearchResult>
     
     /**
      * Where this session stands on encryption: whether the account has
@@ -6072,6 +6117,33 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
         // lift function
         { FfiConverterSequenceTypeFfiSearchResult.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Search the user directory for the given term, as the application's
+     * invite page and direct chat dialog do.
+     *
+     * The homeserver decides what matches; `limit` caps how many it says.
+     */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `searchUsers`(`searchTerm`: kotlin.String, `limit`: kotlin.ULong) : List<FfiUserSearchResult> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_search_users(
+                uniffiHandle,
+                FfiConverterString.lower(`searchTerm`),FfiConverterULong.lower(`limit`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceTypeFfiUserSearchResult.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
     )
@@ -10361,6 +10433,90 @@ public object FfiConverterTypeFfiResetHandle: FfiConverterRustBuffer<FfiResetHan
 
 
 /**
+ * One block of the document a text message presents.
+ *
+ * The tree of quotes and lists is flattened, the way
+ * [`crate::matrix::rich_text::Block`] describes: each block knows how deep
+ * it sits, and the first block of a list item carries the item's marker.
+ */
+data class FfiRichBlock (
+    /**
+     * What the block is.
+     */
+    var `kind`: FfiRichBlockKind
+    , 
+    /**
+     * How many quotes the block sits in.
+     */
+    var `quoteDepth`: kotlin.UByte
+    , 
+    /**
+     * How many lists and disclosures the block sits in.
+     */
+    var `indent`: kotlin.UByte
+    , 
+    /**
+     * The list marker, on the first block of a list item.
+     */
+    var `marker`: kotlin.String?
+    , 
+    /**
+     * The runs of the block; empty for a rule or a code block.
+     */
+    var `inlines`: List<FfiRichInline>
+    , 
+    /**
+     * Whether the block holds nothing but custom emoticons, which are then
+     * presented large, like a sticker.
+     */
+    var `isEmoticonsOnly`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiRichBlock: FfiConverterRustBuffer<FfiRichBlock> {
+    override fun read(buf: ByteBuffer): FfiRichBlock {
+        return FfiRichBlock(
+            FfiConverterTypeFfiRichBlockKind.read(buf),
+            FfiConverterUByte.read(buf),
+            FfiConverterUByte.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterSequenceTypeFfiRichInline.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiRichBlock) = (
+            FfiConverterTypeFfiRichBlockKind.allocationSize(value.`kind`) +
+            FfiConverterUByte.allocationSize(value.`quoteDepth`) +
+            FfiConverterUByte.allocationSize(value.`indent`) +
+            FfiConverterOptionalString.allocationSize(value.`marker`) +
+            FfiConverterSequenceTypeFfiRichInline.allocationSize(value.`inlines`) +
+            FfiConverterBoolean.allocationSize(value.`isEmoticonsOnly`)
+    )
+
+    override fun write(value: FfiRichBlock, buf: ByteBuffer) {
+            FfiConverterTypeFfiRichBlockKind.write(value.`kind`, buf)
+            FfiConverterUByte.write(value.`quoteDepth`, buf)
+            FfiConverterUByte.write(value.`indent`, buf)
+            FfiConverterOptionalString.write(value.`marker`, buf)
+            FfiConverterSequenceTypeFfiRichInline.write(value.`inlines`, buf)
+            FfiConverterBoolean.write(value.`isEmoticonsOnly`, buf)
+    }
+}
+
+
+
+/**
  * A room, as the sidebar needs it.
  */
 data class FfiRoom (
@@ -10937,6 +11093,57 @@ public object FfiConverterTypeFfiSessionSettings: FfiConverterRustBuffer<FfiSess
 
 
 /**
+ * The authenticity shield of a message in an encrypted room.
+ *
+ * A warning is the application's red shield — an unverified or mismatched
+ * sender, a message sent in the clear — and a caveat its grey one. Most
+ * messages carry neither, which is what keeps the two readable.
+ */
+data class FfiShield (
+    /**
+     * Whether this is a warning rather than a caveat.
+     */
+    var `isWarning`: kotlin.Boolean
+    , 
+    /**
+     * Why the shield is shown.
+     */
+    var `code`: FfiShieldCode
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiShield: FfiConverterRustBuffer<FfiShield> {
+    override fun read(buf: ByteBuffer): FfiShield {
+        return FfiShield(
+            FfiConverterBoolean.read(buf),
+            FfiConverterTypeFfiShieldCode.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiShield) = (
+            FfiConverterBoolean.allocationSize(value.`isWarning`) +
+            FfiConverterTypeFfiShieldCode.allocationSize(value.`code`)
+    )
+
+    override fun write(value: FfiShield, buf: ByteBuffer) {
+            FfiConverterBoolean.write(value.`isWarning`, buf)
+            FfiConverterTypeFfiShieldCode.write(value.`code`, buf)
+    }
+}
+
+
+
+/**
  * One room inside a space, as its hierarchy reports it.
  */
 data class FfiSpaceChild (
@@ -11280,6 +11487,61 @@ public object FfiConverterTypeFfiUpgradeInfo: FfiConverterRustBuffer<FfiUpgradeI
             FfiConverterSequenceString.write(value.`unstable`, buf)
             FfiConverterUInt.write(value.`selectedIndex`, buf)
             FfiConverterBoolean.write(value.`canUpgrade`, buf)
+    }
+}
+
+
+
+/**
+ * One user the directory found for a search term.
+ */
+data class FfiUserSearchResult (
+    /**
+     * The ID of the user.
+     */
+    var `userId`: kotlin.String
+    , 
+    /**
+     * The display name, when one is set.
+     */
+    var `displayName`: kotlin.String?
+    , 
+    /**
+     * The avatar, as an `mxc:` URI, when one is set.
+     */
+    var `avatarUrl`: kotlin.String?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiUserSearchResult: FfiConverterRustBuffer<FfiUserSearchResult> {
+    override fun read(buf: ByteBuffer): FfiUserSearchResult {
+        return FfiUserSearchResult(
+            FfiConverterString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiUserSearchResult) = (
+            FfiConverterString.allocationSize(value.`userId`) +
+            FfiConverterOptionalString.allocationSize(value.`displayName`) +
+            FfiConverterOptionalString.allocationSize(value.`avatarUrl`)
+    )
+
+    override fun write(value: FfiUserSearchResult, buf: ByteBuffer) {
+            FfiConverterString.write(value.`userId`, buf)
+            FfiConverterOptionalString.write(value.`displayName`, buf)
+            FfiConverterOptionalString.write(value.`avatarUrl`, buf)
     }
 }
 
@@ -12222,6 +12484,118 @@ public object FfiConverterTypeFfiJoinRuleValue: FfiConverterRustBuffer<FfiJoinRu
 
 
 /**
+ * What a Matrix link points at.
+ */
+sealed class FfiMatrixLink {
+    
+    /**
+     * A room, and possibly an event in it.
+     */
+    data class Room(
+        /**
+         * The ID or alias of the room.
+         */
+        val `roomIdOrAlias`: kotlin.String, 
+        /**
+         * The servers that can route to it, from the link.
+         */
+        val `via`: List<kotlin.String>, 
+        /**
+         * The event the link points at inside the room, if it names one.
+         */
+        val `eventId`: kotlin.String?) : FfiMatrixLink()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A user.
+     */
+    data class User(
+        /**
+         * The ID of the user.
+         */
+        val `userId`: kotlin.String) : FfiMatrixLink()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+
+    
+    
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiMatrixLink : FfiConverterRustBuffer<FfiMatrixLink>{
+    override fun read(buf: ByteBuffer): FfiMatrixLink {
+        return when(buf.getInt()) {
+            1 -> FfiMatrixLink.Room(
+                FfiConverterString.read(buf),
+                FfiConverterSequenceString.read(buf),
+                FfiConverterOptionalString.read(buf),
+                )
+            2 -> FfiMatrixLink.User(
+                FfiConverterString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: FfiMatrixLink) = when(value) {
+        is FfiMatrixLink.Room -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`roomIdOrAlias`)
+                + FfiConverterSequenceString.allocationSize(value.`via`)
+                + FfiConverterOptionalString.allocationSize(value.`eventId`)
+            )
+        }
+        is FfiMatrixLink.User -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`userId`)
+            )
+        }
+    }
+
+    override fun write(value: FfiMatrixLink, buf: ByteBuffer) {
+        when(value) {
+            is FfiMatrixLink.Room -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`roomIdOrAlias`, buf)
+                FfiConverterSequenceString.write(value.`via`, buf)
+                FfiConverterOptionalString.write(value.`eventId`, buf)
+                Unit
+            }
+            is FfiMatrixLink.User -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`userId`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
  * What a media event carries.
  */
 
@@ -12490,6 +12864,497 @@ public object FfiConverterTypeFfiRecoveryState: FfiConverterRustBuffer<FfiRecove
 
     override fun write(value: FfiRecoveryState, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * What a block of a message is.
+ */
+sealed class FfiRichBlockKind {
+    
+    /**
+     * A line of runs.
+     */
+    object Paragraph : FfiRichBlockKind()
+    
+    
+    /**
+     * A heading.
+     */
+    data class Heading(
+        /**
+         * The level, 1 to 6.
+         */
+        val `level`: kotlin.UByte) : FfiRichBlockKind()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Preformatted text, as a code block.
+     */
+    data class Code(
+        /**
+         * The language, if the message named one.
+         */
+        val `language`: kotlin.String?, 
+        /**
+         * The text, whitespace untouched.
+         */
+        val `text`: kotlin.String) : FfiRichBlockKind()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A horizontal rule.
+     */
+    object Rule : FfiRichBlockKind()
+    
+    
+    /**
+     * The summary of a details disclosure; the blocks that follow at one
+     * more level of indentation are its content.
+     */
+    object Summary : FfiRichBlockKind()
+    
+    
+
+    
+
+    
+    
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiRichBlockKind : FfiConverterRustBuffer<FfiRichBlockKind>{
+    override fun read(buf: ByteBuffer): FfiRichBlockKind {
+        return when(buf.getInt()) {
+            1 -> FfiRichBlockKind.Paragraph
+            2 -> FfiRichBlockKind.Heading(
+                FfiConverterUByte.read(buf),
+                )
+            3 -> FfiRichBlockKind.Code(
+                FfiConverterOptionalString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            4 -> FfiRichBlockKind.Rule
+            5 -> FfiRichBlockKind.Summary
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: FfiRichBlockKind) = when(value) {
+        is FfiRichBlockKind.Paragraph -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiRichBlockKind.Heading -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterUByte.allocationSize(value.`level`)
+            )
+        }
+        is FfiRichBlockKind.Code -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterOptionalString.allocationSize(value.`language`)
+                + FfiConverterString.allocationSize(value.`text`)
+            )
+        }
+        is FfiRichBlockKind.Rule -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+        is FfiRichBlockKind.Summary -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: FfiRichBlockKind, buf: ByteBuffer) {
+        when(value) {
+            is FfiRichBlockKind.Paragraph -> {
+                buf.putInt(1)
+                Unit
+            }
+            is FfiRichBlockKind.Heading -> {
+                buf.putInt(2)
+                FfiConverterUByte.write(value.`level`, buf)
+                Unit
+            }
+            is FfiRichBlockKind.Code -> {
+                buf.putInt(3)
+                FfiConverterOptionalString.write(value.`language`, buf)
+                FfiConverterString.write(value.`text`, buf)
+                Unit
+            }
+            is FfiRichBlockKind.Rule -> {
+                buf.putInt(4)
+                Unit
+            }
+            is FfiRichBlockKind.Summary -> {
+                buf.putInt(5)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * One run of a line of a message.
+ */
+sealed class FfiRichInline {
+    
+    /**
+     * Text with one appearance, possibly a link.
+     */
+    data class Text(
+        /**
+         * The text.
+         */
+        val `text`: kotlin.String, 
+        /**
+         * Bold, from `b` and `strong`.
+         */
+        val `bold`: kotlin.Boolean, 
+        /**
+         * Italic, from `i` and `em`.
+         */
+        val `italic`: kotlin.Boolean, 
+        /**
+         * Underlined, from `u`.
+         */
+        val `underline`: kotlin.Boolean, 
+        /**
+         * Struck through, from `s` and `del`.
+         */
+        val `strikethrough`: kotlin.Boolean, 
+        /**
+         * Monospace, from `code`.
+         */
+        val `code`: kotlin.Boolean, 
+        /**
+         * Superscript, from `sup`.
+         */
+        val `superscript`: kotlin.Boolean, 
+        /**
+         * Subscript, from `sub`.
+         */
+        val `subscript`: kotlin.Boolean, 
+        /**
+         * The foreground color of a `span`, as the message wrote it.
+         */
+        val `color`: kotlin.String?, 
+        /**
+         * The background color of a `span`, as the message wrote it.
+         */
+        val `bgColor`: kotlin.String?, 
+        /**
+         * The URI the run links to, if it is a link.
+         */
+        val `link`: kotlin.String?) : FfiRichInline()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A mention, presented as a pill.
+     */
+    data class Mention(
+        /**
+         * What is mentioned.
+         */
+        val `kind`: io.github.steeb_k.commune.core.FfiRichMention, 
+        /**
+         * The name to show on the pill.
+         */
+        val `name`: kotlin.String) : FfiRichInline()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A custom emoticon, presented as an image among the words.
+     */
+    data class Emoticon(
+        /**
+         * The `mxc:` URI of the image.
+         */
+        val `uri`: kotlin.String, 
+        /**
+         * Its textual description.
+         */
+        val `body`: kotlin.String) : FfiRichInline()
+        
+    {
+        
+
+        companion object
+    }
+    
+
+    
+
+    
+    
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiRichInline : FfiConverterRustBuffer<FfiRichInline>{
+    override fun read(buf: ByteBuffer): FfiRichInline {
+        return when(buf.getInt()) {
+            1 -> FfiRichInline.Text(
+                FfiConverterString.read(buf),
+                FfiConverterBoolean.read(buf),
+                FfiConverterBoolean.read(buf),
+                FfiConverterBoolean.read(buf),
+                FfiConverterBoolean.read(buf),
+                FfiConverterBoolean.read(buf),
+                FfiConverterBoolean.read(buf),
+                FfiConverterBoolean.read(buf),
+                FfiConverterOptionalString.read(buf),
+                FfiConverterOptionalString.read(buf),
+                FfiConverterOptionalString.read(buf),
+                )
+            2 -> FfiRichInline.Mention(
+                FfiConverterTypeFfiRichMention.read(buf),
+                FfiConverterString.read(buf),
+                )
+            3 -> FfiRichInline.Emoticon(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                )
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: FfiRichInline) = when(value) {
+        is FfiRichInline.Text -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`text`)
+                + FfiConverterBoolean.allocationSize(value.`bold`)
+                + FfiConverterBoolean.allocationSize(value.`italic`)
+                + FfiConverterBoolean.allocationSize(value.`underline`)
+                + FfiConverterBoolean.allocationSize(value.`strikethrough`)
+                + FfiConverterBoolean.allocationSize(value.`code`)
+                + FfiConverterBoolean.allocationSize(value.`superscript`)
+                + FfiConverterBoolean.allocationSize(value.`subscript`)
+                + FfiConverterOptionalString.allocationSize(value.`color`)
+                + FfiConverterOptionalString.allocationSize(value.`bgColor`)
+                + FfiConverterOptionalString.allocationSize(value.`link`)
+            )
+        }
+        is FfiRichInline.Mention -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterTypeFfiRichMention.allocationSize(value.`kind`)
+                + FfiConverterString.allocationSize(value.`name`)
+            )
+        }
+        is FfiRichInline.Emoticon -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`uri`)
+                + FfiConverterString.allocationSize(value.`body`)
+            )
+        }
+    }
+
+    override fun write(value: FfiRichInline, buf: ByteBuffer) {
+        when(value) {
+            is FfiRichInline.Text -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`text`, buf)
+                FfiConverterBoolean.write(value.`bold`, buf)
+                FfiConverterBoolean.write(value.`italic`, buf)
+                FfiConverterBoolean.write(value.`underline`, buf)
+                FfiConverterBoolean.write(value.`strikethrough`, buf)
+                FfiConverterBoolean.write(value.`code`, buf)
+                FfiConverterBoolean.write(value.`superscript`, buf)
+                FfiConverterBoolean.write(value.`subscript`, buf)
+                FfiConverterOptionalString.write(value.`color`, buf)
+                FfiConverterOptionalString.write(value.`bgColor`, buf)
+                FfiConverterOptionalString.write(value.`link`, buf)
+                Unit
+            }
+            is FfiRichInline.Mention -> {
+                buf.putInt(2)
+                FfiConverterTypeFfiRichMention.write(value.`kind`, buf)
+                FfiConverterString.write(value.`name`, buf)
+                Unit
+            }
+            is FfiRichInline.Emoticon -> {
+                buf.putInt(3)
+                FfiConverterString.write(value.`uri`, buf)
+                FfiConverterString.write(value.`body`, buf)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Who or what a mention in a message points at.
+ */
+sealed class FfiRichMention {
+    
+    /**
+     * A user.
+     */
+    data class User(
+        /**
+         * The ID of the user.
+         */
+        val `userId`: kotlin.String) : FfiRichMention()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * A room, by ID or alias.
+     */
+    data class Room(
+        /**
+         * The ID or alias of the room.
+         */
+        val `roomIdOrAlias`: kotlin.String, 
+        /**
+         * The servers that can route to it, from the link.
+         */
+        val `via`: List<kotlin.String>) : FfiRichMention()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Everyone in the room.
+     */
+    object AtRoom : FfiRichMention()
+    
+    
+
+    
+
+    
+    
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiRichMention : FfiConverterRustBuffer<FfiRichMention>{
+    override fun read(buf: ByteBuffer): FfiRichMention {
+        return when(buf.getInt()) {
+            1 -> FfiRichMention.User(
+                FfiConverterString.read(buf),
+                )
+            2 -> FfiRichMention.Room(
+                FfiConverterString.read(buf),
+                FfiConverterSequenceString.read(buf),
+                )
+            3 -> FfiRichMention.AtRoom
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: FfiRichMention) = when(value) {
+        is FfiRichMention.User -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`userId`)
+            )
+        }
+        is FfiRichMention.Room -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`roomIdOrAlias`)
+                + FfiConverterSequenceString.allocationSize(value.`via`)
+            )
+        }
+        is FfiRichMention.AtRoom -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: FfiRichMention, buf: ByteBuffer) {
+        when(value) {
+            is FfiRichMention.User -> {
+                buf.putInt(1)
+                FfiConverterString.write(value.`userId`, buf)
+                Unit
+            }
+            is FfiRichMention.Room -> {
+                buf.putInt(2)
+                FfiConverterString.write(value.`roomIdOrAlias`, buf)
+                FfiConverterSequenceString.write(value.`via`, buf)
+                Unit
+            }
+            is FfiRichMention.AtRoom -> {
+                buf.putInt(3)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
 }
 
@@ -12807,6 +13672,73 @@ public object FfiConverterTypeFfiSendState: FfiConverterRustBuffer<FfiSendState>
     override fun allocationSize(value: FfiSendState) = 4UL
 
     override fun write(value: FfiSendState, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
+/**
+ * Why a message carries an authenticity shield.
+ */
+
+enum class FfiShieldCode {
+    
+    /**
+     * The authenticity of this message cannot be guaranteed on this
+     * device.
+     */
+    AUTHENTICITY_NOT_GUARANTEED,
+    /**
+     * The device that sent this message is not known.
+     */
+    UNKNOWN_DEVICE,
+    /**
+     * The device that sent this message has not been verified by its
+     * owner.
+     */
+    UNSIGNED_DEVICE,
+    /**
+     * The sender of this message has not been verified.
+     */
+    UNVERIFIED_IDENTITY,
+    /**
+     * The sender of this message was verified once, and has changed
+     * identity since.
+     */
+    VERIFICATION_VIOLATION,
+    /**
+     * The sender of this message does not match the device that encrypted
+     * it.
+     */
+    MISMATCHED_SENDER,
+    /**
+     * This message was not encrypted, in a room that is.
+     */
+    SENT_IN_CLEAR;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiShieldCode: FfiConverterRustBuffer<FfiShieldCode> {
+    override fun read(buf: ByteBuffer) = try {
+        FfiShieldCode.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FfiShieldCode) = 4UL
+
+    override fun write(value: FfiShieldCode, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
@@ -13168,6 +14100,18 @@ sealed class FfiTimelineItem {
          */
         val `body`: kotlin.String, 
         /**
+         * The document a text message presents — its formatted body when
+         * that is usable HTML, its plain body otherwise, with links and
+         * mentions detected either way. Empty for anything but a text
+         * message.
+         */
+        val `rich`: List<io.github.steeb_k.commune.core.FfiRichBlock>, 
+        /**
+         * The authenticity shield, in an encrypted room, when the message
+         * deserves one.
+         */
+        val `shield`: io.github.steeb_k.commune.core.FfiShield?, 
+        /**
          * How far a locally sent event got, `None` for remote echoes.
          */
         val `sendState`: io.github.steeb_k.commune.core.FfiSendState?) : FfiTimelineItem()
@@ -13235,6 +14179,8 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 FfiConverterBoolean.read(buf),
                 FfiConverterTypeFfiEventKind.read(buf),
                 FfiConverterString.read(buf),
+                FfiConverterSequenceTypeFfiRichBlock.read(buf),
+                FfiConverterOptionalTypeFfiShield.read(buf),
                 FfiConverterOptionalTypeFfiSendState.read(buf),
                 )
             2 -> FfiTimelineItem.DateDivider(
@@ -13264,6 +14210,8 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 + FfiConverterBoolean.allocationSize(value.`isOwn`)
                 + FfiConverterTypeFfiEventKind.allocationSize(value.`kind`)
                 + FfiConverterString.allocationSize(value.`body`)
+                + FfiConverterSequenceTypeFfiRichBlock.allocationSize(value.`rich`)
+                + FfiConverterOptionalTypeFfiShield.allocationSize(value.`shield`)
                 + FfiConverterOptionalTypeFfiSendState.allocationSize(value.`sendState`)
             )
         }
@@ -13305,6 +14253,8 @@ public object FfiConverterTypeFfiTimelineItem : FfiConverterRustBuffer<FfiTimeli
                 FfiConverterBoolean.write(value.`isOwn`, buf)
                 FfiConverterTypeFfiEventKind.write(value.`kind`, buf)
                 FfiConverterString.write(value.`body`, buf)
+                FfiConverterSequenceTypeFfiRichBlock.write(value.`rich`, buf)
+                FfiConverterOptionalTypeFfiShield.write(value.`shield`, buf)
                 FfiConverterOptionalTypeFfiSendState.write(value.`sendState`, buf)
                 Unit
             }
@@ -13604,6 +14554,38 @@ public object FfiConverterOptionalTypeFfiSessionSettings: FfiConverterRustBuffer
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeFfiShield: FfiConverterRustBuffer<FfiShield?> {
+    override fun read(buf: ByteBuffer): FfiShield? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiShield.read(buf)
+    }
+
+    override fun allocationSize(value: FfiShield?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiShield.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiShield?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiShield.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeFfiCallOutcome: FfiConverterRustBuffer<FfiCallOutcome?> {
     override fun read(buf: ByteBuffer): FfiCallOutcome? {
         if (buf.get().toInt() == 0) {
@@ -13626,6 +14608,38 @@ public object FfiConverterOptionalTypeFfiCallOutcome: FfiConverterRustBuffer<Ffi
         } else {
             buf.put(1)
             FfiConverterTypeFfiCallOutcome.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiMatrixLink: FfiConverterRustBuffer<FfiMatrixLink?> {
+    override fun read(buf: ByteBuffer): FfiMatrixLink? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiMatrixLink.read(buf)
+    }
+
+    override fun allocationSize(value: FfiMatrixLink?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiMatrixLink.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiMatrixLink?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiMatrixLink.write(value, buf)
         }
     }
 }
@@ -13948,6 +14962,34 @@ public object FfiConverterSequenceTypeFfiReaction: FfiConverterRustBuffer<List<F
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeFfiRichBlock: FfiConverterRustBuffer<List<FfiRichBlock>> {
+    override fun read(buf: ByteBuffer): List<FfiRichBlock> {
+        val len = buf.getInt()
+        return List<FfiRichBlock>(len) {
+            FfiConverterTypeFfiRichBlock.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiRichBlock>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiRichBlock.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiRichBlock>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiRichBlock.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeFfiRoom: FfiConverterRustBuffer<List<FfiRoom>> {
     override fun read(buf: ByteBuffer): List<FfiRoom> {
         val len = buf.getInt()
@@ -14144,6 +15186,62 @@ public object FfiConverterSequenceTypeFfiStickerPack: FfiConverterRustBuffer<Lis
 /**
  * @suppress
  */
+public object FfiConverterSequenceTypeFfiUserSearchResult: FfiConverterRustBuffer<List<FfiUserSearchResult>> {
+    override fun read(buf: ByteBuffer): List<FfiUserSearchResult> {
+        val len = buf.getInt()
+        return List<FfiUserSearchResult>(len) {
+            FfiConverterTypeFfiUserSearchResult.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiUserSearchResult>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiUserSearchResult.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiUserSearchResult>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiUserSearchResult.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterSequenceTypeFfiRichInline: FfiConverterRustBuffer<List<FfiRichInline>> {
+    override fun read(buf: ByteBuffer): List<FfiRichInline> {
+        val len = buf.getInt()
+        return List<FfiRichInline>(len) {
+            FfiConverterTypeFfiRichInline.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<FfiRichInline>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterTypeFfiRichInline.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(value: List<FfiRichInline>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterTypeFfiRichInline.write(it, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeFfiTimelineItem: FfiConverterRustBuffer<List<FfiTimelineItem>> {
     override fun read(buf: ByteBuffer): List<FfiTimelineItem> {
         val len = buf.getInt()
@@ -14233,6 +15331,24 @@ public object FfiConverterSequenceTypeFfiTimelineItem: FfiConverterRustBuffer<Li
         FfiConverterTypeFfiCoreConfig.lower(`ffiConfig`),_status)
 }
     
+    
+
+        /**
+         * What a Matrix link points at, or `None` if the string is not one.
+         *
+         * Both forms the application accepts are taken: a `matrix:` URI and a
+         * `https://matrix.to/#/…` permalink, each with its `via` servers. The
+         * embedder hands every link it is asked to open through here, the way
+         * the application's `process_uri` does.
+         */ fun `parseMatrixLink`(`uri`: kotlin.String): FfiMatrixLink? {
+            return FfiConverterOptionalTypeFfiMatrixLink.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_func_parse_matrix_link(
+    
+        FfiConverterString.lower(`uri`),_status)
+}
+    )
+    }
     
 
 

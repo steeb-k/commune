@@ -35,6 +35,7 @@ use thiserror::Error;
 pub mod ext_traits;
 pub mod media;
 mod mutual_rooms;
+pub mod rich_text;
 mod url_preview;
 
 pub use self::{mutual_rooms::fetch_mutual_rooms, url_preview::previewable_url};
