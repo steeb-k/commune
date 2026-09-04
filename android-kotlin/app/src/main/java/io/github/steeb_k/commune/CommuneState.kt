@@ -1724,6 +1724,7 @@ class CommuneState(context: Context) {
         public: Boolean,
         encrypted: Boolean,
         alias: String,
+        isSpace: Boolean,
         onDone: (String?) -> Unit,
     ) {
         thread {
@@ -1735,6 +1736,7 @@ class CommuneState(context: Context) {
                         public,
                         encrypted,
                         alias.ifBlank { null },
+                        isSpace,
                     )
                 } catch (failure: Exception) {
                     main.post { onDone(failure.message ?: "Could not create the room") }
@@ -2336,6 +2338,64 @@ class CommuneState(context: Context) {
         conversationError = null
     }
 
+    /// Pin the event, or unpin it if it is pinned.
+    fun togglePin(event: FfiTimelineItem.Event, onDone: (String?) -> Unit) {
+        val eventId = event.eventId ?: return
+        moderate(onDone) {
+            if (event.isPinned) app.unpinEvent(it, eventId) else app.pinEvent(it, eventId)
+        }
+    }
+
+    /// Enable encryption in the open room. It cannot be disabled later.
+    fun enableEncryption(onDone: (String?) -> Unit) {
+        moderate(onDone) { app.enableRoomEncryption(it) }
+    }
+
+    /// Lift a ban in the open room.
+    fun unbanUser(userId: String, onDone: (String?) -> Unit) {
+        moderate(onDone) { app.unbanUser(it, userId, null) }
+    }
+
+    /// The joined spaces holding the open room.
+    fun parentSpaces(onDone: (List<FfiRoom>) -> Unit) {
+        val room = openRoom ?: return
+        thread {
+            runBlocking {
+                val spaces = try {
+                    app.parentSpaces(room.roomId)
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                main.post { onDone(spaces) }
+            }
+        }
+    }
+
+    /// Put the open room inside the given space.
+    fun addRoomToSpace(spaceId: String, onDone: (String?) -> Unit) {
+        moderate(onDone) { app.addRoomToSpace(it, spaceId) }
+    }
+
+    /// Take the open room out of the given space.
+    fun removeRoomFromSpace(spaceId: String, onDone: (String?) -> Unit) {
+        moderate(onDone) { app.removeRoomFromSpace(it, spaceId) }
+    }
+
+    /// Reset the crypto identity, the password answering the homeserver.
+    fun resetCrossSigning(password: String, onDone: (String?) -> Unit) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.resetCrossSigning(password)
+                    null
+                } catch (failure: Exception) {
+                    failure.message?.removePrefix("msg=") ?: "Could not reset the crypto identity"
+                }
+                main.post { onDone(error) }
+            }
+        }
+    }
+
     /// Change the account's password; the current one answers the
     /// homeserver's password stage.
     fun changePassword(newPassword: String, currentPassword: String, onDone: (String?) -> Unit) {
@@ -2722,6 +2782,11 @@ class CommuneState(context: Context) {
     var verificationOutgoing by mutableStateOf(false)
         private set
 
+    /// Whether we accepted the request and wait for the other side to
+    /// pick a method — when our QR code is worth showing.
+    var verificationAccepted by mutableStateOf(false)
+        private set
+
     /// Start following verification requests; harmless to call again.
     fun watchVerifications() {
         app.setVerificationListener(object : VerificationListener {
@@ -2732,6 +2797,7 @@ class CommuneState(context: Context) {
                     verificationEmojis = emptyList()
                     verificationDone = false
                     verificationOutgoing = false
+                    verificationAccepted = false
                     // The sheet is already showing when the app is on
                     // screen; when it is not, this is the only sign the
                     // request arrived, the way the desktop posts one.
@@ -2819,6 +2885,7 @@ class CommuneState(context: Context) {
 
     fun acceptVerification() {
         val flowId = verificationFlowId ?: return
+        verificationAccepted = true
         thread { runBlocking { app.acceptVerification(flowId) } }
     }
 
@@ -3703,6 +3770,11 @@ class CommuneState(context: Context) {
 
     fun setPublicReadReceiptsEnabled(enabled: Boolean) {
         app.setPublicReadReceiptsEnabled(enabled)
+        settings = app.sessionSettings()
+    }
+
+    fun setUrlPreviewsEnabled(enabled: Boolean) {
+        app.setUrlPreviewsEnabled(enabled)
         settings = app.sessionSettings()
     }
 

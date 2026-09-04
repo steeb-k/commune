@@ -550,6 +550,7 @@ private fun CreateRoomDialog(state: CommuneState, onDismiss: () -> Unit) {
     var topic by remember { mutableStateOf("") }
     var isPublic by remember { mutableStateOf(false) }
     var encrypted by remember { mutableStateOf(false) }
+    var isSpace by remember { mutableStateOf(false) }
     var alias by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -595,6 +596,15 @@ private fun CreateRoomDialog(state: CommuneState, onDismiss: () -> Unit) {
                         Text("  End-to-end encrypted")
                     }
                 }
+                // A space is a room with a different purpose; the GTK
+                // create dialog offers the choice the same way.
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Switch(
+                        checked = isSpace,
+                        onCheckedChange = { isSpace = it },
+                    )
+                    Text("  Create a space")
+                }
                 error?.let {
                     Text(
                         it,
@@ -610,7 +620,7 @@ private fun CreateRoomDialog(state: CommuneState, onDismiss: () -> Unit) {
                 onClick = {
                     busy = true
                     error = null
-                    state.createRoom(name, topic, isPublic, encrypted, alias) { failure ->
+                    state.createRoom(name, topic, isPublic, encrypted, alias, isSpace) { failure ->
                         busy = false
                         if (failure == null) onDismiss() else error = failure
                     }

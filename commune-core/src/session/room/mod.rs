@@ -26,6 +26,9 @@ mod member;
 mod permissions;
 mod search;
 mod server_acl;
+mod spaces;
+
+pub use self::spaces::{add_room_to_space, parent_spaces, remove_room_from_space};
 mod thread_list;
 mod timeline;
 mod upgrade;
@@ -877,6 +880,45 @@ impl Room {
     /// Subscribe to the event IDs pinned in this room.
     pub fn subscribe_pinned_event_ids(&self) -> Subscriber<Vec<OwnedEventId>> {
         self.inner.pinned_event_ids.subscribe()
+    }
+
+    /// Pin the event with the given ID in this room.
+    pub async fn pin_event(&self, event_id: OwnedEventId) -> Result<(), matrix_sdk::Error> {
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.pin_event(&event_id).await });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_| ())
+            .inspect_err(|error| error!("Could not pin event: {error}"))
+    }
+
+    /// Unpin the event with the given ID in this room.
+    pub async fn unpin_event(&self, event_id: OwnedEventId) -> Result<(), matrix_sdk::Error> {
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.unpin_event(&event_id).await });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .map(|_| ())
+            .inspect_err(|error| error!("Could not unpin event: {error}"))
+    }
+
+    /// Enable encryption in this room. Nothing to do if it already is.
+    pub async fn enable_encryption(&self) -> Result<(), matrix_sdk::Error> {
+        if self.is_encrypted() {
+            return Ok(());
+        }
+
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.enable_encryption().await });
+
+        handle
+            .await
+            .expect("task was not aborted")
+            .inspect_err(|error| error!("Could not enable room encryption: {error}"))
     }
 
     /// Whether the event with the given ID is pinned in this room.

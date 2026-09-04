@@ -346,6 +346,10 @@ internal fun EventActionSheet(state: CommuneState) {
                 state.startSelection(event.uniqueId)
                 state.dismissActionSheet()
             }
+            SheetAction(if (event.isPinned) "Unpin" else "Pin") {
+                state.togglePin(event) {}
+                state.dismissActionSheet()
+            }
             SheetAction("Properties") {
                 event.eventId?.let { state.openEventSource(it) }
                 state.dismissActionSheet()
@@ -1184,6 +1188,7 @@ internal fun MessageBubble(
                     ShieldIcon(shield)
                 }
             }
+            event.previewUrl?.let { url -> UrlPreviewCard(state, url) }
 
             (event.kind as? FfiEventKind.Location)?.let { location ->
                 val context = androidx.compose.ui.platform.LocalContext.current

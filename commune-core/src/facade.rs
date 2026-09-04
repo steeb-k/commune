@@ -1183,6 +1183,11 @@ pub enum FfiTimelineItem {
         /// The authenticity shield, in an encrypted room, when the message
         /// deserves one.
         shield: Option<FfiShield>,
+        /// Whether the event is pinned in its room.
+        is_pinned: bool,
+        /// The first link of a text message that a preview card belongs
+        /// under, when the room is not encrypted and previews are on.
+        preview_url: Option<String>,
         /// How far a locally sent event got, `None` for remote echoes.
         send_state: Option<FfiSendState>,
     },
@@ -1341,6 +1346,10 @@ pub trait TypingListener: Send + Sync {
 /// The toggleable per-session settings, as the settings screen needs
 /// them.
 #[derive(uniffi::Record)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "one switch per setting, as the settings screen lists them"
+)]
 pub struct FfiSessionSettings {
     /// Whether notifications are enabled for this session.
     pub notifications_enabled: bool,
@@ -1348,6 +1357,8 @@ pub struct FfiSessionSettings {
     pub public_read_receipts_enabled: bool,
     /// Whether typing notifications are sent.
     pub typing_enabled: bool,
+    /// Whether URL previews are shown under messages in unencrypted rooms.
+    pub url_previews_enabled: bool,
 }
 
 /// The core, as one object the foreign side holds.
@@ -2109,6 +2120,7 @@ impl CoreApp {
             notifications_enabled: settings.notifications_enabled(),
             public_read_receipts_enabled: settings.public_read_receipts_enabled(),
             typing_enabled: settings.typing_enabled(),
+            url_previews_enabled: settings.url_previews_enabled(),
         })
     }
 
@@ -2142,6 +2154,13 @@ impl CoreApp {
     pub fn set_typing_enabled(&self, enabled: bool) {
         if let Some(session) = self.first_ready_session() {
             session.settings().set_typing_enabled(enabled);
+        }
+    }
+
+    /// Set whether URL previews are shown under messages.
+    pub fn set_url_previews_enabled(&self, enabled: bool) {
+        if let Some(session) = self.first_ready_session() {
+            session.settings().set_url_previews_enabled(enabled);
         }
     }
 
@@ -3372,6 +3391,196 @@ impl CoreApp {
             .map_err(CoreError::from)
     }
 
+    /// Pin the given event in the given room.
+    pub async fn pin_event(&self, room_id: String, event_id: String) -> Result<(), CoreError> {
+        let room = self.room(&room_id)?;
+        let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
+            msg: "Invalid event ID".to_owned(),
+        })?;
+
+        RUNTIME
+            .spawn(async move { room.pin_event(event_id).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| CoreError::Failed {
+                msg: format!("Could not pin: {error}"),
+            })
+    }
+
+    /// Unpin the given event in the given room.
+    pub async fn unpin_event(&self, room_id: String, event_id: String) -> Result<(), CoreError> {
+        let room = self.room(&room_id)?;
+        let event_id = ruma::EventId::parse(&event_id).map_err(|_| CoreError::Failed {
+            msg: "Invalid event ID".to_owned(),
+        })?;
+
+        RUNTIME
+            .spawn(async move { room.unpin_event(event_id).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| CoreError::Failed {
+                msg: format!("Could not unpin: {error}"),
+            })
+    }
+
+    /// Enable encryption in the given room. It cannot be disabled later.
+    pub async fn enable_room_encryption(&self, room_id: String) -> Result<(), CoreError> {
+        let room = self.room(&room_id)?;
+
+        RUNTIME
+            .spawn(async move { room.enable_encryption().await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| CoreError::Failed {
+                msg: format!("Could not enable encryption: {error}"),
+            })
+    }
+
+    /// Lift the given user's ban from the given room.
+    pub async fn unban_user(
+        &self,
+        room_id: String,
+        user_id: String,
+        reason: Option<String>,
+    ) -> Result<(), CoreError> {
+        self.with_room_user(room_id, user_id, move |room, user| async move {
+            room.unban_user(&user, reason.as_deref())
+                .await
+                .map_err(|unban_error| CoreError::Failed {
+                    msg: format!("Could not unban: {unban_error}"),
+                })
+        })
+        .await
+    }
+
+    /// Put the given room inside the given space.
+    pub async fn add_room_to_space(
+        &self,
+        room_id: String,
+        space_id: String,
+    ) -> Result<(), CoreError> {
+        let room = self.room(&room_id)?;
+        let space = self.room(&space_id)?;
+
+        RUNTIME
+            .spawn(async move { crate::session::add_room_to_space(&room, &space).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| CoreError::Failed {
+                msg: format!("Could not add the room to the space: {error}"),
+            })
+    }
+
+    /// Take the given room back out of the given space.
+    pub async fn remove_room_from_space(
+        &self,
+        room_id: String,
+        space_id: String,
+    ) -> Result<(), CoreError> {
+        let room = self.room(&room_id)?;
+        let space = self.room(&space_id)?;
+
+        RUNTIME
+            .spawn(async move { crate::session::remove_room_from_space(&room, &space).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(|error| CoreError::Failed {
+                msg: format!("Could not remove the room from the space: {error}"),
+            })
+    }
+
+    /// The joined spaces that hold the given room.
+    pub async fn parent_spaces(&self, room_id: String) -> Result<Vec<FfiRoom>, CoreError> {
+        let session = self.session()?;
+        let room = self.room(&room_id)?;
+
+        let spaces = RUNTIME
+            .spawn(async move { crate::session::parent_spaces(&room, session.room_list()).await })
+            .await
+            .expect("task was not aborted");
+
+        Ok(spaces.iter().map(FfiRoom::from).collect())
+    }
+
+    /// Reset the crypto identity — new cross-signing keys — answering the
+    /// homeserver's password stage with the given password.
+    pub async fn reset_cross_signing(&self, password: String) -> Result<(), CoreError> {
+        use ruma::api::client::uiaa::AuthType;
+
+        use crate::{login::AuthStage, session::BootstrapError};
+
+        let session = self.session()?;
+        let security = session.security().clone();
+
+        let Err(BootstrapError::Uiaa(uiaa_info)) = security.reset_cross_signing(None).await else {
+            return security
+                .reset_cross_signing(None)
+                .await
+                .map_err(CoreError::from);
+        };
+
+        let stage = AuthStage::next(&uiaa_info, &[AuthType::Password])
+            .filter(|stage| stage.stage == AuthType::Password)
+            .ok_or_else(|| CoreError::Failed {
+                msg: "This homeserver asks for steps this app cannot answer yet".to_owned(),
+            })?;
+        let auth = stage.password_data(session.user_id(), &password);
+
+        security
+            .reset_cross_signing(Some(auth))
+            .await
+            .map_err(CoreError::from)
+    }
+
+    /// The QR code to show for the verification with the given flow ID,
+    /// as the bytes a QR renderer encodes, once the flow offers one.
+    #[allow(
+        clippy::needless_pass_by_value,
+        reason = "the FFI hands over an owned string"
+    )]
+    pub fn verification_qr_code(&self, flow_id: String) -> Option<Vec<u8>> {
+        self.verification(&flow_id).ok()?.qr_code_bytes()
+    }
+
+    /// What the homeserver says about the given link, for the card under
+    /// a message. `None` when it says nothing, or cannot preview at all.
+    pub async fn url_preview(&self, url: String) -> Option<FfiUrlPreview> {
+        use crate::utils::LoadingState;
+
+        let session = self.first_ready_session()?;
+        let url = url::Url::parse(&url).ok()?;
+
+        let entry = session.remote_cache().url_preview(url);
+        let mut updates = entry.subscribe();
+
+        // The cache asked when the entry was made; wait for its answer.
+        let state = RUNTIME
+            .spawn(async move {
+                loop {
+                    let state = entry.state();
+                    match state.loading_state {
+                        LoadingState::Ready | LoadingState::Error => return state,
+                        _ => {}
+                    }
+                    if updates.next().await.is_none() {
+                        return entry.state();
+                    }
+                }
+            })
+            .await
+            .expect("task was not aborted");
+
+        let preview = state.preview?;
+
+        Some(FfiUrlPreview {
+            url: preview.url.to_string(),
+            title: preview.title,
+            description: preview.description,
+            site_name: preview.site_name,
+            image_url: preview.image.map(|image| image.uri.to_string()),
+        })
+    }
+
     /// Search the user directory for the given term, as the application's
     /// invite page and direct chat dialog do.
     ///
@@ -3457,6 +3666,7 @@ impl CoreApp {
         public: bool,
         encrypted: bool,
         alias: Option<String>,
+        is_space: bool,
     ) -> Result<String, CoreError> {
         use crate::session::{CreateRoomOptions, CreateRoomVisibility};
 
@@ -3481,7 +3691,7 @@ impl CoreApp {
             .create_room(CreateRoomOptions {
                 name: Some(name),
                 topic,
-                is_space: false,
+                is_space,
                 visibility,
             })
             .await
@@ -5874,6 +6084,21 @@ impl From<crate::session::NotificationBody> for FfiNotificationBody {
     }
 }
 
+/// What the homeserver says about a link, for the card under a message.
+#[derive(uniffi::Record)]
+pub struct FfiUrlPreview {
+    /// The URL the preview describes.
+    pub url: String,
+    /// The page's title, when it has one.
+    pub title: Option<String>,
+    /// The page's description, when it has one.
+    pub description: Option<String>,
+    /// The site's name, or the host until the homeserver names it.
+    pub site_name: String,
+    /// The page's image, as an `mxc:` URI, when it has one.
+    pub image_url: Option<String>,
+}
+
 /// A third-party identifier linked to the account.
 #[derive(uniffi::Record)]
 pub struct FfiThirdPartyId {
@@ -6751,6 +6976,42 @@ fn ffi_message_kind(message: &matrix_sdk_ui::timeline::Message) -> (FfiEventKind
     (kind, msgtype.body().to_owned())
 }
 
+/// The first link of the given message that a preview card belongs under,
+/// by the application's rule: never in a room that is (or may be)
+/// encrypted, since the homeserver would be told what the message is
+/// about, and only while the setting is on.
+fn ffi_preview_url(
+    message: &matrix_sdk_ui::timeline::Message,
+    session: &Session,
+    room: &Room,
+) -> Option<String> {
+    use matrix_sdk::EncryptionState;
+    use ruma::events::room::message::MessageType;
+
+    // The SDK's tri-state is what is asked, rather than `is_encrypted()`:
+    // that flag is `false` until an async check has answered. `Unknown` is
+    // treated as encrypted here.
+    if !matches!(
+        room.matrix_room().encryption_state(),
+        EncryptionState::NotEncrypted
+    ) {
+        return None;
+    }
+
+    if !session.settings().url_previews_enabled() {
+        return None;
+    }
+
+    let (body, formatted) = match message.msgtype() {
+        MessageType::Text(content) => (&content.body, content.formatted.as_ref()),
+        MessageType::Notice(content) => (&content.body, content.formatted.as_ref()),
+        MessageType::Emote(content) => (&content.body, content.formatted.as_ref()),
+        _ => return None,
+    };
+
+    crate::matrix::previewable_url(body, formatted).map(|url| url.to_string())
+}
+
 /// The names a mention shows, looked up in the room the message was sent
 /// in, the way the application's pills name themselves.
 struct RoomMentionNames<'a> {
@@ -6933,6 +7194,14 @@ fn ffi_timeline_item(
                 _ => Vec::new(),
             };
 
+            let preview_url = match event.content() {
+                TimelineItemContent::MsgLike(msg_like) => match &msg_like.kind {
+                    MsgLikeKind::Message(message) => ffi_preview_url(message, session, room),
+                    _ => None,
+                },
+                _ => None,
+            };
+
             let thread_replies = ffi_thread_replies(event.content());
 
             let reactions = ffi_reactions(event.content(), own_user_id);
@@ -6964,6 +7233,10 @@ fn ffi_timeline_item(
                 body,
                 rich,
                 shield: ffi_shield(event.get_shield(false)),
+                is_pinned: event
+                    .event_id()
+                    .is_some_and(|event_id| room.is_pinned(event_id)),
+                preview_url,
                 send_state: ffi_send_state(event.send_state()),
             }
         }
