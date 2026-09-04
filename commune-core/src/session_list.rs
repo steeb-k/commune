@@ -221,6 +221,18 @@ impl SessionList {
         entries.iter().find_map(|entry| entry.session().cloned())
     }
 
+    /// Every session that is ready, in the list's order.
+    #[must_use]
+    pub fn ready_sessions(&self) -> Vec<Session> {
+        self.inner
+            .entries
+            .lock()
+            .expect("mutex is not poisoned")
+            .iter()
+            .filter_map(|entry| entry.session().cloned())
+            .collect()
+    }
+
     /// The session with the given ID, if any.
     #[must_use]
     pub fn get(&self, session_id: &str) -> Option<SessionEntry> {

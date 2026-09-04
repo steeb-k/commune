@@ -201,6 +201,14 @@ impl From<crate::session::DeviceError> for CoreError {
     }
 }
 
+impl From<crate::session::AccountManagementError> for CoreError {
+    fn from(error: crate::session::AccountManagementError) -> Self {
+        Self::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        }
+    }
+}
+
 impl From<crate::session::PushError> for CoreError {
     fn from(error: crate::session::PushError) -> Self {
         Self::Failed {
@@ -530,6 +538,10 @@ impl From<RoomHighlight> for FfiRoomHighlight {
 
 /// A room, as the sidebar needs it.
 #[derive(uniffi::Record)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "one flag per fact the sidebar and the room screen read side by side"
+)]
 pub struct FfiRoom {
     /// The ID of the room.
     pub room_id: String,
@@ -566,6 +578,8 @@ pub struct FfiRoom {
     /// room list carried before the message that raised the count settled.
     /// The embedder uses this to keep our own message out of the preview.
     pub latest_event_is_own: bool,
+    /// Whether the room is encrypted.
+    pub is_encrypted: bool,
 }
 
 impl From<&Room> for FfiRoom {
@@ -587,6 +601,7 @@ impl From<&Room> for FfiRoom {
             latest_event_sender: latest.as_ref().map(|preview| preview.sender.clone()),
             latest_event_body: latest.as_ref().map(|preview| preview.body.clone()),
             latest_event_is_own: latest.is_some_and(|preview| preview.is_own),
+            is_encrypted: room.is_encrypted(),
         }
     }
 }
@@ -3174,6 +3189,189 @@ impl CoreApp {
         })
     }
 
+    /// Fetch, and where needed decrypt, the one event a push names, and
+    /// say what a notification for it would say — the application's
+    /// Android push path. Waits, bounded, for the sessions of a process
+    /// the push itself started.
+    ///
+    /// `None` means nothing should be shown: no session knows the room,
+    /// the push rules filtered the event out, it was redacted or is gone,
+    /// or it is a call invite, which the calls module rings for.
+    pub async fn fetch_pushed_notification(
+        &self,
+        room_id: String,
+        event_id: String,
+    ) -> Option<FfiPushedNotification> {
+        let room_id = ruma::RoomId::parse(&room_id).ok()?;
+        let event_id = ruma::EventId::parse(&event_id).ok()?;
+        let session_list = self.session_list.clone();
+
+        let pushed = RUNTIME
+            .spawn(async move {
+                crate::session::fetch_pushed_event(&session_list, room_id, event_id).await
+            })
+            .await
+            .expect("task was not aborted")?;
+
+        Some(FfiPushedNotification {
+            room_name: pushed.room_name,
+            sender_name: pushed.sender_name,
+            sender_id: pushed.sender_id,
+            is_own: pushed.is_own,
+            is_direct: pushed.is_direct,
+            body: pushed.body.into(),
+            timestamp: pushed.timestamp,
+        })
+    }
+
+    /// Change the account's password. `current_password` answers the
+    /// homeserver's password stage, which it asks for as a rule.
+    pub async fn change_password(
+        &self,
+        new_password: String,
+        current_password: Option<String>,
+    ) -> Result<(), CoreError> {
+        let session = self.session()?;
+
+        RUNTIME
+            .spawn(async move {
+                session
+                    .change_password(&new_password, current_password.as_deref())
+                    .await
+            })
+            .await
+            .expect("task was not aborted")
+            .map_err(CoreError::from)
+    }
+
+    /// Deactivate the account, keeping its messages, then clean the
+    /// session off this device: the homeserver has already forgotten it.
+    pub async fn deactivate_account(
+        &self,
+        current_password: Option<String>,
+    ) -> Result<(), CoreError> {
+        let session = self.session()?;
+        let session_id = session.session_id().to_owned();
+
+        RUNTIME
+            .spawn(async move {
+                session
+                    .deactivate_account(current_password.as_deref())
+                    .await
+                    .map_err(CoreError::from)?;
+                session.clean_up().await;
+                Ok::<(), CoreError>(())
+            })
+            .await
+            .expect("task was not aborted")?;
+
+        self.session_list.remove(&session_id);
+        self.session_list.set_active(None);
+        Ok(())
+    }
+
+    /// The third-party identifiers on the account.
+    pub async fn third_party_ids(&self) -> Result<FfiThirdPartyIds, CoreError> {
+        let session = self.session()?;
+
+        let ids = RUNTIME
+            .spawn(async move { session.third_party_ids().await })
+            .await
+            .expect("task was not aborted")
+            .map_err(CoreError::from)?;
+
+        Ok(FfiThirdPartyIds {
+            ids: ids
+                .ids
+                .into_iter()
+                .map(|id| FfiThirdPartyId {
+                    address: id.address,
+                    is_email: id.medium == crate::session::ThirdPartyMedium::Email,
+                })
+                .collect(),
+            can_change: ids.can_change,
+        })
+    }
+
+    /// Remove the given third-party identifier from the account.
+    pub async fn delete_third_party_id(
+        &self,
+        address: String,
+        is_email: bool,
+    ) -> Result<(), CoreError> {
+        let session = self.session()?;
+        let medium = if is_email {
+            crate::session::ThirdPartyMedium::Email
+        } else {
+            crate::session::ThirdPartyMedium::Phone
+        };
+
+        RUNTIME
+            .spawn(async move { session.delete_third_party_id(&address, medium).await })
+            .await
+            .expect("task was not aborted")
+            .map_err(CoreError::from)
+    }
+
+    /// Ask the homeserver to send a validation link to the given email
+    /// address. Passing the previous answer for the same address resends.
+    pub async fn request_email_validation(
+        &self,
+        address: String,
+        previous: Option<FfiPendingEmail>,
+    ) -> Result<FfiPendingEmail, CoreError> {
+        let session = self.session()?;
+        let previous = previous.map(TryInto::try_into).transpose()?;
+
+        RUNTIME
+            .spawn(async move {
+                session
+                    .request_email_validation(&address, previous.as_ref())
+                    .await
+            })
+            .await
+            .expect("task was not aborted")
+            .map(Into::into)
+            .map_err(CoreError::from)
+    }
+
+    /// Add the pending email address to the account, once its validation
+    /// link was opened. `current_password` answers the password stage.
+    pub async fn add_pending_email(
+        &self,
+        pending: FfiPendingEmail,
+        current_password: Option<String>,
+    ) -> Result<(), CoreError> {
+        let session = self.session()?;
+        let pending: crate::session::PendingEmail = pending.try_into()?;
+
+        RUNTIME
+            .spawn(async move {
+                session
+                    .add_pending_email(&pending, current_password.as_deref())
+                    .await
+            })
+            .await
+            .expect("task was not aborted")
+            .map_err(CoreError::from)
+    }
+
+    /// Add the messages the room has loaded to its local search index, so
+    /// a search in an encrypted room finds what arrived before the index
+    /// existed. Loading more of the history and doing it again covers more.
+    pub async fn reindex_room_search(&self, room_id: String) -> Result<(), CoreError> {
+        let room = self.room(&room_id)?;
+
+        RUNTIME
+            .spawn(async move {
+                let search = crate::session::RoomSearch::with_page_size(&room, 1);
+                search.reindex().await
+            })
+            .await
+            .expect("task was not aborted")
+            .map_err(CoreError::from)
+    }
+
     /// Search the user directory for the given term, as the application's
     /// invite page and direct chat dialog do.
     ///
@@ -5598,6 +5796,142 @@ pub struct FfiProfile {
     pub display_name: Option<String>,
     /// The avatar, as an `mxc:` URI, when one is set.
     pub avatar_url: Option<String>,
+}
+
+/// What a pushed event says, fetched and decrypted on the device.
+#[derive(uniffi::Record)]
+pub struct FfiPushedNotification {
+    /// The name of the room, as the SDK computes it.
+    pub room_name: String,
+    /// The name of the sender, disambiguated with the user ID when another
+    /// member shares it, or the localpart when there is none.
+    pub sender_name: String,
+    /// The ID of the sender.
+    pub sender_id: String,
+    /// Whether our own user sent the event.
+    pub is_own: bool,
+    /// Whether the room is a direct chat.
+    pub is_direct: bool,
+    /// What the notification says; the embedder words it.
+    pub body: FfiNotificationBody,
+    /// When the event was sent, in milliseconds since the Unix epoch;
+    /// zero for an invite.
+    pub timestamp: u64,
+}
+
+/// What a notification says — the application's `NotificationBody`.
+#[derive(uniffi::Enum)]
+pub enum FfiNotificationBody {
+    /// A text, notice or server notice, with its body.
+    Text {
+        /// The body, the reply fallback removed.
+        body: String,
+    },
+    /// An emote, with its body; it reads as the sender followed by the
+    /// body.
+    Emote {
+        /// The body.
+        body: String,
+    },
+    /// An audio file.
+    Audio,
+    /// A file.
+    File,
+    /// An image.
+    Image,
+    /// A location.
+    Location,
+    /// A video.
+    Video,
+    /// A sticker.
+    Sticker,
+    /// An invite to our own user.
+    Invite,
+    /// An incoming call announced by an RTC notification, which another
+    /// client has to answer.
+    IncomingCall {
+        /// Whether the call has video.
+        video: bool,
+    },
+}
+
+impl From<crate::session::NotificationBody> for FfiNotificationBody {
+    fn from(body: crate::session::NotificationBody) -> Self {
+        use crate::session::NotificationBody as Body;
+
+        match body {
+            Body::Text(body) => Self::Text { body },
+            Body::Emote(body) => Self::Emote { body },
+            Body::Audio => Self::Audio,
+            Body::File => Self::File,
+            Body::Image => Self::Image,
+            Body::Location => Self::Location,
+            Body::Video => Self::Video,
+            Body::Sticker => Self::Sticker,
+            Body::Invite => Self::Invite,
+            Body::IncomingCall { video } => Self::IncomingCall { video },
+        }
+    }
+}
+
+/// A third-party identifier linked to the account.
+#[derive(uniffi::Record)]
+pub struct FfiThirdPartyId {
+    /// The address.
+    pub address: String,
+    /// Whether it is an email address; otherwise a phone number.
+    pub is_email: bool,
+}
+
+/// The third-party identifiers on the account, and whether the homeserver
+/// lets them change.
+#[derive(uniffi::Record)]
+pub struct FfiThirdPartyIds {
+    /// The identifiers.
+    pub ids: Vec<FfiThirdPartyId>,
+    /// Whether adding and removing them is allowed.
+    pub can_change: bool,
+}
+
+/// An email address whose validation link was sent, waiting to be added.
+#[derive(uniffi::Record)]
+pub struct FfiPendingEmail {
+    /// The address.
+    pub address: String,
+    /// The secret this validation session was opened with.
+    pub client_secret: String,
+    /// The validation session on the homeserver.
+    pub sid: String,
+    /// How many times the email was requested for this address.
+    pub send_attempt: u32,
+}
+
+impl From<crate::session::PendingEmail> for FfiPendingEmail {
+    fn from(pending: crate::session::PendingEmail) -> Self {
+        Self {
+            address: pending.address,
+            client_secret: pending.client_secret.to_string(),
+            sid: pending.sid.to_string(),
+            send_attempt: pending.send_attempt,
+        }
+    }
+}
+
+impl TryFrom<FfiPendingEmail> for crate::session::PendingEmail {
+    type Error = CoreError;
+
+    fn try_from(pending: FfiPendingEmail) -> Result<Self, CoreError> {
+        let invalid = |what: &str| CoreError::Failed {
+            msg: format!("Not a valid {what}"),
+        };
+        Ok(Self {
+            address: pending.address,
+            client_secret: ruma::ClientSecret::parse(pending.client_secret)
+                .map_err(|_| invalid("client secret"))?,
+            sid: ruma::SessionId::parse(pending.sid).map_err(|_| invalid("session ID"))?,
+            send_attempt: pending.send_attempt,
+        })
+    }
 }
 
 /// One user the directory found for a search term.

@@ -32,13 +32,22 @@ was abandoned). The GTK app is the desktop target and is now a view over
    and list marker); `RichText.kt` draws it. Verified on the emulator against
    a posted batch (markup, quote, lists, code block, pills, plain-text links,
    emote, heading, colours, rule, details).
-2. **MISSING — Push notifications never decrypt.** `Push.kt` posts straight from
-   the gateway JSON (`content.body`), so an encrypted room's push is the literal
-   "New message". Decrypting needs the SDK's `NotificationClient` on the push
-   path, which the facade does not yet expose to Android.
-3. **PARTIAL — Search in encrypted rooms.** `search_room` exists, but there is no
-   reindex or local index exposed; server `/search` returns nothing for
-   encrypted rooms. The desktop reindex is not on the FFI. RE-VERIFY on device.
+2. **BUILT 3 Sep, RE-VERIFY on the Pixel — Push notifications decrypt.**
+   `session/notifications/pushed.rs` is the GTK `android_push.rs` fetch path
+   without the GTK: bounded wait for the sessions of a push-started process,
+   `NotificationClient` (`MultipleProcesses`, `/context`, 25 s timeout), the
+   `NotificationBody` the core already words. `fetch_pushed_notification` on
+   the facade; `Push.kt` takes that route when the payload has no body or is
+   `m.room.encrypted`, and words it with the GTK sentences. The payload format
+   stays full (the 1 Sep decision), so unencrypted pushes are still instant.
+   Not verifiable on the emulator (no UnifiedPush distributor): needs the
+   Pixel with ntfy and an encrypted room.
+3. **DONE 3 Sep — Search in encrypted rooms.** `search_room` already went to
+   the local index for an encrypted room; `reindex_room_search` is now on the
+   facade and the search page offers "Index the loaded messages" in an
+   encrypted room when nothing was found, where the GTK page puts its button.
+   `is_encrypted` rides on `FfiRoom`. Verified on the emulator: a clear-text
+   message in the encrypted room is found; the button runs without error.
 4. **DONE 3 Sep — Per-message encryption authenticity shield.** `shield` on
    the event (warning/caveat + the SDK's code); the bubble shows the GTK
    icons' equivalents beside the timestamp row and a tap says the GTK
@@ -53,9 +62,15 @@ was abandoned). The GTK app is the desktop target and is now a view over
    invite dialog and the direct chat dialog list matches under the field as
    one types (invite hides current members). Note Synapse's default only
    returns users who share a room.
-7. **MISSING — Account management while logged in.** No change-password,
-   deactivate, or third-party IDs (email/phone). `reset_password` is the
-   pre-login forgotten-password flow only.
+7. **DONE 3 Sep — Account management while logged in.** `session/account.rs`
+   (change password, deactivate, list/remove third-party IDs, add an email
+   through its validation link; one password-answering UIA helper like the
+   device sign-out) and an "Account" group on the settings page
+   (`AccountManagement.kt`). Verified on the emulator: the password change
+   took (API login with the new one), the addresses dialog loads. Deactivation
+   shares the UIA helper and was not run against a live account; adding an
+   email depends on the homeserver sending mail. The OAuth account-management
+   URL the GTK deactivate page opens is not offered (the harness has none).
 
 ### Tier 2
 

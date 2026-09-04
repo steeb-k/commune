@@ -17,11 +17,13 @@ use ruma::api::client::push::{Pusher, PusherIds, PusherInit, PusherKind, get_pus
 use tracing::{debug, info};
 
 mod body;
+mod pushed;
 mod settings;
 
 pub(crate) use self::settings::spawn_load;
 pub use self::{
     body::NotificationBody,
+    pushed::{PushedNotification, fetch_pushed_event},
     settings::{
         NotificationsError, NotificationsGlobalSetting, NotificationsRoomSetting,
         NotificationsSettings, NotificationsSpecialRule,

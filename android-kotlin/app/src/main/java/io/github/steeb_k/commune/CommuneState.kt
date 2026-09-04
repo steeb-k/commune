@@ -822,7 +822,7 @@ class CommuneState(context: Context) {
 
     /// A brief user-facing notice — refusals the timeline cannot show,
     /// like the upload-size preflight turning a file down.
-    private fun toast(message: String) {
+    fun toast(message: String) {
         main.post {
             android.widget.Toast
                 .makeText(appContext, message, android.widget.Toast.LENGTH_LONG)
@@ -2334,6 +2334,142 @@ class CommuneState(context: Context) {
 
     fun clearConversationError() {
         conversationError = null
+    }
+
+    /// Change the account's password; the current one answers the
+    /// homeserver's password stage.
+    fun changePassword(newPassword: String, currentPassword: String, onDone: (String?) -> Unit) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.changePassword(newPassword, currentPassword)
+                    null
+                } catch (failure: Exception) {
+                    failure.message?.removePrefix("msg=") ?: "Could not change password"
+                }
+                main.post { onDone(error) }
+            }
+        }
+    }
+
+    /// Deactivate the account, then leave the session the way a logout
+    /// does: the homeserver has already forgotten it.
+    fun deactivateAccount(currentPassword: String, onDone: (String?) -> Unit) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.deactivateAccount(currentPassword)
+                    null
+                } catch (failure: Exception) {
+                    failure.message?.removePrefix("msg=") ?: "Could not deactivate account"
+                }
+                main.post {
+                    onDone(error)
+                    if (error == null) {
+                        toast("Account successfully deactivated")
+                        PushManager.setMode(appContext, PushManager.MODE_UNSET)
+                        pushMode = PushManager.MODE_UNSET
+                        appContext.stopService(
+                            android.content.Intent(appContext, SyncService::class.java)
+                        )
+                        openRoom = null
+                        rooms = emptyList()
+                        timeline = emptyList()
+                        settingsOpen = false
+                        ownUserId = null
+                        phase = Phase.Login
+                    }
+                }
+            }
+        }
+    }
+
+    /// The email addresses and phone numbers on the account.
+    fun thirdPartyIds(
+        onDone: (io.github.steeb_k.commune.core.FfiThirdPartyIds?, String?) -> Unit,
+    ) {
+        thread {
+            runBlocking {
+                val result = try {
+                    Pair(app.thirdPartyIds(), null)
+                } catch (failure: Exception) {
+                    Pair(null, failure.message?.removePrefix("msg=") ?: "Could not load the addresses")
+                }
+                main.post { onDone(result.first, result.second) }
+            }
+        }
+    }
+
+    /// Remove an address from the account.
+    fun deleteThirdPartyId(address: String, isEmail: Boolean, onDone: (String?) -> Unit) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.deleteThirdPartyId(address, isEmail)
+                    null
+                } catch (failure: Exception) {
+                    failure.message?.removePrefix("msg=") ?: "Could not remove address"
+                }
+                main.post { onDone(error) }
+            }
+        }
+    }
+
+    /// Ask for the validation link of an email address; passing the
+    /// previous answer resends it.
+    fun requestEmailValidation(
+        address: String,
+        previous: io.github.steeb_k.commune.core.FfiPendingEmail?,
+        onDone: (io.github.steeb_k.commune.core.FfiPendingEmail?, String?) -> Unit,
+    ) {
+        thread {
+            runBlocking {
+                val result = try {
+                    Pair(app.requestEmailValidation(address, previous), null)
+                } catch (failure: Exception) {
+                    Pair(null, failure.message?.removePrefix("msg=") ?: "Could not send the validation email")
+                }
+                main.post { onDone(result.first, result.second) }
+            }
+        }
+    }
+
+    /// Add the validated email address, the current password answering
+    /// the homeserver's password stage.
+    fun addPendingEmail(
+        pending: io.github.steeb_k.commune.core.FfiPendingEmail,
+        currentPassword: String,
+        onDone: (String?) -> Unit,
+    ) {
+        thread {
+            runBlocking {
+                val error = try {
+                    app.addPendingEmail(pending, currentPassword)
+                    null
+                } catch (failure: Exception) {
+                    failure.message?.removePrefix("msg=") ?: "Could not add the address"
+                }
+                main.post { onDone(error) }
+            }
+        }
+    }
+
+    /// Add the loaded messages of the open room to its search index, then
+    /// search again — how an encrypted room's history becomes searchable.
+    fun reindexRoomSearch(query: String) {
+        val room = openRoom ?: return
+        roomSearchBusy = true
+        thread {
+            runBlocking {
+                try {
+                    app.reindexRoomSearch(room.roomId)
+                } catch (_: Exception) {
+                }
+                main.post {
+                    if (query.isNotBlank()) searchRoom(query) else roomSearchBusy = false
+                }
+            }
+        }
     }
 
     /// Open what the given Matrix link points at: a room we are in opens

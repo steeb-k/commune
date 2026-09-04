@@ -71,12 +71,22 @@ fun RoomSearchScreen(state: CommuneState, room: FfiRoom) {
         when {
             state.roomSearchBusy -> LoadingFace(modifier = Modifier.fillMaxSize())
 
-            state.roomSearchResults.isEmpty() -> Text(
-                "No results yet — search message text above.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp),
-            )
+            state.roomSearchResults.isEmpty() -> Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    "No results yet — search message text above.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                // An encrypted room is searched on the device, and the
+                // index only knows what arrived after it existed; the GTK
+                // search page offers the same button in the same place.
+                if (room.isEncrypted) {
+                    Spacer(Modifier.size(8.dp))
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = { state.reindexRoomSearch(query.trim()) },
+                    ) { Text("Index the loaded messages") }
+                }
+            }
 
             else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(state.roomSearchResults.size, key = { state.roomSearchResults[it].eventId }) {
