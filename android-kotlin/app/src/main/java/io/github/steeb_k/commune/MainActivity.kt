@@ -46,9 +46,11 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+    // Several at once, as the GTK file dialog now allows: each becomes its
+    // own message, previewed in turn or sent all together.
     private val attachmentPicker =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            uri?.let { state.sendAttachmentFromUri(it) }
+        registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+            if (uris.isNotEmpty()) state.queueAttachmentsFromUris(uris)
         }
 
     private val avatarPicker =
@@ -97,7 +99,30 @@ class MainActivity : ComponentActivity() {
         intent.getStringExtra("room_id")?.let { state.openRoomById(it) }
         handleRedirect(intent)
         handleMatrixLink(intent)
+        handleShare(intent)
         handleCallAction(intent)
+    }
+
+    /// Files shared to the app from elsewhere: one with SEND, several with
+    /// SEND_MULTIPLE. They queue for the open room, or wait for a room to
+    /// be picked.
+    private fun handleShare(intent: android.content.Intent?) {
+        val action = intent?.action ?: return
+        val uris: List<android.net.Uri> = when (action) {
+            android.content.Intent.ACTION_SEND -> listOfNotNull(
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(android.content.Intent.EXTRA_STREAM) as? android.net.Uri
+            )
+            android.content.Intent.ACTION_SEND_MULTIPLE ->
+                @Suppress("DEPRECATION")
+                intent.getParcelableArrayListExtra<android.net.Uri>(android.content.Intent.EXTRA_STREAM)
+                    .orEmpty()
+            else -> return
+        }
+        if (uris.isEmpty()) return
+        // Handled once: the intent stays on the activity across rotations.
+        intent.action = null
+        state.receiveShare(uris)
     }
 
     /// A Matrix link handed to the app: a matrix: URI or a matrix.to
@@ -161,7 +186,7 @@ class MainActivity : ComponentActivity() {
         // and lends it the pickers and permission prompts that need an
         // activity to run on.
         state = (application as CommuneApplication).state
-        state.pickAttachment = { attachmentPicker.launch("*/*") }
+        state.pickAttachment = { attachmentPicker.launch(arrayOf("*/*")) }
         state.pickAvatar = { avatarPicker.launch("image/*") }
         state.pickRoomAvatar = { roomAvatarPicker.launch("image/*") }
         state.pickImagePackFile = { packImagePicker.launch("image/*") }
@@ -218,6 +243,7 @@ class MainActivity : ComponentActivity() {
         intent?.getStringExtra("room_id")?.let { state.openRoomById(it) }
         handleRedirect(intent)
         handleMatrixLink(intent)
+        handleShare(intent)
         handleCallAction(intent)
 
         setContent {
@@ -271,6 +297,7 @@ private fun CommuneApp(state: CommuneState) {
             }
             VerificationDialog(state)
             io.github.steeb_k.commune.ui.MatrixLinkDialog(state)
+            io.github.steeb_k.commune.ui.SharePickerDialog(state)
             val room = state.openRoom
             val viewerPath = state.viewerImagePath
             // A key produced from the setup screen takes over the

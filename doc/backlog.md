@@ -124,6 +124,15 @@ was abandoned). The GTK app is the desktop target and is now a view over
   item, a tombstoned room only changes category, its session rows show the
   verified state without a per-device request). They stay as ideas, not
   gaps.
+* **DONE 3 Sep — Several attachments at once.** Both pickers now return
+  many files (GTK `open_multiple_future`, Android `OpenMultipleDocuments`),
+  a drop of several files on the GTK history and Android's share sheet
+  (SEND and SEND_MULTIPLE, with a room picker when no room is open) feed
+  the same queue, and the preview offers "Send All (N)" beside "Send" —
+  Element Classic's shape. Each file is its own message, sent in the order
+  picked, each awaited before the next. Verified on the emulator: two
+  pictures picked together arrived as two image events in order. The GTK
+  side compiles and lints; its dialog is owed an eyeball.
 * **RE-VERIFY — avatar cropping.** Some cropping code exists in the Kotlin
   app; nobody has checked it against the GTK avatar editor.
 

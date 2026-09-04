@@ -27,6 +27,30 @@ template $AttachmentDialog: Adw.Dialog {
           "suggested-action",
         ]
       }
+
+      [end]
+      Gtk.Button send_all_button {
+        visible: false;
+        clicked => $send_all() swapped;
+      }
+
+      [end]
+      Gtk.Button send_all_button {
+        visible: false;
+        clicked => $send_all() swapped;
+      }
+
+      [end]
+      Gtk.Button send_all_button {
+        visible: false;
+        clicked => $send_all() swapped;
+      }
+
+      [end]
+      Gtk.Button send_all_button {
+        visible: false;
+        clicked => $send_all() swapped;
+      }
     }
 
     content: $MediaContentViewer media {};

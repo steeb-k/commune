@@ -3,7 +3,6 @@
 data/io.github.steeb_k.Commune.desktop.in.in
 data/io.github.steeb_k.Commune.gschema.xml.in
 data/io.github.steeb_k.Commune.metainfo.xml.in.in
-
 src/account_chooser_dialog/mod.blp
 src/account_settings/encryption_page/import_export_keys_subpage.blp
 src/account_settings/encryption_page/import_export_keys_subpage.rs
@@ -214,6 +213,7 @@ src/session_view/room_history/message_row/text/widgets.rs
 src/session_view/room_history/message_row/visual_media.blp
 src/session_view/room_history/message_row/visual_media.rs
 src/session_view/room_history/message_toolbar/attachment_dialog.blp
+src/session_view/room_history/message_toolbar/attachment_dialog.rs
 src/session_view/room_history/message_toolbar/completion/completion_popover.rs
 src/session_view/room_history/message_toolbar/mod.blp
 src/session_view/room_history/message_toolbar/mod.rs
