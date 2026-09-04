@@ -199,6 +199,8 @@ mod imp {
         /// The abort handles of the knock requests subscription.
         knock_requests_aborts: RefCell<Vec<AbortHandle>>,
         window_active_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// The handler watching the dialog presented over the window.
+        window_dialog_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -410,16 +412,38 @@ mod imp {
                     }
                 ));
                 imp.window_active_handler.replace(Some(active_handler));
+
+                // On Windows the window is a plain `gtk::ApplicationWindow` and a
+                // dialog is a window of its own, which takes the activity with it.
+                if let Some(adw_window) = window.dynamic_cast_ref::<adw::ApplicationWindow>() {
+                    let dialog_handler = adw_window.connect_visible_dialog_notify(clone!(
+                        #[weak]
+                        imp,
+                        move |window| {
+                            if window.visible_dialog().is_some() {
+                                return;
+                            }
+
+                            // The dialog over the history closed: what is below it is
+                            // being read again.
+                            imp.trigger_read_receipts_update();
+                        }
+                    ));
+                    imp.window_dialog_handler.replace(Some(dialog_handler));
+                }
             });
         }
 
         fn dispose(&self) {
             self.disconnect_all();
 
-            if let Some(handler) = self.window_active_handler.take()
-                && let Some(window) = self.parent_window()
-            {
-                window.disconnect(handler);
+            if let Some(window) = self.parent_window() {
+                if let Some(handler) = self.window_active_handler.take() {
+                    window.disconnect(handler);
+                }
+                if let Some(handler) = self.window_dialog_handler.take() {
+                    window.disconnect(handler);
+                }
             }
         }
     }
@@ -1678,12 +1702,18 @@ mod imp {
 
         /// Whether the room history is active.
         ///
-        /// It means that the ancestor window is active and the room history is
-        /// mapped.
+        /// It means that the ancestor window is active with no dialog over it
+        /// — a room's details, its media history — and the room history is
+        /// mapped. A dialog leaves the history mapped and the window active,
+        /// so without this a message arriving while the media history is
+        /// open would be marked read unseen.
         fn is_active(&self) -> bool {
-            self.parent_window()
-                .is_some_and(|window| window.is_active())
-                && self.obj().is_mapped()
+            self.parent_window().is_some_and(|window| {
+                window.is_active()
+                    && window
+                        .dynamic_cast_ref::<adw::ApplicationWindow>()
+                        .is_none_or(|window| window.visible_dialog().is_none())
+            }) && self.obj().is_mapped()
         }
 
         /// Trigger the process to update read receipts.

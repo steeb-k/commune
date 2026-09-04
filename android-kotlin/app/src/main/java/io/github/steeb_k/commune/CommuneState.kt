@@ -62,6 +62,9 @@ class CommuneState(context: Context) {
         set(value) {
             field = value
             notifier.visibleRoomId = if (value) openRoom?.roomId else null
+            // Coming to the front over the room history reads it, as the
+            // GTK history sends its receipts when its window turns active.
+            if (value) markReadIfActive()
             // Coming back to the foreground is the moment the session's
             // connectivity knowledge went stale: the background froze the
             // process mid-claim, and the claim would otherwise be sleeping
@@ -596,6 +599,28 @@ class CommuneState(context: Context) {
         jumpToUnread = false
     }
 
+    /// Whether the room screen is the one on the display: set by the
+    /// screen itself as it enters and leaves composition. A member list,
+    /// the media history or a thread over the room takes it off, and no
+    /// receipt goes out while it is — the GTK history's `is_active`, which
+    /// asks that the history be mapped and its window active with no
+    /// dialog over it.
+    var roomScreenMapped by mutableStateOf(false)
+        private set
+
+    fun roomScreenShown(mapped: Boolean) {
+        roomScreenMapped = mapped
+        if (mapped) markReadIfActive()
+    }
+
+    /// Whether looking at the open room counts as reading it right now.
+    private fun roomHistoryActive(): Boolean = uiVisible && roomScreenMapped
+
+    private fun markReadIfActive() {
+        val room = openRoom ?: return
+        if (!suppressMarkRead && roomHistoryActive()) markRead(room.roomId)
+    }
+
     private var paginatingOlder = false
 
     /// Pull one more page of history into the open room's timeline.
@@ -647,8 +672,9 @@ class CommuneState(context: Context) {
                             // looking at it means — except during a
                             // notification-opened visit, which keeps
                             // the read marker where it was until the
-                            // room is left.
-                            if (!suppressMarkRead) markRead(room.roomId)
+                            // room is left, and except while another
+                            // screen covers the room.
+                            markReadIfActive()
                         }
                     }
                 }
