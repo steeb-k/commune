@@ -212,6 +212,28 @@ fun MediaImage(
     }
     val current = drawable ?: return
 
+    // A still picture is drawn by Compose itself, so the frame's clip and
+    // size hold: an ImageView inside a lazy grid painted past its cell and
+    // the media grid became a collage. Animated pictures keep the view,
+    // which is what plays them.
+    val bitmap = (current as? android.graphics.drawable.BitmapDrawable)?.bitmap
+    if (bitmap != null) {
+        val image = androidx.compose.runtime.remember(bitmap) {
+            bitmap.asImageBitmap()
+        }
+        androidx.compose.foundation.Image(
+            bitmap = image,
+            contentDescription = contentDescription,
+            contentScale = if (fill) {
+                androidx.compose.ui.layout.ContentScale.Crop
+            } else {
+                androidx.compose.ui.layout.ContentScale.Fit
+            },
+            modifier = modifier,
+        )
+        return
+    }
+
     androidx.compose.ui.viewinterop.AndroidView(
         factory = { context ->
             android.widget.ImageView(context).apply {
