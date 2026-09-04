@@ -6,11 +6,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -309,5 +312,57 @@ fun RoomAvatar(state: CommuneState, room: FfiRoom, size: Dp) {
             contentScale = ContentScale.Crop,
             modifier = Modifier.size(size).clip(CircleShape),
         )
+    }
+}
+
+/// The strip that shows a save to Downloads under way: the file being
+/// fetched, the count through a batch, a bar, and a stop. The bar has a
+/// fraction for a batch and runs free for one file, so a long fetch is
+/// visibly alive either way.
+@Composable
+fun SaveProgressBar(state: CommuneState) {
+    val progress = state.saveProgress ?: return
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                if (progress.total > 1) {
+                    "Saving ${progress.done + 1} of ${progress.total}"
+                } else {
+                    "Saving"
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                progress.name.ifBlank { "File" },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+            Spacer(Modifier.size(4.dp))
+            if (progress.total > 1) {
+                androidx.compose.material3.LinearProgressIndicator(
+                    progress = { progress.done.toFloat() / progress.total },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                androidx.compose.material3.LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+        if (progress.total > 1) {
+            androidx.compose.material3.IconButton(onClick = { state.cancelSave() }) {
+                Icon(
+                    androidx.compose.material.icons.Icons.Filled.Close,
+                    contentDescription = "Stop saving",
+                )
+            }
+        }
     }
 }

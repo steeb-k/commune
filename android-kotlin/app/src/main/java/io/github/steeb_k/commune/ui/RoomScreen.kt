@@ -113,6 +113,7 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
         if (room.category == FfiRoomCategory.INVITED) {
             InviteBanner(state)
         } else {
+            SaveProgressBar(state)
             ComposerActionBar(state)
             if (state.recordingVoice) {
                 RecordingBar(state)

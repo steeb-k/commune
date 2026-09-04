@@ -939,18 +939,46 @@ class CommuneState(context: Context) {
         val room = openRoom ?: return
         thread {
             runBlocking {
+                beginSave(event.body, 0, 1)
                 val path = try {
                     app.getTimelineMedia(room.roomId, event.uniqueId)
                 } catch (_: Exception) {
                     null
                 }
-                if (path != null && saveToDownloads(path, event.body, null)) {
+                val saved = path != null && saveToDownloads(path, event.body, null)
+                endSave()
+                if (saved) {
                     toast("Saved to Downloads")
                 } else {
                     toast("Could not save the file")
                 }
             }
         }
+    }
+
+    /// Where a save to Downloads stands: how many files are done, how
+    /// many there are, and which one is being fetched. Null when nothing
+    /// is saving. A single file counts as one of one, and its bar moves
+    /// without a fraction, so a long fetch is visibly alive.
+    data class SaveProgress(val done: Int, val total: Int, val name: String)
+
+    var saveProgress by mutableStateOf<SaveProgress?>(null)
+        private set
+
+    @Volatile
+    private var saveCancelled = false
+
+    /// Stop a batch after the file in flight; that one cannot be cut short.
+    fun cancelSave() {
+        saveCancelled = true
+    }
+
+    private fun beginSave(name: String, done: Int, total: Int) {
+        main.post { saveProgress = SaveProgress(done, total, name) }
+    }
+
+    private fun endSave() {
+        main.post { saveProgress = null }
     }
 
     /// The timeline's selection mode: the set of selected unique IDs.
@@ -1199,8 +1227,11 @@ class CommuneState(context: Context) {
         val room = openRoom ?: return
         thread {
             var saved = 0
+            saveCancelled = false
             runBlocking {
-                for (event in events) {
+                for ((index, event) in events.withIndex()) {
+                    if (saveCancelled) break
+                    beginSave(event.body, index, events.size)
                     val path = historyMedia[event.eventId] ?: try {
                         app.getHistoryMedia(room.roomId, event.eventId)
                     } catch (_: Exception) {
@@ -1209,6 +1240,7 @@ class CommuneState(context: Context) {
                     if (saveToDownloads(path, event.body, event.mimeType)) saved += 1
                 }
             }
+            endSave()
             main.post { onDone(saved) }
         }
     }
