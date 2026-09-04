@@ -420,6 +420,10 @@ mod imp {
                 ContentFormat::Compact | ContentFormat::Ellipsized
             );
 
+            // The action takes the root's ID, so the chip carries the action
+            // only together with its target: a button naming a parameterised
+            // action with no target makes GTK warn at every draw — thousands
+            // of lines a minute on a busy room — even while it is hidden.
             if let (Some(count), Some(event_id)) = (num_replies, &event_id) {
                 self.thread_replies_label.set_label(&ngettext_f(
                     // Translators: Do NOT translate the content between '{' and
@@ -431,6 +435,11 @@ mod imp {
                 ));
                 self.thread_chip
                     .set_action_target_value(Some(&event_id.as_str().to_variant()));
+                self.thread_chip
+                    .set_action_name(Some("room-history.show-thread"));
+            } else {
+                self.thread_chip.set_action_name(None);
+                self.thread_chip.set_action_target_value(None);
             }
 
             self.thread_chip
