@@ -119,6 +119,7 @@ fun HistoryScreen(state: CommuneState, kind: FfiHistoryKind) {
             }
         }
 
+        SaveProgressBar(state)
         when {
             state.historyEvents.isEmpty() && state.historyBusy ->
                 LoadingFace(modifier = Modifier.fillMaxSize())
