@@ -131,8 +131,9 @@ was abandoned). The GTK app is the desktop target and is now a view over
   the same queue, and the preview offers "Send All (N)" beside "Send" —
   Element Classic's shape. Each file is its own message, sent in the order
   picked, each awaited before the next. Verified on the emulator: two
-  pictures picked together arrived as two image events in order. The GTK
-  side compiles and lints; its dialog is owed an eyeball.
+  pictures picked together arrived as two image events in order; and on the
+  Linux GTK build: two pictures selected in the file chooser, "Send All (2)"
+  on the preview, two image events in order.
 * **RE-VERIFY — avatar cropping.** Some cropping code exists in the Kotlin
   app; nobody has checked it against the GTK avatar editor.
 
