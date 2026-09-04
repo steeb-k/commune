@@ -205,7 +205,6 @@ fun SettingsScreen(state: CommuneState) {
         FullScreenCallRow()
 
         SettingsGroup("Account")
-        SettingsGroup("Account")
         ChangePasswordRow(state)
         ThirdPartyIdsRow(state)
         DeactivateAccountRow(state)

@@ -128,6 +128,7 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
                     emoticons = state.composerEmoticons,
                     loadDraft = { state.app.loadDraft(room.roomId) },
                     saveDraft = { text -> state.app.saveDraft(room.roomId, text) },
+                    editBody = state.editing?.body,
                 )
             }
         }
@@ -1032,249 +1033,256 @@ internal fun MessageBubble(
             .padding(horizontal = 12.dp, vertical = 2.dp),
         horizontalArrangement = if (own) Arrangement.End else Arrangement.Start,
     ) {
+        // The surface hugs the text; the reactions, the readers and the
+        // thread chip follow below it on the same side, as the GTK row
+        // places them outside the bubble.
         Column(
-            modifier = Modifier
-                .widthIn(max = 320.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(bubbleColor)
-                .combinedClickable(
-                    onClick = {
-                        if (state.selectMode) state.toggleSelected(event.uniqueId)
-                    },
-                    onLongClick = {
-                        if (state.selectMode) {
-                            state.toggleSelected(event.uniqueId)
-                        } else {
-                            state.showActionSheet(event)
-                        }
-                    },
-                )
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.widthIn(max = 320.dp),
             horizontalAlignment = if (own) Alignment.End else Alignment.Start,
         ) {
-            if (showHeader) {
-                val name = event.senderDisplayName ?: event.sender
-                val time = TIME.format(Date(event.timestamp.toLong()))
-                Row {
-                    // The timestamp sits outermost: left of the name for own
-                    // messages, right of it for others.
-                    if (own) {
-                        BubbleTimestamp(time)
-                        Spacer(Modifier.size(6.dp))
+            Column(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(bubbleColor)
+                    .combinedClickable(
+                        onClick = {
+                            if (state.selectMode) state.toggleSelected(event.uniqueId)
+                        },
+                        onLongClick = {
+                            if (state.selectMode) {
+                                state.toggleSelected(event.uniqueId)
+                            } else {
+                                state.showActionSheet(event)
+                            }
+                        },
+                    )
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalAlignment = if (own) Alignment.End else Alignment.Start,
+            ) {
+                if (showHeader) {
+                    val name = event.senderDisplayName ?: event.sender
+                    val time = TIME.format(Date(event.timestamp.toLong()))
+                    Row {
+                        // The timestamp sits outermost: left of the name for own
+                        // messages, right of it for others.
+                        if (own) {
+                            BubbleTimestamp(time)
+                            Spacer(Modifier.size(6.dp))
+                        }
+                        Text(
+                            name,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        if (!own) {
+                            Spacer(Modifier.size(6.dp))
+                            BubbleTimestamp(time)
+                        }
                     }
-                    Text(
-                        name,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    if (!own) {
-                        Spacer(Modifier.size(6.dp))
-                        BubbleTimestamp(time)
+                    Spacer(Modifier.height(2.dp))
+                }
+
+                event.inReplyTo?.let { replyTo ->
+                    Column(
+                        modifier = Modifier
+                            .padding(bottom = 4.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            replyTo.sender?.let(::localpart) ?: "In reply to",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            replyTo.body ?: "…",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                        )
                     }
                 }
-                Spacer(Modifier.height(2.dp))
-            }
 
-            event.inReplyTo?.let { replyTo ->
-                Column(
-                    modifier = Modifier
-                        .padding(bottom = 4.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                ) {
-                    Text(
-                        replyTo.sender?.let(::localpart) ?: "In reply to",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        replyTo.body ?: "…",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                    )
+                val mediaKind = (event.kind as? FfiEventKind.Media)?.kind
+                // A voice message or audio file plays where it sits; video
+                // still takes the whole screen, which is where video wants
+                // to be.
+                if (mediaKind == FfiMediaKind.AUDIO) {
+                    AudioBubblePlayer(state, event.uniqueId)
                 }
-            }
+                if (mediaKind == FfiMediaKind.VIDEO) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .padding(bottom = 4.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .clickable { state.openMediaPlayer(event.uniqueId) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                    ) {
+                        Icon(
+                            androidx.compose.ui.res.painterResource(
+                                io.github.steeb_k.commune.R.drawable.ic_play_symbolic
+                            ),
+                            contentDescription = "Play",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text("Play video", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+                if (mediaKind == FfiMediaKind.IMAGE) {
+                    var mediaPath by remember(event.uniqueId) {
+                        mutableStateOf<String?>(null)
+                    }
+                    LaunchedEffect(event.uniqueId) {
+                        mediaPath = state.app.getTimelineMedia(room.roomId, event.uniqueId)
+                    }
 
-            val mediaKind = (event.kind as? FfiEventKind.Media)?.kind
-            // A voice message or audio file plays where it sits; video
-            // still takes the whole screen, which is where video wants
-            // to be.
-            if (mediaKind == FfiMediaKind.AUDIO) {
-                AudioBubblePlayer(state, event.uniqueId)
-            }
-            if (mediaKind == FfiMediaKind.VIDEO) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .padding(bottom = 4.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { state.openMediaPlayer(event.uniqueId) }
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                ) {
-                    Icon(
-                        androidx.compose.ui.res.painterResource(
-                            io.github.steeb_k.commune.R.drawable.ic_play_symbolic
-                        ),
-                        contentDescription = "Play",
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.size(8.dp))
-                    Text("Play video", style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-            if (mediaKind == FfiMediaKind.IMAGE) {
-                var mediaPath by remember(event.uniqueId) {
-                    mutableStateOf<String?>(null)
-                }
-                LaunchedEffect(event.uniqueId) {
-                    mediaPath = state.app.getTimelineMedia(room.roomId, event.uniqueId)
-                }
-
-                if (mediaPath == null) {
-                    (event.kind as? FfiEventKind.Media)?.blurhash?.let { hash ->
-                        BlurhashImage(
-                            hash,
+                    if (mediaPath == null) {
+                        (event.kind as? FfiEventKind.Media)?.blurhash?.let { hash ->
+                            BlurhashImage(
+                                hash,
+                                contentDescription = event.body,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .padding(bottom = 4.dp),
+                            )
+                        }
+                    }
+                    mediaPath?.let { path ->
+                        // Media fills the bubble and scales up to it, as the
+                        // GTK history presents it — small originals included.
+                        MediaImage(
+                            path,
                             contentDescription = event.body,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(200.dp)
+                                .heightIn(max = 420.dp)
                                 .clip(RoundedCornerShape(8.dp))
+                                .clickable { state.openViewer(path) }
                                 .padding(bottom = 4.dp),
                         )
                     }
                 }
-                mediaPath?.let { path ->
-                    // Media fills the bubble and scales up to it, as the
-                    // GTK history presents it — small originals included.
-                    MediaImage(
-                        path,
-                        contentDescription = event.body,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 420.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { state.openViewer(path) }
-                            .padding(bottom = 4.dp),
-                    )
-                }
-            }
 
-            Row(verticalAlignment = Alignment.Bottom) {
-                // A text message is the document the core built from its
-                // formatted body: markup, links, mentions and emoticons
-                // drawn as the GTK history draws them. Everything else
-                // shows its plain body.
-                if (event.rich.isNotEmpty()) {
-                    RichBody(
-                        state,
-                        event.rich,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                } else {
-                    Text(
-                        body,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontStyle = if (muted) FontStyle.Italic else FontStyle.Normal,
-                        color = if (muted) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
+                Row(verticalAlignment = Alignment.Bottom) {
+                    // A text message is the document the core built from its
+                    // formatted body: markup, links, mentions and emoticons
+                    // drawn as the GTK history draws them. Everything else
+                    // shows its plain body.
+                    if (event.rich.isNotEmpty()) {
+                        RichBody(
+                            state,
+                            event.rich,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    } else {
+                        Text(
+                            body,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontStyle = if (muted) FontStyle.Italic else FontStyle.Normal,
+                            color = if (muted) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    }
+                    if (event.isEdited) {
+                        Spacer(Modifier.size(4.dp))
+                        Text(
+                            "(edited)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    event.shield?.let { shield ->
+                        Spacer(Modifier.size(4.dp))
+                        ShieldIcon(shield)
+                    }
                 }
-                if (event.isEdited) {
+                event.previewUrl?.let { url -> UrlPreviewCard(state, url) }
+
+                (event.kind as? FfiEventKind.Location)?.let { location ->
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    // The place itself, the way the GTK location viewer shows
+                    // it. Tapping either the map or the row below opens it in
+                    // whatever maps application is installed.
+                    LocationMap(
+                        location.geoUri,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable {
+                                try {
+                                    context.startActivity(
+                                        android.content.Intent(
+                                            android.content.Intent.ACTION_VIEW,
+                                            android.net.Uri.parse(location.geoUri),
+                                        )
+                                    )
+                                } catch (_: Exception) {
+                                    // No maps app; the row below still shows.
+                                }
+                            },
+                    )
                     Spacer(Modifier.size(4.dp))
-                    Text(
-                        "(edited)",
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .clickable {
+                                try {
+                                    context.startActivity(
+                                        android.content.Intent(
+                                            android.content.Intent.ACTION_VIEW,
+                                            android.net.Uri.parse(location.geoUri),
+                                        )
+                                    )
+                                } catch (_: Exception) {
+                                    // No maps app; the coordinates in the body
+                                    // are all there is to offer.
+                                }
+                            }
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                    ) {
+                        Icon(
+                            androidx.compose.material.icons.Icons.Filled.Place,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.size(6.dp))
+                        Text("Open in Maps", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+
+                when (event.sendState) {
+                    io.github.steeb_k.commune.core.FfiSendState.SENDING -> Text(
+                        "Sending…",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                }
-                event.shield?.let { shield ->
-                    Spacer(Modifier.size(4.dp))
-                    ShieldIcon(shield)
-                }
-            }
-            event.previewUrl?.let { url -> UrlPreviewCard(state, url) }
-
-            (event.kind as? FfiEventKind.Location)?.let { location ->
-                val context = androidx.compose.ui.platform.LocalContext.current
-                // The place itself, the way the GTK location viewer shows
-                // it. Tapping either the map or the row below opens it in
-                // whatever maps application is installed.
-                LocationMap(
-                    location.geoUri,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable {
-                            try {
-                                context.startActivity(
-                                    android.content.Intent(
-                                        android.content.Intent.ACTION_VIEW,
-                                        android.net.Uri.parse(location.geoUri),
-                                    )
-                                )
-                            } catch (_: Exception) {
-                                // No maps app; the row below still shows.
-                            }
-                        },
-                )
-                Spacer(Modifier.size(4.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable {
-                            try {
-                                context.startActivity(
-                                    android.content.Intent(
-                                        android.content.Intent.ACTION_VIEW,
-                                        android.net.Uri.parse(location.geoUri),
-                                    )
-                                )
-                            } catch (_: Exception) {
-                                // No maps app; the coordinates in the body
-                                // are all there is to offer.
-                            }
-                        }
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                ) {
-                    Icon(
-                        androidx.compose.material.icons.Icons.Filled.Place,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    io.github.steeb_k.commune.core.FfiSendState.RECOVERABLE_ERROR -> Text(
+                        "Not sent — tap to retry",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.clickable { state.retrySends() },
                     )
-                    Spacer(Modifier.size(6.dp))
-                    Text("Open in Maps", style = MaterialTheme.typography.bodyMedium)
+                    io.github.steeb_k.commune.core.FfiSendState.PERMANENT_ERROR -> Text(
+                        "Could not be sent",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    else -> {}
                 }
-            }
-
-            when (event.sendState) {
-                io.github.steeb_k.commune.core.FfiSendState.SENDING -> Text(
-                    "Sending…",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                io.github.steeb_k.commune.core.FfiSendState.RECOVERABLE_ERROR -> Text(
-                    "Not sent — tap to retry",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.clickable { state.retrySends() },
-                )
-                io.github.steeb_k.commune.core.FfiSendState.PERMANENT_ERROR -> Text(
-                    "Could not be sent",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-                else -> {}
             }
 
             ReactionChips(state, event)
@@ -1672,9 +1680,26 @@ internal fun Composer(
     // keeps one per room in the SDK's store, and so does this.
     loadDraft: (suspend () -> String?)? = null,
     saveDraft: (suspend (String) -> Unit)? = null,
+    // The body of the message being edited, while one is: the GTK composer
+    // puts it in the entry when the edit starts and empties the entry when
+    // the edit ends, sent or abandoned.
+    editBody: String? = null,
 ) {
     var draft by remember {
         mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(""))
+    }
+    var wasEditing by remember { mutableStateOf(false) }
+    LaunchedEffect(editBody) {
+        if (editBody != null) {
+            draft = androidx.compose.ui.text.input.TextFieldValue(
+                editBody,
+                androidx.compose.ui.text.TextRange(editBody.length),
+            )
+            wasEditing = true
+        } else if (wasEditing) {
+            draft = androidx.compose.ui.text.input.TextFieldValue("")
+            wasEditing = false
+        }
     }
     var draftLoaded by remember { mutableStateOf(loadDraft == null) }
     LaunchedEffect(Unit) {

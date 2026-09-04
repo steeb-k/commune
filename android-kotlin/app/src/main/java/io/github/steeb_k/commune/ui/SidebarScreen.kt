@@ -302,43 +302,48 @@ private fun PrimaryMenu(state: CommuneState) {
     var menuOpen by remember { mutableStateOf(false) }
     var dialog by remember { mutableStateOf(MenuDialog.None) }
 
-    IconButton(onClick = { menuOpen = true }) {
-        Icon(
-            androidx.compose.ui.res.painterResource(
-                io.github.steeb_k.commune.R.drawable.ic_menu_primary_symbolic
-            ),
-            contentDescription = "Menu",
-        )
-    }
-    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-        DropdownMenuItem(
-            text = { Text("New Direct Chat") },
-            onClick = {
-                menuOpen = false
-                dialog = MenuDialog.DirectChat
-            },
-        )
-        DropdownMenuItem(
-            text = { Text("New Room") },
-            onClick = {
-                menuOpen = false
-                dialog = MenuDialog.NewRoom
-            },
-        )
-        DropdownMenuItem(
-            text = { Text("Explore Rooms") },
-            onClick = {
-                menuOpen = false
-                state.openExplore()
-            },
-        )
-        DropdownMenuItem(
-            text = { Text("Join Room") },
-            onClick = {
-                menuOpen = false
-                dialog = MenuDialog.JoinRoom
-            },
-        )
+    // The menu drops from the button it belongs to: a DropdownMenu anchors
+    // to its parent, and without this Box that parent is the whole header
+    // row, whose corner is the far left of the screen.
+    Box {
+        IconButton(onClick = { menuOpen = true }) {
+            Icon(
+                androidx.compose.ui.res.painterResource(
+                    io.github.steeb_k.commune.R.drawable.ic_menu_primary_symbolic
+                ),
+                contentDescription = "Menu",
+            )
+        }
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            DropdownMenuItem(
+                text = { Text("New Direct Chat") },
+                onClick = {
+                    menuOpen = false
+                    dialog = MenuDialog.DirectChat
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("New Room") },
+                onClick = {
+                    menuOpen = false
+                    dialog = MenuDialog.NewRoom
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Explore Rooms") },
+                onClick = {
+                    menuOpen = false
+                    state.openExplore()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text("Join Room") },
+                onClick = {
+                    menuOpen = false
+                    dialog = MenuDialog.JoinRoom
+                },
+            )
+        }
     }
 
     when (dialog) {
