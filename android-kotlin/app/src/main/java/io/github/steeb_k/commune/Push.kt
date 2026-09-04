@@ -153,31 +153,31 @@ private fun postFromPayload(context: Context, payload: String) {
             when {
                 // The fetch itself broke: say what the payload allows.
                 words == null && failed ->
-                    postMessage(context, roomId, roomName ?: sender ?: "Commune", "New message")
+                    postMessage(context, roomId, roomName ?: sender ?: "Commune", null, "New message")
                 // Nothing to show: filtered, redacted, gone, or a call.
                 words == null -> {}
                 // Our own message from another device is not news.
                 words.isOwn -> {}
                 else -> {
                     val sentence = pushedSentence(words)
-                    val text = if (words.isDirect || words.body is FfiNotificationBody.Emote) {
-                        sentence
+                    // An emote already reads as the sender followed by
+                    // the body; naming them again would double it.
+                    val from = if (words.body is FfiNotificationBody.Emote) {
+                        null
                     } else {
-                        "${words.senderName}: $sentence"
+                        words.senderName
                     }
-                    postMessage(context, roomId, words.roomName, text)
+                    postMessage(context, roomId, words.roomName, from, sentence, words.isDirect)
                 }
             }
         }
         return
     }
 
-    val title = roomName ?: sender ?: "Commune"
-    val text = when {
-        body != null && sender != null && roomName != null -> "$sender: $body"
-        else -> body
-    }
-    postMessage(context, roomId, title, text)
+    // A push names the room only when it is not a direct chat; one
+    // without a room name is taken as direct, its sender the title.
+    val direct = roomName == null
+    postMessage(context, roomId, roomName ?: sender ?: "Commune", sender, body ?: "New message", direct)
 }
 
 /// The words for a fetched event — the GTK app's notification sentences.
@@ -206,36 +206,15 @@ private fun pushedSentence(words: FfiPushedNotification): String = when (val bod
     }
 }
 
-/// Post one message notification for the room, replacing the room's
-/// previous one.
-private fun postMessage(context: Context, roomId: String, title: String, text: String) {
-
-    val manager = context.getSystemService(NotificationManager::class.java)
-    manager.createNotificationChannel(
-        NotificationChannel(
-            "messages",
-            "Messages",
-            NotificationManager.IMPORTANCE_HIGH,
-        )
-    )
-    val openApp = PendingIntent.getActivity(
-        context,
-        roomId.hashCode(),
-        Intent(context, MainActivity::class.java)
-            .putExtra("room_id", roomId)
-            .setAction("io.github.steeb_k.commune.OPEN_ROOM"),
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-    )
-    manager.notify(
-        roomId.hashCode(),
-        Notification.Builder(context, "messages")
-            .setSmallIcon(R.drawable.ic_notify_symbolic)
-            .setContentTitle(title)
-            .setContentText(text)
-            .setContentIntent(openApp)
-            .setAutoCancel(true)
-            .setVisibility(Notification.VISIBILITY_PRIVATE)
-            .setPublicVersion(redactedNotification(context, "messages"))
-            .build(),
-    )
+/// Add one message to the room's notification, in the conversation
+/// shape every message notification takes.
+private fun postMessage(
+    context: Context,
+    roomId: String,
+    title: String,
+    sender: String?,
+    text: String,
+    isDirect: Boolean = false,
+) {
+    postRoomMessage(context, roomId, title, isDirect, sender, text)
 }

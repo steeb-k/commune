@@ -97,6 +97,11 @@
             android:name=".SyncService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- The Mark as Read button on a message notification. -->
+        <receiver
+            android:name=".MarkReadReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>
