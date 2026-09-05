@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Call
@@ -1229,9 +1230,44 @@ internal fun MessageBubble(
                 Row(verticalAlignment = Alignment.Bottom) {
                     // A text message is the document the core built from its
                     // formatted body: markup, links, mentions and emoticons
-                    // drawn as the GTK history draws them. Everything else
-                    // shows its plain body.
-                    if (event.rich.isNotEmpty()) {
+                    // drawn as the GTK history draws them. A file is its
+                    // name beside a save button, as the GTK file row.
+                    // Everything else shows its plain body.
+                    if (mediaKind == FfiMediaKind.FILE) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f, fill = false),
+                        ) {
+                            Icon(
+                                androidx.compose.material.icons.Icons.AutoMirrored.Filled.InsertDriveFile,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Spacer(Modifier.size(6.dp))
+                            Text(
+                                body,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 2,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            Spacer(Modifier.size(4.dp))
+                            IconButton(
+                                onClick = { state.saveEventMedia(event) },
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    androidx.compose.ui.res.painterResource(
+                                        io.github.steeb_k.commune.R.drawable.ic_save_symbolic
+                                    ),
+                                    contentDescription = "Save File",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    } else if (event.rich.isNotEmpty()) {
                         RichBody(
                             state,
                             event.rich,
