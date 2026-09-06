@@ -57,8 +57,9 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="matrix.to" />
             </intent-filter>
-            <!-- Photos and files shared from another app, one or several:
-                 they queue for the open room, or for the room picked. -->
+            <!-- Photos, files or text shared from another app, one or
+                 several: for the room chosen on the share sheet, or for
+                 the room picked here. -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -69,6 +70,11 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="*/*" />
             </intent-filter>
+            <!-- The rooms offered as direct share targets on the share
+                 sheet — see ShareShortcuts. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <!-- A call keeps the process alive for as long as it lasts. -->

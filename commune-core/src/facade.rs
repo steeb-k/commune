@@ -16,9 +16,77 @@ use tokio::sync::mpsc;
 
 use crate::{
     RUNTIME, config,
-    session::{Room, RoomCategory, RoomDisplayName, RoomHighlight, Session},
+    session::{MediaMeasure, Room, RoomCategory, RoomDisplayName, RoomHighlight, Session},
     session_list::SessionList,
 };
+
+/// What the embedder measured about a picture or a video it is about to
+/// send: the GTK message toolbar's `load_image_info` and `load_video_info`
+/// results, as far as the embedder's media stack produces them. Every
+/// field is optional; a missing one is simply absent from the event.
+#[derive(uniffi::Record)]
+pub struct FfiMediaInfo {
+    /// The width of the picture or the video, in pixels.
+    pub width: Option<u32>,
+    /// The height of the picture or the video, in pixels.
+    pub height: Option<u32>,
+    /// The duration of the video, in milliseconds.
+    pub duration_ms: Option<u64>,
+    /// The Blurhash of the picture, or of the video's first frame.
+    pub blurhash: Option<String>,
+    /// The thumbnail to upload alongside: a downscaled copy of the picture,
+    /// or the video's first frame.
+    pub thumbnail: Option<FfiThumbnail>,
+}
+
+/// A thumbnail the embedder generated, on disk until it is sent.
+#[derive(uniffi::Record)]
+pub struct FfiThumbnail {
+    /// The path of the encoded thumbnail. The file is read and removed
+    /// when the attachment is sent.
+    pub path: String,
+    /// The MIME type of the encoded thumbnail.
+    pub mime_type: String,
+    /// The width of the thumbnail, in pixels.
+    pub width: u32,
+    /// The height of the thumbnail, in pixels.
+    pub height: u32,
+}
+
+impl FfiMediaInfo {
+    /// The measurements the timeline sends with an attachment, reading the
+    /// thumbnail's bytes in. A thumbnail that cannot be read is dropped:
+    /// the attachment still goes, without a still.
+    fn into_measure(self) -> MediaMeasure {
+        let thumbnail = self.thumbnail.and_then(|thumbnail| {
+            let bytes = std::fs::read(&thumbnail.path);
+            if let Err(remove_error) = std::fs::remove_file(&thumbnail.path) {
+                tracing::warn!("Could not remove the thumbnail file: {remove_error}");
+            }
+            let data = bytes
+                .inspect_err(|read_error| {
+                    tracing::warn!("Could not read the thumbnail: {read_error}");
+                })
+                .ok()?;
+            let content_type = thumbnail.mime_type.parse::<mime::Mime>().ok()?;
+            let size = ruma::UInt::new(u64::try_from(data.len()).ok()?)?;
+            Some(matrix_sdk::attachment::Thumbnail {
+                data,
+                content_type,
+                width: thumbnail.width.into(),
+                height: thumbnail.height.into(),
+                size,
+            })
+        });
+        MediaMeasure {
+            width: self.width,
+            height: self.height,
+            duration: self.duration_ms.map(std::time::Duration::from_millis),
+            blurhash: self.blurhash,
+            thumbnail,
+        }
+    }
+}
 
 /// What the embedder tells the core about itself, over the FFI.
 #[derive(uniffi::Record)]
@@ -3139,21 +3207,28 @@ impl CoreApp {
     }
 
     /// Send the file at the given path as an attachment to the given room.
+    ///
+    /// `info` is what the embedder measured about a picture or a video —
+    /// what the GTK message toolbar measures with the desktop's media
+    /// stack before it sends; without it the event carries the file size
+    /// alone. The thumbnail file it names is read and removed here.
     pub async fn send_attachment(
         &self,
         room_id: String,
         file_path: String,
         mime_type: String,
+        info: Option<FfiMediaInfo>,
     ) -> Result<(), CoreError> {
         let room = self.room(&room_id)?;
         let mime = mime_type
             .parse::<mime::Mime>()
             .unwrap_or(mime::APPLICATION_OCTET_STREAM);
+        let measure = info.map(FfiMediaInfo::into_measure).unwrap_or_default();
 
         RUNTIME
             .spawn(async move {
                 room.live_timeline()
-                    .send_attachment(file_path.into(), mime)
+                    .send_attachment(file_path.into(), mime, measure)
                     .await
                     .map_err(|error| timeline_failure(error, "Could not send the attachment"))
             })

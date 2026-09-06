@@ -115,8 +115,8 @@ pub use self::{
     room::{
         AclProblem, AliasError, AliasesState, ComposerChunk, ContentPreview,
         HistoryVisibilityValue, JoinRule, JoinRuleState, JoinRuleValue, MAX_BATCH_SIZE,
-        MediaHistoryError, MediaHistoryEvent, MediaHistoryKind, MediaHistoryPage, Member,
-        MemberList, MemberRole, Membership, POWER_LEVEL_MAX, Permissions, PermissionsError,
+        MediaHistoryError, MediaHistoryEvent, MediaHistoryKind, MediaHistoryPage, MediaMeasure,
+        Member, MemberList, MemberRole, Membership, POWER_LEVEL_MAX, Permissions, PermissionsError,
         PermissionsState, PowerLevelsMatrix, ReceiptPosition, Room, RoomAliases, RoomCategory,
         RoomDetailsError, RoomDisplayName, RoomHighlight, RoomSearch, RoomSettingsError,
         SearchError, SearchResult, ServerAclError, ServerNotice, TargetRoomCategory, ThreadList,

@@ -1435,7 +1435,7 @@ external fun uniffi_commune_core_fn_method_coreapp_search_users(`ptr`: Long,`sea
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_security_state(`ptr`: Long,
 ): Long
-external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,
+external fun uniffi_commune_core_fn_method_coreapp_send_attachment(`ptr`: Long,`roomId`: RustBuffer.ByValue,`filePath`: RustBuffer.ByValue,`mimeType`: RustBuffer.ByValue,`info`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_send_call_candidates(`ptr`: Long,`callId`: RustBuffer.ByValue,`candidates`: RustBuffer.ByValue,`endOfCandidates`: Byte,
 ): Long
@@ -2069,7 +2069,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_method_coreapp_security_state() != 41217.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_commune_core_checksum_method_coreapp_send_attachment() != 7086.toShort()) {
+    if (lib.uniffi_commune_core_checksum_method_coreapp_send_attachment() != 43972.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_send_call_candidates() != 25137.toShort()) {
@@ -3907,8 +3907,13 @@ public interface CoreAppInterface {
     
     /**
      * Send the file at the given path as an attachment to the given room.
+     *
+     * `info` is what the embedder measured about a picture or a video —
+     * what the GTK message toolbar measures with the desktop's media
+     * stack before it sends; without it the event carries the file size
+     * alone. The thumbnail file it names is read and removed here.
      */
-    suspend fun `sendAttachment`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String)
+    suspend fun `sendAttachment`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String, `info`: FfiMediaInfo?)
     
     /**
      * Send gathered ICE candidates. Both `sdp_mid` and the media-line
@@ -6985,15 +6990,20 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
     
     /**
      * Send the file at the given path as an attachment to the given room.
+     *
+     * `info` is what the embedder measured about a picture or a video —
+     * what the GTK message toolbar measures with the desktop's media
+     * stack before it sends; without it the event carries the file size
+     * alone. The thumbnail file it names is read and removed here.
      */
     @Throws(CoreException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `sendAttachment`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String) {
+    override suspend fun `sendAttachment`(`roomId`: kotlin.String, `filePath`: kotlin.String, `mimeType`: kotlin.String, `info`: FfiMediaInfo?) {
         return uniffiRustCallAsync(
         callWithHandle { uniffiHandle ->
             UniffiLib.uniffi_commune_core_fn_method_coreapp_send_attachment(
                 uniffiHandle,
-                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`filePath`),FfiConverterString.lower(`mimeType`),
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`filePath`),FfiConverterString.lower(`mimeType`),FfiConverterOptionalTypeFfiMediaInfo.lower(`info`),
             )
         },
         { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_void(future, callback, continuation) },
@@ -10761,6 +10771,81 @@ public object FfiConverterTypeFfiLoginMethods: FfiConverterRustBuffer<FfiLoginMe
 
 
 /**
+ * What the embedder measured about a picture or a video it is about to
+ * send: the GTK message toolbar's `load_image_info` and `load_video_info`
+ * results, as far as the embedder's media stack produces them. Every
+ * field is optional; a missing one is simply absent from the event.
+ */
+data class FfiMediaInfo (
+    /**
+     * The width of the picture or the video, in pixels.
+     */
+    var `width`: kotlin.UInt?
+    , 
+    /**
+     * The height of the picture or the video, in pixels.
+     */
+    var `height`: kotlin.UInt?
+    , 
+    /**
+     * The duration of the video, in milliseconds.
+     */
+    var `durationMs`: kotlin.ULong?
+    , 
+    /**
+     * The Blurhash of the picture, or of the video's first frame.
+     */
+    var `blurhash`: kotlin.String?
+    , 
+    /**
+     * The thumbnail to upload alongside: a downscaled copy of the picture,
+     * or the video's first frame.
+     */
+    var `thumbnail`: FfiThumbnail?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiMediaInfo: FfiConverterRustBuffer<FfiMediaInfo> {
+    override fun read(buf: ByteBuffer): FfiMediaInfo {
+        return FfiMediaInfo(
+            FfiConverterOptionalUInt.read(buf),
+            FfiConverterOptionalUInt.read(buf),
+            FfiConverterOptionalULong.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalTypeFfiThumbnail.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiMediaInfo) = (
+            FfiConverterOptionalUInt.allocationSize(value.`width`) +
+            FfiConverterOptionalUInt.allocationSize(value.`height`) +
+            FfiConverterOptionalULong.allocationSize(value.`durationMs`) +
+            FfiConverterOptionalString.allocationSize(value.`blurhash`) +
+            FfiConverterOptionalTypeFfiThumbnail.allocationSize(value.`thumbnail`)
+    )
+
+    override fun write(value: FfiMediaInfo, buf: ByteBuffer) {
+            FfiConverterOptionalUInt.write(value.`width`, buf)
+            FfiConverterOptionalUInt.write(value.`height`, buf)
+            FfiConverterOptionalULong.write(value.`durationMs`, buf)
+            FfiConverterOptionalString.write(value.`blurhash`, buf)
+            FfiConverterOptionalTypeFfiThumbnail.write(value.`thumbnail`, buf)
+    }
+}
+
+
+
+/**
  * A member of a room.
  */
 data class FfiMember (
@@ -12611,6 +12696,70 @@ public object FfiConverterTypeFfiThirdPartyIds: FfiConverterRustBuffer<FfiThirdP
     override fun write(value: FfiThirdPartyIds, buf: ByteBuffer) {
             FfiConverterSequenceTypeFfiThirdPartyId.write(value.`ids`, buf)
             FfiConverterBoolean.write(value.`canChange`, buf)
+    }
+}
+
+
+
+/**
+ * A thumbnail the embedder generated, on disk until it is sent.
+ */
+data class FfiThumbnail (
+    /**
+     * The path of the encoded thumbnail. The file is read and removed
+     * when the attachment is sent.
+     */
+    var `path`: kotlin.String
+    , 
+    /**
+     * The MIME type of the encoded thumbnail.
+     */
+    var `mimeType`: kotlin.String
+    , 
+    /**
+     * The width of the thumbnail, in pixels.
+     */
+    var `width`: kotlin.UInt
+    , 
+    /**
+     * The height of the thumbnail, in pixels.
+     */
+    var `height`: kotlin.UInt
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiThumbnail: FfiConverterRustBuffer<FfiThumbnail> {
+    override fun read(buf: ByteBuffer): FfiThumbnail {
+        return FfiThumbnail(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterUInt.read(buf),
+            FfiConverterUInt.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiThumbnail) = (
+            FfiConverterString.allocationSize(value.`path`) +
+            FfiConverterString.allocationSize(value.`mimeType`) +
+            FfiConverterUInt.allocationSize(value.`width`) +
+            FfiConverterUInt.allocationSize(value.`height`)
+    )
+
+    override fun write(value: FfiThumbnail, buf: ByteBuffer) {
+            FfiConverterString.write(value.`path`, buf)
+            FfiConverterString.write(value.`mimeType`, buf)
+            FfiConverterUInt.write(value.`width`, buf)
+            FfiConverterUInt.write(value.`height`, buf)
     }
 }
 
@@ -16198,6 +16347,38 @@ public object FfiConverterOptionalTypeFfiInReplyTo: FfiConverterRustBuffer<FfiIn
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeFfiMediaInfo: FfiConverterRustBuffer<FfiMediaInfo?> {
+    override fun read(buf: ByteBuffer): FfiMediaInfo? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiMediaInfo.read(buf)
+    }
+
+    override fun allocationSize(value: FfiMediaInfo?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiMediaInfo.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiMediaInfo?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiMediaInfo.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeFfiPendingEmail: FfiConverterRustBuffer<FfiPendingEmail?> {
     override fun read(buf: ByteBuffer): FfiPendingEmail? {
         if (buf.get().toInt() == 0) {
@@ -16348,6 +16529,38 @@ public object FfiConverterOptionalTypeFfiShield: FfiConverterRustBuffer<FfiShiel
         } else {
             buf.put(1)
             FfiConverterTypeFfiShield.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiThumbnail: FfiConverterRustBuffer<FfiThumbnail?> {
+    override fun read(buf: ByteBuffer): FfiThumbnail? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiThumbnail.read(buf)
+    }
+
+    override fun allocationSize(value: FfiThumbnail?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiThumbnail.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiThumbnail?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiThumbnail.write(value, buf)
         }
     }
 }

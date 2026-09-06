@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The share sheet's direct targets: every dynamic shortcut in the
+     SHARE_TARGET category (a recent room, published by ShareShortcuts)
+     is offered for anything shareable, and the share lands on
+     MainActivity with the room as EXTRA_SHORTCUT_ID. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <share-target android:targetClass="io.github.steeb_k.commune.MainActivity">
+        <data android:mimeType="*/*" />
+        <category android:name="io.github.steeb_k.commune.SHARE_TARGET" />
+    </share-target>
+</shortcuts>
