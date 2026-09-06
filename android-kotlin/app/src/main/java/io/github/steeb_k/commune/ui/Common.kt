@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -62,12 +63,26 @@ private val AVATAR_COLORS = listOf(
     Color(0xFF9E91E8) to Color(0xFF272052),
 )
 
+/// The avatar colors for an identifier, background then foreground.
+private fun avatarColors(identifier: String): Pair<Color, Color> =
+    AVATAR_COLORS[(identifier.hashCode().mod(AVATAR_COLORS.size))]
+
+/// The same colors as ARGB ints, for drawing outside Compose — the share
+/// shortcuts' icons.
+fun avatarColorsArgb(identifier: String): Pair<Int, Int> {
+    val (background, foreground) = avatarColors(identifier)
+    return background.toArgb() to foreground.toArgb()
+}
+
+/// The letter an initials avatar shows for a name.
+fun avatarInitial(name: String): String =
+    name.firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "?"
+
 /// An initials avatar, colored stably by its identifier.
 @Composable
 fun InitialsAvatar(identifier: String, name: String, size: Dp) {
-    val (background, foreground) =
-        AVATAR_COLORS[(identifier.hashCode().mod(AVATAR_COLORS.size))]
-    val initial = name.firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "?"
+    val (background, foreground) = avatarColors(identifier)
+    val initial = avatarInitial(name)
 
     Box(
         modifier = Modifier

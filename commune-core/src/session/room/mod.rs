@@ -95,7 +95,7 @@ pub use self::{
     server_acl::{AclProblem, ServerAclError, acls_are_equal, check_acl, unrestricted_acl},
     thread_list::{ContentPreview, ThreadList, ThreadListError},
     timeline::{
-        MAX_BATCH_SIZE, ReceiptPosition, Timeline, TimelineError, TimelineFocusKind,
+        MAX_BATCH_SIZE, MediaMeasure, ReceiptPosition, Timeline, TimelineError, TimelineFocusKind,
         check_upload_size,
     },
     upgrade::{UpgradeInfo, cmp_room_versions},

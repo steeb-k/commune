@@ -55,6 +55,10 @@ class CommuneState(context: Context) {
     private val appContext = context.applicationContext
     private val notifier = Notifier(appContext)
 
+    /// The rooms offered on other apps' share sheets; lazily, since it
+    /// needs the core.
+    private val shareShortcuts by lazy { ShareShortcuts(appContext, app) }
+
     /// Whether the activity is in the foreground; backgrounded, the open
     /// room notifies like any other. False until a window says otherwise:
     /// the process can now exist with no activity at all, woken by a push.
@@ -172,6 +176,7 @@ class CommuneState(context: Context) {
                 if (securityState == null) checkSessionSetup()
                 notifier.enabled = settings?.notificationsEnabled != false
                 notifier.update(rooms)
+                shareShortcuts.update(rooms)
             }
         }
     }
@@ -1784,6 +1789,7 @@ class CommuneState(context: Context) {
                     )
                     openRoom = null
                     rooms = emptyList()
+                    shareShortcuts.clear()
                     timeline = emptyList()
                     settingsOpen = false
                     phase = Phase.Login
@@ -2525,6 +2531,7 @@ class CommuneState(context: Context) {
                         )
                         openRoom = null
                         rooms = emptyList()
+                        shareShortcuts.clear()
                         timeline = emptyList()
                         settingsOpen = false
                         ownUserId = null
@@ -2856,31 +2863,85 @@ class CommuneState(context: Context) {
         }
     }
 
-    /// Files shared from another app, waiting for a room when none is open.
-    var pendingShare by mutableStateOf<List<android.net.Uri>>(emptyList())
+    /// What another app shared into this one: files, text, or both.
+    data class ShareContent(
+        val uris: List<android.net.Uri>,
+        val text: String?,
+    )
+
+    /// A share waiting for its room.
+    var pendingShare by mutableStateOf<ShareContent?>(null)
         private set
 
-    /// Take files shared from another app: into the open room, or into the
-    /// room picked next.
-    fun receiveShare(uris: List<android.net.Uri>) {
-        if (openRoom != null) {
-            queueAttachmentsFromUris(uris)
-        } else {
-            pendingShare = uris
+    /// The room the share sheet named, while the room list has yet to
+    /// carry it — a cold start takes a moment to list the rooms.
+    private var pendingShareTarget by mutableStateOf<String?>(null)
+
+    /// Whether the share needs a room picked here: nothing was chosen on
+    /// the share sheet. A room being open says nothing about where the
+    /// share was meant to go, as every other messenger has it.
+    val sharePickerNeeded: Boolean
+        get() = pendingShare != null && pendingShareTarget == null
+
+    /// Text handed to the room's composer by a share, until it takes it.
+    var pendingComposerText by mutableStateOf<String?>(null)
+        private set
+
+    fun takeComposerText() {
+        pendingComposerText = null
+    }
+
+    /// Take what another app shared: into the room the share sheet named
+    /// with `targetRoomId`, or into the room picked next.
+    fun receiveShare(uris: List<android.net.Uri>, text: String?, targetRoomId: String?) {
+        val content = ShareContent(uris, text?.takeIf { it.isNotBlank() })
+        if (content.uris.isEmpty() && content.text == null) return
+        pendingShare = content
+        pendingShareTarget = null
+        if (targetRoomId != null) shareWhenListed(targetRoomId)
+    }
+
+    private fun shareWhenListed(roomId: String, attempt: Int = 0) {
+        if (pendingShare == null) return
+        when {
+            rooms.any { it.roomId == roomId } -> {
+                pendingShareTarget = null
+                shareTo(roomId)
+            }
+            attempt < 20 -> {
+                pendingShareTarget = roomId
+                main.postDelayed({ shareWhenListed(roomId, attempt + 1) }, 500)
+            }
+            // The room never came — another account's, or left since the
+            // shortcut was made: the picker takes over.
+            else -> pendingShareTarget = null
         }
     }
 
-    /// The room the shared files go to.
+    /// The room the share goes to: files queue for it as picked
+    /// attachments do, text goes into its composer to be finished there.
     fun shareTo(roomId: String) {
-        val uris = pendingShare
-        pendingShare = emptyList()
+        val share = pendingShare ?: return
         val room = rooms.find { it.roomId == roomId } ?: return
+        pendingShare = null
+        pendingShareTarget = null
+        // Whatever page covers the room has to go: the routing chain is
+        // first-match, and the composer has to be in front.
+        closeSettings()
+        closeImagePacks()
+        closeIgnoredUsers()
+        closeDevices()
+        closeExplore()
+        closeAccountSwitcher()
+        closeRoom()
         openRoom(room)
-        queueAttachmentsFromUris(uris)
+        if (share.uris.isNotEmpty()) queueAttachmentsFromUris(share.uris)
+        pendingComposerText = share.text
     }
 
     fun cancelShare() {
-        pendingShare = emptyList()
+        pendingShare = null
+        pendingShareTarget = null
     }
 
     fun sendInThread(body: String) {
@@ -4022,7 +4083,10 @@ class CommuneState(context: Context) {
         thread {
             for (pending in batch) {
                 try {
-                    runBlocking { app.sendAttachment(room.roomId, pending.path, pending.mime) }
+                    // What the GTK toolbar measures before sending —
+                    // dimensions, a video's still — measured here.
+                    val info = MediaMeasure.measure(appContext, pending.path, pending.mime, pending.size)
+                    runBlocking { app.sendAttachment(room.roomId, pending.path, pending.mime, info) }
                 } catch (e: Exception) {
                     toast(coreMessage(e, "Could not send the file"))
                 }

@@ -138,6 +138,8 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
                     loadDraft = { state.app.loadDraft(room.roomId) },
                     saveDraft = { text -> state.app.saveDraft(room.roomId, text) },
                     editBody = state.editing?.body,
+                    prefill = state.pendingComposerText,
+                    onPrefillTaken = { state.takeComposerText() },
                 )
             }
         }
@@ -1776,6 +1778,10 @@ internal fun Composer(
     // puts it in the entry when the edit starts and empties the entry when
     // the edit ends, sent or abandoned.
     editBody: String? = null,
+    // Text shared from another app, appended to whatever is being written
+    // so it can be finished before it goes; taken once.
+    prefill: String? = null,
+    onPrefillTaken: () -> Unit = {},
 ) {
     var draft by remember {
         mutableStateOf(androidx.compose.ui.text.input.TextFieldValue(""))
@@ -1803,6 +1809,19 @@ internal fun Composer(
             )
         }
         draftLoaded = true
+    }
+    // Shared text goes after the saved draft, once that is in, so a
+    // half-written message is added to rather than replaced.
+    LaunchedEffect(prefill, draftLoaded) {
+        val extra = prefill ?: return@LaunchedEffect
+        if (!draftLoaded) return@LaunchedEffect
+        val current = draft.text
+        val joined = if (current.isBlank()) extra else current.trimEnd() + "\n" + extra
+        draft = androidx.compose.ui.text.input.TextFieldValue(
+            joined,
+            androidx.compose.ui.text.TextRange(joined.length),
+        )
+        onPrefillTaken()
     }
     LaunchedEffect(draft.text) {
         if (!draftLoaded) return@LaunchedEffect

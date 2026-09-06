@@ -26,7 +26,9 @@ use eyeball::{SharedObservable, Subscriber};
 use eyeball_im::{Vector, VectorDiff};
 use futures_util::{Stream, StreamExt};
 use matrix_sdk::{
-    attachment::{AttachmentInfo, BaseAudioInfo, BaseFileInfo, BaseImageInfo, BaseVideoInfo},
+    attachment::{
+        AttachmentInfo, BaseAudioInfo, BaseFileInfo, BaseImageInfo, BaseVideoInfo, Thumbnail,
+    },
     room::edit::EditedContent,
 };
 use matrix_sdk_ui::timeline::{
@@ -257,6 +259,24 @@ impl TimelineInner {
             self.has_reached_end.set_if_not_eq(false);
         }
     }
+}
+
+/// What the embedder measured about a media file before sending it: the
+/// message toolbar's `load_image_info` and `load_video_info` results, as
+/// far as the embedder's media stack can produce them. Every field is
+/// optional, and a missing one is simply absent from the event's info.
+#[derive(Debug, Default)]
+pub struct MediaMeasure {
+    /// The width of a picture or a video, in pixels.
+    pub width: Option<u32>,
+    /// The height of a picture or a video, in pixels.
+    pub height: Option<u32>,
+    /// The duration of a video or an audio file.
+    pub duration: Option<Duration>,
+    /// The Blurhash of a picture or a video's first frame.
+    pub blurhash: Option<String>,
+    /// The thumbnail of a picture or a video, uploaded alongside it.
+    pub thumbnail: Option<Thumbnail>,
 }
 
 impl Timeline {
@@ -860,33 +880,58 @@ impl Timeline {
     /// decides it: an image, a video, an audio file or a plain file. The
     /// toolbar also measures images, videos and audio — dimensions,
     /// durations, thumbnails — with the desktop's media stack; the core
-    /// sends the size alone, and the embedder that has such a stack owes
-    /// the rest.
+    /// measures the size alone, and the embedder that has such a stack
+    /// hands the rest over as the `measure`, which goes on the wire as the
+    /// toolbar's `load_image_info` and `load_video_info` results do.
     pub async fn send_attachment(
         &self,
         path: PathBuf,
         mime: mime::Mime,
+        measure: MediaMeasure,
     ) -> Result<(), TimelineError> {
         let size = std::fs::metadata(&path)
             .ok()
             .and_then(|metadata| UInt::new(metadata.len()));
+        let MediaMeasure {
+            width,
+            height,
+            duration,
+            blurhash,
+            thumbnail,
+        } = measure;
+        let width = width.map(UInt::from);
+        let height = height.map(UInt::from);
         let info = match mime.type_() {
             mime::IMAGE => AttachmentInfo::Image(BaseImageInfo {
+                width,
+                height,
                 size,
+                blurhash,
                 ..Default::default()
             }),
             mime::VIDEO => AttachmentInfo::Video(BaseVideoInfo {
+                duration,
+                width,
+                height,
                 size,
-                ..Default::default()
+                blurhash,
             }),
             mime::AUDIO => AttachmentInfo::Audio(BaseAudioInfo {
+                duration,
                 size,
                 ..Default::default()
             }),
             _ => AttachmentInfo::File(BaseFileInfo { size }),
         };
+        // A thumbnail belongs to a picture or a video alone: the toolbar
+        // generates one for nothing else, and the SDK would put it on a
+        // file message's info where nothing reads it.
+        let thumbnail = match mime.type_() {
+            mime::IMAGE | mime::VIDEO => thumbnail,
+            _ => None,
+        };
 
-        self.send_attachment_with(AttachmentSource::File(path), mime, info)
+        self.send_attachment_with(AttachmentSource::File(path), mime, info, thumbnail)
             .await
     }
 
@@ -919,7 +964,7 @@ impl Timeline {
             waveform: None,
         });
 
-        self.send_attachment_with(AttachmentSource::Data { bytes, filename }, mime, info)
+        self.send_attachment_with(AttachmentSource::Data { bytes, filename }, mime, info, None)
             .await
     }
 
@@ -930,6 +975,7 @@ impl Timeline {
         source: AttachmentSource,
         mime: mime::Mime,
         info: AttachmentInfo,
+        thumbnail: Option<Thumbnail>,
     ) -> Result<(), TimelineError> {
         let matrix_timeline = self
             .matrix_timeline()
@@ -946,6 +992,7 @@ impl Timeline {
 
         let config = AttachmentConfig {
             info: Some(info),
+            thumbnail,
             ..Default::default()
         };
 

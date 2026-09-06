@@ -33,6 +33,12 @@ import io.github.steeb_k.commune.ui.SidebarScreen
 import io.github.steeb_k.commune.ui.SpaceScreen
 
 class MainActivity : ComponentActivity() {
+    companion object {
+        /// The action of an intent that opens a room: a notification's
+        /// tap, a launcher shortcut's.
+        const val ACTION_OPEN_ROOM = "io.github.steeb_k.commune.OPEN_ROOM"
+    }
+
     private lateinit var state: CommuneState
 
     private val notificationPermission =
@@ -103,9 +109,10 @@ class MainActivity : ComponentActivity() {
         handleCallAction(intent)
     }
 
-    /// Files shared to the app from elsewhere: one with SEND, several with
-    /// SEND_MULTIPLE. They queue for the open room, or wait for a room to
-    /// be picked.
+    /// Something shared to the app from elsewhere: files, one with SEND
+    /// and several with SEND_MULTIPLE, or text — a link from a browser's
+    /// share button. The share sheet names the room when one of the
+    /// app's share targets was chosen; otherwise a room is picked here.
     private fun handleShare(intent: android.content.Intent?) {
         val action = intent?.action ?: return
         val uris: List<android.net.Uri> = when (action) {
@@ -119,10 +126,12 @@ class MainActivity : ComponentActivity() {
                     .orEmpty()
             else -> return
         }
-        if (uris.isEmpty()) return
+        val text = intent.getStringExtra(android.content.Intent.EXTRA_TEXT)
+        if (uris.isEmpty() && text.isNullOrBlank()) return
+        val target = intent.getStringExtra(android.content.Intent.EXTRA_SHORTCUT_ID)
         // Handled once: the intent stays on the activity across rotations.
         intent.action = null
-        state.receiveShare(uris)
+        state.receiveShare(uris, text, target)
     }
 
     /// A Matrix link handed to the app: a matrix: URI or a matrix.to
