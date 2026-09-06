@@ -617,7 +617,8 @@
       <span>Commune 1.0.0-rc1</span>
       <span>main @ 10a2bf6e</span>
       <span>10 clients</span>
-      <span>Checked 23 August 2026</span>
+      <span>Peers checked 23 August 2026</span>
+      <span>Commune column 6 September 2026</span>
     </div>
     <h1>What the other clients ship</h1>
     <p class="standfirst">
@@ -843,6 +844,11 @@
         The Commune column was read out of this tree, not out of a changelog. The Fractal column is
         Commune minus what the fork added, cross-checked against the matrix.org ecosystem entry for
         Fractal, which independently lists spaces, threads, calls and image packs as unsupported.
+        Since 3 September 2026 the tree holds two applications over one Rust core — the GTK
+        desktop app and a Kotlin app for Android — and the column reads the core, which is where
+        every protocol decision on this page is made; where the phone has not yet drawn something
+        the desktop has, <code>doc/backlog.md</code> says so, and this table does not split the
+        difference.
       </p>
       <p>
         The other eight columns come from each project's own source tree, changelog or release
@@ -871,7 +877,7 @@
 
   <footer>
     <span>Commune 1.0.0-rc1</span>
-    <span>Data current 23 August 2026</span>
+    <span>Peer data current 23 August 2026 · Commune column 6 September 2026</span>
     <span>Companion to Commune Spec Gaps</span>
   </footer>
 </div>
@@ -881,8 +887,8 @@
   "use strict";
 
   var CLIENTS = [
-    { k: "commune", n: "Commune", us: true, lang: "Rust / GTK4", plat: "Linux, macOS", by: "this fork", lic: "GPL-3.0", mat: "1.0.0-rc1",
-      good: "The client this page is about — a permanent fork of Fractal." },
+    { k: "commune", n: "Commune", us: true, lang: "Rust core; GTK4 desktop, Kotlin / Compose phone", plat: "Linux, macOS, Windows, Android", by: "this fork", lic: "GPL-3.0", mat: "1.0.0-rc1",
+      good: "The client this page is about — a permanent fork of Fractal. Since September 2026 the protocol lives in a Rust core that a GTK desktop app and a Kotlin Android app both sit over." },
     { k: "fractal", n: "Fractal", lang: "Rust / GTK4", plat: "Linux", by: "GNOME World", lic: "GPL-3.0-or-later", mat: "Beta",
       good: "The parent project. Where a gap appears here, the fork inherited it." },
     { k: "ew", n: "Element Web", lang: "TypeScript / React", plat: "Web, Linux, macOS, Windows", by: "Element", lic: "AGPL-3.0 / commercial", mat: "Stable",
@@ -962,7 +968,9 @@
       cn: { commune:"Stable /media/preview_url only, and never in an encrypted room." } },
 
     { f: "Read receipts and typing notifications", g: "Messaging", kind: "spec", tag: "Spec",
-      c: { commune:1, fractal:1, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 } },
+      c: { commune:1, fractal:1, ew:1, ex:1, ec:1, sc:1, fc:1, nh:1, nc:1, ci:1 },
+      cn: { commune:"Since 4 September 2026 a receipt goes out only for a message the room actually showed: one arriving while the member list, the media history or a thread covered the room waits until the room is back in front, on the phone and on the desktop alike.",
+            fractal:"A message arriving under a dialog or a thread is marked read unseen." } },
 
     // ---- Rooms
     { f: "Spaces", g: "Rooms", kind: "spec", tag: "Spaces",

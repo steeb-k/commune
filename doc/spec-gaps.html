@@ -725,7 +725,7 @@
 
   <section>
     <div class="sec-head">
-      <h2>Added since the fork <span class="tick have">31 touch the protocol</span></h2>
+      <h2>Added since the fork <span class="tick have">33 touch the protocol</span></h2>
       <p class="sec-sub">
 643 commits since the split from Fractal at <code style="font-family:var(--f-mono);font-size:0.875em">1e5c1cab</code>
         on 18 August 2026. Most of it is the macOS port and the
@@ -753,6 +753,18 @@
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><span class="feat">A receipt only for what was seen</span></td>
+            <td class="mod">Receipts</td>
+            <td class="state">A read receipt says a person has read up to here, and until 4 September 2026 this client sent one for messages nobody had seen: the room history judged itself visible whenever it was mapped under an active window, which the member list, the media history and a thread all leave true while covering it. The receipt now waits until the room is the view on the display with no dialog over it, and catches up the moment it is — the same rule on the phone, whose timeline listener had marked read whenever the room was open at all. The fully-read marker goes through the same gate, since it makes the same claim.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">On Windows a dialog is a native window of its own and takes the activity with it, so the plain window there keeps the old rule.</span></td>
+          </tr>
+          <tr>
+            <td><span class="feat">Several files in one go</span></td>
+            <td class="mod">Instant Messaging</td>
+            <td class="state">Both pickers return many files now, a drop of several on the room history is taken as a batch, and on Android the share sheet delivers one or several. The preview dialog shows each in turn and offers to send them all, the way Element Classic's upload dialog does; a cancel drops the rest. On the wire nothing new: every file becomes its own <code>m.room.message</code> of the kind its MIME type decides, sent in the order picked and awaited before the next, because the specification has no gallery event and the proposal for one stays out under the fork's no-MSC stance.</td>
+            <td><span class="chip on">On spec</span><span class="chip-note">Verified on both: two pictures picked together arrived as two image events, in order.</span></td>
+          </tr>
           <tr>
             <td><span class="feat">Email and phone on the account</span></td>
             <td class="mod">Client-Server API</td>
@@ -919,6 +931,16 @@
       bundle, icons and fonts — plus the rebrand to Commune, the media history viewer's age
       grouping, the decoded-texture cache, and a dark-theme switch. Worth stating plainly: on the
       one axis this page measures, the fork's largest body of work does not move the needle at all.
+      The same goes for what landed after it: a Windows build, and the extraction of everything
+      protocol-shaped into <code style="font-family:var(--f-mono);font-size:0.875em">commune-core</code>
+      so that the GTK desktop app and a Kotlin Android app are two views over one Rust crate. That
+      is why this page has no Android column: the phone sends and reads exactly what the desktop
+      does, module for module, and the pieces it has yet to draw are interface rather than protocol.
+      The last pass over the desktop tree, on 3 and 4 September 2026, was interface too — the
+      Join Room, Create Room and room-details dialogs reaching the window through the application
+      rather than the widget tree, since on the GTK Windows backend a dialog is a window of its own;
+      and the thread chip carrying its action only together with its target, which silenced
+      tens of thousands of warnings a minute in a busy room.
     </p>
   </section>
 
@@ -1381,6 +1403,8 @@
     opened, read, written in place and listed with every other thread of its room, the
     predefined notification rules given their switches, the account's email addresses made
     visible, addable and removable where the homeserver does not manage them in the browser,
+    several files sent as a batch of ordinary messages, a read receipt held back until the room
+    is actually in front,
     every local
     branch merged, and no unreachable
     work left in the object store. Spec is the
