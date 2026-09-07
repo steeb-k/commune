@@ -170,7 +170,7 @@
       Every open issue on Fractal's tracker labelled Bug, Crash, Regression or Performance,
       ranked by severity and grouped by whether it can reach Commune. Enhancements and feature
       requests are excluded — 137 of the 207 open issues — since those are a wish list, not a
-      defect backlog. Commune is Fractal 14.1 plus 643 commits, so the first group is the one
+      defect backlog. Commune is Fractal 14.1 plus 651 commits, so the first group is the one
       that matters.
     </p>
   </header>
@@ -212,7 +212,7 @@
   <section>
     <div class="sec-head">
       <h2>Reported against a version Commune is built on <span class="tick gone">26</span></h2>
-      <p class="sec-sub">Fractal 13, 14 or 14.1, or verified live in the tree. Commune <em>is</em> 14.1 plus 643 commits, so unless one of those commits happened to touch it, these are yours.</p>
+      <p class="sec-sub">Fractal 13, 14 or 14.1, or verified live in the tree. Commune <em>is</em> 14.1 plus 651 commits, so unless one of those commits happened to touch it, these are yours.</p>
     </div>
     <div class="tscroll">
       <table>
@@ -355,7 +355,7 @@
           <tr>
             <td class="c-id"><a href="https://gitlab.gnome.org/World/fractal/-/work_items/1763">#1763</a></td>
             <td><span class="sev med">Medium</span></td>
-            <td><span class="feat">Room history sometimes endlessly loads after scrolling to the top</span><span class="note">Room history loads endlessly after scrolling to the top, because the scroll position stays pinned. Reported against 14.1.</span></td>
+            <td><span class="feat">Room history sometimes endlessly loads after scrolling to the top</span><span class="note">Room history loads endlessly after scrolling to the top, because the scroll position stays pinned. Reported against 14.1. <strong>Bounded here since 3e35dc0c</strong>: one automatic walk of the history loads three batches at most, and the next starts only after a frame has laid the list out, so a pinned position is read again rather than trusted. That change was made for a jump to an old search result, which loaded the history up to the message until the app froze, and has not been tried against this report’s own steps.</span></td>
             <td class="c-when"><span class="dates">2026-08<br><span class="upd">last touched 2026-08</span></span></td>
             <td class="c-act"><span class="cmt">0</span></td>
           </tr>
@@ -789,8 +789,8 @@
   <footer>
     Pulled from the GitLab API for <code>World/fractal</code> on 22 August 2026: 207 open issues,
     of which 70 carry a defect label. Ordered by severity within each group, then by comment count.
-    Commune's base is <code>1e5c1cab</code>, Fractal 14.1, plus 643 commits at
-    <code>10a2bf6e</code> — the version column is
+    Commune's base is <code>1e5c1cab</code>, Fractal 14.1, plus 651 commits at
+    <code>3e35dc0c</code> — the version column is
     what the reporter filed against, not what has been fixed since. The tracker itself has not
     been read again since 22 August 2026; the commit counts are current, the issue list is not.
   </footer>
