@@ -324,6 +324,8 @@ private fun CommuneApp(state: CommuneState) {
                 MediaViewerScreen(
                     viewerPath,
                     isVideo = state.viewerIsVideo,
+                    pages = state.viewerPages,
+                    initialPage = state.viewerIndex,
                     onClose = { state.closeViewer() },
                 )
             } else if (state.pushMode == PushManager.MODE_UNSET) {

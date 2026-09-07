@@ -344,7 +344,14 @@ private fun MediaCell(
                         toggle(event.eventId)
                     } else {
                         state.fetchHistoryMedia(event.eventId) { mediaPath ->
-                            mediaPath?.let { state.openViewer(it, isVideo = event.isVideo) }
+                            if (mediaPath == null) {
+                                return@fetchHistoryMedia
+                            }
+                            if (event.isVideo) {
+                                state.openViewer(mediaPath, isVideo = true)
+                            } else {
+                                state.openHistoryImage(event.eventId, mediaPath)
+                            }
                         }
                     }
                 },

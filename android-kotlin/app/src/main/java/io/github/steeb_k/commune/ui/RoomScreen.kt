@@ -864,6 +864,7 @@ internal fun Timeline(
                             item,
                             showHeader = item.sender != previousSender,
                             onOpenThread = onOpenThread,
+                            gallery = items,
                         )
                     } else {
                         StateLine(state, item)
@@ -1005,6 +1006,9 @@ internal fun MessageBubble(
     event: FfiTimelineItem.Event,
     showHeader: Boolean,
     onOpenThread: ((String) -> Unit)? = null,
+    // The list the bubble sits in: a picture opens with the list's other
+    // pictures a swipe away.
+    gallery: List<FfiTimelineItem> = emptyList(),
 ) {
     val own = event.isOwn
     val bubbleColor = if (own) {
@@ -1223,7 +1227,9 @@ internal fun MessageBubble(
                                 .fillMaxWidth()
                                 .heightIn(max = 420.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { state.openViewer(path) }
+                                .clickable {
+                                    state.openTimelineImage(gallery, event.uniqueId, path)
+                                }
                                 .padding(bottom = 4.dp),
                         )
                     }
