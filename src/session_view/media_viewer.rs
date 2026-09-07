@@ -424,8 +424,9 @@ mod imp {
             animation.play();
         }
 
-        /// Reveal this widget by transitioning from `source_widget`.
-        pub(super) fn reveal(&self, source_widget: &gtk::Widget) {
+        /// Reveal this widget by transitioning from `source_widget`, or from
+        /// the middle of the view when there is none to transition from.
+        pub(super) fn reveal(&self, source_widget: Option<&gtk::Widget>) {
             self.obj().set_visible(true);
             self.menu.grab_focus();
 
@@ -433,7 +434,7 @@ mod imp {
             self.swipe_progress.set(0.0);
 
             // Trigger the revealer.
-            self.revealer.set_source_widget(Some(source_widget));
+            self.revealer.set_source_widget(source_widget);
             self.revealer.set_reveal_child(true);
 
             // Fade in the background.
@@ -544,9 +545,10 @@ impl MediaViewer {
         glib::Object::new()
     }
 
-    /// Reveal this widget by transitioning from `source_widget`.
-    pub(crate) fn reveal(&self, source_widget: &impl IsA<gtk::Widget>) {
-        self.imp().reveal(source_widget.upcast_ref());
+    /// Reveal this widget by transitioning from `source_widget`, or from the
+    /// middle of the view when there is none to transition from.
+    pub(crate) fn reveal(&self, source_widget: Option<&gtk::Widget>) {
+        self.imp().reveal(source_widget);
     }
 
     /// Whether this widget is showing something.

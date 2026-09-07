@@ -9,6 +9,8 @@ use super::{
     HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline, MAX_COLUMNS, MediaAge,
     VisualMediaItem, VisualMediaRow, VisualMediaRowItem, VisualMediaRowModel, n_columns_for_width,
 };
+#[cfg(not(target_os = "android"))]
+use crate::Application;
 use crate::{
     components::LoadingRow,
     prelude::*,
@@ -538,9 +540,41 @@ mod imp {
             let media_message = event
                 .visual_media_message()
                 .expect("visual media items should contain only visual message content");
-            self.media_viewer
-                .set_message(&room, media_message, Some(event.event_id()));
-            self.media_viewer.reveal(item);
+
+            #[cfg(target_os = "android")]
+            {
+                self.media_viewer
+                    .set_message(&room, media_message, Some(event.event_id()));
+                self.media_viewer.reveal(Some(item.upcast_ref()));
+            }
+
+            // On the desktop the media opens in the session view's viewer,
+            // the one a picture in the room history opens in, since the
+            // dialog this viewer sits in cannot go fullscreen: see
+            // `SessionView::show_media_viewer_over_dialog()`. The window is
+            // reached through the application, as a presented dialog is a
+            // separate window on Windows.
+            #[cfg(not(target_os = "android"))]
+            {
+                let Some(dialog) = item
+                    .ancestor(adw::Dialog::static_type())
+                    .and_downcast::<adw::Dialog>()
+                else {
+                    error!("Could not find the dialog of the media history viewer");
+                    return;
+                };
+                let Some(window) = Application::default().main_window() else {
+                    error!("Could not find the main window");
+                    return;
+                };
+
+                window.session_view().show_media_viewer_over_dialog(
+                    &dialog,
+                    &room,
+                    media_message,
+                    Some(event.event_id()),
+                );
+            }
         }
     }
 }
