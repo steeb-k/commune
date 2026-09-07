@@ -978,6 +978,16 @@ is unfocused — two accounts, or a phone.
       but worth noticing if it happens every time.
 * [x] **Clicking a notification for a room you are already reading** does not
       jump anywhere unpleasant or steal the scroll position for long.
+* [ ] **A search result from months back in a busy room lands at once, and
+      the room does not scroll itself into the past.** Before 3e35dc0c the
+      view's "fill the screen" rule ran before the jump had landed and loaded
+      the history batch after batch up to the message until the app froze.
+      Now the message should appear highlighted within a second or two, with
+      a screen or so of history above and below it and _Back to Latest_
+      showing; scrolling up from there loads more as usual. Verified on the
+      harness (a jump over 1500 messages cost 14 batches, then stopped) but
+      not yet on a real room with real dates. Also check that a search hit no
+      longer shows twice in the results list.
 
 ## Threads: the chip, the view, and the list — `doc/threads.md`
 

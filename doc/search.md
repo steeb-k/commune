@@ -197,11 +197,44 @@ pressed it. Arriving in a chat room and not seeing the next message is a worse
 failure than the one it was solving.
 
 So the method asks first whether the room's **live** timeline already holds the
-event, with `Timeline::find_event_position()` — the same lookup `scroll_to_event`
-does, and the only "is this loaded" answer either the SDK or this tree offers.
-If it does, the live timeline stays and the event is scrolled to and highlighted
-in place. Only an event that is genuinely not loaded gets a timeline of its own,
-which is the case that mode exists for.
+event, with `Timeline::has_event()` — a lookup in the timeline's map of events,
+and the only "is this loaded" answer either the SDK or this tree offers.
+`Timeline::find_event_position()` walks the items for the position and is for
+the one-off scroll, once the event is known to be there. If it is loaded, the
+live timeline stays and the event is scrolled to and highlighted in place. Only
+an event that is genuinely not loaded gets a timeline of its own, which is the
+case that mode exists for.
+
+### The view fills itself only once the jump has landed
+
+`RoomHistory` keeps the view full: while the viewport is within two pages of
+the top it paginates backwards, batch after batch, and on a focused timeline it
+does the same at the bottom. That rule read the scroll position as soon as the
+timeline was ready, which on a focused timeline is before the scroll to its
+event has been laid out — the view sat at row zero, every batch prepended
+above it, and the position it read between batches was the one before the last
+batch's layout. A search result from months back loaded the whole history up
+to itself, and froze the app on a busy room, which is exactly what a focused
+timeline exists not to do.
+
+Two guards, both in `RoomHistory`, since 3e35dc0c:
+
+* `focused_scroll_landed` — `needs_more_events_at_the_start()` and
+  `..._at_the_end()` say no on a focused timeline until it is set. The scroll
+  to the focused event is issued from an idle; a tick callback marks the frame
+  it lands in, and an idle after that frame sets the flag and runs the fill
+  check once, against a laid-out position.
+* `MAX_AUTO_LOAD_BATCHES` — one automatic walk loads three batches at most.
+  The list only reflects a batch in its next frame, so a walk that never
+  yields reads the same position every time; between two walks a frame goes
+  by, and the change of height it brings starts the next walk when more is
+  still needed. This one applies to the live timeline too.
+
+The same change fixed a spinner that the walk used to hide: the timeline's
+initial events were applied without notifying `is-empty`, and the core reports
+a focused timeline ready before its events reach the view, so without the
+walk's state changes nothing ever swapped the spinner for the list. The
+initial append goes through `update_with_diff_list()` now, which notifies.
 
 The awkward part is that the answer is not available at the moment of the click:
 the live timeline of a room that has never been opened is still being built, so
