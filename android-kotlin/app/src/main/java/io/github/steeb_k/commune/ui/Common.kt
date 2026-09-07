@@ -198,6 +198,9 @@ fun MediaImage(
     // Fixed frames — avatars, grid tiles — crop to fill rather than
     // letterbox; free-height bubbles keep the whole picture.
     fill: Boolean = false,
+    // Told the decoded picture's size, for a caller that must know where
+    // its edges fall inside the frame.
+    onSize: ((androidx.compose.ui.unit.IntSize) -> Unit)? = null,
 ) {
     val drawable by androidx.compose.runtime.produceState<
         android.graphics.drawable.Drawable?,
@@ -234,6 +237,11 @@ fun MediaImage(
     // size hold: an ImageView inside a lazy grid painted past its cell and
     // the media grid became a collage. Animated pictures keep the view,
     // which is what plays them.
+    androidx.compose.runtime.LaunchedEffect(current) {
+        onSize?.invoke(
+            androidx.compose.ui.unit.IntSize(current.intrinsicWidth, current.intrinsicHeight)
+        )
+    }
     val bitmap = (current as? android.graphics.drawable.BitmapDrawable)?.bitmap
     if (bitmap != null) {
         val image = androidx.compose.runtime.remember(bitmap) {

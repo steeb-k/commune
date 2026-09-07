@@ -13,6 +13,8 @@ import androidx.compose.runtime.setValue
 import io.github.steeb_k.commune.core.CoreApp
 import io.github.steeb_k.commune.core.FfiCoreConfig
 import io.github.steeb_k.commune.core.FfiDevice
+import io.github.steeb_k.commune.core.FfiEventKind
+import io.github.steeb_k.commune.core.FfiMediaKind
 import io.github.steeb_k.commune.core.FfiRoomNotificationMode
 import io.github.steeb_k.commune.core.FfiGif
 import io.github.steeb_k.commune.core.FfiHistoryEvent
@@ -49,6 +51,10 @@ enum class Phase {
     /// A session is up (or coming up) and the session UI is showing.
     Session,
 }
+
+/// One picture of the gallery the media viewer pages through: what tells
+/// it apart, and how its file is got once its page comes on screen.
+class ViewerPage(val key: String, val load: suspend () -> String?)
 
 class CommuneState(context: Context) {
     private val main = Handler(Looper.getMainLooper())
@@ -127,6 +133,13 @@ class CommuneState(context: Context) {
     var viewerImagePath by mutableStateOf<String?>(null)
         private set
     var viewerIsVideo by mutableStateOf(false)
+        private set
+    /// The pictures on either side of the one the viewer opened on, in
+    /// the order they sit on the screen they came from; empty when it
+    /// opened on a picture alone.
+    var viewerPages by mutableStateOf<List<ViewerPage>>(emptyList())
+        private set
+    var viewerIndex by mutableStateOf(0)
         private set
     var roomDetailsOpen by mutableStateOf(false)
         private set
@@ -3188,6 +3201,64 @@ class CommuneState(context: Context) {
 
     fun openViewer(path: String, isVideo: Boolean = false) {
         viewerIsVideo = isVideo
+        viewerPages = emptyList()
+        viewerIndex = 0
+        viewerImagePath = path
+    }
+
+    /// Open a picture of the timeline, with the timeline's other pictures
+    /// a swipe away on either side, in the order the list shows them.
+    fun openTimelineImage(items: List<FfiTimelineItem>, uniqueId: String, path: String) {
+        val roomId = openRoom?.roomId ?: return
+        val pages = items
+            .filterIsInstance<FfiTimelineItem.Event>()
+            .filter { (it.kind as? FfiEventKind.Media)?.kind == FfiMediaKind.IMAGE }
+            .map { event ->
+                ViewerPage(event.uniqueId) {
+                    if (event.uniqueId == uniqueId) {
+                        path
+                    } else {
+                        try {
+                            app.getTimelineMedia(roomId, event.uniqueId)
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
+                }
+            }
+        openGallery(pages, uniqueId, path)
+    }
+
+    /// Open a picture of the media history, with the grid's other pictures
+    /// a swipe away on either side, in the order the grid shows them.
+    fun openHistoryImage(eventId: String, path: String) {
+        val roomId = openRoom?.roomId ?: return
+        val pages = historyEvents
+            .filter { it.kind == FfiHistoryKind.MEDIA && !it.isVideo }
+            .map { event ->
+                ViewerPage(event.eventId) {
+                    historyMedia[event.eventId] ?: try {
+                        app.getHistoryMedia(roomId, event.eventId)
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+            }
+        openGallery(pages, eventId, path)
+    }
+
+    /// Open the viewer on the page of `pages` keyed `key` — or on `path`
+    /// alone when no page is.
+    private fun openGallery(pages: List<ViewerPage>, key: String, path: String) {
+        val index = pages.indexOfFirst { it.key == key }
+        viewerIsVideo = false
+        if (index < 0) {
+            viewerPages = emptyList()
+            viewerIndex = 0
+        } else {
+            viewerPages = pages
+            viewerIndex = index
+        }
         viewerImagePath = path
     }
 
@@ -3959,6 +4030,8 @@ class CommuneState(context: Context) {
     fun closeViewer() {
         viewerImagePath = null
         viewerIsVideo = false
+        viewerPages = emptyList()
+        viewerIndex = 0
     }
 
     fun setNotificationsEnabled(enabled: Boolean) {
