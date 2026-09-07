@@ -101,16 +101,24 @@ mod imp {
                 return;
             }
 
-            let source_bounds = self
-                    .source_widget
-                    .upgrade()
-                    .and_then(|s| s.compute_bounds(&*obj))
-                    .unwrap_or_else(|| {
+            let source_widget = self.source_widget.upgrade();
+            let source_bounds = source_widget
+                .as_ref()
+                .and_then(|s| s.compute_bounds(&*obj))
+                .unwrap_or_else(|| {
+                    if source_widget.is_some() {
                         warn!(
                             "The source widget bounds could not be calculated, using default bounds as fallback"
                         );
-                        graphene::Rect::new(0.0, 0.0, 100.0, 100.0)
-                    });
+                    }
+
+                    // Without a source widget to grow out of, grow out of
+                    // the middle: the viewer opened over something that is
+                    // not on this window, such as a dialog.
+                    let width = obj.width() as f32;
+                    let height = obj.height() as f32;
+                    graphene::Rect::new(width / 4.0, height / 4.0, width / 2.0, height / 2.0)
+                });
             let rev_progress = (1.0 - progress).abs();
 
             let x_scale = source_bounds.width() / obj.width() as f32;
@@ -127,9 +135,13 @@ mod imp {
 
             let borrowed_source_widget_texture = self.source_widget_texture.borrow();
             let Some(source_widget_texture) = borrowed_source_widget_texture.as_ref() else {
-                warn!(
-                    "Revealer animation failed: no source widget texture, using child snapshot as fallback"
-                );
+                if source_widget.is_some() {
+                    warn!(
+                        "Revealer animation failed: no source widget texture, using child snapshot as fallback"
+                    );
+                }
+                // With nothing to cross-fade from, the child scales up on
+                // its own.
                 obj.snapshot_child(&child, snapshot);
                 return;
             };

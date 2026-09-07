@@ -77,6 +77,10 @@ mod imp {
         /// The window of the call that is happening, if it is still open.
         #[cfg(not(target_os = "android"))]
         call_view: RefCell<Option<CallView>>,
+        /// The dialog the media viewer was opened over, to present again
+        /// once the viewer is closed.
+        #[cfg(not(target_os = "android"))]
+        dialog_under_media_viewer: RefCell<Option<adw::Dialog>>,
     }
 
     #[glib::object_subclass]
@@ -249,6 +253,23 @@ mod imp {
 
                     // Withdraw the notifications of the newly selected item.
                     imp.withdraw_selected_item_notifications();
+                }
+            ));
+
+            // A dialog that stepped aside for the media viewer comes back
+            // once the viewer has gone.
+            #[cfg(not(target_os = "android"))]
+            self.media_viewer.connect_visible_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |media_viewer| {
+                    if media_viewer.is_visible() {
+                        return;
+                    }
+
+                    if let Some(dialog) = imp.dialog_under_media_viewer.take() {
+                        dialog.present(Some(&*imp.obj()));
+                    }
                 }
             ));
 
@@ -646,7 +667,34 @@ mod imp {
             event_id: Option<OwnedEventId>,
         ) {
             self.media_viewer.set_message(room, media_message, event_id);
-            self.media_viewer.reveal(source_widget);
+            self.media_viewer.reveal(Some(source_widget));
+        }
+
+        /// Show the given media event in the media viewer, in place of
+        /// `dialog`.
+        ///
+        /// A dialog has no room for a fullscreen viewer of its own: presented
+        /// in the window it floats with margins around it, and on Windows it
+        /// is a separate window altogether, so fullscreening the window does
+        /// nothing for it. The dialog steps aside instead, the media shows in
+        /// this view's viewer as it does from the room history, and the
+        /// dialog is presented again when the viewer closes.
+        #[cfg(not(target_os = "android"))]
+        pub(super) fn show_media_viewer_over_dialog(
+            &self,
+            dialog: &adw::Dialog,
+            room: &Room,
+            media_message: VisualMediaMessage,
+            event_id: Option<OwnedEventId>,
+        ) {
+            if dialog.close() {
+                self.dialog_under_media_viewer.replace(Some(dialog.clone()));
+            } else {
+                warn!("Could not close the dialog under the media viewer");
+            }
+
+            self.media_viewer.set_message(room, media_message, event_id);
+            self.media_viewer.reveal(None);
         }
 
         /// Go back one step within this view, if there is one to go back
@@ -832,6 +880,24 @@ impl SessionView {
     ) {
         self.imp()
             .show_media_viewer(source_widget.upcast_ref(), room, media_message, event_id);
+    }
+
+    /// Show the given media event in the media viewer, in place of `dialog`,
+    /// which is presented again when the viewer closes.
+    #[cfg(not(target_os = "android"))]
+    pub(crate) fn show_media_viewer_over_dialog(
+        &self,
+        dialog: &impl IsA<adw::Dialog>,
+        room: &Room,
+        media_message: VisualMediaMessage,
+        event_id: Option<OwnedEventId>,
+    ) {
+        self.imp().show_media_viewer_over_dialog(
+            dialog.upcast_ref(),
+            room,
+            media_message,
+            event_id,
+        );
     }
 
     /// Show the given `MatrixIdUri`.
