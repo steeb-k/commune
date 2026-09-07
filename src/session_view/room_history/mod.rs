@@ -80,6 +80,14 @@ const HIGHLIGHT_SECONDS: u32 = 3;
 /// How long to wait for an event to turn up in a loading live timeline before
 /// giving up and building a timeline focused on it.
 const HIGHLIGHT_WAIT_SECONDS: u32 = 2;
+/// The number of batches one automatic walk of the history loads at most.
+///
+/// The scroll position is read between the batches of a walk, but the list
+/// only reflects a batch in the layout of its next frame, so a walk that
+/// never yields for one reads the same position every time. Between two
+/// walks a frame goes by; the change of height it brings starts the next
+/// walk when more is still needed.
+const MAX_AUTO_LOAD_BATCHES: u32 = 3;
 
 mod imp {
     use std::{
@@ -169,6 +177,14 @@ mod imp {
         /// Whether we already scrolled to the focused event of the current
         /// timeline.
         focused_scroll_done: Cell<bool>,
+        /// Whether the scroll to the focused event has been laid out, so
+        /// that the scroll position of a focused timeline can be trusted.
+        ///
+        /// Until then the view sits at its top, which the automatic loading
+        /// of older events reads as "near the start, load more", and it went
+        /// on loading a busy room batch after batch until the app froze. A
+        /// focused timeline loads nothing on its own before the jump lands.
+        focused_scroll_landed: Cell<bool>,
         /// The event to scroll to and highlight without leaving the live
         /// timeline.
         ///
@@ -1017,6 +1033,7 @@ mod imp {
                     // stick to it, and the scroll button returns to the live timeline
                     // instead of scrolling down.
                     self.focused_scroll_done.set(false);
+                    self.focused_scroll_landed.set(false);
                     self.set_sticky(false);
                     self.update_scroll_btn();
                     self.scroll_to_focused_event_if_needed();
@@ -1325,6 +1342,43 @@ mod imp {
                 self,
                 move || {
                     imp.scroll_to_event(&TimelineEventItemId::EventId(event_id));
+                    imp.wait_for_focused_scroll_to_land(timeline);
+                }
+            ));
+        }
+
+        /// Open the automatic loading of the given focused timeline once the
+        /// scroll to its event has been laid out.
+        ///
+        /// The scroll asks the list for a new position; the list gives it
+        /// during the layout of its next frame. A tick callback runs at the
+        /// start of that frame, and an idle source is dispatched only once
+        /// the frame is done, so the position is there when it runs. The
+        /// timeline is checked again then, as another one may have taken its
+        /// place in the meantime, with a jump of its own to wait for.
+        fn wait_for_focused_scroll_to_land(&self, timeline: Timeline) {
+            self.listview.add_tick_callback(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                #[upgrade_or]
+                glib::ControlFlow::Break,
+                move |_, _| {
+                    glib::idle_add_local_once(clone!(
+                        #[weak]
+                        imp,
+                        #[strong]
+                        timeline,
+                        move || {
+                            if imp.timeline.obj().as_ref() != Some(&timeline) {
+                                return;
+                            }
+
+                            imp.focused_scroll_landed.set(true);
+                            imp.load_more_events_if_needed();
+                        }
+                    ));
+
+                    glib::ControlFlow::Break
                 }
             ));
         }
@@ -1378,7 +1432,7 @@ mod imp {
             };
 
             let key = TimelineEventItemId::EventId(event_id);
-            if timeline.find_event_position(&key).is_none() {
+            if !timeline.has_event(&key) {
                 if !timeline.is_empty() && timeline.state() == LoadingState::Ready {
                     // The timeline is loaded and the event is not in it, so it
                     // is old enough to need one of its own. The timeout is
@@ -1559,7 +1613,14 @@ mod imp {
 
         /// Whether we need to load more events at the start of the timeline.
         fn needs_more_events_at_the_start(&self) -> bool {
-            if self.grouping_model().n_items() == 0 {
+            if self.is_focused() {
+                if !self.focused_scroll_landed.get() {
+                    // The events around the focused one come with the timeline, and
+                    // the view is at its top until the jump to it lands, so nothing
+                    // it says about the scroll position is worth loading for yet.
+                    return false;
+                }
+            } else if self.grouping_model().n_items() == 0 {
                 // We definitely want events if the history is empty.
                 return true;
             }
@@ -1581,8 +1642,9 @@ mod imp {
                 return false;
             }
 
-            if self.grouping_model().n_items() == 0 {
-                // Wait for the initial events, they are loaded with the timeline.
+            if !self.focused_scroll_landed.get() {
+                // The initial events are loaded with the timeline, and the scroll
+                // position means nothing until the jump to the focused event lands.
                 return false;
             }
 
@@ -1612,6 +1674,7 @@ mod imp {
                 return;
             };
 
+            let batches = Cell::new(0);
             spawn!(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -1623,7 +1686,10 @@ mod imp {
                             #[upgrade_or]
                             ControlFlow::Break(()),
                             move || {
-                                if imp.needs_more_events_at_the_end() {
+                                batches.set(batches.get() + 1);
+                                if batches.get() < MAX_AUTO_LOAD_BATCHES
+                                    && imp.needs_more_events_at_the_end()
+                                {
                                     ControlFlow::Continue(())
                                 } else {
                                     ControlFlow::Break(())
@@ -1641,6 +1707,7 @@ mod imp {
                 return;
             };
 
+            let batches = Cell::new(0);
             spawn!(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -1652,7 +1719,10 @@ mod imp {
                             #[upgrade_or]
                             ControlFlow::Break(()),
                             move || {
-                                if imp.needs_more_events_at_the_start() {
+                                batches.set(batches.get() + 1);
+                                if batches.get() < MAX_AUTO_LOAD_BATCHES
+                                    && imp.needs_more_events_at_the_start()
+                                {
                                     ControlFlow::Continue(())
                                 } else {
                                     ControlFlow::Break(())
@@ -2188,9 +2258,7 @@ impl RoomHistory {
         }
 
         let live_timeline = room.live_timeline();
-        let is_loaded = live_timeline
-            .find_event_position(&TimelineEventItemId::EventId(event_id.clone()))
-            .is_some();
+        let is_loaded = live_timeline.has_event(&TimelineEventItemId::EventId(event_id.clone()));
         // The live timeline of a room that has never been opened is still
         // being built, so "not found" is not yet an answer.
         let may_still_load =

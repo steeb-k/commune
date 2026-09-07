@@ -199,7 +199,17 @@ mod imp {
         }
 
         /// Load more results.
+        ///
+        /// One page at a time: a new term restarts the search and, through
+        /// the core's state change, asks the view to fill its list, both of
+        /// which come here for the first page. The core only reports itself
+        /// loading once its request is under way, so the page in flight is
+        /// tracked here, by its abort handle.
         pub(super) async fn load(&self) {
+            if self.abort_handle.borrow().is_some() {
+                return;
+            }
+
             let core = self.core().clone();
             let handle = spawn_tokio!(async move { core.load_more().await });
             self.abort_handle.replace(Some(handle.abort_handle()));

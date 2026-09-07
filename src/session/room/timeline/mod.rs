@@ -274,7 +274,12 @@ mod imp {
             }
 
             if !values.is_empty() {
-                self.update_with_single_diff(VectorDiff::Append { values });
+                // Through the list update, so that `is-empty` is notified: the
+                // core reports a focused timeline ready before its initial
+                // events get here, and the view only leaves its spinner on that
+                // notification. The backwards walk that used to hide this by
+                // changing the state again no longer runs before the jump lands.
+                self.update_with_diff_list(vec![VectorDiff::Append { values }]);
             }
 
             let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
@@ -1129,9 +1134,24 @@ impl Timeline {
         self.imp().event_map.borrow().get(identifier).cloned()
     }
 
+    /// Whether this `Timeline` holds the event with the given identifier.
+    ///
+    /// A lookup in the map of events, so it costs the same however long the
+    /// timeline is, unlike [`Self::find_event_position()`].
+    pub(crate) fn has_event(&self, identifier: &TimelineEventItemId) -> bool {
+        self.imp().event_map.borrow().contains_key(identifier)
+    }
+
     /// Get the position of the event with the given identifier in this
     /// `Timeline`.
+    ///
+    /// This walks the items, so it is for the one-off scroll to an event that
+    /// is known to be there; [`Self::has_event()`] answers whether it is.
     pub(crate) fn find_event_position(&self, identifier: &TimelineEventItemId) -> Option<usize> {
+        if !self.has_event(identifier) {
+            return None;
+        }
+
         self.items()
             .iter::<glib::Object>()
             .enumerate()
