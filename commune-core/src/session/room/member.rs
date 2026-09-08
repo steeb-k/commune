@@ -138,6 +138,36 @@ pub struct Member {
 }
 
 impl Member {
+    /// Read one member from the store, without going to the server — the
+    /// application's `get_member_no_sync` lookup, which its notifications
+    /// use to name a message's sender and pick their picture.
+    ///
+    /// `None` when the store does not know the member, or could not read.
+    pub(crate) async fn fetch(
+        matrix_room: &matrix_sdk::room::Room,
+        user_id: &UserId,
+    ) -> Option<Self> {
+        let power_levels = match matrix_room.power_levels().await {
+            Ok(power_levels) => power_levels,
+            Err(levels_error) => {
+                error!("Could not load room power levels: {levels_error}");
+                return None;
+            }
+        };
+
+        match matrix_room.get_member_no_sync(user_id).await {
+            Ok(Some(member)) => Some(Self::from_room_member(&member, &power_levels)),
+            Ok(None) => {
+                debug!("Room member {user_id} not found");
+                None
+            }
+            Err(member_error) => {
+                error!("Could not load room member {user_id}: {member_error}");
+                None
+            }
+        }
+    }
+
     /// Build a snapshot from the SDK's member under the given power levels.
     fn from_room_member(member: &RoomMember, power_levels: &RoomPowerLevels) -> Self {
         Self {

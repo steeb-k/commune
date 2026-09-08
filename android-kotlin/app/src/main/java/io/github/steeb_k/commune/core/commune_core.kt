@@ -1025,6 +1025,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_room_join_rule(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_room_media_history(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_room_member(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_room_members(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_room_notification_mode(
@@ -1414,6 +1416,8 @@ external fun uniffi_commune_core_fn_method_coreapp_room_history_visibility(`ptr`
 external fun uniffi_commune_core_fn_method_coreapp_room_join_rule(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_room_media_history(`ptr`: Long,`roomId`: RustBuffer.ByValue,`from`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_room_member(`ptr`: Long,`roomId`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_room_members(`ptr`: Long,`roomId`: RustBuffer.ByValue,
 ): Long
@@ -2038,6 +2042,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_room_media_history() != 24819.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_room_member() != 37003.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_room_members() != 65362.toShort()) {
@@ -3836,6 +3843,14 @@ public interface CoreAppInterface {
      * by message type on our side.
      */
     suspend fun `roomMediaHistory`(`roomId`: kotlin.String, `from`: kotlin.String?): FfiHistoryPage
+    
+    /**
+     * One member of the given room, read from the store without loading
+     * the list — how a notification names a message's sender and finds
+     * their picture, as the application's notifications do with
+     * `get_member_no_sync`. `None` when the store does not know them.
+     */
+    suspend fun `roomMember`(`roomId`: kotlin.String, `userId`: kotlin.String): FfiMember?
     
     /**
      * A snapshot of the given room's members, loading the list on first
@@ -6721,6 +6736,32 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { FfiConverterTypeFfiHistoryPage.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * One member of the given room, read from the store without loading
+     * the list — how a notification names a message's sender and finds
+     * their picture, as the application's notifications do with
+     * `get_member_no_sync`. `None` when the store does not know them.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `roomMember`(`roomId`: kotlin.String, `userId`: kotlin.String) : FfiMember? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_room_member(
+                uniffiHandle,
+                FfiConverterString.lower(`roomId`),FfiConverterString.lower(`userId`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeFfiMember.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
     )
     }
 
@@ -16406,6 +16447,38 @@ public object FfiConverterOptionalTypeFfiMediaInfo: FfiConverterRustBuffer<FfiMe
         } else {
             buf.put(1)
             FfiConverterTypeFfiMediaInfo.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiMember: FfiConverterRustBuffer<FfiMember?> {
+    override fun read(buf: ByteBuffer): FfiMember? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiMember.read(buf)
+    }
+
+    override fun allocationSize(value: FfiMember?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiMember.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiMember?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiMember.write(value, buf)
         }
     }
 }

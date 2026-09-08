@@ -2645,6 +2645,22 @@ impl CoreApp {
             .expect("task was not aborted");
     }
 
+    /// One member of the given room, read from the store without loading
+    /// the list — how a notification names a message's sender and finds
+    /// their picture, as the application's notifications do with
+    /// `get_member_no_sync`. `None` when the store does not know them.
+    pub async fn room_member(&self, room_id: String, user_id: String) -> Option<FfiMember> {
+        let room = self.room(&room_id).ok()?;
+        let user_id = parse_user_id(&user_id).ok()?;
+
+        RUNTIME
+            .spawn(async move { room.member(&user_id).await })
+            .await
+            .expect("task was not aborted")
+            .as_ref()
+            .map(FfiMember::from)
+    }
+
     /// A snapshot of the given room's members, loading the list on first
     /// use — the composer's mention completion reads this.
     pub async fn room_members(&self, room_id: String) -> Vec<FfiMember> {

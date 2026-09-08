@@ -9,9 +9,13 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import io.github.steeb_k.commune.core.CoreApp
 import io.github.steeb_k.commune.core.FfiRoom
+import kotlin.concurrent.thread
 
-class Notifier(private val context: Context) {
+/// `app` is the core, asked for when a message is posted: the notifier
+/// is built before the core is.
+class Notifier(private val context: Context, private val app: () -> CoreApp) {
     private val manager = context.getSystemService(NotificationManager::class.java)
 
     /// The per-room counts already notified, persisted so an app restart
@@ -80,20 +84,21 @@ class Notifier(private val context: Context) {
         // an incoming notification. Without a readable message the count
         // itself is the line.
         val body = room.latestEventBody?.takeIf { !room.latestEventIsOwn }
-        val sender = if (body != null && !room.isDirect) {
-            room.latestEventSender?.substringAfter("@")?.substringBefore(":")
-        } else {
-            null
+        val senderId = if (body != null) room.latestEventSender else null
+        // Naming the sender reads the store and may fetch their picture;
+        // the room-list update this rides on is on the main thread.
+        thread {
+            val sender = senderId?.let { senderPerson(app(), room.roomId, it) }
+            postRoomMessage(
+                context,
+                room.roomId,
+                name,
+                room.isDirect,
+                sender,
+                body ?: countText,
+                count.toInt(),
+            )
         }
-        postRoomMessage(
-            context,
-            room.roomId,
-            name,
-            room.isDirect,
-            sender,
-            body ?: countText,
-            count.toInt(),
-        )
     }
 
     companion object {

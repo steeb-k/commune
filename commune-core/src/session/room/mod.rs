@@ -52,7 +52,7 @@ use matrix_sdk::{
 };
 use ruma::{
     EventId, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedMxcUri, OwnedRoomId, OwnedUserId,
-    RoomId, UInt,
+    RoomId, UInt, UserId,
     api::{
         client::{
             directory::{get_room_visibility, set_room_visibility},
@@ -1010,6 +1010,16 @@ impl Room {
     #[must_use]
     pub fn thread_list(&self) -> ThreadList {
         ThreadList::new(self.inner.matrix_room.clone())
+    }
+
+    /// One member of this room, read from the store — the sender of a
+    /// message a notification announces, without loading the whole list
+    /// for it.
+    pub async fn member(&self, user_id: &UserId) -> Option<Member> {
+        let matrix_room = self.inner.matrix_room.clone();
+        let user_id = user_id.to_owned();
+        let handle = spawn_tokio!(async move { Member::fetch(&matrix_room, &user_id).await });
+        handle.await.expect("task was not aborted")
     }
 
     /// The member list of this room.
