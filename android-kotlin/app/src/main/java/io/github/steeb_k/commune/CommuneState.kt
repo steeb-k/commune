@@ -59,7 +59,7 @@ class ViewerPage(val key: String, val load: suspend () -> String?)
 class CommuneState(context: Context) {
     private val main = Handler(Looper.getMainLooper())
     private val appContext = context.applicationContext
-    private val notifier = Notifier(appContext)
+    private val notifier = Notifier(appContext) { app }
 
     /// The rooms offered on other apps' share sheets; lazily, since it
     /// needs the core.

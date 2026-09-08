@@ -26,21 +26,26 @@ internal const val MESSAGES_CHANNEL_ID = "messages"
 /// The most messages one room's notification keeps; older ones fall off.
 private const val MAX_MESSAGES = 25
 
+/// Posting reads what the shade shows and writes it back with one more
+/// message; two sources on their own threads take turns, or one's message
+/// would be lost.
+private val postLock = Any()
+
 /// Post the room's notification with one more message in it.
 ///
-/// `sender` is the display name to show against the message; null means
-/// the room itself speaks — a direct chat, or a count with no readable
-/// body. `count` is the server's unread count when known, shown as the
-/// badge and in the subtext.
+/// `sender` is who the message is from, as [senderPerson] builds them;
+/// null means the room itself speaks — a count with no readable body, an
+/// emote that already names its sender. `count` is the server's unread
+/// count when known, shown as the badge and in the subtext.
 internal fun postRoomMessage(
     context: Context,
     roomId: String,
     roomName: String,
     isDirect: Boolean,
-    sender: String?,
+    sender: Person?,
     text: String,
     count: Int? = null,
-) {
+) = synchronized(postLock) {
     val manager = context.getSystemService(NotificationManager::class.java)
     manager.createNotificationChannel(
         NotificationChannel(
@@ -54,7 +59,9 @@ internal fun postRoomMessage(
     // What the shade already shows for this room, so the new message
     // joins the earlier ones instead of replacing them. The sidebar's
     // count and the push for the same event both post it: the same words
-    // from the same sender as the newest entry are not added twice.
+    // from the same sender as the newest entry are not added twice. The
+    // sender is told by key — their Matrix ID — not by name, since the
+    // two sources can spell the name differently.
     val previous = manager.activeNotifications
         .firstOrNull { it.id == id }
         ?.notification
@@ -62,11 +69,11 @@ internal fun postRoomMessage(
         ?.getParcelableArray(Notification.EXTRA_MESSAGES)
         ?.let { Notification.MessagingStyle.Message.getMessagesFromBundleArray(it) }
         .orEmpty()
-    val person = Person.Builder().setName(sender ?: roomName).build()
+    val person = sender ?: Person.Builder().setName(roomName).setKey(roomId).build()
     val newest = previous.lastOrNull()
     val duplicate = newest != null &&
         newest.text?.toString() == text &&
-        newest.senderPerson?.name?.toString() == person.name?.toString()
+        newest.senderPerson?.identity() == person.identity()
     val messages = if (duplicate) {
         previous
     } else {
@@ -104,7 +111,7 @@ internal fun postRoomMessage(
     val builder = Notification.Builder(context, MESSAGES_CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_notify_symbolic)
         .setContentTitle(roomName)
-        .setContentText(if (sender != null && !isDirect) "$sender: $text" else text)
+        .setContentText(if (sender != null && !isDirect) "${sender.name}: $text" else text)
         .setStyle(style)
         .setSubText(countText)
         .setContentIntent(openApp)
@@ -124,6 +131,11 @@ internal fun postRoomMessage(
     if (count != null) builder.setNumber(count)
     manager.notify(id, builder.build())
 }
+
+/// What tells one Person from another: the key when there is one, the
+/// name otherwise — the system's own rule for filing messages under a
+/// person.
+private fun Person.identity(): String = key ?: name?.toString().orEmpty()
 
 /// The Mark as Read button: the room is marked read on the server and its
 /// notification taken down, without the app coming to the front.

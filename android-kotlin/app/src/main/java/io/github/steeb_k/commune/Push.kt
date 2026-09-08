@@ -127,9 +127,8 @@ private fun postFromPayload(context: Context, payload: String) {
         return
     }
 
-    val sender = notification?.optString("sender_display_name")
-        ?.takeIf { it.isNotBlank() }
-        ?: notification?.optString("sender")?.takeIf { it.isNotBlank() }
+    val senderId = notification?.optString("sender")?.takeIf { it.isNotBlank() }
+    val senderName = notification?.optString("sender_display_name")?.takeIf { it.isNotBlank() }
     val roomName = notification?.optString("room_name")?.takeIf { it.isNotBlank() }
     val body = notification?.optJSONObject("content")?.optString("body")
         ?.takeIf { it.isNotBlank() }
@@ -140,12 +139,10 @@ private fun postFromPayload(context: Context, payload: String) {
     // leaves this callback for a thread of its own.
     if (body == null || eventType == "m.room.encrypted") {
         thread {
+            val app = (context.applicationContext as CommuneApplication).state.app
             var failed = false
             val words = try {
-                runBlocking {
-                    (context.applicationContext as CommuneApplication).state.app
-                        .fetchPushedNotification(roomId, eventId)
-                }
+                runBlocking { app.fetchPushedNotification(roomId, eventId) }
             } catch (_: Exception) {
                 failed = true
                 null
@@ -153,7 +150,7 @@ private fun postFromPayload(context: Context, payload: String) {
             when {
                 // The fetch itself broke: say what the payload allows.
                 words == null && failed ->
-                    postMessage(context, roomId, roomName ?: sender ?: "Commune", null, "New message")
+                    postMessage(context, roomId, roomName ?: senderName ?: senderId ?: "Commune", null, "New message")
                 // Nothing to show: filtered, redacted, gone, or a call.
                 words == null -> {}
                 // Our own message from another device is not news.
@@ -165,7 +162,7 @@ private fun postFromPayload(context: Context, payload: String) {
                     val from = if (words.body is FfiNotificationBody.Emote) {
                         null
                     } else {
-                        words.senderName
+                        senderPerson(app, roomId, words.senderId, words.senderName)
                     }
                     postMessage(context, roomId, words.roomName, from, sentence, words.isDirect)
                 }
@@ -175,9 +172,17 @@ private fun postFromPayload(context: Context, payload: String) {
     }
 
     // A push names the room only when it is not a direct chat; one
-    // without a room name is taken as direct, its sender the title.
+    // without a room name is taken as direct, its sender the title. The
+    // sender is looked up as the room's member — their current name and
+    // picture, keyed by ID like the sidebar's posts — which reads the
+    // store, so it leaves this callback too.
     val direct = roomName == null
-    postMessage(context, roomId, roomName ?: sender ?: "Commune", sender, body ?: "New message", direct)
+    thread {
+        val app = (context.applicationContext as CommuneApplication).state.app
+        val from = senderId?.let { senderPerson(app, roomId, it, senderName) }
+        val title = roomName ?: from?.name?.toString() ?: "Commune"
+        postMessage(context, roomId, title, from, body, direct)
+    }
 }
 
 /// The words for a fetched event — the GTK app's notification sentences.
@@ -212,7 +217,7 @@ private fun postMessage(
     context: Context,
     roomId: String,
     title: String,
-    sender: String?,
+    sender: android.app.Person?,
     text: String,
     isDirect: Boolean = false,
 ) {

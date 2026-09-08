@@ -13,18 +13,11 @@ import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Matrix
-import android.graphics.Paint
-import android.graphics.RectF
-import android.graphics.Typeface
 import android.graphics.drawable.Icon
 import android.os.Build
 import io.github.steeb_k.commune.core.CoreApp
 import io.github.steeb_k.commune.core.FfiRoom
 import io.github.steeb_k.commune.core.FfiRoomCategory
-import io.github.steeb_k.commune.ui.avatarColorsArgb
-import io.github.steeb_k.commune.ui.avatarInitial
 import io.github.steeb_k.commune.ui.roomName
 import kotlin.concurrent.thread
 import kotlinx.coroutines.runBlocking
@@ -111,45 +104,15 @@ class ShareShortcuts(private val context: Context, private val app: CoreApp) {
     }
 
     /// The room's avatar as an adaptive icon: the picture filling the
-    /// canvas, or the initials avatar the room list shows. The system
-    /// masks the icon to its shape and shows the centre of it.
+    /// canvas, or the initials avatar the room list shows.
     private fun avatarBitmap(room: FfiRoom, name: String): Bitmap {
-        val size = ICON_SIZE
-        val out = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(out)
-
         val picture = try {
-            runBlocking { app.getRoomAvatar(room.roomId, size.toUInt()) }
+            runBlocking { app.getRoomAvatar(room.roomId, AVATAR_ICON_SIZE.toUInt()) }
                 ?.let { BitmapFactory.decodeFile(it) }
         } catch (_: Exception) {
             null
         }
-        if (picture != null) {
-            val scale = maxOf(size.toFloat() / picture.width, size.toFloat() / picture.height)
-            val matrix = Matrix().apply {
-                setScale(scale, scale)
-                postTranslate(
-                    (size - picture.width * scale) / 2f,
-                    (size - picture.height * scale) / 2f,
-                )
-            }
-            canvas.drawBitmap(picture, matrix, Paint(Paint.FILTER_BITMAP_FLAG))
-            return out
-        }
-
-        val (background, foreground) = avatarColorsArgb(room.roomId)
-        canvas.drawRect(RectF(0f, 0f, size.toFloat(), size.toFloat()), Paint().apply { color = background })
-        // The letter sized to the part the mask reveals — the middle two
-        // thirds — as the room list's 0.45 of its circle.
-        val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = foreground
-            typeface = Typeface.DEFAULT_BOLD
-            textSize = size * 0.30f
-            textAlign = Paint.Align.CENTER
-        }
-        val baseline = size / 2f - (text.descent() + text.ascent()) / 2f
-        canvas.drawText(avatarInitial(name), size / 2f, baseline, text)
-        return out
+        return avatarBitmap(room.roomId, name, picture)
     }
 
     companion object {
@@ -159,9 +122,6 @@ class ShareShortcuts(private val context: Context, private val app: CoreApp) {
         /// How many rooms are offered: the share sheet shows a handful and
         /// the launcher menu fewer still.
         private const val MAX_TARGETS = 8
-
-        /// The adaptive icon canvas, in pixels: 108dp at 2x.
-        private const val ICON_SIZE = 216
 
         /// The rooms a message can be sent to from outside: joined ones,
         /// not invitations, spaces or the server's notices.
