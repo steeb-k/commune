@@ -49,6 +49,19 @@ went unbuilt through a change to `build.gradle.kts` that did not compile.
 The wrapper pins 9.3.1, the version the build was developed against, instead
 of whatever a given machine happens to have.
 
+### The emoji dataset
+
+`app/src/main/assets/emoji.json` feeds the emoji chooser, the one behind
+"More Reactions". It is generated, not hand-kept, by `gen-emoji-data.py`
+from the emojibase dataset GTK's own chooser is built from:
+
+```sh
+curl -sSLO https://cdn.jsdelivr.net/npm/emojibase-data@latest/en/data.json
+python3 gen-emoji-data.py data.json
+```
+
+Regenerate it when a new Unicode emoji release lands in emojibase.
+
 ### The KLIPY API key
 
 The GIF search needs one, and it is a credential: put it in

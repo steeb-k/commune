@@ -16,7 +16,10 @@ use tokio::sync::mpsc;
 
 use crate::{
     RUNTIME, config,
-    session::{MediaMeasure, Room, RoomCategory, RoomDisplayName, RoomHighlight, Session},
+    session::{
+        GlobalAccountData, MediaMeasure, Room, RoomCategory, RoomDisplayName, RoomHighlight,
+        Session,
+    },
     session_list::SessionList,
 };
 
@@ -4072,6 +4075,24 @@ impl CoreApp {
             })
             .await
             .expect("task was not aborted")
+    }
+
+    /// The emoji to offer as quick reactions, most used first and filled
+    /// out with the defaults — the application's reaction chooser order.
+    pub async fn quick_reactions(&self) -> Vec<String> {
+        let Ok(session) = self.session() else {
+            return GlobalAccountData::default_quick_reactions();
+        };
+
+        // Reading the cache alone would answer with the defaults for a
+        // session that is active but has not finished preparing.
+        let ensure = session.clone();
+        RUNTIME
+            .spawn(async move { ensure.global_account_data().ensure_loaded().await })
+            .await
+            .expect("task was not aborted");
+
+        session.global_account_data().quick_reactions()
     }
 
     /// The users the account ignores, as `m.ignored_user_list` lists

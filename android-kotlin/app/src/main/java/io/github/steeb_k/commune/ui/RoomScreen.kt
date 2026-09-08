@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.GppBad
@@ -146,6 +147,7 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
     }
 
     EventActionSheet(state)
+    ReactionChooserSheet(state)
     EventSourceDialog(state)
     AttachmentPreviewDialog(state)
     LocationPreviewDialog(state)
@@ -307,9 +309,6 @@ internal fun ComposerActionBar(state: CommuneState) {
     }
 }
 
-/// The quick reactions the GTK context menu offers first.
-private val QUICK_REACTIONS = listOf("\uD83D\uDC4D", "\uD83D\uDC4E", "\u2764\uFE0F", "\uD83D\uDE02", "\uD83C\uDF89", "\uD83D\uDE2E")
-
 /// The long-press action sheet: quick reactions, then the event actions.
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -318,26 +317,15 @@ internal fun EventActionSheet(state: CommuneState) {
     val clipboard = LocalClipboardManager.current
 
     ModalBottomSheet(onDismissRequest = { state.dismissActionSheet() }) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            for (key in QUICK_REACTIONS) {
-                Text(
-                    key,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .clickable {
-                            event.eventId?.let { state.toggleReaction(it, key) }
-                            state.dismissActionSheet()
-                        }
-                        .padding(8.dp),
-                )
-            }
-        }
+        QuickReactionGrid(
+            keys = state.quickReactions,
+            own = event.reactions.filter { it.isOwn }.map { it.key }.toSet(),
+            onReact = { key ->
+                event.eventId?.let { state.toggleReaction(it, key) }
+                state.dismissActionSheet()
+            },
+            onMore = { state.showReactionChooser(event) },
+        )
         HorizontalDivider()
 
         SheetAction("Reply") {
@@ -527,6 +515,65 @@ private fun EventSourceDialog(state: CommuneState) {
                 Text("Close")
             }
         },
+    )
+}
+
+/// The GTK quick reaction chooser: the seven quick reactions on a grid
+/// of four by two, the last cell the "More Reactions" button that opens
+/// the full chooser. The ones the account already sent show pressed, as
+/// the GTK toggle buttons do.
+@Composable
+private fun QuickReactionGrid(
+    keys: List<String>,
+    own: Set<String>,
+    onReact: (String) -> Unit,
+    onMore: () -> Unit,
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        for (row in 0 until 2) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                for (column in 0 until 4) {
+                    val index = row * 4 + column
+                    if (index == 7) {
+                        IconButton(onClick = onMore) {
+                            Icon(Icons.Filled.MoreHoriz, contentDescription = "More Reactions")
+                        }
+                    } else {
+                        val key = keys.getOrNull(index)
+                        Text(
+                            key ?: "",
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(
+                                    if (key != null && key in own) {
+                                        MaterialTheme.colorScheme.secondaryContainer
+                                    } else {
+                                        androidx.compose.ui.graphics.Color.Transparent
+                                    },
+                                )
+                                .clickable(enabled = key != null) { key?.let(onReact) }
+                                .padding(8.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// The full emoji chooser, open for the event whose "More Reactions"
+/// was tapped; the emoji picked toggles as a reaction.
+@Composable
+internal fun ReactionChooserSheet(state: CommuneState) {
+    val event = state.reactionChooserEvent ?: return
+    EmojiChooserSheet(
+        onPick = { emoji -> event.eventId?.let { state.toggleReaction(it, emoji) } },
+        onDismiss = { state.dismissReactionChooser() },
     )
 }
 

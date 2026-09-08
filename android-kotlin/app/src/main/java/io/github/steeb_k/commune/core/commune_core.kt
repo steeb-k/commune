@@ -967,6 +967,8 @@ external fun uniffi_commune_core_checksum_method_coreapp_pin_event(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_place_call(
 ): Short
+external fun uniffi_commune_core_checksum_method_coreapp_quick_reactions(
+): Short
 external fun uniffi_commune_core_checksum_method_coreapp_recheck_connectivity(
 ): Short
 external fun uniffi_commune_core_checksum_method_coreapp_recover(
@@ -1354,6 +1356,8 @@ external fun uniffi_commune_core_fn_method_coreapp_parent_spaces(`ptr`: Long,`ro
 external fun uniffi_commune_core_fn_method_coreapp_pin_event(`ptr`: Long,`roomId`: RustBuffer.ByValue,`eventId`: RustBuffer.ByValue,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_place_call(`ptr`: Long,`roomId`: RustBuffer.ByValue,`invitee`: RustBuffer.ByValue,`sdp`: RustBuffer.ByValue,
+): Long
+external fun uniffi_commune_core_fn_method_coreapp_quick_reactions(`ptr`: Long,
 ): Long
 external fun uniffi_commune_core_fn_method_coreapp_recheck_connectivity(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1947,6 +1951,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_place_call() != 24301.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_coreapp_quick_reactions() != 54913.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_coreapp_recheck_connectivity() != 25639.toShort()) {
@@ -3651,6 +3658,12 @@ public interface CoreAppInterface {
      * WebRTC produced, and return the call ID everything else uses.
      */
     suspend fun `placeCall`(`roomId`: kotlin.String, `invitee`: kotlin.String, `sdp`: kotlin.String): kotlin.String
+    
+    /**
+     * The emoji to offer as quick reactions, most used first and filled
+     * out with the defaults — the application's reaction chooser order.
+     */
+    suspend fun `quickReactions`(): List<kotlin.String>
     
     /**
      * Drop any stale offline claim and find out fresh.
@@ -5975,6 +5988,30 @@ open class CoreApp: Disposable, AutoCloseable, CoreAppInterface
         { FfiConverterString.lift(it) },
         // Error FFI converter
         CoreException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * The emoji to offer as quick reactions, most used first and filled
+     * out with the defaults — the application's reaction chooser order.
+     */
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `quickReactions`() : List<kotlin.String> {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_commune_core_fn_method_coreapp_quick_reactions(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterSequenceString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
     )
     }
 
