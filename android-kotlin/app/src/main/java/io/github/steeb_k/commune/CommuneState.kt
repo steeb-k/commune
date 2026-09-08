@@ -2365,10 +2365,43 @@ class CommuneState(context: Context) {
 
     fun showActionSheet(event: FfiTimelineItem.Event) {
         actionSheetEvent = event
+        refreshQuickReactions()
     }
 
     fun dismissActionSheet() {
         actionSheetEvent = null
+    }
+
+    /// The quick reactions the action sheet offers, in the core's order:
+    /// the account's most used first, the defaults filling out the seven.
+    /// Kept between openings so the sheet never opens on an empty row.
+    var quickReactions by mutableStateOf<List<String>>(emptyList())
+
+    /// The event the full emoji chooser is open for.
+    var reactionChooserEvent by mutableStateOf<FfiTimelineItem.Event?>(null)
+
+    fun refreshQuickReactions() {
+        thread {
+            runBlocking {
+                val list = try {
+                    app.quickReactions()
+                } catch (_: Exception) {
+                    return@runBlocking
+                }
+                main.post { quickReactions = list }
+            }
+        }
+    }
+
+    /// Replace the action sheet with the emoji chooser, as the GTK context
+    /// menu gives way to its chooser.
+    fun showReactionChooser(event: FfiTimelineItem.Event) {
+        actionSheetEvent = null
+        reactionChooserEvent = event
+    }
+
+    fun dismissReactionChooser() {
+        reactionChooserEvent = null
     }
 
     fun startReply(event: FfiTimelineItem.Event) {

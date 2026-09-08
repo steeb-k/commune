@@ -1472,3 +1472,33 @@ Three small guards; each check is a mistake the app used to allow.
       homeserver's limit (Synapse defaults to 50M; the harness accepts a
       dd-made 60M file): the toast names the limit immediately, with no
       long upload first. A file under the limit sends as always.
+
+## The reaction chooser — 8 September 2026
+
+The long-press sheet's reaction row used to be six emoji fixed in the
+Kotlin source with no way past them. It is now the GTK quick reaction
+chooser — the core's seven, most used first, on a four-by-two grid with
+"More Reactions" in the last cell — and that button opens a chooser
+built like GtkEmojiChooser from the same emojibase dataset.
+
+* [ ] **The quick row is the account's.** React with an emoji that is not
+      in the row from either client; long-press another message: the row
+      now starts with it. A reaction the account already sent shows on a
+      tinted circle, and tapping it removes the reaction.
+* [ ] **More Reactions opens the chooser.** The action sheet gives way to a
+      sheet with a search field, the emoji under their section headings in
+      the GTK order, and the section bar underneath. Tapping one sends it
+      as the reaction and closes the sheet; the bubble shows the chip.
+* [ ] **Search is by word prefix.** "thu" lists thumbs up and down (and
+      thunder); "red heart" lists the red heart; "xyzzy" shows "No Results
+      Found" with "Try a different search". Clearing the field brings the
+      sections back.
+* [ ] **Skin tones.** Long-press the waving hand: a row of six opens, the
+      plain one first; picking the dark one reacts with that variant. An
+      emoji without tones opens nothing on a long press.
+* [ ] **Recent is the chooser's own.** Before anything was picked there is
+      no Recent section and its bar button is dimmed. After a pick it
+      heads the list, newest first, and survives the app being killed. The
+      quick row above it is unaffected by picks it does not make.
+* [ ] **The section bar follows the scroll.** Scrolling the grid moves the
+      highlight along the bar; tapping Flags jumps to the flags heading.
