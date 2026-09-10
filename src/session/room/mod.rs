@@ -1160,9 +1160,23 @@ mod imp {
                 return;
             }
 
+            let cleared = count == 0 && self.notification_count.get() > 0;
+
             self.notification_count.set(count);
             self.set_has_notifications(count > 0);
             self.obj().notify_notification_count();
+
+            // A count back at zero means the room was read: here, or on
+            // another device, whose read receipt the server counts for
+            // every device of the account. The notifications shown for
+            // the room are stale either way, so they come down. Only the
+            // ones shown since startup are known, as `withdraw_all_for_room`
+            // says.
+            if cleared && let Some(session) = self.obj().session() {
+                session
+                    .notifications()
+                    .withdraw_all_for_room(self.room_id());
+            }
         }
 
         /// Set whether this room has unread notifications.

@@ -15,6 +15,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.PowerManager
 import io.github.steeb_k.commune.core.FfiNotificationBody
 import io.github.steeb_k.commune.core.FfiPushedNotification
 import kotlin.concurrent.thread
@@ -104,15 +105,29 @@ private fun postFromPayload(context: Context, payload: String) {
     val roomId = notification?.optString("room_id").orEmpty()
     val eventId = notification?.optString("event_id").orEmpty()
 
-    // Unread going to zero clears; everything was read elsewhere.
+    // Unread going to zero clears; everything was read elsewhere. Only
+    // the message notifications: a ringing call or a verification request
+    // is not something a read receipt answers.
     if (notification != null && unread == 0) {
         val manager = context.getSystemService(NotificationManager::class.java)
-        if (roomId.isNotEmpty()) manager.cancel(roomId.hashCode()) else manager.cancelAll()
+        if (roomId.isNotEmpty()) {
+            manager.cancel(roomId.hashCode())
+        } else {
+            manager.activeNotifications
+                .filter { it.notification.channelId == MESSAGES_CHANNEL_ID }
+                .forEach { manager.cancel(it.id) }
+        }
         return
     }
     // A push without an event is badge synchronization, not a message —
     // posting it would be the generic notification next to the real one.
+    // A badge above zero after a read receipt elsewhere names no room:
+    // which one came down is the sync's to say, through the sidebar's
+    // counts reaching the notifier. The core restores and syncs as soon
+    // as the process exists, which this push made happen; holding the
+    // CPU for a moment lets that sync land with the screen off.
     if (roomId.isEmpty() || eventId.isEmpty()) {
+        if (notification != null && unread > 0) holdForSync(context)
         return
     }
 
@@ -184,6 +199,18 @@ private fun postFromPayload(context: Context, payload: String) {
         postMessage(context, roomId, title, from, body, direct)
     }
 }
+
+/// Keep the CPU awake long enough for the sync a badge push calls for.
+/// The lock lets go on its own; nothing waits on the sync itself.
+private fun holdForSync(context: Context) {
+    val power = context.getSystemService(PowerManager::class.java) ?: return
+    val lock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "commune:badge-sync")
+    lock.setReferenceCounted(false)
+    lock.acquire(BADGE_SYNC_HOLD_MS)
+}
+
+/// How long a badge push keeps the CPU up for the sync it announces.
+private const val BADGE_SYNC_HOLD_MS = 30_000L
 
 /// The words for a fetched event — the GTK app's notification sentences.
 private fun pushedSentence(words: FfiPushedNotification): String = when (val body = words.body) {

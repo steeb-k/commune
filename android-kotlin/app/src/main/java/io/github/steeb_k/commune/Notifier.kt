@@ -52,16 +52,20 @@ class Notifier(private val context: Context, private val app: () -> CoreApp) {
 
     /// Mirror the given rooms' notification counts into the shade.
     fun update(rooms: List<FfiRoom>) {
+        // What the shade holds right now. The push service posts rooms
+        // this bookkeeping never saw, and a room read on another device
+        // comes down whichever source put it up: the count at zero is the
+        // server saying every device is done with it.
+        val shown = manager.activeNotifications.mapTo(HashSet()) { it.id }
         for (room in rooms) {
+            val id = room.roomId.hashCode()
             val count = room.notificationCount.toLong()
             val known = posted.getLong(postedKey(room.roomId), 0L)
             when {
                 count == 0L || room.roomId == visibleRoomId ||
                     room.roomId == callRoomId || !enabled -> {
-                    if (known != 0L) {
-                        posted.edit().remove(postedKey(room.roomId)).apply()
-                        manager.cancel(room.roomId.hashCode())
-                    }
+                    if (known != 0L) posted.edit().remove(postedKey(room.roomId)).apply()
+                    if (known != 0L || id in shown) manager.cancel(id)
                 }
                 // Only more unread than last announced is news; the same
                 // count after a restart is not.
