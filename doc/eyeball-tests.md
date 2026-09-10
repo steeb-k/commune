@@ -988,6 +988,12 @@ is unfocused — two accounts, or a phone.
       harness (a jump over 1500 messages cost 14 batches, then stopped) but
       not yet on a real room with real dates. Also check that a search hit no
       longer shows twice in the results list.
+* [ ] **A room read on the phone leaves the desktop shade.** With a message
+      notification showing on the desktop, open that room on the phone (or
+      press its Mark as Read): the desktop notification withdraws within a
+      sync or two, without the desktop window being touched. Since ba284741
+      the room's unread count reaching zero withdraws what was shown for it;
+      only notifications shown since the desktop app started are known.
 
 ## Threads: the chip, the view, and the list — `doc/threads.md`
 
