@@ -82,3 +82,26 @@ Debug builds install as `io.github.steeb_k.commune.skeleton`, so they never
 displace the GTK build (or its seeded test session) on a device. Release
 builds keep the real id: adopting the GTK build's session in place is a
 design goal.
+
+### Signing for the device
+
+A release APK is signed with the debug keystore of whichever machine ran
+Gradle, and Android only upgrades a package in place — `pm install -r`,
+session kept — when the new APK carries the same key as the installed one.
+The phone was first installed from a WSL build, so its package carries the
+WSL user's `~/.android/debug.keystore` (SHA-256 `56:A8:1A:A4…`). A Windows
+Gradle build signs with the Windows user's keystore (`93:DE:BB:43…`) and the
+install is refused with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`; uninstalling to
+get past that would destroy the adopted session. So either build in WSL, or
+re-sign a Windows build before pushing it:
+
+```sh
+BT=/c/Android/Sdk/build-tools/36.0.0
+cp //wsl.localhost/archlinux/home/steeb/.android/debug.keystore /tmp/wsl-debug.keystore
+/apksigner.bat sign --ks /tmp/wsl-debug.keystore --ks-pass pass:android \n    --ks-key-alias androiddebugkey --key-pass pass:android app-release.apk
+/apksigner.bat verify --print-certs app-release.apk   # expect 56a81aa4…
+```
+
+The emulator was first installed from a Windows build and carries the
+Windows key, so an unsigned-over Windows build is fine there and nowhere
+else.
