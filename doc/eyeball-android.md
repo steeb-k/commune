@@ -126,6 +126,13 @@ since. The S-step that first proved each is named where it helps.
       and its tap opens the room in a freshly started app.
 * [ ] **One notification per conversation.** Three messages in one room while
       backgrounded stack into one conversation notification, not three cards.
+* [ ] **A room read on the desktop leaves the phone shade.** In both
+      delivery modes: with a message notification showing on the phone,
+      read that room on the desktop. Sync mode clears it at the next sync.
+      Push mode: the badge push wakes the app, which syncs and clears it —
+      allow a few seconds with the screen off. Since ba284741 the notifier
+      cancels any room the shade shows once its count is zero, whichever
+      source posted it, and a zero badge no longer cancels a ringing call.
 * [ ] **The offline banner tells the truth after a freeze.** Airplane mode on,
       background the app minutes long, airplane mode off, foreground: the
       banner clears once connectivity is rechecked rather than claiming
