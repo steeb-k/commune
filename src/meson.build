@@ -1,3 +1,8 @@
+# Windows resolves a bare `bash` through the system PATH, where WSL's launcher
+# in System32 comes first — so every script target names this rather than
+# letting Meson infer an interpreter from a shebang.
+bash = find_program('bash')
+
 if not build_env_only
     # Compile Blueprint resources
     blp_files = []
@@ -34,6 +39,15 @@ if not build_env_only
         input: blp_files,
         output: ui_files,
         command: [
+            # Explicitly, rather than letting Meson infer an interpreter from
+            # the script's shebang. That inference emits a bare `bash` for
+            # Ninja to resolve through the system PATH — and on Windows the
+            # first `bash.exe` there is WSL's launcher in System32, which
+            # answers with "Windows Subsystem for Linux has no installed
+            # distributions" in UTF-16 and fails the build. `find_program`
+            # resolves to a real path, which is what the two invocations in
+            # the top-level meson.build already do.
+            bash,
             '../build-aux/compile-blueprints.sh',
             blueprint_compiler.full_path(),
             '@OUTDIR@',
@@ -183,6 +197,8 @@ elif not build_env_only
         depends: [resources, ui_resources],
         env: cargo_env,
         command: [
+            # Named, for the reason the blueprints target gives above.
+            bash,
             '../build-aux/cargo-build.sh',
             cargo.full_path(),
             cargo_target_dir / rust_target / exe_name,
