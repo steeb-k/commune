@@ -68,10 +68,17 @@ jobs:
             gtksourceview5-devel libshumate-devel \
             gstreamer1-devel gstreamer1-plugins-base-devel \
             gstreamer1-plugins-bad-free-devel \
-            sqlite-devel openssl-devel \
+            sqlite-devel openssl-devel libwebp-devel \
             blueprint-compiler desktop-file-utils
+          # glycin decodes images on Linux and only there, so `meson.build`
+          # asks for it under a host check. Fedora has moved the package name
+          # around, so try the spellings rather than pin one.
+          for pkg in libglycin-devel libglycin-gtk4-devel glycin-devel glycin-gtk4-devel; do
+            dnf install -y --setopt=install_weak_deps=False "$pkg" || true
+          done
           echo "--- versions this gate builds against ---"
           pkg-config --modversion gtk4 libadwaita-1 glib-2.0 gstreamer-1.0 gtksourceview-5
+          pkg-config --modversion glycin-2 glycin-gtk4-2 || echo "::error::no glycin, which meson.build requires on Linux"
 
       - uses: actions/checkout@v5
         with:
