@@ -19,6 +19,11 @@ extend-ignore-re = [
   # forms: the marker line and the published-page checksums.
   "commit [0-9a-f]{7,40}",
   "sha256 [0-9a-f]{64}",
+  # The eyeball sheets name a commit in running prose rather than in a code
+  # span — "Since ba284741 the notifier ..." — which the patterns above do not
+  # reach. Narrow on purpose, like them: matching hex anywhere would swallow
+  # `defaced`, which is seven hexadecimal characters and a real word.
+  "Since [0-9a-f]{7,40}",
   # uniffi-bindgen writes this comment into the generated Kotlin bindings,
   # typo and all; regeneration would undo a hand-correction.
   "different implmentations available",
