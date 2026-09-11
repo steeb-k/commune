@@ -5,6 +5,20 @@
 # `.gitlab-ci.yml` has never run there. This is that same gate, run on every
 # push: `hooks/checks` is the binary the pre-commit hook calls, so there is one
 # definition of what "clean" means rather than two that drift.
+#
+# # Why Fedora and not the GNOME images
+#
+# The first attempt used `quay.io/gnome_infrastructure/gnome-runtime-images`,
+# on the assumption that an image named for the GNOME runtime carries the
+# GNOME development files. It carries almost nothing: no compiler, no
+# pkg-config, no meson. Those images are a base for `flatpak-builder`, which
+# brings its own runtime along, so there is no reason for anything to be
+# installed in the image itself.
+#
+# What this gate needs is the opposite — a native toolchain — because
+# `hooks/checks` runs clippy, and clippy has to compile the application
+# against real GTK headers. Fedora is the distribution carrying GTK new enough
+# for `meson.build`'s floor of 4.20.2.
 name: check
 
 on:
@@ -22,17 +36,57 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  gate:
-    name: Style, lints and dependencies
+  workflows:
+    name: Workflow files
+    # Separate and first, because it takes seconds rather than minutes and it
+    # catches the class of mistake that stops every other job running at all:
+    # a workflow that is valid YAML and still one GitHub refuses.
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+
+      - name: actionlint
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash
+          ./actionlint -color
+
+  gate:
+    name: Gate and tests
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: The build environment
+        # One `dnf` rather than a curated list per job: the gate compiles the
+        # application through clippy, so it needs everything a build needs
+        # anyway, and splitting it across two jobs would install all of this
+        # twice.
+        run: |
+          dnf install -y --setopt=install_weak_deps=False \
+            gcc gcc-c++ clang cmake make perl git which \
+            pkgconf-pkg-config meson ninja-build \
+            glib2-devel gtk4-devel libadwaita-devel \
+            gtksourceview5-devel libshumate-devel \
+            gstreamer1-devel gstreamer1-plugins-base-devel \
+            gstreamer1-plugins-bad-free-devel \
+            sqlite-devel openssl-devel \
+            blueprint-compiler desktop-file-utils
+          echo "--- versions this gate builds against ---"
+          pkg-config --modversion gtk4 libadwaita-1 glib-2.0 gstreamer-1.0 gtksourceview-5
+
       - uses: actions/checkout@v5
         with:
           # `hooks/doc-freshness` and the build number both ask git how many
           # commits there are, and a shallow clone answers wrongly.
           fetch-depth: 0
 
+      - name: Trust the checkout
+        # The container is root and the checkout is not, and git refuses to
+        # touch a repository it thinks belongs to somebody else.
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
 
       - name: Install the nightly rustfmt
         # Only rustfmt, and only nightly: the project formats with unstable
@@ -42,7 +96,7 @@ jobs:
         # `wrap_comments = true` is one of those options and successive
         # nightlies rewrap comments differently. Unpinned, this job fails on
         # whatever morning rustfmt changes its mind, having been given nothing
-        # to do with it. Bump this when a developer bumps their own nightly,
+        # to do about it. Bump this when a developer bumps their own nightly,
         # and reformat the tree in the same commit.
         uses: dtolnay/rust-toolchain@master
         with:
@@ -51,39 +105,39 @@ jobs:
 
       - name: Make `+nightly` mean the pinned one
         # `hooks/checks` runs `cargo +nightly fmt`, which resolves a toolchain
-        # by that exact name, and rustup will not let a dated toolchain be
-        # linked under a reserved channel name. Pointing the channel's
-        # directory at the dated one is what makes the two agree. The version
-        # is printed so a run says which rustfmt actually judged the tree.
+        # by that exact name, and rustup will not link a dated toolchain under
+        # a reserved channel name. Pointing the channel's directory at the
+        # dated one is what makes the two agree.
         run: |
           cd ~/.rustup/toolchains
           ln -sfn nightly-2026-08-23-x86_64-unknown-linux-gnu nightly-x86_64-unknown-linux-gnu
           cargo +nightly fmt --version
 
       - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: check
+
+      - name: A SASS compiler
+        # `data/resources/meson.build` wants `grass` or `sass`. The prebuilt
+        # dart-sass rather than building grass from source, which is a minute
+        # of compiling for one stylesheet.
+        run: |
+          curl -fsSL -o /tmp/sass.tar.gz https://github.com/sass/dart-sass/releases/download/1.83.4/dart-sass-1.83.4-linux-x64.tar.gz
+          tar -xzf /tmp/sass.tar.gz -C /opt
+          ln -sf /opt/dart-sass/sass /usr/local/bin/sass
+          sass --version
+
+      - name: Configure
+        # A build directory is what generates `src/config.rs`, which nothing
+        # in the application compiles without — clippy included.
+        run: meson setup _build -Dprofile=development
 
       - name: Install the check tools
-        run: |
-          cargo install --locked cargo-deny cargo-machete cargo-sort typos-cli rumdl
-
-      - name: Build the gate
-        run: cargo build --release --manifest-path hooks/checks/Cargo.toml
+        run: cargo install --locked cargo-deny cargo-machete cargo-sort typos-cli rumdl
 
       - name: Run the gate
         run: |
+          cargo build --release --manifest-path hooks/checks/Cargo.toml
           cp hooks/checks/target/release/checks hooks/checks-bin
           hooks/checks-bin
-
-      - name: The workflows themselves
-        # A workflow file can be valid YAML and still be rejected by GitHub —
-        # a duplicate key, a hyphen in a property path — and the only symptom
-        # is a run that fails in zero seconds saying "workflow file issue".
-        # actionlint is what catches those before a push does.
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash
-          ./actionlint -color
 
       - name: Widget templates against the Rust that builds them
         run: hooks/template-checks
@@ -94,70 +148,6 @@ jobs:
         # loud and not worth refusing a merge over.
         continue-on-error: true
         run: hooks/doc-freshness
-
-  test:
-    name: Tests
-    runs-on: ubuntu-latest
-    container:
-      image: quay.io/gnome_infrastructure/gnome-runtime-images:gnome-50
-      options: --privileged --user root
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Trust the checkout
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: test
-
-      - name: The tools Meson looks for
-        # The runtime image carries the libraries, not the build tooling.
-        # `meson.build` asks for these by name and fails configure without
-        # them; `grass` is the Rust SASS compiler it prefers over `sass`.
-        run: |
-          echo "--- what the image already has ---"
-          for tool in gcc cc ld meson ninja sass sassc grass blueprint-compiler pkg-config python3 pip3 dnf apt-get; do
-            echo "  $tool -> $(command -v "$tool" || echo MISSING)"
-          done
-
-          echo "--- a C compiler, which cargo needs for any build script ---"
-          if ! command -v cc >/dev/null; then
-            if command -v gcc >/dev/null; then
-              ln -sf "$(command -v gcc)" /usr/local/bin/cc
-            elif command -v dnf >/dev/null; then
-              dnf install -y gcc
-            elif command -v apt-get >/dev/null; then
-              apt-get update && apt-get install -y gcc
-            fi
-          fi
-          command -v cc || echo "::error::no C compiler in the image"
-
-          echo "--- meson and ninja ---"
-          command -v meson >/dev/null || python3 -m pip install --break-system-packages meson ninja || python3 -m pip install meson ninja
-
-          echo "--- a SASS compiler, which data/resources/meson.build requires ---"
-          if ! command -v sass >/dev/null && ! command -v grass >/dev/null; then
-            # The prebuilt dart-sass, rather than building grass from source:
-            # this step runs before it is known that cargo can compile at all.
-            curl -fsSL -o /tmp/sass.tar.gz https://github.com/sass/dart-sass/releases/download/1.83.4/dart-sass-1.83.4-linux-x64.tar.gz
-            tar -xzf /tmp/sass.tar.gz -C /opt
-            ln -sf /opt/dart-sass/sass /usr/local/bin/sass
-          fi
-
-          echo "--- versions ---"
-          meson --version
-          sass --version || grass --version
-          blueprint-compiler --version || echo "::warning::no blueprint-compiler in the image"
-
-      - name: Configure
-        # A build directory is what generates `src/config.rs`, which the
-        # application crate will not compile without.
-        run: meson setup _build -Dprofile=development
 
       - name: Test the core
         run: cargo test -p commune-core
