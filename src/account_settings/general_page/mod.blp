@@ -159,6 +159,46 @@ template $AccountSettingsGeneralPage: Adw.PreferencesPage {
     }
   }
 
+  Adw.PreferencesGroup updates_group {
+    title: _("Updates");
+
+    Adw.SwitchRow updates_automatic_row {
+      title: _("Check for Updates Automatically");
+      subtitle: _("Ask once a day whether a newer version of Commune has been released. Nothing is ever downloaded or installed without you choosing to.");
+    }
+
+    Adw.ComboRow updates_channel_row {
+      visible: false;
+      title: _("Update Channel");
+      subtitle: _("Which series of releases to follow");
+    }
+
+    Adw.ActionRow updates_status_row {
+      title: _("Version");
+
+      [suffix]
+      Gtk.Box {
+        spacing: 6;
+        valign: center;
+
+        Gtk.Button updates_notes_button {
+          visible: false;
+          tooltip-text: _("What's New in This Release");
+          icon-name: "external-link-symbolic";
+          clicked => $open_release_notes() swapped;
+
+          styles [
+            "flat",
+          ]
+        }
+
+        Gtk.Button updates_action_button {
+          clicked => $activate_update_action() swapped;
+        }
+      }
+    }
+  }
+
   Adw.PreferencesGroup {
     Adw.ExpanderRow {
       title: _("Advanced Information");

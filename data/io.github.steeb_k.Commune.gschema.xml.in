@@ -48,6 +48,11 @@
       <summary>Session settings</summary>
       <description>Serialized list of settings per session</description>
     </key>
+    <key name="updates" type="s">
+      <default>''</default>
+      <summary>Update settings</summary>
+      <description>Serialized settings of the update checker: whether to check without being asked, which release channel to follow, when the last check finished, and a version the user asked not to be told about again. Read and written by the shared core rather than by this application directly, which is why it is one string rather than four keys</description>
+    </key>
     <key name="current-session" type="s">
       <default>""</default>
       <summary>Current session</summary>

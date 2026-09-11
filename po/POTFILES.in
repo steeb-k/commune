@@ -246,6 +246,7 @@ src/session_view/sidebar/section_row.rs
 src/session_view/space.blp
 src/session_view/space.rs
 src/shortcuts-dialog.blp
+src/updates.rs
 src/user_facing_error.rs
 src/utils/android_notifications.rs
 src/utils/android_sync_service.rs

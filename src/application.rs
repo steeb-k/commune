@@ -6,7 +6,7 @@ use gtk::{gio, glib, glib::clone};
 use tracing::{debug, error, info, warn};
 
 use crate::{
-    GETTEXT_PACKAGE, Window, config,
+    GETTEXT_PACKAGE, Window, config, gettext_f,
     intent::SessionIntent,
     prelude::*,
     session::{Session, SessionState},
@@ -14,6 +14,7 @@ use crate::{
     spawn,
     system_settings::SystemSettings,
     toast,
+    updates::Updates,
     utils::{BoundObjectWeakRef, LoadingState, app_bundle::RuntimePaths, matrix::MatrixIdUri},
 };
 
@@ -45,6 +46,11 @@ mod imp {
         /// they are loaded and the only place that runs on the instance that
         /// won registration.
         pub(super) paths: OnceCell<RuntimePaths>,
+        /// Whether a newer release exists, and the fetching of it.
+        ///
+        /// One per installation rather than per window: the settings row and
+        /// the toast are two views of the same check.
+        pub(super) updates: Updates,
     }
 
     impl Default for Application {
@@ -56,6 +62,7 @@ mod imp {
                 intent_handler: Default::default(),
                 last_network_state: Default::default(),
                 paths: Default::default(),
+                updates: Updates::new(),
             }
         }
     }
@@ -146,6 +153,22 @@ mod imp {
 
             #[cfg(debug_assertions)]
             self.set_up_test_notification();
+
+            // Look for a newer release, on a timer that starts a minute and
+            // a half from now. Does nothing at all in a build that could not
+            // install one — see `updates::Updates::start`.
+            self.updates.start();
+            self.updates.connect_closure(
+                "update-announced",
+                false,
+                glib::closure_local!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_: Updates, version: String| {
+                        imp.show_update_toast(&version);
+                    }
+                ),
+            );
 
             // Watch the network to log its state.
             let network_monitor = gio::NetworkMonitor::default();
@@ -671,6 +694,51 @@ mod imp {
             self.obj().set_menubar(Some(&menu_bar));
         }
 
+        /// Mention a newer release on the main window.
+        ///
+        /// Only ever from an automatic check: one the user asked for is
+        /// answered by the row they pressed. The toast offers the update and
+        /// nothing else — dismissing it is how a release is skipped, and the
+        /// settings row still offers it afterwards.
+        fn show_update_toast(&self, version: &str) {
+            let Some(window) = self.obj().main_window() else {
+                // No window yet. The next check will find the same release,
+                // and the settings row shows it in the meantime.
+                return;
+            };
+
+            let toast = adw::Toast::builder()
+                .title(gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name. {version} is a version number, like 1.0.
+                    "Commune {version} is available",
+                    &[("version", version)],
+                ))
+                .button_label(gettext("Update"))
+                .timeout(0)
+                .build();
+
+            toast.connect_button_clicked(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.updates.install();
+                }
+            ));
+
+            // Dismissing it is a decision, not an accident: the toast has no
+            // timeout, so it stays until the user does something with it.
+            toast.connect_dismissed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.updates.skip();
+                }
+            ));
+
+            window.add_toast(toast);
+        }
+
         /// Show the dialog with information about the application.
         fn show_about_dialog(&self) {
             let dialog = adw::AboutDialog::builder()
@@ -983,6 +1051,11 @@ impl Application {
         self.windows()
             .into_iter()
             .find_map(|window| window.downcast::<Window>().ok())
+    }
+
+    /// Whether a newer release exists, and the fetching of it.
+    pub(crate) fn updates(&self) -> Updates {
+        self.imp().updates.clone()
     }
 
     /// Re-evaluate how messages are delivered while the app is not on screen.
