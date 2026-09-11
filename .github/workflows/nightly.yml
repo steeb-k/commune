@@ -90,7 +90,7 @@ jobs:
       - name: Work out what this build is
         id: nightly
         run: |
-          version="$(sh build-aux/ci/project-version.sh)"
+          version="$(bash build-aux/ci/project-version.sh)"
           build="$(git rev-list --count HEAD)"
           {
             echo "version=$version"
@@ -135,7 +135,7 @@ jobs:
           [ -n "$apk" ] && assets="$assets --asset android-arm64-apk|$apk|$base/$(basename "$apk")"
 
           # shellcheck disable=SC2086
-          sh build-aux/ci/publish-feed.sh \
+          bash build-aux/ci/publish-feed.sh \
             --channel nightly \
             --version "${{ steps.nightly.outputs.version }}" \
             --build "${{ steps.nightly.outputs.build }}" \
@@ -144,4 +144,4 @@ jobs:
             $assets
 
       - name: Commit the feed
-        run: sh build-aux/ci/commit-feed.sh feed "nightly ${{ steps.nightly.outputs.sha }}"
+        run: bash build-aux/ci/commit-feed.sh feed "nightly ${{ steps.nightly.outputs.sha }}"

@@ -54,7 +54,7 @@ jobs:
         id: release
         run: |
           tag="${{ inputs.tag || github.ref_name }}"
-          version="$(sh build-aux/ci/project-version.sh)"
+          version="$(bash build-aux/ci/project-version.sh)"
           build="$(git rev-list --count HEAD)"
 
           # The tag is the authority on what was released; if it disagrees
@@ -124,7 +124,7 @@ jobs:
 
           for channel in ${{ steps.release.outputs.channels }}; do
             # shellcheck disable=SC2086
-            sh build-aux/ci/publish-feed.sh \
+            bash build-aux/ci/publish-feed.sh \
               --channel "$channel" \
               --version "${{ steps.release.outputs.version }}" \
               --build "${{ steps.release.outputs.build }}" \
@@ -134,4 +134,4 @@ jobs:
           done
 
       - name: Commit the feed
-        run: sh build-aux/ci/commit-feed.sh feed "${{ steps.release.outputs.tag }}"
+        run: bash build-aux/ci/commit-feed.sh feed "${{ steps.release.outputs.tag }}"
