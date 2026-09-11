@@ -281,9 +281,20 @@ jobs:
           CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
           CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
           CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          # Either an App Store Connect API key or an app-specific password;
+          # sign-notarize.sh takes whichever is present. Notarization is not
+          # the App Store — it is the other half of Developer ID, and this
+          # project could not be listed in any case, being GPL-3 with many
+          # copyright holders.
           NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          NOTARY_PASSWORD: ${{ secrets.MACOS_NOTARY_PASSWORD }}
+          NOTARY_APPLE_ID: ${{ secrets.MACOS_NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
+          # Set this repository variable to ship signed but un-notarized,
+          # which the in-app updater installs and a browser download does not.
+          ALLOW_UNNOTARIZED: ${{ vars.ALLOW_UNNOTARIZED }}
         run: sh build-aux/macos/sign-notarize.sh universal/Commune.app
 
       - name: Make the tarball
