@@ -137,7 +137,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: quay.io/gnome_infrastructure/gnome-runtime-images:gnome-50
-      options: --privileged
+      # Root inside it: the image defines a non-root user, which cannot write
+      # the runner's own temp directory, so checkout fails on EACCES.
+      options: --privileged --user root
     steps:
       - uses: actions/checkout@v5
         with:
