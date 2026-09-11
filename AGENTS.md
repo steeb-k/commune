@@ -71,6 +71,13 @@ the application's name or ID.
 than a feature, and `doc/macos-plan.md` is the plan that produced the second of
 them.
 
+`doc/updates-plan.md` is the plan for in-app automatic updates and for moving
+release builds onto GitHub Actions, written 11 September 2026 with every
+maintainer decision already recorded in its "Decisions" list. Read it before
+adding anything under `.github/`, touching versions in `Cargo.toml`,
+`meson.build` or `android-kotlin/app/build.gradle.kts`, or the signing scripts
+under `build-aux/`. `doc/updates.md` becomes the ledger once work starts.
+
 `doc/gap-closing-plan.md` is the plan for the round of work in progress — the
 order the remaining gaps are being closed in, and why. Its "Where this got to"
 section is kept current and is the thing to read before picking that work up

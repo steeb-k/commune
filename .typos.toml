@@ -25,6 +25,7 @@ extend-ignore-re = [
 ]
 
 [default.extend-words]
+flate = "flate" # The flate2 crate, named in doc/updates-plan.md
 gir = "gir"
 inout = "inout"
 numer = "numer" # Short for numerator in GStreamer
