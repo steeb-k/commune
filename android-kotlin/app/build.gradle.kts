@@ -29,6 +29,59 @@ fun secretProperty(name: String): String {
     return project.findProperty(name) as String? ?: ""
 }
 
+// The version the whole project releases under, read from the one place
+// `RELEASING.md` says to bump. Typing it here as well is how the APK came to
+// claim 0.1.0 while the desktop build shipped 1.0.0-rc1, which the update
+// feed would have turned into a phone that never sees a new release.
+val communeVersionName: String by lazy {
+    val manifest = rootProject.file("../Cargo.toml")
+    val packageSection = manifest.readText().substringAfter("[package]", "")
+    val version = Regex("""(?m)^version\s*=\s*"([^"]+)"""").find(packageSection)?.groupValues?.get(1)
+
+    requireNotNull(version) { "No [package] version in ${manifest.absolutePath}" }
+}
+
+// The build number, and the only thing Android orders two installs by. It has
+// to rise on every build that could be published, and nothing in the version
+// name does: five nightlies all call themselves 1.0.0-rc1. The commit count
+// is what `CFBundleVersion` already uses on macOS for the same reason
+// (build-aux/macos/bundle.sh), so the three platforms agree by construction.
+//
+// Outside a git checkout there is no count to read, and 1 is the honest
+// answer: such a build cannot be part of an ordered series anyway.
+val communeVersionCode: Int by lazy {
+    val counted =
+        runCatching {
+            providers
+                .exec {
+                    commandLine("git", "rev-list", "--count", "HEAD")
+                    workingDir = rootProject.file("..")
+                }.standardOutput
+                .asText
+                .get()
+                .trim()
+                .toInt()
+        }.getOrNull()
+
+    counted ?: 1
+}
+
+// The release signing identity, when there is one. `keystore.properties` and
+// the keystore it names are git-ignored and live outside every build output;
+// CI writes both from repository secrets before it builds. Without them the
+// release variant falls back to the device debug key, which is what a
+// contributor's checkout gets — it still builds and still installs, it just
+// cannot produce an APK that upgrades a released one.
+val releaseKeystore: Properties? by lazy {
+    val file = rootProject.file("keystore.properties")
+
+    if (!file.isFile) {
+        null
+    } else {
+        Properties().also { properties -> file.inputStream().use { properties.load(it) } }
+    }
+}
+
 android {
     namespace = "io.github.steeb_k.commune"
     compileSdk = 36
@@ -40,8 +93,8 @@ android {
         applicationId = "io.github.steeb_k.commune"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = communeVersionCode
+        versionName = communeVersionName
 
         // The KLIPY API key for the GIF search, through `secretProperty` so
         // that it can only come from somewhere git does not track. This
@@ -58,13 +111,29 @@ android {
     signingConfigs {
         // The sideload identity for the device: the same debug keystore
         // that signed every install there, so `install -r` upgrades in
-        // place and the adopted session survives. Play Store signing
-        // arrives with the Store work.
+        // place and the adopted session survives. Still what debug builds
+        // and a keyless checkout's release build use.
         create("device") {
             storeFile = file(System.getProperty("user.home") + "/.android/debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
+        }
+
+        // The published identity. Android refuses to install an update
+        // signed by a different key than the installed copy, which is the
+        // whole basis of the in-app updater in doc/updates-plan.md: it is
+        // the system, not us, that checks that an update came from here.
+        // The first APK signed with this key cannot upgrade any of the
+        // debug-keyed installs that came before it, and that one uninstall
+        // is paid once, per device.
+        releaseKeystore?.let { properties ->
+            create("release") {
+                storeFile = rootProject.file(properties.getProperty("storeFile"))
+                storePassword = properties.getProperty("storePassword")
+                keyAlias = properties.getProperty("keyAlias")
+                keyPassword = properties.getProperty("keyPassword")
+            }
         }
     }
 
@@ -78,7 +147,7 @@ android {
             ndk { abiFilters += "x86_64" }
         }
         release {
-            signingConfig = signingConfigs.getByName("device")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("device")
             // The device APK carries only its own ABI. No minification:
             // the size is the Rust core's, and R8 has nothing to shrink
             // that is worth the JNA/UniFFI keep-rule risk.

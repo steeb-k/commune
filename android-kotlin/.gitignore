@@ -6,3 +6,10 @@ local.properties
 # The native core is built out of commune-core/ and copied in, never
 # committed: it is a hundred-megabyte build artifact.
 app/src/main/jniLibs/
+
+# The release signing identity. An APK signed by a different key cannot
+# upgrade an installed one, so this is both a credential and the one
+# irreplaceable file here: it is ignored, and backed up outside the tree.
+# CI reads the same keystore from a repository secret.
+commune-release.jks
+keystore.properties

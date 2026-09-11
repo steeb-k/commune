@@ -63,6 +63,7 @@ endif
 # Generate config.rs
 global_conf = configuration_data()
 global_conf.set_quoted('APP_ID', application_id)
+global_conf.set('BUILD_NUMBER', build_number)
 global_conf.set(
     'DISABLE_GLYCIN_SANDBOX',
     get_option('disable-glycin-sandbox').to_string(),
