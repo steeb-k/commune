@@ -122,7 +122,7 @@ jobs:
 
       - name: Name it after the release
         run: |
-          version="$(sh build-aux/ci/project-version.sh)"
+          version="$(bash build-aux/ci/project-version.sh)"
           mkdir -p dist
           cp android-kotlin/app/build/outputs/apk/release/app-release.apk "dist/commune-$version-arm64-v8a.apk"
 
@@ -277,7 +277,7 @@ jobs:
 
       - name: Record what this build used
         shell: msys2 {0}
-        run: sh build-aux/windows/probe-env.sh | tee probe-env.txt
+        run: bash build-aux/windows/probe-env.sh | tee probe-env.txt
 
       - name: Build the bundle
         env:
@@ -397,7 +397,7 @@ jobs:
         # always builds the osx-arm64 one; the x86 env only exists under that
         # flag. It costs that runner the from-source trio twice, which the
         # cache above pays for only once.
-        run: sh build-aux/macos/setup-conda-macos.sh ${{ matrix.conda-flags }}
+        run: bash build-aux/macos/setup-conda-macos.sh ${{ matrix.conda-flags }}
 
       - name: Build the bundle
         env:
@@ -420,7 +420,7 @@ jobs:
           export GI_TYPELIB_PATH="$env_dir/lib/girepository-1.0"
           export XDG_DATA_DIRS="$env_dir/share"
           export MACOSX_DEPLOYMENT_TARGET=11.0
-          sh build-aux/macos/probe-env.sh || true
+          bash build-aux/macos/probe-env.sh || true
           meson setup _build -Dprofile=${{ inputs.meson-profile }} -Dklipy-api-key="$KLIPY_API_KEY"
           meson compile -C _build macos-bundle
 
@@ -469,7 +469,7 @@ jobs:
         run: |
           arm64_bundle="$(find halves/arm64 -maxdepth 2 -name '*.app' | head -1)"
           x86_64_bundle="$(find halves/x86_64 -maxdepth 2 -name '*.app' | head -1)"
-          sh build-aux/macos/lipo-bundles.sh --arm64 "$arm64_bundle" --x86_64 "$x86_64_bundle" --output universal/Commune.app
+          bash build-aux/macos/lipo-bundles.sh --arm64 "$arm64_bundle" --x86_64 "$x86_64_bundle" --output universal/Commune.app
 
       - name: Sign, notarize and staple
         # Signing happens after the merge, never before: a signature covers
@@ -494,16 +494,16 @@ jobs:
           # Set this repository variable to ship signed but un-notarized,
           # which the in-app updater installs and a browser download does not.
           ALLOW_UNNOTARIZED: ${{ vars.ALLOW_UNNOTARIZED }}
-        run: sh build-aux/macos/sign-notarize.sh universal/Commune.app
+        run: bash build-aux/macos/sign-notarize.sh universal/Commune.app
 
       - name: Make the tarball
         # A tarball rather than the disk image, because files a process
         # extracts from one are never quarantined and a quarantined bundle is
         # refused on first launch. This is what the updater downloads.
         run: |
-          version="$(sh build-aux/ci/project-version.sh)"
+          version="$(bash build-aux/ci/project-version.sh)"
           mkdir -p dist
-          sh build-aux/macos/make-tarball.sh universal/Commune.app "dist/commune-$version-universal.tar.gz"
+          bash build-aux/macos/make-tarball.sh universal/Commune.app "dist/commune-$version-universal.tar.gz"
 
       - uses: actions/upload-artifact@v4
         with:
