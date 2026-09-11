@@ -433,7 +433,6 @@ jobs:
       && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' macos '))
     needs: [macos-half]
     name: macOS universal bundle
-    needs: macos-half
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v5
