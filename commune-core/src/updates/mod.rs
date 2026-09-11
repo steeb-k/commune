@@ -448,6 +448,19 @@ pub fn current_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
+/// The current time as a Unix timestamp in seconds, for
+/// [`UpdateSettings::is_check_due()`].
+///
+/// A clock before the epoch is not a case worth carrying a signed type
+/// through the settings for: it reads as zero, which makes a check due,
+/// which is the harmless answer.
+#[must_use]
+pub fn now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |since| since.as_secs())
+}
+
 /// Where the feed is being read from.
 fn feed_base() -> String {
     std::env::var(FEED_BASE_ENV).map_or_else(

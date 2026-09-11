@@ -647,6 +647,9 @@ internal interface UniffiCallbackInterfaceTimelineListenerMethod0 : com.sun.jna.
 internal interface UniffiCallbackInterfaceTypingListenerMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`userIds`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
+internal interface UniffiCallbackInterfaceUpdateProgressListenerMethod0 : com.sun.jna.Callback {
+    fun callback(`uniffiHandle`: Long,`downloaded`: Long,`total`: Long,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
+}
 internal interface UniffiCallbackInterfaceVerificationListenerMethod0 : com.sun.jna.Callback {
     fun callback(`uniffiHandle`: Long,`flowId`: RustBuffer.ByValue,`userId`: RustBuffer.ByValue,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
@@ -766,6 +769,25 @@ internal open class UniffiVTableCallbackInterfaceTypingListener(
     }
 
 }
+@Structure.FieldOrder("uniffiFree", "uniffiClone", "progress")
+internal open class UniffiVTableCallbackInterfaceUpdateProgressListener(
+    @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+    @JvmField internal var `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+    @JvmField internal var `progress`: UniffiCallbackInterfaceUpdateProgressListenerMethod0? = null,
+) : Structure() {
+    class UniffiByValue(
+        `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+        `uniffiClone`: UniffiCallbackInterfaceClone? = null,
+        `progress`: UniffiCallbackInterfaceUpdateProgressListenerMethod0? = null,
+    ): UniffiVTableCallbackInterfaceUpdateProgressListener(`uniffiFree`,`uniffiClone`,`progress`,), Structure.ByValue
+
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceUpdateProgressListener) {
+        `uniffiFree` = other.`uniffiFree`
+        `uniffiClone` = other.`uniffiClone`
+        `progress` = other.`progress`
+    }
+
+}
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "onRequest", "onEmojis", "onDone", "onCancelled")
 internal open class UniffiVTableCallbackInterfaceVerificationListener(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -819,13 +841,27 @@ internal object IntegrityCheckingUniffiLib {
     }
     external fun uniffi_commune_core_checksum_func_core_version(
 ): Short
+external fun uniffi_commune_core_checksum_func_app_version(
+): Short
+external fun uniffi_commune_core_checksum_func_check_for_update(
+): Short
 external fun uniffi_commune_core_checksum_func_decode_blurhash(
+): Short
+external fun uniffi_commune_core_checksum_func_download_update(
 ): Short
 external fun uniffi_commune_core_checksum_func_gif_search_available(
 ): Short
 external fun uniffi_commune_core_checksum_func_init_core(
 ): Short
 external fun uniffi_commune_core_checksum_func_parse_matrix_link(
+): Short
+external fun uniffi_commune_core_checksum_func_set_update_channel(
+): Short
+external fun uniffi_commune_core_checksum_func_set_update_check_automatically(
+): Short
+external fun uniffi_commune_core_checksum_func_set_update_skipped_version(
+): Short
+external fun uniffi_commune_core_checksum_func_update_settings(
 ): Short
 external fun uniffi_commune_core_checksum_method_calllistener_on_incoming(
 ): Short
@@ -1173,6 +1209,8 @@ external fun uniffi_commune_core_checksum_method_timelinelistener_on_update(
 ): Short
 external fun uniffi_commune_core_checksum_method_typinglistener_on_update(
 ): Short
+external fun uniffi_commune_core_checksum_method_updateprogresslistener_progress(
+): Short
 external fun uniffi_commune_core_checksum_method_verificationlistener_on_request(
 ): Short
 external fun uniffi_commune_core_checksum_method_verificationlistener_on_emojis(
@@ -1204,6 +1242,7 @@ internal object UniffiLib {
         uniffiCallbackInterfaceRoomListListener.register(this)
         uniffiCallbackInterfaceTimelineListener.register(this)
         uniffiCallbackInterfaceTypingListener.register(this)
+        uniffiCallbackInterfaceUpdateProgressListener.register(this)
         uniffiCallbackInterfaceVerificationListener.register(this)
         
     }
@@ -1589,6 +1628,14 @@ external fun uniffi_commune_core_fn_init_callback_vtable_typinglistener(`vtable`
 ): Unit
 external fun uniffi_commune_core_fn_method_typinglistener_on_update(`ptr`: Long,`userIds`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
+external fun uniffi_commune_core_fn_clone_updateprogresslistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_commune_core_fn_free_updateprogresslistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_init_callback_vtable_updateprogresslistener(`vtable`: UniffiVTableCallbackInterfaceUpdateProgressListener,
+): Unit
+external fun uniffi_commune_core_fn_method_updateprogresslistener_progress(`ptr`: Long,`downloaded`: Long,`total`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
 external fun uniffi_commune_core_fn_clone_verificationlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): Long
 external fun uniffi_commune_core_fn_free_verificationlistener(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1605,13 +1652,27 @@ external fun uniffi_commune_core_fn_method_verificationlistener_on_cancelled(`pt
 ): Unit
 external fun uniffi_commune_core_fn_func_core_version(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_func_app_version(uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_func_check_for_update(
+): Long
 external fun uniffi_commune_core_fn_func_decode_blurhash(`blurhash`: RustBuffer.ByValue,`width`: Int,`height`: Int,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_func_download_update(`asset`: RustBuffer.ByValue,`destDir`: RustBuffer.ByValue,`listener`: RustBuffer.ByValue,
+): Long
 external fun uniffi_commune_core_fn_func_gif_search_available(uniffi_out_err: UniffiRustCallStatus, 
 ): Byte
 external fun uniffi_commune_core_fn_func_init_core(`ffiConfig`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_func_parse_matrix_link(`uri`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_func_set_update_channel(`channel`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_func_set_update_check_automatically(`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_func_set_update_skipped_version(`version`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_func_update_settings(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun ffi_commune_core_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
@@ -1735,7 +1796,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_func_core_version() != 14287.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_func_app_version() != 10786.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_func_check_for_update() != 32116.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_func_decode_blurhash() != 5311.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_func_download_update() != 24495.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_func_gif_search_available() != 26209.toShort()) {
@@ -1745,6 +1815,18 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_func_parse_matrix_link() != 12875.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_func_set_update_channel() != 36233.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_func_set_update_check_automatically() != 60012.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_func_set_update_skipped_version() != 15174.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_func_update_settings() != 10090.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_calllistener_on_incoming() != 8405.toShort()) {
@@ -2264,6 +2346,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_typinglistener_on_update() != 31416.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_method_updateprogresslistener_progress() != 292.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_method_verificationlistener_on_request() != 26434.toShort()) {
@@ -9766,6 +9851,324 @@ public object FfiConverterTypeTypingListener: FfiConverter<TypingListener, Long>
 
 
 /**
+ * Told how far a download has got.
+ */
+public interface UpdateProgressListener {
+    
+    /**
+     * How many bytes have arrived out of how many are expected.
+     */
+    fun `progress`(`downloaded`: kotlin.ULong, `total`: kotlin.ULong)
+    
+    companion object
+}
+
+/**
+ * Told how far a download has got.
+ */
+open class UpdateProgressListenerImpl: Disposable, AutoCloseable, UpdateProgressListener
+{
+
+    @Suppress("UNUSED_PARAMETER")
+    /**
+     * @suppress
+     */
+    constructor(withHandle: UniffiWithHandle, handle: Long) {
+        this.handle = handle
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
+    }
+
+    /**
+     * @suppress
+     *
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noHandle: NoHandle) {
+        this.handle = 0
+        this.cleanable = null
+    }
+
+    protected val handle: Long
+    protected val cleanable: UniffiCleaner.Cleanable?
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithHandle(block: (handle: Long) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the handle being freed concurrently.
+        try {
+            return block(this.uniffiCloneHandle())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable?.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
+        override fun run() {
+            if (handle == 0.toLong()) {
+                // Fake object created with `NoHandle`, don't try to free.
+                return;
+            }
+            uniffiRustCall { status ->
+                UniffiLib.uniffi_commune_core_fn_free_updateprogresslistener(handle, status)
+            }
+        }
+    }
+
+    /**
+     * @suppress
+     */
+    fun uniffiCloneHandle(): Long {
+        if (handle == 0.toLong()) {
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
+        }
+        return uniffiRustCall() { status ->
+            UniffiLib.uniffi_commune_core_fn_clone_updateprogresslistener(handle, status)
+        }
+    }
+
+    
+    /**
+     * How many bytes have arrived out of how many are expected.
+     */override fun `progress`(`downloaded`: kotlin.ULong, `total`: kotlin.ULong)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_method_updateprogresslistener_progress(
+        it,
+        FfiConverterULong.lower(`downloaded`),FfiConverterULong.lower(`total`),_status)
+}
+    }
+    
+    
+
+    
+
+    
+
+
+    
+    
+    /**
+     * @suppress
+     */
+    companion object
+    
+}
+
+
+
+// Put the implementation in an object so we don't pollute the top-level namespace
+internal object uniffiCallbackInterfaceUpdateProgressListener {
+    internal object `progress`: UniffiCallbackInterfaceUpdateProgressListenerMethod0 {
+        override fun callback(`uniffiHandle`: Long,`downloaded`: Long,`total`: Long,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
+            val uniffiObj = FfiConverterTypeUpdateProgressListener.handleMap.get(uniffiHandle)
+            val makeCall = { ->
+                uniffiObj.`progress`(
+                    FfiConverterULong.lift(`downloaded`),
+                    FfiConverterULong.lift(`total`),
+                )
+            }
+            val writeReturn = { _: Unit -> Unit }
+            uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
+        }
+    }
+
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
+        override fun callback(handle: Long) {
+            FfiConverterTypeUpdateProgressListener.handleMap.remove(handle)
+        }
+    }
+
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypeUpdateProgressListener.handleMap.clone(handle)
+        }
+    }
+
+    internal var vtable = UniffiVTableCallbackInterfaceUpdateProgressListener.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `progress`,
+    )
+
+    // Registers the foreign callback with the Rust side.
+    // This method is generated for each callback interface.
+    internal fun register(lib: UniffiLib) {
+        lib.uniffi_commune_core_fn_init_callback_vtable_updateprogresslistener(vtable)
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeUpdateProgressListener: FfiConverter<UpdateProgressListener, Long> {
+    internal val handleMap = UniffiHandleMap<UpdateProgressListener>()
+
+    override fun lower(value: UpdateProgressListener): Long {
+        if (value is UpdateProgressListenerImpl) {
+             // Rust-implemented object.  Clone the handle and return it
+            return value.uniffiCloneHandle()
+         } else {
+            // Kotlin object, generate a new vtable handle and return that.
+            return handleMap.insert(value)
+         }
+    }
+
+    override fun lift(value: Long): UpdateProgressListener {
+        if ((value and 1.toLong()) == 0.toLong()) {
+            // Rust-generated handle, construct a new class that uses the handle to implement the
+            // interface
+            return UpdateProgressListenerImpl(UniffiWithHandle, value)
+        } else {
+            // Kotlin-generated handle, get the object from the handle map
+            return handleMap.remove(value)
+        }
+    }
+
+    override fun read(buf: ByteBuffer): UpdateProgressListener {
+        return lift(buf.getLong())
+    }
+
+    override fun allocationSize(value: UpdateProgressListener) = 8UL
+
+    override fun write(value: UpdateProgressListener, buf: ByteBuffer) {
+        buf.putLong(lower(value))
+    }
+}
+
+
+// This template implements a class for working with a Rust struct via a handle
+// to the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque handle to the underlying Rust struct.
+//     Method calls need to read this handle from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its handle should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the handle, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the handle, but is interrupted
+//      before it can pass the handle over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read handle value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+
+/**
  * Something on the foreign side that wants to follow device
  * verifications.
  */
@@ -10107,6 +10510,14 @@ data class FfiCoreConfig (
     var `profile`: kotlin.String
     , 
     /**
+     * The number of commits behind this build — `versionCode`, which
+     * `android-kotlin/app/build.gradle.kts` derives from the same
+     * `git rev-list --count HEAD` the other platforms use. It is what
+     * [`crate::updates`] orders two builds of one version by.
+     */
+    var `buildNumber`: kotlin.ULong
+    , 
+    /**
      * The directory persistent data lives under.
      */
     var `dataDir`: kotlin.String
@@ -10142,6 +10553,7 @@ public object FfiConverterTypeFfiCoreConfig: FfiConverterRustBuffer<FfiCoreConfi
         return FfiCoreConfig(
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
             FfiConverterString.read(buf),
             FfiConverterString.read(buf),
             FfiConverterOptionalString.read(buf),
@@ -10151,6 +10563,7 @@ public object FfiConverterTypeFfiCoreConfig: FfiConverterRustBuffer<FfiCoreConfi
     override fun allocationSize(value: FfiCoreConfig) = (
             FfiConverterString.allocationSize(value.`appId`) +
             FfiConverterString.allocationSize(value.`profile`) +
+            FfiConverterULong.allocationSize(value.`buildNumber`) +
             FfiConverterString.allocationSize(value.`dataDir`) +
             FfiConverterString.allocationSize(value.`cacheDir`) +
             FfiConverterOptionalString.allocationSize(value.`klipyApiKey`)
@@ -10159,6 +10572,7 @@ public object FfiConverterTypeFfiCoreConfig: FfiConverterRustBuffer<FfiCoreConfi
     override fun write(value: FfiCoreConfig, buf: ByteBuffer) {
             FfiConverterString.write(value.`appId`, buf)
             FfiConverterString.write(value.`profile`, buf)
+            FfiConverterULong.write(value.`buildNumber`, buf)
             FfiConverterString.write(value.`dataDir`, buf)
             FfiConverterString.write(value.`cacheDir`, buf)
             FfiConverterOptionalString.write(value.`klipyApiKey`, buf)
@@ -11679,6 +12093,77 @@ public object FfiConverterTypeFfiReaction: FfiConverterRustBuffer<FfiReaction> {
 
 
 /**
+ * A release the feed advertises, over the FFI.
+ */
+data class FfiRelease (
+    /**
+     * Its version, in the semver spelling.
+     */
+    var `version`: kotlin.String
+    , 
+    /**
+     * Its commit count, which orders two builds of one version.
+     */
+    var `build`: kotlin.ULong
+    , 
+    /**
+     * When it was published, RFC 3339.
+     */
+    var `published`: kotlin.String
+    , 
+    /**
+     * Where a person can read what changed.
+     */
+    var `notesUrl`: kotlin.String
+    , 
+    /**
+     * The artifact for this build, when the release carries one.
+     */
+    var `asset`: FfiUpdateAsset?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiRelease: FfiConverterRustBuffer<FfiRelease> {
+    override fun read(buf: ByteBuffer): FfiRelease {
+        return FfiRelease(
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterOptionalTypeFfiUpdateAsset.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiRelease) = (
+            FfiConverterString.allocationSize(value.`version`) +
+            FfiConverterULong.allocationSize(value.`build`) +
+            FfiConverterString.allocationSize(value.`published`) +
+            FfiConverterString.allocationSize(value.`notesUrl`) +
+            FfiConverterOptionalTypeFfiUpdateAsset.allocationSize(value.`asset`)
+    )
+
+    override fun write(value: FfiRelease, buf: ByteBuffer) {
+            FfiConverterString.write(value.`version`, buf)
+            FfiConverterULong.write(value.`build`, buf)
+            FfiConverterString.write(value.`published`, buf)
+            FfiConverterString.write(value.`notesUrl`, buf)
+            FfiConverterOptionalTypeFfiUpdateAsset.write(value.`asset`, buf)
+    }
+}
+
+
+
+/**
  * The server-side session of a password reset, carried between the
  * email ask and the new password.
  */
@@ -12901,6 +13386,189 @@ public object FfiConverterTypeFfiTurnServers: FfiConverterRustBuffer<FfiTurnServ
             FfiConverterString.write(value.`username`, buf)
             FfiConverterString.write(value.`password`, buf)
             FfiConverterULong.write(value.`ttlSeconds`, buf)
+    }
+}
+
+
+
+/**
+ * One downloadable artifact, over the FFI.
+ */
+data class FfiUpdateAsset (
+    /**
+     * Where to fetch it.
+     */
+    var `url`: kotlin.String
+    , 
+    /**
+     * Its SHA-256 digest, as lowercase hex.
+     */
+    var `sha256`: kotlin.String
+    , 
+    /**
+     * Its size in bytes.
+     */
+    var `size`: kotlin.ULong
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiUpdateAsset: FfiConverterRustBuffer<FfiUpdateAsset> {
+    override fun read(buf: ByteBuffer): FfiUpdateAsset {
+        return FfiUpdateAsset(
+            FfiConverterString.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiUpdateAsset) = (
+            FfiConverterString.allocationSize(value.`url`) +
+            FfiConverterString.allocationSize(value.`sha256`) +
+            FfiConverterULong.allocationSize(value.`size`)
+    )
+
+    override fun write(value: FfiUpdateAsset, buf: ByteBuffer) {
+            FfiConverterString.write(value.`url`, buf)
+            FfiConverterString.write(value.`sha256`, buf)
+            FfiConverterULong.write(value.`size`, buf)
+    }
+}
+
+
+
+/**
+ * What a completed check found, over the FFI.
+ */
+data class FfiUpdateCheck (
+    /**
+     * The version that is running.
+     */
+    var `currentVersion`: kotlin.String
+    , 
+    /**
+     * The build number that is running.
+     */
+    var `currentBuild`: kotlin.ULong
+    , 
+    /**
+     * The release to move to, when there is one.
+     */
+    var `available`: FfiRelease?
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiUpdateCheck: FfiConverterRustBuffer<FfiUpdateCheck> {
+    override fun read(buf: ByteBuffer): FfiUpdateCheck {
+        return FfiUpdateCheck(
+            FfiConverterString.read(buf),
+            FfiConverterULong.read(buf),
+            FfiConverterOptionalTypeFfiRelease.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiUpdateCheck) = (
+            FfiConverterString.allocationSize(value.`currentVersion`) +
+            FfiConverterULong.allocationSize(value.`currentBuild`) +
+            FfiConverterOptionalTypeFfiRelease.allocationSize(value.`available`)
+    )
+
+    override fun write(value: FfiUpdateCheck, buf: ByteBuffer) {
+            FfiConverterString.write(value.`currentVersion`, buf)
+            FfiConverterULong.write(value.`currentBuild`, buf)
+            FfiConverterOptionalTypeFfiRelease.write(value.`available`, buf)
+    }
+}
+
+
+
+/**
+ * The update settings, over the FFI.
+ */
+data class FfiUpdateSettings (
+    /**
+     * Whether to check without being asked.
+     */
+    var `checkAutomatically`: kotlin.Boolean
+    , 
+    /**
+     * The channel being followed, resolved to the profile's default when the
+     * user has not chosen one.
+     */
+    var `channel`: kotlin.String
+    , 
+    /**
+     * Every channel this build may be pointed at, in the order to offer
+     * them.
+     */
+    var `availableChannels`: List<kotlin.String>
+    , 
+    /**
+     * The version the user asked not to be told about again.
+     */
+    var `skippedVersion`: kotlin.String?
+    , 
+    /**
+     * Whether an automatic check is due now.
+     */
+    var `checkDue`: kotlin.Boolean
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFfiUpdateSettings: FfiConverterRustBuffer<FfiUpdateSettings> {
+    override fun read(buf: ByteBuffer): FfiUpdateSettings {
+        return FfiUpdateSettings(
+            FfiConverterBoolean.read(buf),
+            FfiConverterString.read(buf),
+            FfiConverterSequenceString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterBoolean.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: FfiUpdateSettings) = (
+            FfiConverterBoolean.allocationSize(value.`checkAutomatically`) +
+            FfiConverterString.allocationSize(value.`channel`) +
+            FfiConverterSequenceString.allocationSize(value.`availableChannels`) +
+            FfiConverterOptionalString.allocationSize(value.`skippedVersion`) +
+            FfiConverterBoolean.allocationSize(value.`checkDue`)
+    )
+
+    override fun write(value: FfiUpdateSettings, buf: ByteBuffer) {
+            FfiConverterBoolean.write(value.`checkAutomatically`, buf)
+            FfiConverterString.write(value.`channel`, buf)
+            FfiConverterSequenceString.write(value.`availableChannels`, buf)
+            FfiConverterOptionalString.write(value.`skippedVersion`, buf)
+            FfiConverterBoolean.write(value.`checkDue`, buf)
     }
 }
 
@@ -16393,6 +17061,38 @@ public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteA
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeUpdateProgressListener: FfiConverterRustBuffer<UpdateProgressListener?> {
+    override fun read(buf: ByteBuffer): UpdateProgressListener? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeUpdateProgressListener.read(buf)
+    }
+
+    override fun allocationSize(value: UpdateProgressListener?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeUpdateProgressListener.allocationSize(value)
+        }
+    }
+
+    override fun write(value: UpdateProgressListener?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeUpdateProgressListener.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeFfiInReplyTo: FfiConverterRustBuffer<FfiInReplyTo?> {
     override fun read(buf: ByteBuffer): FfiInReplyTo? {
         if (buf.get().toInt() == 0) {
@@ -16585,6 +17285,38 @@ public object FfiConverterOptionalTypeFfiPushedNotification: FfiConverterRustBuf
 /**
  * @suppress
  */
+public object FfiConverterOptionalTypeFfiRelease: FfiConverterRustBuffer<FfiRelease?> {
+    override fun read(buf: ByteBuffer): FfiRelease? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiRelease.read(buf)
+    }
+
+    override fun allocationSize(value: FfiRelease?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiRelease.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiRelease?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiRelease.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeFfiSessionSettings: FfiConverterRustBuffer<FfiSessionSettings?> {
     override fun read(buf: ByteBuffer): FfiSessionSettings? {
         if (buf.get().toInt() == 0) {
@@ -16671,6 +17403,38 @@ public object FfiConverterOptionalTypeFfiThumbnail: FfiConverterRustBuffer<FfiTh
         } else {
             buf.put(1)
             FfiConverterTypeFfiThumbnail.write(value, buf)
+        }
+    }
+}
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterOptionalTypeFfiUpdateAsset: FfiConverterRustBuffer<FfiUpdateAsset?> {
+    override fun read(buf: ByteBuffer): FfiUpdateAsset? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeFfiUpdateAsset.read(buf)
+    }
+
+    override fun allocationSize(value: FfiUpdateAsset?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeFfiUpdateAsset.allocationSize(value)
+        }
+    }
+
+    override fun write(value: FfiUpdateAsset?, buf: ByteBuffer) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeFfiUpdateAsset.write(value, buf)
         }
     }
 }
@@ -17441,6 +18205,40 @@ public object FfiConverterSequenceTypeFfiTimelineItem: FfiConverterRustBuffer<Li
     
 
         /**
+         * The version of the core, which is the version of the application.
+         */ fun `appVersion`(): kotlin.String {
+            return FfiConverterString.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_func_app_version(
+    
+        _status)
+}
+    )
+    }
+    
+
+        /**
+         * Ask the feed what the current release is, and record that we asked.
+         *
+         * Uses whichever channel the settings resolve to, so that the Kotlin side
+         * never has to know what the profile's default is.
+         */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+     suspend fun `checkForUpdate`() : FfiUpdateCheck {
+        return uniffiRustCallAsync(
+        UniffiLib.uniffi_commune_core_fn_func_check_for_update(),
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeFfiUpdateCheck.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
+
+        /**
          * Decode a blurhash into raw RGBA bytes at the given size.
          *
          * Rendering at a couple dozen pixels a side and letting the UI scale it
@@ -17455,6 +18253,27 @@ public object FfiConverterSequenceTypeFfiTimelineItem: FfiConverterRustBuffer<Li
     )
     }
     
+
+        /**
+         * Fetch the given artifact into the given directory, checking its digest.
+         *
+         * Returns the path it was saved at, which is what the caller hands to the
+         * system package installer.
+         */
+    @Throws(CoreException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+     suspend fun `downloadUpdate`(`asset`: FfiUpdateAsset, `destDir`: kotlin.String, `listener`: UpdateProgressListener?) : kotlin.String {
+        return uniffiRustCallAsync(
+        UniffiLib.uniffi_commune_core_fn_func_download_update(FfiConverterTypeFfiUpdateAsset.lower(`asset`),FfiConverterString.lower(`destDir`),FfiConverterOptionalTypeUpdateProgressListener.lower(`listener`),),
+        { future, callback, continuation -> UniffiLib.ffi_commune_core_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_commune_core_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_commune_core_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        CoreException.ErrorHandler,
+    )
+    }
 
         /**
          * Whether the GIF search is available in this build.
@@ -17501,6 +18320,56 @@ public object FfiConverterSequenceTypeFfiTimelineItem: FfiConverterRustBuffer<Li
     UniffiLib.uniffi_commune_core_fn_func_parse_matrix_link(
     
         FfiConverterString.lower(`uri`),_status)
+}
+    )
+    }
+    
+
+        /**
+         * Follow the named channel, or the profile's default when the name is not
+         * one this build offers.
+         */ fun `setUpdateChannel`(`channel`: kotlin.String)
+        = 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_func_set_update_channel(
+    
+        FfiConverterString.lower(`channel`),_status)
+}
+    
+    
+
+        /**
+         * Turn automatic checks on or off.
+         */ fun `setUpdateCheckAutomatically`(`enabled`: kotlin.Boolean)
+        = 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_func_set_update_check_automatically(
+    
+        FfiConverterBoolean.lower(`enabled`),_status)
+}
+    
+    
+
+        /**
+         * Stop offering the given version.
+         */ fun `setUpdateSkippedVersion`(`version`: kotlin.String?)
+        = 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_func_set_update_skipped_version(
+    
+        FfiConverterOptionalString.lower(`version`),_status)
+}
+    
+    
+
+        /**
+         * The update settings as they stand.
+         */ fun `updateSettings`(): FfiUpdateSettings {
+            return FfiConverterTypeFfiUpdateSettings.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_func_update_settings(
+    
+        _status)
 }
     )
     }

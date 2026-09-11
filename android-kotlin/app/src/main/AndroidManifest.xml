@@ -14,6 +14,12 @@
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Offering a downloaded release to the system package installer. It is
+         the system that then checks the new APK is signed by the same key as
+         the installed one, which is what makes an in-app updater safe at all;
+         see ../../../../doc/updates-plan.md. The user still has to allow this
+         application to install packages, once, in system settings. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".CommuneApplication"
@@ -109,6 +115,19 @@
         <receiver
             android:name=".MarkReadReceiver"
             android:exported="false" />
+        <!-- Hands the downloaded APK to the package installer, which runs
+             in another process and so cannot read a path inside this
+             application. Only `cache/updates/` is exposed; see
+             res/xml/updates_paths.xml. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/updates_paths" />
+        </provider>
     </application>
 
 </manifest>
