@@ -1015,6 +1015,58 @@ mod tests {
         );
     }
 
+    /// A manifest signed by the real release key, and its signature.
+    ///
+    /// Produced once by `build-aux/ci/publish-feed.sh` with the key the
+    /// release workflow signs with. It is here so that the public key in
+    /// `key.rs` is checked against a signature that key actually made, rather
+    /// than only against signatures these tests make for themselves: a typo
+    /// in those 32 bytes would otherwise pass every test in this file and
+    /// fail on every installation in the world at once.
+    ///
+    /// It also pins the exact bytes the signature covers, so a change to what
+    /// `publish-feed.sh` writes cannot silently stop verifying.
+    const SIGNED_FIXTURE: &[u8] = include_bytes!("../../tests/fixtures/stable.json");
+    /// The signature of [`SIGNED_FIXTURE`].
+    const SIGNED_FIXTURE_SIGNATURE: &[u8] = include_bytes!("../../tests/fixtures/stable.json.sig");
+
+    #[test]
+    fn the_shipped_key_verifies_a_real_signed_manifest() {
+        verify(
+            SIGNED_FIXTURE,
+            SIGNED_FIXTURE_SIGNATURE,
+            key::VERIFYING_KEYS,
+        )
+        .expect("the committed public key verifies a manifest the release key signed");
+    }
+
+    #[test]
+    fn a_real_signed_manifest_parses() {
+        let release: Release =
+            serde_json::from_slice(SIGNED_FIXTURE).expect("the fixture is a manifest");
+
+        assert_eq!(release.channel, Channel::Stable);
+        assert_eq!(release.version, "1.0.0");
+        assert_eq!(release.build, 4021);
+        assert!(release.assets.contains_key(Platform::WindowsMsi.feed_key()));
+        assert!(
+            release
+                .assets
+                .contains_key(Platform::MacOsTarball.feed_key())
+        );
+    }
+
+    #[test]
+    fn a_real_signed_manifest_stops_verifying_when_it_changes() {
+        let mut tampered = SIGNED_FIXTURE.to_vec();
+        tampered.push(b' ');
+
+        assert!(matches!(
+            verify(&tampered, SIGNED_FIXTURE_SIGNATURE, key::VERIFYING_KEYS),
+            Err(UpdateError::Signature)
+        ));
+    }
+
     #[test]
     fn a_channel_round_trips_through_its_name() {
         for channel in [Channel::Stable, Channel::Rc, Channel::Nightly] {

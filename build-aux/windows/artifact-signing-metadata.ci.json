@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "The Trusted Signing account for CI, which differs from the copy beside",
+    "the repository root in exactly one way: which credential types",
+    "DefaultAzureCredential is allowed to try.",
+    "",
+    "The local file excludes everything except AzureCliCredential, so that a",
+    "signature is authorised by the maintainer's own `az login` session and by",
+    "nothing else. A runner has no such session. It authenticates with an OIDC",
+    "token GitHub mints for the workflow, which `azure/login` exchanges for an",
+    "access token and puts in the environment, so EnvironmentCredential and",
+    "WorkloadIdentityCredential are the two that must stay enabled here.",
+    "",
+    "Everything interactive stays excluded: a credential type that can open a",
+    "browser has no business in a non-interactive job, where it would hang",
+    "until the step times out instead of failing.",
+    "",
+    "The account and profile names are not secrets; the authorisation to use",
+    "them is. See doc/updates-plan.md and doc/windows.md."
+  ],
+  "Endpoint": "https://wus.codesigning.azure.net/",
+  "CodeSigningAccountName": "skz-code",
+  "CertificateProfileName": "ddrx-pcsvc",
+  "ExcludeCredentials": [
+    "ManagedIdentityCredential",
+    "SharedTokenCacheCredential",
+    "VisualStudioCredential",
+    "VisualStudioCodeCredential",
+    "AzurePowerShellCredential",
+    "AzureDeveloperCliCredential",
+    "AzureCliCredential",
+    "InteractiveBrowserCredential"
+  ]
+}

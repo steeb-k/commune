@@ -1,0 +1,134 @@
+# A tag becomes a release, and a release becomes a feed.
+#
+# Pushing a `v*` tag is the whole of making a release. It builds every
+# platform, attaches the artifacts to a GitHub release, and then writes the
+# manifest an installed Commune reads to find out that the release exists —
+# see `doc/updates-plan.md`.
+#
+# `RELEASING.md` still owns the commit that comes before the tag: the version
+# in three files, the metainfo entry, the screenshots. This owns everything
+# after it.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'An existing tag to build and publish.'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      meson-profile: default
+      windows-profile: Stable
+      sign: true
+    secrets: inherit
+
+  publish:
+    name: Publish the release and the feed
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Work out what this release is
+        id: release
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          version="$(sh build-aux/ci/project-version.sh)"
+          build="$(git rev-list --count HEAD)"
+
+          # The tag is the authority on what was released; if it disagrees
+          # with Cargo.toml then the release commit was wrong and publishing
+          # would put a version nobody can find behind a tag nobody expects.
+          if [ "$tag" != "v${version}" ] && [ "$tag" != "v$(echo "$version" | sed 's/^\([0-9]*\)\.0\.0-/\1./')" ]; then
+            echo "::error::tag $tag does not match the version in Cargo.toml ($version)"
+            exit 1
+          fi
+
+          # A release candidate is a pre-release on GitHub and goes to the
+          # `rc` channel only; a plain release goes to `stable` and to `rc`,
+          # so that somebody testing candidates is not left behind when the
+          # real thing arrives.
+          case "$version" in
+            *-*) channels="rc"; prerelease=true ;;
+            *)   channels="stable rc"; prerelease=false ;;
+          esac
+
+          {
+            echo "tag=$tag"
+            echo "version=$version"
+            echo "build=$build"
+            echo "channels=$channels"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Collect the artifacts
+        id: collect
+        run: |
+          mkdir -p dist
+          find artifacts -type f \( -name '*.msi' -o -name '*.tar.gz' -o -name '*.apk' -o -name '*.flatpak' \) -exec cp {} dist/ ';'
+          ls -la dist
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="Commune ${{ steps.release.outputs.version }}."
+          if [ "${{ steps.release.outputs.prerelease }}" = "true" ]; then
+            flag="--prerelease"
+          else
+            flag=""
+          fi
+          gh release create "${{ steps.release.outputs.tag }}" dist/* \
+            --title "Commune ${{ steps.release.outputs.version }}" \
+            --notes "$notes" $flag \
+            || gh release upload "${{ steps.release.outputs.tag }}" dist/* --clobber
+
+      - name: Write and sign the feed
+        env:
+          UPDATE_FEED_PRIVATE_KEY: ${{ secrets.UPDATE_FEED_PRIVATE_KEY }}
+        run: |
+          base="https://github.com/${{ github.repository }}/releases/download/${{ steps.release.outputs.tag }}"
+          notes_url="https://github.com/${{ github.repository }}/releases/tag/${{ steps.release.outputs.tag }}"
+
+          # Only the artifacts that exist. A platform whose job failed is left
+          # out of the manifest, which tells an installation there is nothing
+          # to install rather than sending it at a URL that 404s.
+          assets=""
+          msi="$(find dist -name '*.msi' | head -1)"
+          tarball="$(find dist -name '*.tar.gz' | head -1)"
+          apk="$(find dist -name '*.apk' | head -1)"
+          [ -n "$msi" ] && assets="$assets --asset windows-x86_64-msi|$msi|$base/$(basename "$msi")"
+          [ -n "$tarball" ] && assets="$assets --asset macos-universal-tar|$tarball|$base/$(basename "$tarball")"
+          [ -n "$apk" ] && assets="$assets --asset android-arm64-apk|$apk|$base/$(basename "$apk")"
+
+          for channel in ${{ steps.release.outputs.channels }}; do
+            # shellcheck disable=SC2086
+            sh build-aux/ci/publish-feed.sh \
+              --channel "$channel" \
+              --version "${{ steps.release.outputs.version }}" \
+              --build "${{ steps.release.outputs.build }}" \
+              --notes-url "$notes_url" \
+              --out-dir feed \
+              $assets
+          done
+
+      - name: Commit the feed
+        run: sh build-aux/ci/commit-feed.sh feed "${{ steps.release.outputs.tag }}"

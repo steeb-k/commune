@@ -1,0 +1,115 @@
+# A build of `main`, every time `main` moves.
+#
+# This is the file that replaces the loop it used to take to see a change on
+# three platforms: build the Windows bundle in MSYS2, build the Mac bundle on
+# the Mac, build the APK in WSL, copy each one where it has to go. A push does
+# all of it, and a Devel installation following the `nightly` channel picks the
+# result up on its own.
+#
+# Devel builds, not release ones: a different application id, a different data
+# directory and a different MSI UpgradeCode, so a nightly installs beside a
+# stable copy rather than over it. That is also why `Channel::Nightly` is only
+# offered to a Devel build — see `commune-core/src/updates/mod.rs`.
+name: nightly
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A burst of pushes should produce one build, not six. The last one wins,
+# which is the one anybody wants to install.
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    # Documentation-only pushes move `main` without changing what a build
+    # would produce, and a nightly for each of them is runner minutes spent on
+    # nothing.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      !startsWith(github.event.head_commit.message, 'doc:')
+    uses: ./.github/workflows/build.yml
+    with:
+      meson-profile: development
+      windows-profile: Devel
+      sign: true
+    secrets: inherit
+
+  publish:
+    name: Publish the nightly and the feed
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Work out what this build is
+        id: nightly
+        run: |
+          version="$(sh build-aux/ci/project-version.sh)"
+          build="$(git rev-list --count HEAD)"
+          {
+            echo "version=$version"
+            echo "build=$build"
+            echo "sha=$(git rev-parse --short HEAD)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Collect the artifacts
+        run: |
+          mkdir -p dist
+          find artifacts -type f \( -name '*.msi' -o -name '*.tar.gz' -o -name '*.apk' -o -name '*.flatpak' \) -exec cp {} dist/ ';'
+          ls -la dist
+
+      - name: Replace the rolling nightly release
+        # The one place `RELEASING.md`'s rule that a tag is never moved does
+        # not hold, and it says so: this tag is a pointer to "the newest build
+        # of main", which is the only thing a nightly channel can mean. Every
+        # other tag in the repository is still permanent.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete nightly --yes --cleanup-tag 2>/dev/null || true
+          gh release create nightly dist/* \
+            --title "Nightly ${{ steps.nightly.outputs.version }} (${{ steps.nightly.outputs.sha }})" \
+            --notes "An automatic build of main at ${{ steps.nightly.outputs.sha }}. Not a release: it installs beside a stable Commune rather than over it." \
+            --prerelease \
+            --target "$GITHUB_SHA"
+
+      - name: Write and sign the feed
+        env:
+          UPDATE_FEED_PRIVATE_KEY: ${{ secrets.UPDATE_FEED_PRIVATE_KEY }}
+        run: |
+          base="https://github.com/${{ github.repository }}/releases/download/nightly"
+          notes_url="https://github.com/${{ github.repository }}/commits/main"
+
+          assets=""
+          msi="$(find dist -name '*.msi' | head -1)"
+          tarball="$(find dist -name '*.tar.gz' | head -1)"
+          apk="$(find dist -name '*.apk' | head -1)"
+          [ -n "$msi" ] && assets="$assets --asset windows-x86_64-msi|$msi|$base/$(basename "$msi")"
+          [ -n "$tarball" ] && assets="$assets --asset macos-universal-tar|$tarball|$base/$(basename "$tarball")"
+          [ -n "$apk" ] && assets="$assets --asset android-arm64-apk|$apk|$base/$(basename "$apk")"
+
+          # shellcheck disable=SC2086
+          sh build-aux/ci/publish-feed.sh \
+            --channel nightly \
+            --version "${{ steps.nightly.outputs.version }}" \
+            --build "${{ steps.nightly.outputs.build }}" \
+            --notes-url "$notes_url" \
+            --out-dir feed \
+            $assets
+
+      - name: Commit the feed
+        run: sh build-aux/ci/commit-feed.sh feed "nightly ${{ steps.nightly.outputs.sha }}"
