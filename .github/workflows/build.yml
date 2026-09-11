@@ -39,6 +39,13 @@ jobs:
   windows:
     name: Windows installer
     runs-on: windows-latest
+    # Not a gate, a subject. A federated credential cannot have a wildcard
+    # in its subject, and release tags vary in name — so the Azure identity
+    # trusts `repo:steeb-k/commune:environment:release`, which one
+    # environment satisfies for every tag and for main alike. Nothing is
+    # required to approve here; adding a reviewer to the environment later
+    # is what would make a release wait for one.
+    environment: release
     env:
       # Signing needs an Azure federated credential. Without one the job
       # still builds and still publishes — it just publishes a package the
