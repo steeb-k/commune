@@ -183,6 +183,16 @@ jobs:
           print("injected the KLIPY option")
           EOF
 
+      - name: The Flathub remote
+        # The image carries GNOME's nightly remote, not Flathub, so the
+        # builder's attempt to install org.gnome.Sdk//50 finds "no remote
+        # refs found for flathub". The manifests target the released runtime
+        # rather than nightly — see doc/flatpak.md — so Flathub is where it
+        # comes from.
+        run: |
+          flatpak remote-add --if-not-exists --system flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak remotes --system
+
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: io.github.steeb_k.Commune.flatpak
