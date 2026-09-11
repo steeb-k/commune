@@ -37,8 +37,16 @@ jobs:
       - name: Install the nightly rustfmt
         # Only rustfmt, and only nightly: the project formats with unstable
         # options, which is why `hooks/checks` invokes `cargo +nightly fmt`.
-        uses: dtolnay/rust-toolchain@nightly
+        #
+        # Pinned to a date rather than tracking `nightly`, because
+        # `wrap_comments = true` is one of those options and successive
+        # nightlies rewrap comments differently. Unpinned, this job fails on
+        # whatever morning rustfmt changes its mind, having been given nothing
+        # to do with it. Bump this when a developer bumps their own nightly,
+        # and reformat the tree in the same commit.
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly-2026-08-23
           components: rustfmt
 
       - uses: Swatinem/rust-cache@v2
@@ -95,6 +103,16 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: test
+
+      - name: The tools Meson looks for
+        # The runtime image carries the libraries, not the build tooling.
+        # `meson.build` asks for these by name and fails configure without
+        # them; `grass` is the Rust SASS compiler it prefers over `sass`.
+        run: |
+          python3 -m pip install --upgrade --break-system-packages meson ninja || python3 -m pip install --upgrade meson ninja
+          cargo install --locked grass
+          meson --version
+          blueprint-compiler --version || echo "::warning::no blueprint-compiler in the image"
 
       - name: Configure
         # A build directory is what generates `src/config.rs`, which the
