@@ -11,6 +11,7 @@ was built; this file records what actually exists, what is stubbed, and what bit
 * [Setting the environment up](#setting-the-environment-up)
 * [Building](#building)
 * [Packaging](#packaging)
+* [Updating an installed copy](#updating-an-installed-copy)
 * [Testing by hand](#testing-by-hand)
 * [What differs from Linux](#what-differs-from-linux)
 * [Not done yet](#not-done-yet)
@@ -498,6 +499,40 @@ is why the sibling SEED Sync project ships a `curl | sh` tarball. **`make-tarbal
 artefact to actually hand to somebody today**; `make-dmg.sh` exists because it is the right shape
 once the signing story is sorted, and because a locally built `.dmg` is a fine way to test the
 install itself.
+
+## Updating an installed copy
+
+The artefact an installed Commune downloads to replace itself is the
+`.tar.gz`, not the `.dmg`, and for the reason this page already gives about
+quarantine: a bundle that arrives inside a disk image is refused on first
+launch until somebody clears the attribute, and files a process extracts from
+a tarball are never quarantined at all.
+
+`src/utils/macos_update.rs` extracts beside the installed bundle, runs
+`codesign --verify --deep --strict`, requires the Team ID to equal the running
+bundle's, and swaps the two directories by rename — putting the old one back
+if the second rename fails. Nothing is written into the running bundle, so
+every failure short of the swap leaves the installed copy exactly as it was.
+Afterwards it `touch`es the bundle and runs `lsregister -f`, which is the
+remedy this page records for the icon cache.
+
+An ad-hoc signed build never updates. It has no Team ID to compare, and
+replacing a developer's own build with a release would change the signing
+identity under every Keychain item it has stored and re-prompt for each.
+
+Two things changed for CI. The release bundle is **universal**:
+`.github/workflows/build.yml` builds an arm64 half and an x86_64 half on
+their own runners and `build-aux/macos/lipo-bundles.sh` merges them, checking
+that every file the two builds disagree about is actually a binary. Signing
+happens after the merge and never before, because a signature covers all of a
+binary's slices at once. And because the certificate on this machine is
+Xcode's cloud-managed kind and cannot be exported,
+`build-aux/macos/sign-notarize.sh` builds a throwaway keychain from a second
+Developer ID certificate under the same team — which is what an installed copy
+compares, so the swap is silent.
+
+Neither script has ever run: both were written without a Mac to hand.
+[`doc/updates.md`](updates.md) keeps that list.
 
 ## Testing by hand
 
