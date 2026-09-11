@@ -241,10 +241,25 @@ therefore a decision about new users, not about updates.
 `check.yml` on every push and pull request: the same `hooks/checks` binary the
 pre-commit hook runs, plus `hooks/template-checks` and the tests.
 
-`build.yml` is called by the other two and builds everything: the Windows
-bundle and MSI in MSYS2, two macOS bundles merged with `lipo` and then signed
-and notarized, the Android APK, the Flatpak bundle. It takes the profile as an
+`build.yml` is called by the other two and builds everything: the Android APK,
+the Flatpak bundle, the Windows bundle and MSI in MSYS2, and two macOS bundles
+merged with `lipo` and then signed and notarized. It takes the profile as an
 input, which is the only thing that differs between a release and a nightly.
+
+**They run in that order, one after another, rather than at once.** Android
+first because it is the client most people run, macOS last because it is the
+one most likely to fail — so a failure stops the chain before the expensive
+half of it, instead of four platforms failing in parallel for one reason. Each
+job runs when the one before it succeeded _or was skipped_, which is what keeps
+the platform picker working; a job whose predecessor actually failed does not
+run at all.
+
+**No build embeds the KLIPY key.** Nothing in CI passes `-Dklipy-api-key` or
+`communeKlipyApiKey`, so `klipy::is_available()` is false in every published
+build and the GIF tab is not drawn. That is deliberate and not an oversight: a
+client-side key compiled into a distributed binary is extractable with
+`strings`, so shipping one in a public release is publishing it. The feature
+works in a local build by whoever holds a key.
 
 `release.yml` on a `v*` tag. `nightly.yml` on a press, with a platform picker,
 plus one scheduled build a week — deliberately **not** on every push, because
