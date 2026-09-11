@@ -39,6 +39,14 @@ jobs:
   windows:
     name: Windows installer
     runs-on: windows-latest
+    env:
+      # Signing needs an Azure federated credential. Without one the job
+      # still builds and still publishes — it just publishes a package the
+      # updater will refuse, because `windows_update.rs` checks Authenticode
+      # before handing anything to msiexec. That is the right failure: an
+      # unsigned installer nobody can auto-install beats a silent downgrade
+      # of what "signed" means.
+      SIGN_WINDOWS: ${{ inputs.sign && secrets.AZURE_CLIENT_ID != '' }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -120,7 +128,7 @@ jobs:
           wix extension add --global WixToolset.UI.wixext/5.0.0
 
       - name: Sign in to Azure
-        if: inputs.sign
+        if: env.SIGN_WINDOWS == 'true'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -128,7 +136,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Install the Trusted Signing client
-        if: inputs.sign
+        if: env.SIGN_WINDOWS == 'true'
         shell: pwsh
         run: Install-Module -Name TrustedSigning -Force -AllowClobber -Scope CurrentUser
 
@@ -138,10 +146,23 @@ jobs:
           # The metadata beside the repository names only AzureCliCredential,
           # which is right for a laptop with an `az login` session and useless
           # on a runner. The CI copy leaves the credential type OIDC provides.
-          ARTIFACT_SIGNING_METADATA: ${{ inputs.sign && 'build-aux/windows/artifact-signing-metadata.ci.json' || '' }}
+          ARTIFACT_SIGNING_METADATA: ${{ env.SIGN_WINDOWS == 'true' && 'build-aux/windows/artifact-signing-metadata.ci.json' || '' }}
         run: |
           $name = if ('${{ inputs.windows-profile }}' -eq 'Stable') { 'Commune' } else { 'Commune ${{ inputs.windows-profile }}' }
           pwsh -File build-aux\windows\build-msi.ps1 -BundleDir "_build\windows\$name" -Profile ${{ inputs.windows-profile }}
+
+      - name: Say if it went out unsigned
+        if: env.SIGN_WINDOWS != 'true'
+        shell: bash
+        run: |
+          echo "::warning::This MSI is UNSIGNED. The in-app updater will refuse it."
+          {
+            echo "### Windows package is unsigned"
+            echo
+            echo "No Azure federated credential is configured, so \`sign.ps1\` was skipped."
+            echo "The package installs by hand; the in-app updater checks Authenticode"
+            echo "first and will not install it. See \`doc/updates.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:
