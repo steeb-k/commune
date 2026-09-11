@@ -184,6 +184,20 @@ authorises a signature with an `az login` session; CI authorises it with an
 OIDC token, which is the whole difference between
 `artifact-signing-metadata.json` and `artifact-signing-metadata.ci.json`.
 
+The identity is the `commune-ci-signing` app registration, created
+11 September 2026, which holds **no client secret at all**: it trusts GitHub's
+OIDC issuer for the subject `repo:steeb-k/commune:environment:release`, and
+that is why the Windows job declares `environment: release`. A federated
+credential's subject cannot contain a wildcard and release tags vary in name,
+so one environment stands in for every tag and for `main` alike. The
+environment requires no approval; adding a reviewer to it is what would make a
+release wait for one.
+
+Its one permission is **Artifact Signing Certificate Profile Signer**, scoped
+to the `ddrx-pcsvc` profile rather than the account — the role was renamed from
+Trusted Signing in Azure's rebrand, which is why searching for the old name
+finds nothing.
+
 Without `AZURE_CLIENT_ID` the Windows job still builds and still publishes —
 it just publishes a package the updater refuses, because `windows_update.rs`
 checks Authenticode before handing anything to `msiexec`. The run says so as a
