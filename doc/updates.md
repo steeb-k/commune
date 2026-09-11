@@ -193,6 +193,15 @@ so one environment stands in for every tag and for `main` alike. The
 environment requires no approval; adding a reviewer to it is what would make a
 release wait for one.
 
+It carries **two** federated credentials for what is logically one subject.
+GitHub now presents the immutable-ID form —
+`repo:steeb-k@133536278/commune@1340279514:environment:release` — rather than
+the readable one, and Azure matches the subject as an exact string, so the
+readable credential alone fails with `AADSTS700213: no matching federated
+identity record`. Both are registered: the ID form because it is what arrives,
+the readable one because it is what the documentation everywhere describes and
+what would arrive again if that behaviour were turned off.
+
 Its one permission is **Artifact Signing Certificate Profile Signer**, scoped
 to the `ddrx-pcsvc` profile rather than the account — the role was renamed from
 Trusted Signing in Azure's rebrand, which is why searching for the old name
