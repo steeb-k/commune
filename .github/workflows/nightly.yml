@@ -1,24 +1,54 @@
-# A build of `main`, every time `main` moves.
+# A build of `main`, when somebody asks for one.
 #
-# This is the file that replaces the loop it used to take to see a change on
-# three platforms: build the Windows bundle in MSYS2, build the Mac bundle on
-# the Mac, build the APK in WSL, copy each one where it has to go. A push does
-# all of it, and a Devel installation following the `nightly` channel picks the
-# result up on its own.
+# This replaces the loop it used to take to see a change on three platforms:
+# build the Windows bundle in MSYS2, build the Mac bundle on the Mac, build the
+# APK in WSL, copy each one where it has to go. One press does all of it, and a
+# Devel installation following the `nightly` channel picks the result up on its
+# own.
 #
-# Devel builds, not release ones: a different application id, a different data
-# directory and a different MSI UpgradeCode, so a nightly installs beside a
-# stable copy rather than over it. That is also why `Channel::Nightly` is only
-# offered to a Devel build — see `commune-core/src/updates/mod.rs`.
+# # Why not on every push
+#
+# Because five platforms take the better part of two hours, and most commits
+# touch code that three of them do not compile. Free minutes on a public
+# repository make that affordable, not useful: it is queue time and noise for a
+# result nobody asked for. So the trigger is a press, plus one scheduled build
+# a week so the channel does not go stale while attention is elsewhere.
+#
+# It matters more than it looks, because there is no Mac: CI is the only way a
+# macOS build gets made at all. Tying that to release tags would mean minting a
+# permanent tag and bumping three version files every time somebody wanted to
+# see a change on macOS, which is a worse manual loop than the one this
+# replaced.
+#
+# # Why Devel
+#
+# A nightly carries the Devel application id, data directory and MSI
+# UpgradeCode, so it installs beside a stable Commune rather than over it. That
+# is also why `Channel::Nightly` is only offered to a Devel build — see
+# `commune-core/src/updates/mod.rs`.
 name: nightly
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Which platforms to build: all, or a space-separated list of windows macos android flatpak.'
+        required: false
+        default: all
+        type: string
+      publish:
+        description: 'Publish to the nightly release and the update feed. Off builds artifacts only, which is what debugging a platform wants.'
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    # Sundays, 04:00 UTC. Late enough to be nobody's working hours and rare
+    # enough that a week of silence still ends in a build that is known to
+    # work — which is the thing a channel nobody has pressed in a while
+    # otherwise stops being.
+    - cron: '0 4 * * 0'
 
-# A burst of pushes should produce one build, not six. The last one wins,
-# which is the one anybody wants to install.
+# One build at a time. A second press makes the first one's answer stale.
 concurrency:
   group: nightly
   cancel-in-progress: true
@@ -29,22 +59,24 @@ permissions:
 
 jobs:
   build:
-    # Documentation-only pushes move `main` without changing what a build
-    # would produce, and a nightly for each of them is runner minutes spent on
-    # nothing.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      !startsWith(github.event.head_commit.message, 'doc:')
     uses: ./.github/workflows/build.yml
     with:
       meson-profile: development
       windows-profile: Devel
       sign: true
+      # A schedule has no inputs, so it gets the defaults.
+      platforms: ${{ inputs.platforms || 'all' }}
     secrets: inherit
 
   publish:
     name: Publish the nightly and the feed
     needs: build
+    # Never when a platform was skipped: a manifest written from a partial
+    # build would tell every other platform there is nothing to install, which
+    # is indistinguishable from a release that dropped them.
+    if: >-
+      github.event_name == 'schedule' ||
+      (inputs.publish && (inputs.platforms == 'all' || inputs.platforms == ''))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

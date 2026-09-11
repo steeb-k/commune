@@ -25,6 +25,11 @@ on:
         required: false
         default: true
         type: boolean
+      platforms:
+        description: 'Which platforms to build: all, or a space-separated list of windows macos android flatpak.'
+        required: false
+        default: all
+        type: string
 
 # `azure/login` asks GitHub for an OIDC token, which is what replaces a stored
 # client secret for the Windows signing step.
@@ -37,6 +42,7 @@ env:
 
 jobs:
   windows:
+    if: inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' windows ')
     name: Windows installer
     runs-on: windows-latest
     # Not a gate, a subject. A federated credential cannot have a wildcard
@@ -180,6 +186,7 @@ jobs:
           if-no-files-found: error
 
   macos-half:
+    if: inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' macos ')
     name: macOS ${{ matrix.arch }} bundle
     strategy:
       fail-fast: false
@@ -276,6 +283,7 @@ jobs:
           if-no-files-found: error
 
   macos:
+    if: inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' macos ')
     name: macOS universal bundle
     needs: macos-half
     runs-on: macos-15
@@ -341,6 +349,7 @@ jobs:
           if-no-files-found: error
 
   android:
+    if: inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' android ')
     name: Android APK
     runs-on: ubuntu-latest
     steps:
@@ -406,6 +415,7 @@ jobs:
           if-no-files-found: error
 
   flatpak:
+    if: inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' flatpak ')
     name: Flatpak bundle
     runs-on: ubuntu-latest
     container:

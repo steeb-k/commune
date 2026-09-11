@@ -31,6 +31,9 @@ jobs:
       meson-profile: default
       windows-profile: Stable
       sign: true
+      # Always everything. A release that quietly dropped a platform would
+      # publish a manifest telling that platform there is nothing to install.
+      platforms: all
     secrets: inherit
 
   publish:
