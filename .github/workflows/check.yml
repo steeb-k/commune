@@ -72,6 +72,15 @@ jobs:
           cp hooks/checks/target/release/checks hooks/checks-bin
           hooks/checks-bin
 
+      - name: The workflows themselves
+        # A workflow file can be valid YAML and still be rejected by GitHub —
+        # a duplicate key, a hyphen in a property path — and the only symptom
+        # is a run that fails in zero seconds saying "workflow file issue".
+        # actionlint is what catches those before a push does.
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash
+          ./actionlint -color
+
       - name: Widget templates against the Rust that builds them
         run: hooks/template-checks
 
