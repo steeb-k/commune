@@ -49,6 +49,17 @@ jobs:
           toolchain: nightly-2026-08-23
           components: rustfmt
 
+      - name: Make `+nightly` mean the pinned one
+        # `hooks/checks` runs `cargo +nightly fmt`, which resolves a toolchain
+        # by that exact name, and rustup will not let a dated toolchain be
+        # linked under a reserved channel name. Pointing the channel's
+        # directory at the dated one is what makes the two agree. The version
+        # is printed so a run says which rustfmt actually judged the tree.
+        run: |
+          cd ~/.rustup/toolchains
+          ln -sfn nightly-2026-08-23-x86_64-unknown-linux-gnu nightly-x86_64-unknown-linux-gnu
+          cargo +nightly fmt --version
+
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: check
@@ -109,9 +120,38 @@ jobs:
         # `meson.build` asks for these by name and fails configure without
         # them; `grass` is the Rust SASS compiler it prefers over `sass`.
         run: |
-          python3 -m pip install --upgrade --break-system-packages meson ninja || python3 -m pip install --upgrade meson ninja
-          cargo install --locked grass
+          echo "--- what the image already has ---"
+          for tool in gcc cc ld meson ninja sass sassc grass blueprint-compiler pkg-config python3 pip3 dnf apt-get; do
+            echo "  $tool -> $(command -v "$tool" || echo MISSING)"
+          done
+
+          echo "--- a C compiler, which cargo needs for any build script ---"
+          if ! command -v cc >/dev/null; then
+            if command -v gcc >/dev/null; then
+              ln -sf "$(command -v gcc)" /usr/local/bin/cc
+            elif command -v dnf >/dev/null; then
+              dnf install -y gcc
+            elif command -v apt-get >/dev/null; then
+              apt-get update && apt-get install -y gcc
+            fi
+          fi
+          command -v cc || echo "::error::no C compiler in the image"
+
+          echo "--- meson and ninja ---"
+          command -v meson >/dev/null || python3 -m pip install --break-system-packages meson ninja || python3 -m pip install meson ninja
+
+          echo "--- a SASS compiler, which data/resources/meson.build requires ---"
+          if ! command -v sass >/dev/null && ! command -v grass >/dev/null; then
+            # The prebuilt dart-sass, rather than building grass from source:
+            # this step runs before it is known that cargo can compile at all.
+            curl -fsSL -o /tmp/sass.tar.gz https://github.com/sass/dart-sass/releases/download/1.83.4/dart-sass-1.83.4-linux-x64.tar.gz
+            tar -xzf /tmp/sass.tar.gz -C /opt
+            ln -sf /opt/dart-sass/sass /usr/local/bin/sass
+          fi
+
+          echo "--- versions ---"
           meson --version
+          sass --version || grass --version
           blueprint-compiler --version || echo "::warning::no blueprint-compiler in the image"
 
       - name: Configure
