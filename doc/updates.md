@@ -194,10 +194,27 @@ variant falls back to the debug key — and produces something installable that
 simply cannot upgrade a released copy.
 
 **The Mac identity** is a second Developer ID Application certificate under
-team `VLC2KZKNBH`, issued from a CSR generated off the Mac because the
-certificate already on it is Xcode's cloud-managed kind and cannot be exported.
-The team is what an installed copy compares, not the certificate, so a second
-one under the same team updates silently.
+team `VLC2KZKNBH`, issued 11 September 2026 from a CSR generated off the Mac
+because the certificate already on it is Xcode's cloud-managed kind and cannot
+be exported. The team is what an installed copy compares, not the certificate,
+so a second one under the same team updates silently. It expires in September
+2031.
+
+Notarizing needs a credential of its own, and `sign-notarize.sh` takes either:
+an App Store Connect team API key, or an app-specific password from
+appleid.apple.com. **Neither has anything to do with the App Store.**
+Notarization is the other half of Developer ID — the arrangement for software
+distributed outside the store — and involves no listing, no review and no app
+record. The name of the first credential is the only thing suggesting
+otherwise. Commune could not be listed in any case: it is GPL-3 with many
+copyright holders, which the store's terms do not permit.
+
+Notarizing is also skippable, with `ALLOW_UNNOTARIZED=1`, and the consequence
+is narrower than it looks. The updater extracts the tarball itself, so what it
+installs is never quarantined and Gatekeeper never asks. What breaks is the
+_first_ install by somebody who downloads the tarball in a browser and unpacks
+it in Finder: that copy is refused on launch. Shipping un-notarized is
+therefore a decision about new users, not about updates.
 
 ## Continuous integration
 

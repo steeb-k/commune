@@ -35,9 +35,19 @@
 #                         'Developer ID Application: Someone (TEAMID)'.
 #   CERTIFICATE_P12       The certificate and its key, base64 of a .p12.
 #   CERTIFICATE_PASSWORD  The .p12's password.
-#   NOTARY_ISSUER_ID      App Store Connect API issuer UUID.
+#
+# Then either set, for the notary service:
+#
+#   NOTARY_KEY            The .p8 private key contents.
 #   NOTARY_KEY_ID         App Store Connect API key id.
-#   NOTARY_KEY            The .p8 private key's contents.
+#   NOTARY_ISSUER_ID      App Store Connect API issuer UUID.
+#
+#   NOTARY_PASSWORD       An app-specific password from appleid.apple.com.
+#   NOTARY_APPLE_ID       The Apple ID it belongs to.
+#   NOTARY_TEAM_ID        The team, e.g. VLC2KZKNBH.
+#
+# Or ALLOW_UNNOTARIZED=1 to sign without notarizing, which the updater can
+# install and a browser download cannot.
 
 set -euo pipefail
 
@@ -51,10 +61,40 @@ die() {
 [ -n "$bundle" ] || die "usage: sign-notarize.sh path/to/Commune.app"
 [ -d "$bundle" ] || die "not a bundle: $bundle"
 
-for required in CODESIGN_IDENTITY CERTIFICATE_P12 CERTIFICATE_PASSWORD \
-                NOTARY_ISSUER_ID NOTARY_KEY_ID NOTARY_KEY; do
+for required in CODESIGN_IDENTITY CERTIFICATE_P12 CERTIFICATE_PASSWORD; do
     [ -n "${!required:-}" ] || die "$required is not set"
 done
+
+# How to authenticate to the notary service, or whether to at all.
+#
+# Notarization is not the App Store. It is the other half of Developer ID —
+# the arrangement Apple provides for software distributed outside the store —
+# and it involves no listing, no review and no app record. Worth stating
+# plainly because the credential is called an "App Store Connect API key",
+# and this project could not go in the store in any case: it is GPL-3 with
+# many copyright holders, which the store terms do not permit.
+#
+# Two ways in, and for this purpose neither is better than the other:
+#
+#   * An App Store Connect team API key — a `.p8`, a key id, an issuer id.
+#     Creating one needs a role on the developer account.
+#   * An app-specific password from appleid.apple.com, with the Apple ID and
+#     the team id. No portal, no roles.
+if [ -n "${NOTARY_KEY:-}" ]; then
+    notarize=key
+    for required in NOTARY_ISSUER_ID NOTARY_KEY_ID; do
+        [ -n "${!required:-}" ] || die "$required is not set, and NOTARY_KEY is"
+    done
+elif [ -n "${NOTARY_PASSWORD:-}" ]; then
+    notarize=password
+    for required in NOTARY_APPLE_ID NOTARY_TEAM_ID; do
+        [ -n "${!required:-}" ] || die "$required is not set, and NOTARY_PASSWORD is"
+    done
+elif [ "${ALLOW_UNNOTARIZED:-0}" = "1" ]; then
+    notarize=no
+else
+    die "no notary credentials: set NOTARY_KEY or NOTARY_PASSWORD, or ALLOW_UNNOTARIZED=1"
+fi
 
 work="$(mktemp -d)"
 keychain="$work/build.keychain-db"
@@ -113,16 +153,35 @@ codesign --force --timestamp --options runtime \
 
 codesign --verify --deep --strict --verbose=2 "$bundle"
 
+if [ "$notarize" = "no" ]; then
+    # Deliberate, and worth saying loudly. A signed but un-notarized build
+    # still installs through the updater, which extracts the tarball itself
+    # and so never sets the quarantine attribute — but a person who downloads
+    # the same tarball in a browser and unpacks it in Finder is refused on
+    # first launch, with no way forward that does not involve System Settings.
+    printf 'sign-notarize: WARNING: %s is signed but NOT notarized.\n' "$bundle" >&2
+    printf 'sign-notarize: the updater can install it; a browser download cannot.\n' >&2
+    exit 0
+fi
+
 # Notarization takes a zip, not a directory. `ditto -c -k` is the only
 # archiver Apple documents for this.
-printf '%s' "$NOTARY_KEY" > "$work/notary.p8"
 ditto -c -k --keepParent "$bundle" "$work/notarize.zip"
 
-xcrun notarytool submit "$work/notarize.zip" \
-    --key "$work/notary.p8" \
-    --key-id "$NOTARY_KEY_ID" \
-    --issuer "$NOTARY_ISSUER_ID" \
-    --wait
+if [ "$notarize" = "key" ]; then
+    printf '%s' "$NOTARY_KEY" > "$work/notary.p8"
+    xcrun notarytool submit "$work/notarize.zip" \
+        --key "$work/notary.p8" \
+        --key-id "$NOTARY_KEY_ID" \
+        --issuer "$NOTARY_ISSUER_ID" \
+        --wait
+else
+    xcrun notarytool submit "$work/notarize.zip" \
+        --apple-id "$NOTARY_APPLE_ID" \
+        --password "$NOTARY_PASSWORD" \
+        --team-id "$NOTARY_TEAM_ID" \
+        --wait
+fi
 
 # On the bundle, so that the ticket survives being put in a tarball.
 xcrun stapler staple "$bundle"
