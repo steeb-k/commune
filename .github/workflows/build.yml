@@ -41,8 +41,105 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  android:
+    if: >-
+      !cancelled()
+      && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' android '))
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: android
+
+      - name: Install cargo-ndk
+        run: cargo install --locked cargo-ndk
+
+      - name: Build the core for the device
+        # Builds both ABIs; the release variant packages only arm64-v8a, so
+        # the emulator half is wasted work rather than a wrong artifact.
+        run: cd android-kotlin && ./build-core.sh --release
+
+      - name: Write the release keystore
+        # The key that decides whether an APK can upgrade an installed one.
+        # Without it the build still succeeds and signs with the debug key,
+        # which is the right answer for a fork or a pull request: it produces
+        # something installable that simply cannot upgrade a released copy.
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::No release keystore; this APK is debug-signed and cannot upgrade a released install."
+            exit 0
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > android-kotlin/commune-release.jks
+          {
+            echo "storeFile=commune-release.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=commune"
+            echo "keyPassword=$KEYSTORE_PASSWORD"
+          } > android-kotlin/keystore.properties
+
+      - name: Build the APK
+        run: cd android-kotlin && ./gradlew assembleRelease
+
+      - name: Name it after the release
+        run: |
+          version="$(sh build-aux/ci/project-version.sh)"
+          mkdir -p dist
+          cp android-kotlin/app/build/outputs/apk/release/app-release.apk "dist/commune-$version-arm64-v8a.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: dist/*.apk
+          if-no-files-found: error
+
+  flatpak:
+    if: >-
+      !cancelled()
+      && !contains(needs.*.result, 'failure')
+      && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' flatpak '))
+    needs: [android]
+    name: Flatpak bundle
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/gnome_infrastructure/gnome-runtime-images:gnome-50
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: io.github.steeb_k.Commune.flatpak
+          manifest-path: ${{ inputs.meson-profile == 'default' && 'build-aux/io.github.steeb_k.Commune.json' || 'build-aux/io.github.steeb_k.Commune.Devel.json' }}
+          cache-key: flatpak-${{ hashFiles('build-aux/*.json') }}
+
   windows:
-    if: inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' windows ')
+    if: >-
+      !cancelled()
+      && !contains(needs.*.result, 'failure')
+      && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' windows '))
+    needs: [flatpak]
     name: Windows installer
     runs-on: windows-latest
     # Not a gate, a subject. A federated credential cannot have a wildcard
@@ -186,7 +283,11 @@ jobs:
           if-no-files-found: error
 
   macos-half:
-    if: inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' macos ')
+    if: >-
+      !cancelled()
+      && !contains(needs.*.result, 'failure')
+      && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' macos '))
+    needs: [windows]
     name: macOS ${{ matrix.arch }} bundle
     strategy:
       fail-fast: false
@@ -283,7 +384,12 @@ jobs:
           if-no-files-found: error
 
   macos:
-    if: inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' macos ')
+    if: >-
+      !cancelled()
+      && !contains(needs.*.result, 'failure')
+      && needs.macos-half.result == 'success'
+      && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' macos '))
+    needs: [macos-half]
     name: macOS universal bundle
     needs: macos-half
     runs-on: macos-15
@@ -347,90 +453,3 @@ jobs:
           name: macos
           path: dist/*.tar.gz
           if-no-files-found: error
-
-  android:
-    if: inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' android ')
-    name: Android APK
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android,x86_64-linux-android
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: android
-
-      - name: Install cargo-ndk
-        run: cargo install --locked cargo-ndk
-
-      - name: Build the core for the device
-        # Builds both ABIs; the release variant packages only arm64-v8a, so
-        # the emulator half is wasted work rather than a wrong artifact.
-        run: cd android-kotlin && ./build-core.sh --release
-
-      - name: Write the release keystore
-        # The key that decides whether an APK can upgrade an installed one.
-        # Without it the build still succeeds and signs with the debug key,
-        # which is the right answer for a fork or a pull request: it produces
-        # something installable that simply cannot upgrade a released copy.
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-        run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::warning::No release keystore; this APK is debug-signed and cannot upgrade a released install."
-            exit 0
-          fi
-          printf '%s' "$KEYSTORE_BASE64" | base64 -d > android-kotlin/commune-release.jks
-          {
-            echo "storeFile=commune-release.jks"
-            echo "storePassword=$KEYSTORE_PASSWORD"
-            echo "keyAlias=commune"
-            echo "keyPassword=$KEYSTORE_PASSWORD"
-          } > android-kotlin/keystore.properties
-
-      - name: Build the APK
-        run: cd android-kotlin && ./gradlew assembleRelease
-
-      - name: Name it after the release
-        run: |
-          version="$(sh build-aux/ci/project-version.sh)"
-          mkdir -p dist
-          cp android-kotlin/app/build/outputs/apk/release/app-release.apk "dist/commune-$version-arm64-v8a.apk"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android
-          path: dist/*.apk
-          if-no-files-found: error
-
-  flatpak:
-    if: inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' flatpak ')
-    name: Flatpak bundle
-    runs-on: ubuntu-latest
-    container:
-      image: quay.io/gnome_infrastructure/gnome-runtime-images:gnome-50
-      options: --privileged
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Trust the checkout
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
-      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
-        with:
-          bundle: io.github.steeb_k.Commune.flatpak
-          manifest-path: ${{ inputs.meson-profile == 'default' && 'build-aux/io.github.steeb_k.Commune.json' || 'build-aux/io.github.steeb_k.Commune.Devel.json' }}
-          cache-key: flatpak-${{ hashFiles('build-aux/*.json') }}
