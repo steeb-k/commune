@@ -20,6 +20,7 @@ numbered decisions; what remains open is settled when a milestone reaches it.
 * [Linux](#linux)
 * [The user interface](#the-user-interface)
 * [Continuous integration](#continuous-integration)
+* [Where this got to](#where-this-got-to)
 * [Milestones](#milestones)
 * [Risks and open questions](#risks-and-open-questions)
 * [Critical files](#critical-files)
@@ -341,6 +342,44 @@ Cost: the Windows job is the long one (dependency tree plus the 11-minute app cr
 `doc/windows.md:236-249`); `Swatinem/rust-cache` on `CARGO_HOME` and the meson build dir cuts
 the second run to the app crate alone. The macOS runner's memory fits with the codegen-units
 override.
+
+## Where this got to
+
+All six milestones landed on 11 September 2026, in five commits. What exists
+is the ledger's job to describe — [`doc/updates.md`](updates.md) — and this
+section only says how far the plan got and what it changed on the way:
+
+* **M0-M4 are done and verified** as far as this machine allows. The core has
+  27 tests, the Windows helper 3; the Android APK builds, carries the derived
+  version and is signed by the new release key; the GTK application compiles
+  clean under pedantic clippy on the MSYS2 toolchain.
+* **M5 is written and unrun.** Every workflow parses and every script it calls
+  passes `bash -n`, but no tag has been pushed. The first release candidate is
+  the test.
+* **The macOS half has never executed.** `lipo-bundles.sh`, `sign-notarize.sh`
+  and `macos_update.rs` were all written without a Mac to hand.
+
+Three of the questions this file left open were settled by building it:
+
+1. `download` streams by hand with `reqwest` rather than reusing the SDK's
+   media helper, which is bound to Matrix content repositories.
+2. macOS extracts with `/usr/bin/tar` rather than the `tar` crate. It is on
+   every Mac, it is what wrote the archive, and a bundle whose signature has
+   to survive the round trip is not where to discover that a reimplementation
+   handles some corner of the format differently.
+3. The About dialog gained nothing. Release notes for the _current_ version
+   would need the metainfo parsed at runtime; the feed already carries a notes
+   URL for the _next_ one, which is the one worth reading, so it is a link on
+   the update row instead.
+
+Two things the plan did not anticipate:
+
+* The version had to reach the core from the embedder. Nothing compiled in can
+  know the commit count, so `CoreConfig` grew `build_number` and Meson, Gradle
+  and `bundle.sh` now all take it from the same `git rev-list --count HEAD`.
+* `commune-core` had a version of its own (`0.1.0`) while the application
+  shipped `1.0.0-rc1`. Since the core is what reports the running version to
+  the feed, the two are now one number, and `RELEASING.md` says to bump both.
 
 ## Milestones
 

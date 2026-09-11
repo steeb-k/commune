@@ -8,6 +8,7 @@ it was built; this file records what actually exists, what is stubbed, and what 
 <!-- toc -->
 * [State today](#state-today)
 * [The GTK environment](#the-gtk-environment)
+* [Updating an installed copy](#updating-an-installed-copy)
 * [Setting the environment up](#setting-the-environment-up)
 * [Building](#building)
 * [Packaging](#packaging)
@@ -123,6 +124,31 @@ Two things the probe looks for and did **not** find, both expected:
   has no backend — the same hole macOS has, filled by the same `GstMediaStream`.
 * **No `Adwaita Sans` or `Adwaita Mono`.** libadwaita asks for them and Pango falls back with
   `couldn't load font … expect ugly output` on stderr. Cosmetic today; a bundle should carry them.
+
+## Updating an installed copy
+
+An installed Commune replaces itself with the same `.msi` a person would
+download and double-click. Nothing in `commune.wxs` had to change for it: the
+package is already `perUser`, so there is no elevation to ask for, and its
+`UpgradeCode` has not moved since the first release, so `MajorUpgrade` does
+the work.
+
+What the application adds is `src/utils/windows_update.rs`: it checks the
+package's Authenticode signature with `WinVerifyTrust`, writes a small `.cmd`
+beside the download, starts it detached and quits. The script waits for the
+process to be gone — `msiexec` cannot replace a running executable — then
+installs with `/passive` and starts whatever is at the installed path
+afterwards. The updater only offers itself at all when the executable is under
+`%LOCALAPPDATA%\Programs`; from a build directory or an unpacked `.zip` an
+installer would add a second copy rather than replace this one.
+
+The release `.msi` is built by `.github/workflows/build.yml` now, in an MSYS2
+runner set up from the package list below. MSYS2 is a rolling release and the
+runner takes the newest of everything, so the job uploads `probe-env.txt` as
+an artifact: that table is the record of what a given release was actually
+built against.
+
+[`doc/updates.md`](updates.md) is the ledger for the rest of it.
 
 ## Setting the environment up
 

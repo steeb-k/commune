@@ -16,9 +16,10 @@ Which upstream tree a build came from is [`doc/fork.md`](doc/fork.md)'s job, not
   are stale, do the rebase or the security cherry-picks [`doc/fork.md`](doc/fork.md) describes
   first.
 * Run the full sweep on the tree being released: `meson install -C _build`,
-  `cargo clippy --all-targets`, `cargo test -j 2 --bin commune`, and `hooks/checks-bin`. There is
-  no CI on the GitHub repository — the inherited `.gitlab-ci.yml` never runs there — so these
-  local checks are the whole gate.
+  `cargo clippy --all-targets`, `cargo test -j 2 --bin commune`, and `hooks/checks-bin`.
+  `.github/workflows/check.yml` runs the same `hooks/checks` binary on every push, so this is
+  a second opinion rather than the whole gate it used to be — the inherited `.gitlab-ci.yml`
+  still never runs anywhere.
 * Check that `hooks/doc-freshness` reports the pages level with the code, and that
   [`doc/eyeball-tests.md`](doc/eyeball-tests.md) has no unstruck entries for anything the release
   ships.
@@ -29,9 +30,11 @@ Which upstream tree a build came from is [`doc/fork.md`](doc/fork.md)'s job, not
 
 1. Make a single release commit, described [below](#release-commit-content).
 2. [Create a tag](#creating-a-tag) on that commit and push it.
-3. Create a release on GitHub for the tag, and attach the
-   [macOS and Windows artefacts](#macos-and-windows) to it.
-4. [Publish the Flatpak](#publishing-the-flatpak).
+3. Wait. `.github/workflows/release.yml` builds every platform, creates the GitHub release,
+   attaches the artefacts, and writes the [update feed](doc/updates.md) that tells installed
+   copies the release exists. Nothing else is needed for the desktop and Android builds.
+4. [Publish the Flatpak](#publishing-the-flatpak), which is still by hand because Flathub
+   takes a pull request rather than an artefact.
 
 ## Release commit content
 
@@ -41,7 +44,11 @@ Which upstream tree a build came from is [`doc/fork.md`](doc/fork.md)'s job, not
   * Change the `major_version` and `pre_release_version` below it. For stable versions,
     `pre_release_version` should be an empty string.
 * Update `/Cargo.toml`: change the `version`, using a semver format, and let a build carry the
-  bump into `Cargo.lock`.
+  bump into `Cargo.lock`. This is the version the update feed compares and every artefact is
+  named after, and `commune-core/Cargo.toml` carries the same one — it is the application's
+  version, not a version of its own, so bump both. Nothing else needs touching: Android reads
+  `versionName` from here and computes `versionCode` from the commit count, which is also what
+  Meson and `bundle.sh` use.
 * Update `/data/io.github.steeb_k.Commune.metainfo.xml.in.in`:
   * Add a new `release` entry at the top of the `releases`:
     * Its `version` should use the `major_version~pre_release_version` format.
@@ -69,6 +76,11 @@ Tags carry a `v` prefix — `v1.rc1` — which is the form the pinned Flatpak so
 [`doc/flatpak.md`](doc/flatpak.md) expects. Each release candidate gets its own tag; a tag is
 never moved or reused, because GitHub releases and anyone who fetched it keep the old commit
 silently.
+
+The one exception is `nightly`, which `.github/workflows/nightly.yml` deletes and recreates on
+every push to `main`. It is not a release: it is a pointer to "the newest build of `main`",
+which is the only thing a nightly channel can mean, and the builds behind it carry the Devel
+application id so they install beside a stable Commune rather than over it.
 
 Signing the tag is not mandatory but is good practice:
 
@@ -113,7 +125,14 @@ are listed in [`doc/flatpak.md`](doc/flatpak.md).
 More details are in the Flathub docs about [maintenance](https://docs.flathub.org/docs/for-app-authors/maintenance)
 and [updates](https://docs.flathub.org/docs/for-app-authors/updates).
 
-## macOS and Windows
+## Building the artefacts by hand
+
+The release workflow does all of this. It is here for when CI is unavailable, or when
+something it produced needs reproducing locally — and note that a hand-built artefact is not
+in the feed, so nobody's installation will find it. [`doc/updates.md`](doc/updates.md) is the
+ledger for the feed itself.
+
+### macOS and Windows
 
 Both ports package from a build directory configured as `-Dprofile=default`, which is what names
 the bundle `Commune` rather than `Commune Devel` and gives it the plain icon. Each platform's

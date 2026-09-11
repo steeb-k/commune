@@ -35,6 +35,32 @@ ANDROID_HOME=$HOME/android/sdk ./gradlew assembleDebug
 `build-core.sh --all` does steps 1 and 2 for both ABIs in one go, which is
 what Track 3's per-commit gate runs.
 
+### Signing, and why it matters more now
+
+The release variant signs with `keystore.properties` and the keystore it names
+when both are present, and falls back to the debug key when they are not — so
+a checkout without them still builds something installable, it just cannot
+upgrade a released copy.
+
+That fallback is the whole point. Android replaces an installed application
+only with one signed by the same key, and the in-app updater rests entirely on
+the system enforcing that. The keystore is therefore the one file here that
+cannot be regenerated: losing it means every installation has to be
+uninstalled by hand before it can be replaced. It is git-ignored, it is in the
+`ANDROID_KEYSTORE_BASE64` repository secret, and it should be backed up
+offline as well.
+
+The first APK signed with it cannot install over the debug-keyed copies that
+came before, including the one on the development Pixel — that uninstall is
+paid once per device and costs that device's adopted session.
+
+`versionName` is read from the workspace `Cargo.toml` and `versionCode` is
+`git rev-list --count HEAD`, so neither is typed here any more. They used to
+be, and had drifted: this app called itself 0.1.0 while the desktop shipped
+1.0.0-rc1.
+
+See [`../doc/updates.md`](../doc/updates.md) for the updater itself.
+
 ### Why there is a wrapper
 
 `gradlew` and `gradle/wrapper/` are committed, `gradle-wrapper.jar`
