@@ -254,12 +254,17 @@ job runs when the one before it succeeded _or was skipped_, which is what keeps
 the platform picker working; a job whose predecessor actually failed does not
 run at all.
 
-**No build embeds the KLIPY key.** Nothing in CI passes `-Dklipy-api-key` or
-`communeKlipyApiKey`, so `klipy::is_available()` is false in every published
-build and the GIF tab is not drawn. That is deliberate and not an oversight: a
-client-side key compiled into a distributed binary is extractable with
-`strings`, so shipping one in a public release is publishing it. The feature
-works in a local build by whoever holds a key.
+**Every build embeds the KLIPY key**, from the `KLIPY_API_KEY` secret: a Meson
+option on the desktop platforms, a `local.properties` line on Android, and an
+injected `config-opts` entry for Flatpak. The tracked manifest stays clean, so
+the key is in the repository nowhere — but it _is_ in the binaries, and a
+client-side key compiled into a distributed binary comes back out with
+`strings`. Shipping it publicly is therefore publishing it, which was the
+decision taken on 11 September 2026 with that understood. If the quota is
+burned, the GIF search fails with a toast and nothing else breaks.
+
+The one asymmetry: a Flathub build uses the tracked manifest, which has no key,
+so a Flatpak installed from Flathub has no GIF search.
 
 `release.yml` on a `v*` tag. `nightly.yml` on a press, with a platform picker,
 plus one scheduled build a week — deliberately **not** on every push, because
