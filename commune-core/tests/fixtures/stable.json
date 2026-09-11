@@ -1,0 +1,19 @@
+{
+  "channel": "stable",
+  "version": "1.0.0",
+  "build": 4021,
+  "published": "2026-09-11T00:00:00Z",
+  "notes_url": "https://github.com/steeb-k/commune/releases/tag/v1",
+  "assets": {
+    "windows-x86_64-msi": {
+      "url": "https://github.com/steeb-k/commune/releases/download/v1/Commune-1.0.0-x64.msi",
+      "sha256": "a90dc50bb91c6476f59d649ad770a3ba696eb57e31f905f96cca985ea72acbab",
+      "size": 12
+    },
+    "macos-universal-tar": {
+      "url": "https://github.com/steeb-k/commune/releases/download/v1/commune-1-universal.tar.gz",
+      "sha256": "1bd0ca50eedf8bbb85d4106c8b61acb32349b73ef0342114b2ee61ca2090d7b1",
+      "size": 16
+    }
+  }
+}

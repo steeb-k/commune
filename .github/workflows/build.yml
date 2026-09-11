@@ -1,0 +1,387 @@
+# Every platform's artifact, built once and reused.
+#
+# Called by `release.yml` for a tag and by `nightly.yml` for a push to `main`.
+# The only difference between the two is the profile, which is why this is one
+# file taking it as an input rather than two that drift apart.
+#
+# See `doc/updates-plan.md` for what these artifacts are for: each is what an
+# installed Commune downloads to replace itself, so their names and their
+# signing matter as much as the builds do.
+name: build
+
+on:
+  workflow_call:
+    inputs:
+      meson-profile:
+        description: 'The Meson profile: default for a release, development for a nightly.'
+        required: true
+        type: string
+      windows-profile:
+        description: 'The MSI profile: Stable or Devel. It picks the UpgradeCode, so it decides what an installed copy upgrades.'
+        required: true
+        type: string
+      sign:
+        description: 'Whether to sign. Off for a pull request, which cannot reach the secrets anyway.'
+        required: false
+        default: true
+        type: boolean
+
+# `azure/login` asks GitHub for an OIDC token, which is what replaces a stored
+# client secret for the Windows signing step.
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    name: Windows installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # The build number is `git rev-list --count HEAD`, and a shallow
+          # clone answers that wrongly.
+          fetch-depth: 0
+
+      - name: Allow long paths
+        # matrix-rust-sdk carries test fixtures whose paths pass 260
+        # characters, and git will not check them out without this.
+        shell: pwsh
+        run: |
+          Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name LongPathsEnabled -Value 1
+          git config --global core.longpaths true
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          # The list from doc/windows.md. MSYS2 is a rolling release with no
+          # pinning mechanism, which is a real risk for a release build: GTK
+          # can move underneath the port without a commit changing here. The
+          # probe table uploaded below is the audit trail for what a given
+          # build actually used.
+          install: >-
+            mingw-w64-ucrt-x86_64-gtk4 mingw-w64-ucrt-x86_64-libadwaita
+            mingw-w64-ucrt-x86_64-gtksourceview5 mingw-w64-ucrt-x86_64-libshumate
+            mingw-w64-ucrt-x86_64-gstreamer mingw-w64-ucrt-x86_64-gst-plugins-base
+            mingw-w64-ucrt-x86_64-gst-plugins-good mingw-w64-ucrt-x86_64-gst-plugins-bad
+            mingw-w64-ucrt-x86_64-gst-plugins-ugly mingw-w64-ucrt-x86_64-gst-plugins-rs
+            mingw-w64-ucrt-x86_64-libnice mingw-w64-ucrt-x86_64-glib-networking
+            mingw-w64-ucrt-x86_64-libsoup3 mingw-w64-ucrt-x86_64-libwebp
+            mingw-w64-ucrt-x86_64-sqlite3 mingw-w64-ucrt-x86_64-librsvg
+            mingw-w64-ucrt-x86_64-adwaita-icon-theme
+            mingw-w64-ucrt-x86_64-blueprint-compiler mingw-w64-ucrt-x86_64-meson
+            mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-gettext-tools
+            mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-rust
+            mingw-w64-ucrt-x86_64-ntldd mingw-w64-ucrt-x86_64-icoutils
+            git
+
+      - name: Cache the Cargo registry and the build
+        uses: actions/cache@v4
+        with:
+          # `CARGO_HOME` stays the default one on purpose: doc/windows.md
+          # records that rooting it inside the build directory pushes the
+          # SDK's test fixtures past the path limit.
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: windows-${{ inputs.windows-profile }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: windows-${{ inputs.windows-profile }}-
+
+      - name: Install grass
+        # The stylesheet compiler: a cargo binary rather than an MSYS2
+        # package. It lands in %USERPROFILE%\.cargo\bin, which must come
+        # after /ucrt64/bin so the MSVC rustup shims there never win.
+        shell: msys2 {0}
+        run: |
+          export PATH="$PATH:$(cygpath -u "$USERPROFILE")/.cargo/bin"
+          cargo install --locked grass
+
+      - name: Record what this build used
+        shell: msys2 {0}
+        run: sh build-aux/windows/probe-env.sh | tee probe-env.txt
+
+      - name: Build the bundle
+        shell: msys2 {0}
+        run: |
+          export PATH="$PATH:$(cygpath -u "$USERPROFILE")/.cargo/bin"
+          meson setup _build -Dprofile=${{ inputs.meson-profile }}
+          meson compile -C _build windows-bundle
+
+      - name: Install the WiX toolset
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.*
+          wix extension add --global WixToolset.UI.wixext/5.0.0
+
+      - name: Sign in to Azure
+        if: inputs.sign
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install the Trusted Signing client
+        if: inputs.sign
+        shell: pwsh
+        run: Install-Module -Name TrustedSigning -Force -AllowClobber -Scope CurrentUser
+
+      - name: Build the installer
+        shell: pwsh
+        env:
+          # The metadata beside the repository names only AzureCliCredential,
+          # which is right for a laptop with an `az login` session and useless
+          # on a runner. The CI copy leaves the credential type OIDC provides.
+          ARTIFACT_SIGNING_METADATA: ${{ inputs.sign && 'build-aux/windows/artifact-signing-metadata.ci.json' || '' }}
+        run: |
+          $name = if ('${{ inputs.windows-profile }}' -eq 'Stable') { 'Commune' } else { 'Commune ${{ inputs.windows-profile }}' }
+          pwsh -File build-aux\windows\build-msi.ps1 -BundleDir "_build\windows\$name" -Profile ${{ inputs.windows-profile }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            _build/windows/*.msi
+            probe-env.txt
+          if-no-files-found: error
+
+  macos-half:
+    name: macOS ${{ matrix.arch }} bundle
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+            conda-platform: osx-arm64
+            conda-env: arm64
+            conda-flags: ''
+          - arch: x86_64
+            # GitHub retires the Intel runner in autumn 2027. When it goes
+            # this half either cross-builds under Rosetta or the universal
+            # binary becomes an arm64 one; the feed's asset key does not
+            # change either way.
+            runner: macos-15-intel
+            conda-platform: osx-64
+            conda-env: x86
+            conda-flags: '--universal'
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache the conda environment and the from-source libraries
+        uses: actions/cache@v4
+        with:
+          # The three from-source projects — libsrtp2, libnice and a rebuilt
+          # gst-plugins-bad — are the slow part of the setup and are pinned by
+          # version, so they are identical on every run until a pin changes.
+          path: .conda-gtk
+          key: conda-${{ matrix.arch }}-${{ hashFiles('build-aux/macos/setup-conda-macos.sh') }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: macos-${{ matrix.arch }}
+
+      - name: Install micromamba
+        run: |
+          mkdir -p "$PWD/bin"
+          curl -Ls "https://micro.mamba.pm/api/micromamba/${{ matrix.conda-platform }}/latest" | tar -xvjO bin/micromamba > "$PWD/bin/micromamba"
+          chmod +x "$PWD/bin/micromamba"
+          echo "COMMUNE_CONDA_BIN=$PWD/bin/micromamba" >> "$GITHUB_ENV"
+
+      - name: Build the environment
+        # `--universal` on the Intel half because the script's single-env path
+        # always builds the osx-arm64 one; the x86 env only exists under that
+        # flag. It costs that runner the from-source trio twice, which the
+        # cache above pays for only once.
+        run: sh build-aux/macos/setup-conda-macos.sh ${{ matrix.conda-flags }}
+
+      - name: Build the bundle
+        env:
+          # The release profile wants about 11 GB on its own with debug info
+          # on, and a runner does not have it. Dropping the debug info and
+          # letting codegen parallelise is the documented way out, set here
+          # rather than in Cargo.toml so that Linux and Flatpak keep their
+          # backtraces. See doc/macos.md.
+          CARGO_PROFILE_RELEASE_DEBUG: 'false'
+          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: '16'
+        run: |
+          env_dir="$PWD/.conda-gtk/${{ matrix.conda-env }}"
+          # PKG_CONFIG_LIBDIR matters as much as PKG_CONFIG_PATH: it replaces
+          # the default search path, so nothing leaks in from a Homebrew
+          # prefix and quietly turns this into a Rosetta binary.
+          export PKG_CONFIG_PATH="$env_dir/lib/pkgconfig"
+          export PKG_CONFIG_LIBDIR="$env_dir/lib/pkgconfig"
+          export PATH="$env_dir/bin:$PATH"
+          export GI_TYPELIB_PATH="$env_dir/lib/girepository-1.0"
+          export XDG_DATA_DIRS="$env_dir/share"
+          export MACOSX_DEPLOYMENT_TARGET=11.0
+          sh build-aux/macos/probe-env.sh || true
+          meson setup _build -Dprofile=${{ inputs.meson-profile }}
+          meson compile -C _build macos-bundle
+
+      - name: Record the deployment target
+        # The reason this bundle runs on macOS 11 is that conda-forge builds
+        # against an old SDK whatever machine is used. If this prints the
+        # runner's own OS version instead, something Homebrew-built has crept
+        # in — the mistake doc/macos.md records as having shipped once already
+        # in a sibling project.
+        run: |
+          for binary in _build/macos/*.app/Contents/MacOS/*; do
+            vtool -show-build "$binary" | grep -A2 minos || true
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: _build/macos/*.app
+          if-no-files-found: error
+
+  macos:
+    name: macOS universal bundle
+    needs: macos-half
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-arm64
+          path: halves/arm64
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-x86_64
+          path: halves/x86_64
+
+      - name: Merge the two halves
+        run: |
+          arm64_bundle="$(find halves/arm64 -maxdepth 2 -name '*.app' | head -1)"
+          x86_64_bundle="$(find halves/x86_64 -maxdepth 2 -name '*.app' | head -1)"
+          sh build-aux/macos/lipo-bundles.sh --arm64 "$arm64_bundle" --x86_64 "$x86_64_bundle" --output universal/Commune.app
+
+      - name: Sign, notarize and staple
+        # Signing happens after the merge, never before: a signature covers
+        # all of a binary's slices at once, so signing the halves and then
+        # merging them produces a bundle whose signature does not check out.
+        if: inputs.sign
+        env:
+          CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+          CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+        run: sh build-aux/macos/sign-notarize.sh universal/Commune.app
+
+      - name: Make the tarball
+        # A tarball rather than the disk image, because files a process
+        # extracts from one are never quarantined and a quarantined bundle is
+        # refused on first launch. This is what the updater downloads.
+        run: |
+          version="$(sh build-aux/ci/project-version.sh)"
+          mkdir -p dist
+          sh build-aux/macos/make-tarball.sh universal/Commune.app "dist/commune-$version-universal.tar.gz"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: android
+
+      - name: Install cargo-ndk
+        run: cargo install --locked cargo-ndk
+
+      - name: Build the core for the device
+        # Builds both ABIs; the release variant packages only arm64-v8a, so
+        # the emulator half is wasted work rather than a wrong artifact.
+        run: cd android-kotlin && ./build-core.sh --release
+
+      - name: Write the release keystore
+        # The key that decides whether an APK can upgrade an installed one.
+        # Without it the build still succeeds and signs with the debug key,
+        # which is the right answer for a fork or a pull request: it produces
+        # something installable that simply cannot upgrade a released copy.
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::No release keystore; this APK is debug-signed and cannot upgrade a released install."
+            exit 0
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > android-kotlin/commune-release.jks
+          {
+            echo "storeFile=commune-release.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=commune"
+            echo "keyPassword=$KEYSTORE_PASSWORD"
+          } > android-kotlin/keystore.properties
+
+      - name: Build the APK
+        run: cd android-kotlin && ./gradlew assembleRelease
+
+      - name: Name it after the release
+        run: |
+          version="$(sh build-aux/ci/project-version.sh)"
+          mkdir -p dist
+          cp android-kotlin/app/build/outputs/apk/release/app-release.apk "dist/commune-$version-arm64-v8a.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: dist/*.apk
+          if-no-files-found: error
+
+  flatpak:
+    name: Flatpak bundle
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/gnome_infrastructure/gnome-runtime-images:gnome-50
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: io.github.steeb_k.Commune.flatpak
+          manifest-path: ${{ inputs.meson-profile == 'default' && 'build-aux/io.github.steeb_k.Commune.json' || 'build-aux/io.github.steeb_k.Commune.Devel.json' }}
+          cache-key: flatpak-${{ hashFiles('build-aux/*.json') }}

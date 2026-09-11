@@ -1,0 +1,116 @@
+# The gate that used to be local only.
+#
+# `RELEASING.md` said, until this file existed, that the local checks were the
+# whole gate — there was no CI on the GitHub repository, and the inherited
+# `.gitlab-ci.yml` has never run there. This is that same gate, run on every
+# push: `hooks/checks` is the binary the pre-commit hook calls, so there is one
+# definition of what "clean" means rather than two that drift.
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A second push to the same branch makes the first one's answer irrelevant.
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  gate:
+    name: Style, lints and dependencies
+    runs-on: ubuntu-latest
+    # The GNOME SDK carries GTK 4, libadwaita and GStreamer at the versions
+    # `meson.build` asks for. Installing them from Ubuntu's archive would get
+    # versions too old to build against, which is the same reason the Flatpak
+    # manifests target a runtime rather than a distribution.
+    container:
+      image: quay.io/gnome_infrastructure/gnome-runtime-images:gnome-50
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # `hooks/doc-freshness` and the build number both ask git how many
+          # commits there are, and a shallow clone answers wrongly.
+          fetch-depth: 0
+
+      - name: Trust the checkout
+        # The container runs as a different user than the one that checked the
+        # tree out, and git refuses to touch a repository it thinks belongs to
+        # somebody else.
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Install the nightly rustfmt
+        # Only rustfmt, and only nightly: the project formats with unstable
+        # options, which is why `hooks/checks` invokes `cargo +nightly fmt`.
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: check
+
+      - name: Install the check tools
+        run: |
+          cargo install --locked cargo-deny cargo-machete cargo-sort typos-cli rumdl
+
+      - name: Build the gate
+        run: cargo build --release --manifest-path hooks/checks/Cargo.toml
+
+      - name: Run the gate
+        run: |
+          cp hooks/checks/target/release/checks hooks/checks-bin
+          hooks/checks-bin
+
+      - name: Widget templates against the Rust that builds them
+        run: hooks/template-checks
+
+      - name: Documentation freshness
+        # Warns rather than blocks, exactly as the pre-commit hook does: a
+        # documentation page that is one commit behind is worth saying out
+        # loud and not worth refusing a merge over.
+        continue-on-error: true
+        run: hooks/doc-freshness
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/gnome_infrastructure/gnome-runtime-images:gnome-50
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: test
+
+      - name: Configure
+        # A build directory is what generates `src/config.rs`, which the
+        # application crate will not compile without.
+        run: meson setup _build -Dprofile=development
+
+      - name: Test the core
+        run: cargo test -p commune-core
+
+      - name: Test the application
+        # `--bin commune` rather than the whole target set: the `#[gtk::test]`
+        # tests need a display, and this job has none.
+        run: cargo test -j 2 --bin commune
