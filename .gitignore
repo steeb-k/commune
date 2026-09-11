@@ -7,6 +7,12 @@ builddir/
 
 # Cargo
 target/
+# The MSYS2 toolchain's own build output. A test binary has to link
+# `sqlite3`, which the MSVC toolchain on this machine has no library for, so
+# the tests build under `x86_64-pc-windows-gnu` — and sharing one directory
+# between the two toolchains means each rebuilds the whole tree after the
+# other. See doc/windows.md.
+target-msys/
 
 # Supported build systems
 build-flatpak*/
