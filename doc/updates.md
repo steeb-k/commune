@@ -184,6 +184,12 @@ authorises a signature with an `az login` session; CI authorises it with an
 OIDC token, which is the whole difference between
 `artifact-signing-metadata.json` and `artifact-signing-metadata.ci.json`.
 
+Without `AZURE_CLIENT_ID` the Windows job still builds and still publishes —
+it just publishes a package the updater refuses, because `windows_update.rs`
+checks Authenticode before handing anything to `msiexec`. The run says so as a
+warning and in the job summary. That is the right failure: an installer nobody
+can auto-install beats quietly loosening what "signed" means.
+
 **The Android key** is `android-kotlin/commune-release.jks`, named by a
 git-ignored `keystore.properties` beside it, and base64 in the
 `ANDROID_KEYSTORE_BASE64` secret. It is the one file in this project that
@@ -272,5 +278,9 @@ Kept honest rather than hopeful:
   session.
 * **The `updates` branch does not exist yet**, so every check 404s, which the
   app reads as "no update" and says nothing about.
+* **The notary credential has never been exercised.** It is an app-specific
+  password, set 11 September 2026, and `notarytool` exists only on macOS — so
+  nothing on the development machine can test it. The first release build is
+  what proves it, which is an argument for making the first tag a candidate.
 * The Windows install path is covered by unit tests for the script it writes,
   but no MSI has actually been installed over another one by the updater.
