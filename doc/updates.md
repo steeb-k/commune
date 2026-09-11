@@ -246,8 +246,21 @@ bundle and MSI in MSYS2, two macOS bundles merged with `lipo` and then signed
 and notarized, the Android APK, the Flatpak bundle. It takes the profile as an
 input, which is the only thing that differs between a release and a nightly.
 
-`release.yml` on a `v*` tag, `nightly.yml` on a push to `main`. Both end by
-writing the feed. The nightly release is a rolling tag, which is the one
+`release.yml` on a `v*` tag. `nightly.yml` on a press, with a platform picker,
+plus one scheduled build a week — deliberately **not** on every push, because
+five platforms take the better part of two hours and most commits touch code
+three of them do not compile. Free minutes on a public repository make that
+affordable rather than useful.
+
+The press matters more than it looks: there is no Mac, so CI is the only way a
+macOS build gets made at all. Tying that to release tags alone would mean
+minting a permanent tag and bumping three version files every time somebody
+wanted to see a change on macOS, which is a worse loop than the one this
+replaced. A build with platforms deselected does not publish, because a
+manifest written from a partial build tells every other platform there is
+nothing to install.
+
+Both end by writing the feed. The nightly release is a rolling tag, which is the one
 exception to [`RELEASING.md`](../RELEASING.md)'s rule that a tag is never
 moved, and it says so there.
 
