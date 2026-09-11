@@ -16,7 +16,20 @@
 set -eu
 
 NDK_VERSION=${NDK_VERSION:-27.2.12479018}
-NDK_BIN="$HOME/android/sdk/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin"
+# Where the SDK lives. The default is the WSL build environment's layout,
+# which is what this has always assumed; a runner sets ANDROID_SDK_ROOT to
+# somewhere else entirely and would otherwise fail with a path nobody
+# recognises. The NDK version stays pinned either way, because the .so this
+# produces is shipped and ought to come out of the same toolchain wherever it
+# was built.
+ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$HOME/android/sdk}
+NDK_BIN="$ANDROID_SDK_ROOT/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin"
+
+if [ ! -d "$NDK_BIN" ]; then
+    echo "build-core: no NDK $NDK_VERSION under $ANDROID_SDK_ROOT" >&2
+    echo "build-core: set ANDROID_SDK_ROOT, or NDK_VERSION to one installed" >&2
+    exit 1
+fi
 API=29
 
 CORE_DIR="$(cd "$(dirname "$0")/../commune-core" && pwd)"

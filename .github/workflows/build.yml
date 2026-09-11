@@ -67,6 +67,15 @@ jobs:
 
       - name: Install cargo-ndk
         run: cargo install --locked cargo-ndk
+      - name: Install the pinned NDK
+        # The version build-core.sh pins, not whichever the runner image
+        # happens to carry: this .so is shipped, so it should come out of the
+        # same toolchain as a local build.
+        run: |
+          NDK_VERSION=$(grep '^NDK_VERSION=' android-kotlin/build-core.sh | cut -d- -f2 | tr -d '}')
+          echo "pinned NDK: $NDK_VERSION"
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION" > /dev/null
+
 
       - name: Build the core for the device
         # Builds both ABIs; the release variant packages only arm64-v8a, so
