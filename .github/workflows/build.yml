@@ -429,7 +429,7 @@ jobs:
     if: >-
       !cancelled()
       && !contains(needs.*.result, 'failure')
-      && needs.macos-half.result == 'success'
+      && needs['macos-half'].result == 'success'
       && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' macos '))
     needs: [macos-half]
     name: macOS universal bundle
