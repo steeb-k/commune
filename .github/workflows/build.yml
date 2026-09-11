@@ -94,6 +94,15 @@ jobs:
             echo "keyPassword=$KEYSTORE_PASSWORD"
           } > android-kotlin/keystore.properties
 
+      - name: Supply the KLIPY key
+        # Through local.properties, which build.gradle.kts already reads and
+        # .gitignore already covers — not `-P`, which would put the key in
+        # the process list for anything on the runner to read.
+        env:
+          KLIPY_API_KEY: ${{ secrets.KLIPY_API_KEY }}
+        run: |
+          echo "communeKlipyApiKey=$KLIPY_API_KEY" >> android-kotlin/local.properties
+
       - name: Build the APK
         run: cd android-kotlin && ./gradlew assembleRelease
 
@@ -127,6 +136,36 @@ jobs:
 
       - name: Trust the checkout
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Supply the KLIPY key
+        # The manifest cannot read a secret, and committing the key into it
+        # would put it in the repository — which is the thing that went
+        # wrong once already. Injected into the working copy instead, so the
+        # built Flatpak matches the other three platforms while the tracked
+        # manifest stays clean. A Flathub build, which uses the tracked
+        # manifest, therefore has no GIF search.
+        env:
+          KLIPY_API_KEY: ${{ secrets.KLIPY_API_KEY }}
+          MANIFEST: ${{ inputs.meson-profile == 'default' && 'build-aux/io.github.steeb_k.Commune.json' || 'build-aux/io.github.steeb_k.Commune.Devel.json' }}
+        run: |
+          python3 - "$MANIFEST" <<'EOF'
+          import json, os, sys
+          path = sys.argv[1]
+          key = os.environ.get("KLIPY_API_KEY", "")
+          if not key:
+              print("no KLIPY key; leaving the manifest alone")
+              raise SystemExit(0)
+          manifest = json.load(open(path, encoding="utf-8"))
+          for module in manifest["modules"]:
+              if isinstance(module, dict) and module.get("name") == "commune":
+                  opts = module.setdefault("config-opts", [])
+                  opts.append("-Dklipy-api-key=" + key)
+                  break
+          else:
+              raise SystemExit("no commune module in " + path)
+          json.dump(manifest, open(path, "w", encoding="utf-8"), indent=4)
+          print("injected the KLIPY option")
+          EOF
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
@@ -225,10 +264,12 @@ jobs:
         run: sh build-aux/windows/probe-env.sh | tee probe-env.txt
 
       - name: Build the bundle
+        env:
+          KLIPY_API_KEY: ${{ secrets.KLIPY_API_KEY }}
         shell: msys2 {0}
         run: |
           export PATH="$PATH:$(cygpath -u "$USERPROFILE")/.cargo/bin"
-          meson setup _build -Dprofile=${{ inputs.meson-profile }}
+          meson setup _build -Dprofile=${{ inputs.meson-profile }} -Dklipy-api-key="$KLIPY_API_KEY"
           meson compile -C _build windows-bundle
 
       - name: Install the WiX toolset
@@ -344,6 +385,7 @@ jobs:
 
       - name: Build the bundle
         env:
+          KLIPY_API_KEY: ${{ secrets.KLIPY_API_KEY }}
           # The release profile wants about 11 GB on its own with debug info
           # on, and a runner does not have it. Dropping the debug info and
           # letting codegen parallelise is the documented way out, set here
@@ -363,7 +405,7 @@ jobs:
           export XDG_DATA_DIRS="$env_dir/share"
           export MACOSX_DEPLOYMENT_TARGET=11.0
           sh build-aux/macos/probe-env.sh || true
-          meson setup _build -Dprofile=${{ inputs.meson-profile }}
+          meson setup _build -Dprofile=${{ inputs.meson-profile }} -Dklipy-api-key="$KLIPY_API_KEY"
           meson compile -C _build macos-bundle
 
       - name: Record the deployment target
