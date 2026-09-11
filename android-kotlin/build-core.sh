@@ -2,9 +2,13 @@
 # Build libcommune_core.so for the Android ABIs and put the stripped
 # copies where Gradle packages them. Run inside the WSL build environment:
 #
-#     ./build-core.sh            # debug, x86_64 (the emulator)
-#     ./build-core.sh --all      # debug, x86_64 + arm64
-#     ./build-core.sh --release  # release, both ABIs
+#     ./build-core.sh                    # debug, x86_64 (the emulator)
+#     ./build-core.sh --all              # debug, x86_64 + arm64
+#     ./build-core.sh --release          # release, both ABIs
+#     ./build-core.sh --release --arm64  # release, the device only
+#
+# Order matters for the last one: --release sets both ABIs, and --arm64 after
+# it narrows them back down.
 #
 # The Kotlin bindings are generated separately (see README.md): they
 # change when the facade changes, the .so on every core change.
@@ -48,6 +52,11 @@ for arg in "$@"; do
       profile_flag=(--release)
       targets=(x86_64-linux-android aarch64-linux-android)
       ;;
+    # One ABI only. The release variant packages arm64-v8a alone, so a
+    # release build that also does x86_64 spends half its time on a library
+    # nothing ships — which is most of an hour on a two-core runner.
+    --arm64) targets=(aarch64-linux-android) ;;
+    --x86_64) targets=(x86_64-linux-android) ;;
     *) echo "unknown argument: $arg" >&2; exit 2 ;;
   esac
 done

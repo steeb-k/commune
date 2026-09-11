@@ -78,9 +78,14 @@ jobs:
 
 
       - name: Build the core for the device
-        # Builds both ABIs; the release variant packages only arm64-v8a, so
-        # the emulator half is wasted work rather than a wrong artifact.
-        run: cd android-kotlin && ./build-core.sh --release
+        env:
+          # The library is stripped immediately afterwards, so every minute
+          # spent producing debug info is a minute spent on bytes that are
+          # thrown away.
+          CARGO_PROFILE_RELEASE_DEBUG: 'false'
+        # arm64 only: it is the one ABI the release variant packages, and
+        # building the emulator's as well doubles the slowest step here.
+        run: cd android-kotlin && ./build-core.sh --release --arm64
 
       - name: Write the release keystore
         # The key that decides whether an APK can upgrade an installed one.
