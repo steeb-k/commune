@@ -42,6 +42,8 @@ pub(crate) mod macos_notifications;
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_text_scale;
 #[cfg(target_os = "macos")]
+pub(crate) mod macos_update;
+#[cfg(target_os = "macos")]
 pub(crate) mod macos_url_events;
 mod macros;
 pub(crate) mod matrix;
@@ -62,6 +64,8 @@ pub(crate) mod windows_frame;
 pub(crate) mod windows_notifications;
 #[cfg(target_os = "windows")]
 pub(crate) mod windows_toast_activator;
+#[cfg(target_os = "windows")]
+pub(crate) mod windows_update;
 
 // Two leaves of Track 3 that moved wholesale, re-exported under the paths
 // they already had so that `utils::tls::matrix_client()` and

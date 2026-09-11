@@ -1,4 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
+use commune_core::updates::Channel;
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone};
 use ruma::{
@@ -30,11 +31,12 @@ use crate::{
         identity_server_choice_for_preference, set_identity_server_preference,
     },
     spawn, spawn_tokio, toast,
+    updates::{UpdateState, Updates},
     utils::{OngoingAsyncAction, TemplateCallbacks, klipy, media::FileInfo},
 };
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use glib::subclass::InitializingObject;
 
@@ -80,6 +82,23 @@ mod imp {
         share_presence_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
         identity_server_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        updates_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        updates_automatic_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        updates_channel_row: TemplateChild<adw::ComboRow>,
+        #[template_child]
+        updates_status_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        updates_notes_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        updates_action_button: TemplateChild<gtk::Button>,
+        /// Set while the channel row is being written to, so that the change
+        /// it emits is not read back as the user choosing a channel.
+        updates_channel_guard: Cell<bool>,
+        /// The application's updater, which these rows are a view of.
+        updates: OnceCell<Updates>,
         /// The current session.
         #[property(get, set = Self::set_session, nullable)]
         session: glib::WeakRef<Session>,
@@ -139,6 +158,8 @@ mod imp {
                 .bind("share-presence", &*self.share_presence_row, "active")
                 .build();
 
+            self.set_up_updates();
+
             // There is nothing to turn on when this build has no API key.
             if klipy::is_available() {
                 self.gif_search_group.set_visible(true);
@@ -156,6 +177,162 @@ mod imp {
 
     #[gtk::template_callbacks]
     impl GeneralPage {
+        /// Bind the Updates group to the application's updater.
+        ///
+        /// The whole group is present whatever the platform: a Flatpak has a
+        /// perfectly good answer to "how do I get the next version", and
+        /// hiding the question would only make somebody go looking for it.
+        /// What changes is that the controls are insensitive and the row says
+        /// where updates actually come from.
+        fn set_up_updates(&self) {
+            let updates = self
+                .updates
+                .get_or_init(|| Application::default().updates())
+                .clone();
+
+            if !updates.supported() {
+                self.updates_automatic_row.set_visible(false);
+                self.updates_action_button.set_visible(false);
+                self.updates_status_row.set_subtitle(&updates.status());
+                return;
+            }
+
+            self.updates_automatic_row
+                .set_active(updates.check_automatically());
+            self.updates_automatic_row.connect_active_notify(clone!(
+                #[weak]
+                updates,
+                move |row| {
+                    updates.set_check_automatically(row.is_active());
+                }
+            ));
+
+            self.set_up_updates_channel(&updates);
+
+            // The status sentence and the button label are two views of one
+            // state, so they are written together whenever it moves.
+            updates.connect_state_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |updates| {
+                    imp.update_updates_row(updates);
+                }
+            ));
+            updates.connect_status_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |updates| {
+                    imp.update_updates_row(updates);
+                }
+            ));
+
+            self.update_updates_row(&updates);
+        }
+
+        /// Fill the channel row, and hide it when there is no choice to make.
+        fn set_up_updates_channel(&self, updates: &Updates) {
+            let channels = Channel::available_for_profile();
+
+            if channels.len() < 2 {
+                return;
+            }
+
+            let names = channels
+                .iter()
+                .map(|channel| match channel {
+                    Channel::Stable => gettext("Stable"),
+                    Channel::Rc => gettext("Release Candidates"),
+                    Channel::Nightly => gettext("Nightly"),
+                })
+                .collect::<Vec<_>>();
+            let model = gtk::StringList::new(&names.iter().map(String::as_str).collect::<Vec<_>>());
+
+            self.updates_channel_row.set_model(Some(&model));
+            self.updates_channel_row.set_visible(true);
+
+            let selected = channels
+                .iter()
+                .position(|channel| *channel == updates.channel())
+                .unwrap_or_default();
+
+            self.updates_channel_guard.set(true);
+            self.updates_channel_row
+                .set_selected(u32::try_from(selected).unwrap_or_default());
+            self.updates_channel_guard.set(false);
+
+            self.updates_channel_row.connect_selected_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                #[weak]
+                updates,
+                move |row| {
+                    // Setting the row above emits this too, and acting on
+                    // that would turn showing the page into choosing a
+                    // channel.
+                    if imp.updates_channel_guard.get() {
+                        return;
+                    }
+
+                    if let Some(channel) =
+                        Channel::available_for_profile().get(row.selected() as usize)
+                    {
+                        updates.set_channel(*channel);
+                    }
+                }
+            ));
+        }
+
+        /// Write the status row and its button for the updater's state.
+        fn update_updates_row(&self, updates: &Updates) {
+            self.updates_status_row.set_subtitle(&updates.status());
+
+            let (label, sensitive) = match updates.state() {
+                UpdateState::Available => (gettext("Update"), true),
+                UpdateState::Checking => (gettext("Checking…"), false),
+                UpdateState::Downloading | UpdateState::Installing => (gettext("Updating…"), false),
+                UpdateState::Idle | UpdateState::UpToDate | UpdateState::Failed => {
+                    (gettext("Check Now"), true)
+                }
+            };
+
+            self.updates_action_button.set_label(&label);
+            self.updates_action_button.set_sensitive(sensitive);
+            self.updates_notes_button
+                .set_visible(updates.state() == UpdateState::Available);
+        }
+
+        /// Check for an update, or install the one that was found.
+        #[template_callback]
+        fn activate_update_action(&self) {
+            let Some(updates) = self.updates.get() else {
+                return;
+            };
+
+            if updates.state() == UpdateState::Available {
+                updates.install();
+            } else {
+                updates.check(true);
+            }
+        }
+
+        /// Open the release notes of the update that was found.
+        #[template_callback]
+        fn open_release_notes(&self) {
+            let Some(url) = self.updates.get().and_then(Updates::release_notes_url) else {
+                return;
+            };
+
+            gtk::UriLauncher::new(&url).launch(
+                Application::default().main_window().as_ref(),
+                gio::Cancellable::NONE,
+                |result| {
+                    if let Err(error) = result {
+                        error!("Could not open the release notes: {error}");
+                    }
+                },
+            );
+        }
+
         /// Set the current session.
         fn set_session(&self, session: Option<Session>) {
             let prev_session = self.session.upgrade();

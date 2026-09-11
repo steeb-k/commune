@@ -42,6 +42,7 @@ mod session;
 mod session_list;
 mod session_view;
 mod system_settings;
+mod updates;
 mod user_facing_error;
 mod utils;
 mod window;
