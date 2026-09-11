@@ -7583,3 +7583,212 @@ fn ffi_timeline_item(
         },
     }
 }
+
+// ---------------------------------------------------------------------------
+// Updates
+//
+// `crate::updates` does the work; these are the shapes it crosses the FFI in.
+// Installing is the Kotlin side's job — Android will only take an APK from
+// its own package installer, and it is the system, not this code, that checks
+// the new package is signed by the same key as the installed one.
+// ---------------------------------------------------------------------------
+
+/// One downloadable artifact, over the FFI.
+#[derive(uniffi::Record)]
+pub struct FfiUpdateAsset {
+    /// Where to fetch it.
+    pub url: String,
+    /// Its SHA-256 digest, as lowercase hex.
+    pub sha256: String,
+    /// Its size in bytes.
+    pub size: u64,
+}
+
+impl From<&crate::updates::Asset> for FfiUpdateAsset {
+    fn from(asset: &crate::updates::Asset) -> Self {
+        Self {
+            url: asset.url.clone(),
+            sha256: asset.sha256.clone(),
+            size: asset.size,
+        }
+    }
+}
+
+/// A release the feed advertises, over the FFI.
+#[derive(uniffi::Record)]
+pub struct FfiRelease {
+    /// Its version, in the semver spelling.
+    pub version: String,
+    /// Its commit count, which orders two builds of one version.
+    pub build: u64,
+    /// When it was published, RFC 3339.
+    pub published: String,
+    /// Where a person can read what changed.
+    pub notes_url: String,
+    /// The artifact for this build, when the release carries one.
+    pub asset: Option<FfiUpdateAsset>,
+}
+
+/// What a completed check found, over the FFI.
+#[derive(uniffi::Record)]
+pub struct FfiUpdateCheck {
+    /// The version that is running.
+    pub current_version: String,
+    /// The build number that is running.
+    pub current_build: u64,
+    /// The release to move to, when there is one.
+    pub available: Option<FfiRelease>,
+}
+
+/// The update settings, over the FFI.
+#[derive(uniffi::Record)]
+pub struct FfiUpdateSettings {
+    /// Whether to check without being asked.
+    pub check_automatically: bool,
+    /// The channel being followed, resolved to the profile's default when the
+    /// user has not chosen one.
+    pub channel: String,
+    /// Every channel this build may be pointed at, in the order to offer
+    /// them.
+    pub available_channels: Vec<String>,
+    /// The version the user asked not to be told about again.
+    pub skipped_version: Option<String>,
+    /// Whether an automatic check is due now.
+    pub check_due: bool,
+}
+
+/// Told how far a download has got.
+#[uniffi::export(with_foreign)]
+pub trait UpdateProgressListener: Send + Sync {
+    /// How many bytes have arrived out of how many are expected.
+    fn progress(&self, downloaded: u64, total: u64);
+}
+
+/// Adapts the FFI listener to what `crate::updates` calls.
+struct FfiDownloadProgress {
+    /// The foreign object to report to.
+    listener: Arc<dyn UpdateProgressListener>,
+}
+
+impl crate::updates::DownloadProgress for FfiDownloadProgress {
+    fn progress(&self, downloaded: u64, total: u64) {
+        self.listener.progress(downloaded, total);
+    }
+}
+
+/// The version of the core, which is the version of the application.
+#[uniffi::export]
+#[must_use]
+pub fn app_version() -> String {
+    crate::updates::current_version().to_owned()
+}
+
+/// The update settings as they stand.
+#[uniffi::export]
+#[must_use]
+pub fn update_settings() -> FfiUpdateSettings {
+    let settings = crate::updates::UpdateSettings::load();
+
+    FfiUpdateSettings {
+        check_automatically: settings.check_automatically,
+        channel: settings.effective_channel().to_string(),
+        available_channels: crate::updates::Channel::available_for_profile()
+            .iter()
+            .map(ToString::to_string)
+            .collect(),
+        skipped_version: settings.skipped_version.clone(),
+        check_due: settings.is_check_due(crate::updates::now()),
+    }
+}
+
+/// Turn automatic checks on or off.
+#[uniffi::export]
+pub fn set_update_check_automatically(enabled: bool) {
+    let mut settings = crate::updates::UpdateSettings::load();
+    settings.check_automatically = enabled;
+    settings.save();
+}
+
+/// Follow the named channel, or the profile's default when the name is not
+/// one this build offers.
+#[uniffi::export]
+pub fn set_update_channel(channel: &str) {
+    let Ok(channel) = channel.parse::<crate::updates::Channel>() else {
+        return;
+    };
+
+    let mut settings = crate::updates::UpdateSettings::load();
+    settings.channel = Some(channel);
+    // A channel the user just chose is one they want an answer about now.
+    settings.last_check = None;
+    settings.skipped_version = None;
+    settings.save();
+}
+
+/// Stop offering the given version.
+#[uniffi::export]
+pub fn set_update_skipped_version(version: Option<String>) {
+    let mut settings = crate::updates::UpdateSettings::load();
+    settings.skipped_version = version;
+    settings.save();
+}
+
+/// Ask the feed what the current release is, and record that we asked.
+///
+/// Uses whichever channel the settings resolve to, so that the Kotlin side
+/// never has to know what the profile's default is.
+#[uniffi::export]
+pub async fn check_for_update() -> Result<FfiUpdateCheck, CoreError> {
+    let channel = crate::updates::UpdateSettings::load().effective_channel();
+    let result = crate::updates::check(channel).await;
+
+    // Recorded whatever the answer was: a failed check that did not count
+    // would be retried on every launch.
+    let mut settings = crate::updates::UpdateSettings::load();
+    settings.last_check = Some(crate::updates::now());
+    settings.save();
+
+    let check = result.map_err(|error| CoreError::Failed {
+        msg: crate::UserFacingError::to_user_facing(&error),
+    })?;
+
+    Ok(FfiUpdateCheck {
+        current_version: check.current_version,
+        current_build: check.current_build,
+        available: check.available.map(|release| FfiRelease {
+            asset: release.asset_for_current_platform().map(Into::into),
+            version: release.version,
+            build: release.build,
+            published: release.published,
+            notes_url: release.notes_url,
+        }),
+    })
+}
+
+/// Fetch the given artifact into the given directory, checking its digest.
+///
+/// Returns the path it was saved at, which is what the caller hands to the
+/// system package installer.
+#[uniffi::export]
+pub async fn download_update(
+    asset: FfiUpdateAsset,
+    dest_dir: String,
+    listener: Option<Arc<dyn UpdateProgressListener>>,
+) -> Result<String, CoreError> {
+    let asset = crate::updates::Asset {
+        url: asset.url,
+        sha256: asset.sha256,
+        size: asset.size,
+    };
+    let progress = listener.map(|listener| {
+        Arc::new(FfiDownloadProgress { listener }) as Arc<dyn crate::updates::DownloadProgress>
+    });
+
+    let path = crate::updates::download(&asset, std::path::Path::new(&dest_dir), progress)
+        .await
+        .map_err(|error| CoreError::Failed {
+            msg: crate::UserFacingError::to_user_facing(&error),
+        })?;
+
+    Ok(path.to_string_lossy().into_owned())
+}

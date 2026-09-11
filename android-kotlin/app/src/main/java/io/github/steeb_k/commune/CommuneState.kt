@@ -207,6 +207,11 @@ class CommuneState(context: Context) {
                 // Only the Linux secret backend reads this; on Android it
                 // is inert.
                 profile = "skeleton",
+                // `versionCode`, which build.gradle.kts takes from
+                // `git rev-list --count HEAD` — the same number the desktop
+                // and macOS builds use. It is what the update check orders
+                // two builds of one version by; see doc/updates-plan.md.
+                buildNumber = BuildConfig.VERSION_CODE.toULong(),
                 dataDir = context.noBackupFilesDir.resolve("commune").absolutePath,
                 cacheDir = context.cacheDir.resolve("commune").absolutePath,
                 // From the `communeKlipyApiKey` Gradle property, which is

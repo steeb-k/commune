@@ -31,7 +31,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 import io.github.steeb_k.commune.CommuneState
+import io.github.steeb_k.commune.UpdateState
+import io.github.steeb_k.commune.Updates
 import io.github.steeb_k.commune.core.FfiRecoveryState
 
 @Composable
@@ -209,7 +213,156 @@ fun SettingsScreen(state: CommuneState) {
         ThirdPartyIdsRow(state)
         DeactivateAccountRow(state)
         LogoutRow(state)
+
+        SettingsGroup("About")
+        UpdateRows()
     }
+}
+
+/// What version this is, and whether there is a newer one.
+///
+/// The Kotlin application never showed its own version before, which made
+/// "which build is on the phone?" a question only `adb` could answer. It is
+/// the first row here for that reason, and it is shown whatever the rest of
+/// the group can do.
+@Composable
+private fun UpdateRows() {
+    val context = LocalContext.current
+    val activity = context as? android.app.Activity
+
+    LaunchedEffect(Unit) { Updates.start() }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Version", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                Updates.version,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    val settings = Updates.settings ?: return
+
+    // No channels means a build with nowhere to update from — nothing to
+    // offer, and saying so beats a switch that does nothing.
+    if (settings.availableChannels.isEmpty()) {
+        return
+    }
+
+    SettingSwitch(
+        title = "Check for Updates Automatically",
+        checked = settings.checkAutomatically,
+        onChange = { Updates.setCheckAutomatically(it) },
+        subtitle = "Ask once a day whether a newer version has been released. " +
+            "Nothing is downloaded or installed without you choosing to.",
+    )
+
+    if (settings.availableChannels.size > 1) {
+        UpdateChannelRow(settings.channel, settings.availableChannels)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Updates", style = MaterialTheme.typography.bodyLarge)
+            if (Updates.status.isNotEmpty()) {
+                Text(
+                    Updates.status,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        val notesUrl = Updates.releaseNotesUrl
+        if (Updates.state == UpdateState.Available && notesUrl != null) {
+            TextButton(onClick = {
+                context.startActivity(
+                    android.content.Intent(
+                        android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse(notesUrl),
+                    ),
+                )
+            }) { Text("What's New") }
+        }
+
+        when (Updates.state) {
+            UpdateState.Available -> TextButton(
+                onClick = { activity?.let { Updates.install(it) } },
+            ) { Text("Update") }
+            UpdateState.Checking, UpdateState.Downloading, UpdateState.Installing ->
+                TextButton(onClick = {}, enabled = false) { Text("Working…") }
+            else -> TextButton(
+                onClick = { Updates.check(userInitiated = true) },
+            ) { Text("Check Now") }
+        }
+    }
+}
+
+/// Which series of releases to follow.
+///
+/// Only shown when there is more than one to choose between, which on a
+/// release build means stable or release candidates; a Devel build follows
+/// nightly and has no choice to offer.
+@Composable
+private fun UpdateChannelRow(current: String, channels: List<String>) {
+    var open by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Update Channel", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                channelLabel(current),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        TextButton(onClick = { open = true }) { Text("Change") }
+    }
+
+    if (open) {
+        AlertDialog(
+            onDismissRequest = { open = false },
+            title = { Text("Update Channel") },
+            text = {
+                Column {
+                    channels.forEach { channel ->
+                        TextButton(onClick = {
+                            open = false
+                            Updates.setChannel(channel)
+                        }) { Text(channelLabel(channel)) }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { open = false }) { Text("Cancel") }
+            },
+        )
+    }
+}
+
+/// The name a channel goes by on screen.
+private fun channelLabel(channel: String): String = when (channel) {
+    "stable" -> "Stable"
+    "rc" -> "Release Candidates"
+    "nightly" -> "Nightly"
+    else -> channel
 }
 
 /// Ringing on a locked screen needs a permission the system does not hand

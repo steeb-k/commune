@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    What the update FileProvider is allowed to hand out.
+
+    Exactly one directory: `updates/` under the cache directory, which is
+    where the core saves a downloaded APK and nothing else is written. The
+    provider exists because the system package installer runs in another
+    process and cannot read this application's files by path, so the APK has
+    to be offered as a content URI with a one-shot read grant.
+-->
+<paths>
+    <cache-path
+        name="updates"
+        path="updates/" />
+</paths>
