@@ -1,6 +1,9 @@
 use crate::application::AppProfile;
 
 pub(crate) const APP_ID: &str = @APP_ID@;
+/// The number of commits behind this build, which is what orders two builds
+/// that carry the same [`VERSION`]. See `meson.build`.
+pub(crate) const BUILD_NUMBER: u64 = @BUILD_NUMBER@;
 /// Only the glycin image decoder has a sandbox, and glycin is only used on
 /// Linux, so this is dead code anywhere else.
 #[cfg(target_os = "linux")]

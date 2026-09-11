@@ -9,7 +9,12 @@
 
 [package]
 name = "commune-core"
-version = "0.1.0"
+# The application's version, not a version of its own. `updates::check()`
+# compares this against what the release feed advertises, and `http`'s user
+# agent carries it, so a core that numbered itself separately would make the
+# application claim a version nobody released. `RELEASING.md` bumps the two
+# together.
+version = "1.0.0-rc1"
 license = "GPL-3.0-or-later"
 edition = "2024"
 rust-version = "1.95"
@@ -50,19 +55,31 @@ cli = ["ffi", "uniffi/cli"]
 # placeholders.
 blurhash = "0.2"
 cfg-if = "1"
+# Verifies the release feed's signature. Already in the tree under
+# vodozemac; named here because `updates` calls it directly.
+ed25519-dalek = "3"
 # The same reactive primitives the SDK itself uses, at the versions its
 # workspace pins, so core state and SDK state speak one vocabulary.
 eyeball = { version = "0.8.8", default-features = false, features = ["tracing"] }
 eyeball-im = { version = "0.8.0", default-features = false, features = ["tracing"] }
 futures-util = "0.3"
+# The release feed spells its signature and its checksums in hex, so that
+# the branch the workflow commits them to stays readable text.
+hex = "0.4"
 indexmap = "2"
 linkify = "0.11"
 mime = "0.3"
 rand = "0.10"
 rmp-serde = "1"
+# Orders one release against another. The application's version is semver
+# in `Cargo.toml` and something else everywhere else — see `RELEASING.md` —
+# and this is the spelling that compares correctly.
+semver = "1"
 serde = "1"
 serde_bytes = "0.11"
 serde_json = "1"
+# Checks a downloaded artifact against the digest the feed carries.
+sha2 = "0.11"
 time = { version = "0.3", features = ["formatting"] }
 thiserror = "2"
 tld = "2"

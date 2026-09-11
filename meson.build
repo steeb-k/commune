@@ -41,6 +41,31 @@ if pre_release_version != ''
 endif
 full_version = version
 
+# The number of commits behind this build.
+#
+# The version cannot order two builds of the same release — every nightly in
+# a series carries the same one — so `commune_core::updates` compares this
+# when the versions match. It is the same number `build-aux/macos/bundle.sh`
+# writes into `CFBundleVersion` and `android-kotlin` uses for `versionCode`,
+# for the same reason and from the same command, so all three platforms
+# order the same builds the same way.
+#
+# Read at configure time, which means it is as current as the last
+# `meson setup`. That is exact for a release and for CI, both of which
+# configure a fresh tree; a developer whose build directory has gone stale
+# gets a number that is merely low, and a low build number can only make the
+# updater offer something, never hide it.
+build_number = run_command(
+    'git',
+    'rev-list',
+    '--count',
+    'HEAD',
+    check: false,
+).stdout().strip()
+if build_number == ''
+    build_number = '0'
+endif
+
 # Android links these into the shared object itself, because Cargo hands over a
 # `staticlib` and Meson performs the one real link. Everywhere else they are
 # assertions that the libraries exist, and Cargo's `-sys` crates do the linking.

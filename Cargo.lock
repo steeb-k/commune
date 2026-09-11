@@ -898,15 +898,17 @@ dependencies = [
 
 [[package]]
 name = "commune-core"
-version = "0.1.0"
+version = "1.0.0-rc1"
 dependencies = [
  "anyhow",
  "ashpd",
  "blurhash",
  "cfg-if",
+ "ed25519-dalek",
  "eyeball",
  "eyeball-im",
  "futures-util",
+ "hex",
  "indexmap",
  "jni 0.21.1",
  "linkify",
@@ -924,9 +926,11 @@ dependencies = [
  "rustls",
  "rustls-pemfile",
  "security-framework",
+ "semver",
  "serde",
  "serde_bytes",
  "serde_json",
+ "sha2 0.11.0",
  "thiserror 2.0.20",
  "time",
  "tld",

@@ -98,6 +98,11 @@ pub struct FfiCoreConfig {
     pub app_id: String,
     /// The build profile name.
     pub profile: String,
+    /// The number of commits behind this build — `versionCode`, which
+    /// `android-kotlin/app/build.gradle.kts` derives from the same
+    /// `git rev-list --count HEAD` the other platforms use. It is what
+    /// [`crate::updates`] orders two builds of one version by.
+    pub build_number: u64,
     /// The directory persistent data lives under.
     pub data_dir: String,
     /// The directory cached data lives under.
@@ -149,6 +154,7 @@ pub fn init_core(ffi_config: FfiCoreConfig) {
             redirect_uris: vec![android_redirect_uri()],
         },
         profile: ffi_config.profile,
+        build_number: ffi_config.build_number,
         data_dir: ffi_config.data_dir.into(),
         cache_dir: ffi_config.cache_dir.into(),
         settings_store: None,

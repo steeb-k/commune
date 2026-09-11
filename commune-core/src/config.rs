@@ -65,6 +65,18 @@ pub struct CoreConfig {
     /// The build profile name stored in secret attributes on Linux
     /// (`stable`, `devel`, `hack`).
     pub profile: String,
+    /// The number of commits behind this build.
+    ///
+    /// The version alone cannot order two builds: every nightly in a series
+    /// carries the same one, and `crate::updates` has to be able to tell
+    /// them apart. The embedder knows this number because its build system
+    /// already asks git for it — Meson at configure time, Gradle for
+    /// `versionCode`, `bundle.sh` for `CFBundleVersion` — and this crate
+    /// cannot ask, because a compiled crate has no idea when it was
+    /// compiled. `0` is the honest answer for a build that has no count,
+    /// and means the update check will only ever see a different version as
+    /// newer, never a different build of the same one.
+    pub build_number: u64,
     /// The directory persistent data lives under, profile already applied.
     pub data_dir: PathBuf,
     /// The directory cached data lives under, profile already applied.
@@ -118,6 +130,7 @@ impl fmt::Debug for CoreConfig {
             .field("device_display_name", &self.device_display_name)
             .field("oauth_client", &self.oauth_client)
             .field("profile", &self.profile)
+            .field("build_number", &self.build_number)
             .field("data_dir", &self.data_dir)
             .field("cache_dir", &self.cache_dir)
             .field("settings_store", &self.settings_store.is_some())
@@ -142,6 +155,8 @@ pub(crate) struct ResolvedConfig {
     pub(crate) oauth_client: OAuthClientConfig,
     /// The build profile name.
     pub(crate) profile: String,
+    /// The number of commits behind this build.
+    pub(crate) build_number: u64,
     /// The directory persistent data lives under.
     pub(crate) data_dir: PathBuf,
     /// The directory cached data lives under.
@@ -194,6 +209,7 @@ pub fn init(config: CoreConfig) {
         device_display_name,
         oauth_client,
         profile,
+        build_number,
         data_dir,
         cache_dir,
         settings_store,
@@ -217,6 +233,7 @@ pub fn init(config: CoreConfig) {
         device_display_name,
         oauth_client,
         profile,
+        build_number,
         data_dir,
         cache_dir,
         settings_store,
@@ -267,6 +284,12 @@ pub fn profile() -> &'static str {
     &get().profile
 }
 
+/// The number of commits behind this build.
+#[must_use]
+pub fn build_number() -> u64 {
+    get().build_number
+}
+
 /// Where named settings live.
 pub(crate) fn settings_store() -> Arc<dyn SettingsStore> {
     get().settings_store.clone()
@@ -312,6 +335,7 @@ pub(crate) fn init_test_config() {
             redirect_uris: vec![Url::parse("http://127.0.0.1/").expect("valid URL")],
         },
         profile: "test".to_owned(),
+        build_number: 0,
         data_dir: std::env::temp_dir().join("commune-core-test").join("data"),
         cache_dir: std::env::temp_dir().join("commune-core-test").join("cache"),
         settings_store: None,

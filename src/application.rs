@@ -223,6 +223,10 @@ mod imp {
                 // builds, until the login flow itself moves to the core.
                 oauth_client: crate::login::oauth_client_config(),
                 profile: crate::PROFILE.as_str().to_owned(),
+                // From `git rev-list --count HEAD` at configure time, through
+                // the generated `src/config.rs`. What `updates` orders two
+                // builds of one version by.
+                build_number: crate::config::BUILD_NUMBER,
                 data_dir: crate::utils::DataType::Persistent.dir_path(),
                 cache_dir: crate::utils::DataType::Cache.dir_path(),
                 // Where the session list's order and every session's own

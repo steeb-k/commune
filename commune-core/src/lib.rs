@@ -28,6 +28,7 @@ pub mod session;
 pub mod session_list;
 pub mod settings;
 pub mod tls;
+pub mod updates;
 pub mod utils;
 
 /// The shape of a change to one of the core's lists, for whoever presents
