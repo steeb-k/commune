@@ -68,6 +68,7 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | Keyboard shortcuts | `<Primary>` throughout, so Command rather than Control |
 | `matrix:` URLs | Our own Apple Event handler, `src/utils/macos_url_events.rs` |
 | Notifications | `UNUserNotificationCenter`, `src/utils/macos_notifications.rs` |
+| Media viewer header | `use-native-controls` on its `GtkHeaderBar`, as libadwaita's already do |
 
 ## The GTK environment
 
@@ -1039,6 +1040,18 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
 `login::local_server`, never touches a GTK type and passes: the pool thread's failed
 `gtk::init()` is swallowed by the `catch_unwind` inside `glib::ThreadPool::push`.
 
+**The media viewer's header bar uses the native window buttons.** macOS draws close, minimise
+and zoom itself, at the top left of every window, and GTK 4.18 gave `GtkWindowControls` a
+`use-native-controls` property that makes room for them instead of drawing its own. libadwaita's
+header bar turns it on unconditionally, which is why the sidebar and the room history have looked
+right all along. The media viewer's header is a plain `GtkHeaderBar`, which does not, and the
+1.rc1 bundle showed the consequence: GTK's own minimise, maximise and close at the top right, and
+the back button at the top left underneath the native cluster. `media_viewer.blp` now sets the
+property too. On macOS that drops the GTK cluster and moves the back button to the right of the
+traffic lights; on every other platform it is a no-op and the header is unchanged. The earlier
+note in [Not done yet](#not-done-yet) that the viewer's close button "reads as native as it
+stands" was about the button, not about what sat on top of it.
+
 ## Not done yet
 
 * **Nothing from the Windows merge has been eyeballed here.** The merge brought spaces, peeking,
@@ -1080,7 +1093,9 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
 
   Left out of M3 deliberately: a File → Close Window item, which the muxer cannot reach, so it
   would be drawn insensitive next to a ⌘W that works. The media viewer's own close button was on
-  this list too and has come off it — looked at on a Mac, it reads as native as it stands.
+  this list too and has come off it — looked at on a Mac, it reads as native as it stands. Its
+  header bar did not, and now uses the native controls: see
+  [What differs from Linux](#what-differs-from-linux).
 * **M4** — camera QR scanning through `avfvideosrc`. None of it exists.
 * **The sticker picker sometimes will not close on a click outside it.** Reported from a bundle,
   intermittent, and not reproducible on demand — Escape closes it, and so does changing room, but

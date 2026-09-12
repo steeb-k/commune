@@ -59,6 +59,13 @@ template $MediaViewer: Gtk.Widget {
 
     [top]
     Gtk.HeaderBar header_bar {
+      // macOS draws its own close, minimise and zoom buttons over the top
+      // left of every window, the way libadwaita's header bars already
+      // expect. Without this GTK also draws its own cluster at the top right
+      // and leaves the back button underneath the native one. On any other
+      // platform this does nothing.
+      use-native-controls: true;
+
       title-widget: Gtk.Label {
         label: bind template.filename;
         single-line-mode: true;
