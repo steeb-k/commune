@@ -101,7 +101,16 @@ jobs:
       - name: Collect the artifacts
         run: |
           mkdir -p dist
-          find artifacts -type f \( -name '*.msi' -o -name '*.tar.gz' -o -name '*.apk' -o -name '*.flatpak' \) -exec cp {} dist/ ';'
+          # Not a blanket `*.tar.gz`. The two macOS halves travel as
+          # `bundle.tar.gz` so that the artifact store keeps their executable
+          # bits and symlinks, and a blanket glob attached one of them to the
+          # v1.rc1 release: 105 MB, indistinguishable from the real download
+          # except that it runs on half the Macs. They are build
+          # intermediates and have no business here.
+          find artifacts -type f \
+              \( -name '*.msi' -o -name '*.tar.gz' -o -name '*.apk' -o -name '*.flatpak' \) \
+              -not -name 'bundle.tar.gz' \
+              -exec cp {} dist/ ';'
           ls -la dist
 
       - name: Replace the rolling nightly release
@@ -128,7 +137,11 @@ jobs:
 
           assets=""
           msi="$(find dist -name '*.msi' | head -1)"
-          tarball="$(find dist -name '*.tar.gz' | head -1)"
+          # Named, not `head -1`. With the halves excluded above there is only
+          # one tarball left, but picking the first of a glob is how the feed
+          # for that release came to point at the right file by luck rather
+          # than by construction.
+          tarball="$(find dist -name 'commune-*-universal.tar.gz' | head -1)"
           apk="$(find dist -name '*.apk' | head -1)"
           [ -n "$msi" ] && assets="$assets --asset windows-x86_64-msi|$msi|$base/$(basename "$msi")"
           [ -n "$tarball" ] && assets="$assets --asset macos-universal-tar|$tarball|$base/$(basename "$tarball")"
