@@ -455,8 +455,9 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache the conda environment and the from-source libraries
-        uses: actions/cache@v4
+      - name: Restore the conda environment and the from-source libraries
+        id: conda-cache
+        uses: actions/cache/restore@v4
         with:
           # The three from-source projects — libsrtp2, libnice and a rebuilt
           # gst-plugins-bad — are the slow part of the setup and are pinned by
@@ -467,6 +468,10 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: macos-${{ matrix.arch }}
+          # A build that fails has still compiled several hundred
+          # dependencies, and throwing those away means the next attempt at
+          # the same bug pays for them again.
+          cache-on-failure: true
 
       - name: Install micromamba
         run: |
@@ -481,6 +486,21 @@ jobs:
         # flag. It costs that runner the from-source trio twice, which the
         # cache above pays for only once.
         run: bash build-aux/macos/setup-conda-macos.sh ${{ matrix.conda-flags }}
+
+      - name: Save the conda environment
+        # Deliberately not `actions/cache`, whose saving half runs as a post
+        # step — and a post step is skipped when the job fails. The x86_64
+        # half failed twice after building its environment, and threw away
+        # twelve minutes of work both times, so each attempt at the next bug
+        # rebuilt it from nothing. This saves the moment the environment
+        # exists, which is also the only moment it is known to be complete:
+        # running here rather than at the end means a half-built environment
+        # from a failed setup is never what gets cached.
+        if: steps.conda-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .conda-gtk
+          key: ${{ steps.conda-cache.outputs.cache-primary-key }}
 
       - name: A SASS compiler
         # `data/resources/meson.build` wants `grass` or `sass`, and neither

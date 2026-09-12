@@ -534,15 +534,25 @@ note "signing with identity '$IDENTITY'"
 # records silence anyway. The entitlements go on the bundle-level sign only:
 # that is the call that signs the main executable, and they mean nothing on
 # a dylib.
+#
+# stderr always goes to a file and is always printed when a sign fails. It
+# used to go to /dev/null under an ad-hoc identity, on the grounds that an
+# ad-hoc sign is noisy and its warnings mean nothing. That is true of a sign
+# that succeeds and useless when one does not: the x86_64 half of the first
+# real macOS build failed here and said, in full,
+#
+#     bundle: signing failed for .../Contents/MacOS/commune:
+#
+# a message whose entire content was a colon. Suppressing the noise of
+# success is worth doing; suppressing the reason for a failure is not.
 if [ "$IDENTITY" = '-' ]; then
     SIGN_FLAGS='--timestamp=none'
     APP_SIGN_FLAGS="$SIGN_FLAGS"
-    SIGN_ERR='/dev/null'
 else
     SIGN_FLAGS='--timestamp --options runtime'
     APP_SIGN_FLAGS="$SIGN_FLAGS --entitlements $HERE/entitlements.plist"
-    SIGN_ERR="$OUT_DIR/.codesign-err"
 fi
+SIGN_ERR="$OUT_DIR/.codesign-err"
 
 # Nested code first, the bundle last. `--deep` would do this in one call but is
 # deprecated, and it signs in an order codesign itself warns about.
@@ -551,17 +561,19 @@ while read -r f; do
     # shellcheck disable=SC2086 -- SIGN_FLAGS is a flag list on purpose
     codesign --force $SIGN_FLAGS --sign "$IDENTITY" "$f" 2>"$SIGN_ERR" || {
         echo "bundle: signing failed for $f:" >&2
-        [ "$SIGN_ERR" != '/dev/null' ] && sed 's/^/  /' "$SIGN_ERR" >&2
+        sed 's/^/  /' "$SIGN_ERR" >&2
+        echo "bundle: the file codesign refused:" >&2
+        file "$f" | sed 's/^/  /' >&2
         exit 1
     }
 done <"$ALL_BINARIES"
 # shellcheck disable=SC2086
 codesign --force $APP_SIGN_FLAGS --sign "$IDENTITY" "$APP" 2>"$SIGN_ERR" || {
     echo "bundle: signing failed for $APP:" >&2
-    [ "$SIGN_ERR" != '/dev/null' ] && sed 's/^/  /' "$SIGN_ERR" >&2
+    sed 's/^/  /' "$SIGN_ERR" >&2
     exit 1
 }
-[ "$SIGN_ERR" != '/dev/null' ] && rm -f "$SIGN_ERR"
+rm -f "$SIGN_ERR"
 codesign --verify --deep --strict "$APP"
 
 # ---------------------------------------------------------------------------
