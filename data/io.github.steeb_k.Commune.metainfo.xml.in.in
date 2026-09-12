@@ -76,52 +76,131 @@
     <release version="1~rc1" type="development" date="2026-09-12">
       <description>
         <p>
-          The first Commune release candidate. Commune forks Fractal 14.1 and carries its own name,
-          icon and settings, so it installs and runs alongside Fractal without either app disturbing
-          the other’s sessions or preferences. Since the fork it has grown:
+          Commune is a fork of Fractal 14.1 with its own name, icon and settings, so it installs
+          and runs alongside Fractal without either app disturbing the other’s sessions or
+          preferences. This first release candidate is everything that has grown since the fork,
+          on top of everything Fractal already did.
         </p>
+        <p>Conversations got the most attention:</p>
         <ul>
-          <li>Voice and video calls between two people.</li>
-          <li>Searching a room’s messages, with results opening a timeline centred on the match.</li>
-          <li>Creating an account, and resetting a forgotten password, without leaving the app.</li>
           <li>
-            Spaces: a Spaces section in the sidebar, and opening a space lists the rooms inside
-            it.
+            Voice and video calls between two people. A call opens in a window of its own, rings
+            on the other side, and leaves a row in the timeline where it happened. Group calls are
+            not supported yet.
+          </li>
+          <li>
+            Threads. A message that started one says so, a thread can be read and replied to on a
+            page of its own, and all the threads of a room are listed together.
+          </li>
+          <li>
+            Searching a room’s messages, with results opening a timeline centred on the match.
+            Encrypted rooms are searched through an index built from the messages the room has
+            already loaded.
+          </li>
+          <li>Voice messages can now be recorded, not only played back.</li>
+          <li>
+            Several files can be attached at once, from the file dialog, a drop, or the share
+            sheet. Each becomes its own message, sent in the order they were picked.
+          </li>
+          <li>
+            Custom sticker and emoticon packs can be browsed, added, edited and removed from
+            account settings and from room details, and used from the composer. Custom emoticons
+            render inline, complete from their shortcodes, and a message made only of them is
+            shown larger.
+          </li>
+          <li>A GIF picker in the composer.</li>
+          <li>Link previews under messages, with a switch to turn them off.</li>
+          <li>Quick reactions are drawn from the emoji recently used on any client of the account.</li>
+          <li>Pinning messages, and a page that shows what a room has pinned.</li>
+          <li>
+            Every message in an encrypted room carries a shield that says how far its sender can
+            be trusted, and a message that could not be decrypted now says why.
+          </li>
+          <li>A message that failed to send can be sent again, rather than only discarded.</li>
+          <li>
+            A Chat Bubbles switch draws the timeline with your own messages on the right, and a
+            Dark Mode switch keeps the app dark whatever the system says.
+          </li>
+          <li>
+            The media history groups a room’s pictures and videos by age, shows the date as you
+            scroll past it, and opens on the most recent.
+          </li>
+        </ul>
+        <p>Rooms and spaces:</p>
+        <ul>
+          <li>
+            A Spaces section in the sidebar. Opening a space lists the rooms and subspaces inside
+            it, and a new room can be put in a space or restricted to its members.
           </li>
           <li>
             Previewing a world-readable room before joining it, from Explore and from a space’s
             room list.
           </li>
-          <li>Pinning messages, and a page that shows what a room has pinned.</li>
           <li>
-            Presence: who is around, shown in the member list and on profiles, with a switch for
-            whether you share your own.
+            Presence: who is around, shown in the member list, on profiles and on direct chats,
+            with a switch for whether you share your own.
+          </li>
+          <li>A person’s profile lists the rooms you share with them.</li>
+          <li>Favourites keep the order another client gave them.</li>
+          <li>The knock banner remembers which requests you have already looked at.</li>
+          <li>Server notices from the homeserver get their own sidebar section and a banner.</li>
+          <li>
+            Moderation rules in a policy room read as sentences: who recommended banning what, and
+            why. So do a room’s policy server and server ACL changes.
+          </li>
+        </ul>
+        <p>Accounts and moderation:</p>
+        <ul>
+          <li>
+            Creating an account, and resetting a forgotten password, without leaving the app. The
+            greeter offers matrix.org instead of asking for a homeserver first.
           </li>
           <li>
-            Custom sticker and emoticon packs can be browsed, added and removed from account
-            settings and from room details, and used from the composer.
+            The email addresses and phone numbers on an account are listed in settings, where an
+            email address can be added or removed.
           </li>
-          <li>A GIF picker in the composer.</li>
-          <li>Link previews under messages, with a switch to turn them off.</li>
-          <li>Quick reactions drawn from the emoji recently used on any client of the account.</li>
           <li>
-            Moderation: editing a restricted room’s join rule, server ACLs, and reporting rooms
-            and users.
+            The predefined notification rules (mentions, @room, invites and incoming calls) can be
+            switched on and off.
           </li>
-          <li>Server notices from the homeserver get their own sidebar section.</li>
-          <li>The app also builds and runs on macOS and Windows.</li>
+          <li>
+            An identity server can be chosen, or declined, and with one set somebody can be invited
+            to a room by email address.
+          </li>
+          <li>
+            Editing a restricted room’s join rule, showing and editing which servers can take part
+            in a room, and reporting rooms and users.
+          </li>
+        </ul>
+        <p>Beyond Linux:</p>
+        <ul>
+          <li>
+            Commune builds and runs on macOS and Windows, shipped as a disk image and an installer.
+            Sessions are kept in the Keychain and the Credential Manager, notifications arrive
+            through the system, and matrix: links open the app.
+          </li>
           <li>
             Commune notices when a new release exists, and on Windows, macOS and Android it can
             download and install it itself. A Flatpak installation updates through the remote it
             came from instead. There is a switch in settings for whether to check at all.
           </li>
           <li>
-            A separate Android client, built on the same core as the desktop app.
+            A separate Android client, built on the same core as the desktop app. It covers the
+            everyday: conversations and threads, media, stickers and GIFs, calls, verification by
+            emoji or QR code, several accounts, and notifications over UnifiedPush or background
+            sync.
           </li>
         </ul>
         <p>
-          Everything else is Fractal 14.1, whose release notes remain the best description of the
-          features Commune inherits.
+          Everything else is Fractal 14.1, whose release notes remain the best description of what
+          Commune inherits. As usual, this release includes other improvements and fixes thanks to
+          our upstream projects, and above all to the Fractal contributors whose work all of this
+          is built on.
+        </p>
+        <p>
+          As the version implies, this candidate is meant to be installed and used. That is how a
+          release candidate earns the plain release that follows it, and what it gets wrong is what
+          1.rc2 is for.
         </p>
       </description>
     </release>
