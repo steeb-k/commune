@@ -160,8 +160,8 @@
             email address can be added or removed.
           </li>
           <li>
-            The predefined notification rules (mentions, @room, invites and incoming calls) can be
-            switched on and off.
+            The predefined notification rules, for mentions of you or of the whole room, invites
+            and incoming calls, can be switched on and off.
           </li>
           <li>
             An identity server can be chosen, or declined, and with one set somebody can be invited
