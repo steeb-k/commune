@@ -299,7 +299,7 @@ jobs:
           # run: a system binary arrives already signed, so checking "is it
           # signed" afterwards proves nothing whatever. Stripping first means
           # the only signature that can be there at the end is ours.
-          $signtool = (Get-ChildItem "C:\\Program Files (x86)\\Windows Kits\\10\\bin" -Recurse -Filter signtool.exe |
+          $signtool = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
             Where-Object { $_.FullName -match "x64" } | Sort-Object FullName -Descending | Select-Object -First 1).FullName
           & $signtool remove /s $probe | Out-Null
           $before = Get-AuthenticodeSignature $probe
