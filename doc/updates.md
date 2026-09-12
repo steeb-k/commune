@@ -394,27 +394,32 @@ against a key of your own means rebuilding with it in `key.rs`.
 
 ## What has not been seen working
 
-Kept honest rather than hopeful. Ticked off as each one actually runs, on
-11 September 2026:
+Kept honest rather than hopeful. Ticked off as each one actually runs.
 
-* **Run.** The gate, the Android APK and the Flatpak bundle all pass on a
-  runner. Windows gets as far as proving it can sign before it builds.
-* **Unrun.** No `v*` tag has been pushed, so `release.yml` has never
-  executed; only `nightly.yml` has.
-* **The macOS path has never run anywhere.** It was written without a Mac to
-  hand. `lipo-bundles.sh` and `sign-notarize.sh` have never been executed,
-  and `macos_update.rs` has only ever been compiled. Reading it found three
-  defects that would each have failed the job or shipped a broken bundle —
-  the artifact round trip, the bundle name and the notary verdict — which is
-  a fair estimate of how much else is in there.
-* **The notary credential has never been exercised.** It is an app-specific
-  password, set 11 September 2026, and `notarytool` exists only on macOS, so
-  nothing on the development machine can test it.
-* **The Android APK has not been installed on the Pixel.** It builds and is
-  signed with the release key (SHA-256 `4E:C5:A0:98:…`), which means the
-  first install has to uninstall the debug-keyed copy and loses that
-  device's adopted session.
-* **The `updates` branch does not exist yet**, so every check 404s, which the
-  app reads as "no update" and says nothing about.
-* The Windows install path is covered by unit tests for the script it writes,
-  but no MSI has actually been installed over another one by the updater.
+**Run, on 12 September 2026.** The gate, the Android APK, the Flatpak bundle,
+the signed Windows MSI and the signed, notarized, stapled macOS universal
+tarball all build on runners. The Windows installer is signed by Trusted
+Signing, proven by a probe that signs a binary compiled seconds earlier. The
+Mac bundle is `x86_64 arm64` in one file, and the notary service answered
+`Accepted` in eighty seconds.
+
+Getting macOS there took eight attempts, and every one found something real:
+the Intel runner cannot build the arm64 conda environment, neither half had a
+SASS compiler, codesign was being handed the bundle's main executable before
+the dylibs it encloses, the two halves legitimately differ by one library, the
+discarded ad-hoc signature looked like a divergence, and the `.p12` was
+written in a format Apple cannot read. One of the eight was a bad edit of mine
+that shipped half a fix.
+
+Still unrun or unseen:
+
+* **No `v*` tag has been pushed**, so `release.yml` has never executed and the
+  `updates` branch does not exist. Every update check therefore 404s, which
+  the app reads as "no update" and says nothing about. Publishing a nightly is
+  what creates that branch.
+* **Nothing has ever updated itself.** The Windows install path has unit tests
+  for the script it writes, but no MSI has been installed over another one by
+  the updater, and `macos_update.rs` has only ever been compiled.
+* **The Android APK has not been installed on the Pixel.** It is signed with
+  the release key (SHA-256 `4E:C5:A0:98:…`), so the first install has to
+  uninstall the debug-keyed copy and loses that device's adopted session.
