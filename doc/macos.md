@@ -13,6 +13,7 @@ was built; this file records what actually exists, what is stubbed, and what bit
 * [Packaging](#packaging)
 * [Updating an installed copy](#updating-an-installed-copy)
 * [Testing by hand](#testing-by-hand)
+* [The 1.rc1 bundle does not launch](#the-1rc1-bundle-does-not-launch)
 * [What differs from Linux](#what-differs-from-linux)
 * [Not done yet](#not-done-yet)
 * [Rebasing](#rebasing)
@@ -702,6 +703,60 @@ menu bar, which is why the environment variable exists at all.
 Rows 1 and 13 are done: the menu bar comes up as Commune, File, Edit, View, Window, Help, and the
 sidebar header carries nothing but the account switcher and the search toggle. What is left in
 between is the behaviour of the individual items and the Command keys, rows 2 to 12 and 14 to 19.
+
+## The 1.rc1 bundle does not launch
+
+Open as of 12 September 2026. The `v1.rc1` universal tarball does not open on
+a test Mac. Bundles built by hand on that Mac did. This is the first bundle
+that is `lipo`-merged from two halves, signed with a real Developer ID, and
+run under the hardened runtime, so any of those three is a candidate and the
+hand-built ones exercised none of them.
+
+Ruled out already, by inspecting the published artefact rather than by
+argument:
+
+* **Signing coverage.** All 154 Mach-O files in the bundle are matched by
+  `sign-notarize.sh`'s two passes. `lipo` destroys every signature, so a file
+  it missed would be unsigned, and the hardened runtime kills a process that
+  loads an unsigned library. Nothing is missed.
+* **The executable bit.** `Contents/MacOS/commune` is `-rwxr-xr-x` inside the
+  published tarball. The merge copies each input's mode onto its output, and
+  `chmod --reference` does not exist on macOS, so the fallback to
+  `stat -f '%Lp'` was the thing to doubt. It works.
+* **The universal binary.** Well-formed: two slices, both with valid Mach-O
+  magic, x86_64 at offset 16384 for 163,928,096 bytes and arm64 at
+  163,954,688 for 157,048,048, summing to the file's own size.
+
+What is left needs a Mac, because it needs the error rather than a guess.
+Running the binary straight from a terminal is worth more than the other four
+put together: a dyld failure or a panic prints there and nowhere else.
+
+```sh
+# 1. The error itself.
+"/Applications/Commune.app/Contents/MacOS/commune"
+
+# 2. What Gatekeeper makes of it, and whether the ticket is stapled.
+spctl -a -vvv -t exec "/Applications/Commune.app"
+xcrun stapler validate "/Applications/Commune.app"
+
+# 3. Whether the signature still checks out where it landed.
+codesign --verify --deep --strict --verbose=2 "/Applications/Commune.app"
+codesign -d --entitlements - "/Applications/Commune.app"
+
+# 4. What the system logged, and any crash report.
+log show --predicate 'process == "commune"' --last 10m --info --debug
+ls -lt ~/Library/Logs/DiagnosticReports | head
+
+# 5. Quarantine, which extracting a tarball should not set but check anyway.
+xattr -l "/Applications/Commune.app"
+```
+
+The leading suspect is the hardened runtime. `entitlements.plist` carries only
+the microphone and camera, and library validation is on by default, so
+anything the app loads or maps that is not signed by this team is refused —
+a case no ad-hoc build can reach. If step 1 names a library, that is the
+answer. `com.apple.security.cs.disable-library-validation` would confirm it
+quickly, though it is a diagnosis rather than a fix.
 
 ## What differs from Linux
 
