@@ -148,8 +148,22 @@ enforces that. `REQUEST_INSTALL_PACKAGES` is declared, but the user still has
 to allow it once; the first press opens the settings page that can and says
 so.
 
-**Linux.** Nothing. A Flatpak has an app store behind it, and the Updates group
-says so rather than hiding the question.
+**Linux.** Nothing in the application. A Flatpak updates through whatever
+remote it was installed from, and the Updates group says so rather than hiding
+the question.
+
+Which remote that will be is **undecided**, and one option is closed:
+**Flathub is ruled out, because it rejects LLM-generated code.** The plan is a
+self-hosted OSTree repository on the maintainer's own server behind a reverse
+proxy — `RELEASING.md` already sketches the shape, and OSTree being
+content-addressed means each publish moves only the objects that changed. How
+CI reaches that server, and whether the repository is public, are open
+questions as of 12 September 2026.
+
+Until then CI publishes a single `.flatpak` bundle, and a bundle has **no
+update path at all**: it carries no remote, so `flatpak update` has nothing to
+check. Fine for handing somebody a build, useless as a channel, and worth
+saying in the release notes of anything that ships that way.
 
 ## When the updater stays quiet
 
