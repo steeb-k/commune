@@ -73,7 +73,7 @@
   </content_rating>
 
   <releases>@development-release@
-    <release version="1~rc1" type="development" date="2026-08-25">
+    <release version="1~rc1" type="development" date="2026-09-12">
       <description>
         <p>
           The first Commune release candidate. Commune forks Fractal 14.1 and carries its own name,
@@ -110,6 +110,14 @@
           </li>
           <li>Server notices from the homeserver get their own sidebar section.</li>
           <li>The app also builds and runs on macOS and Windows.</li>
+          <li>
+            Commune notices when a new release exists, and on Windows, macOS and Android it can
+            download and install it itself. A Flatpak installation updates through the remote it
+            came from instead. There is a switch in settings for whether to check at all.
+          </li>
+          <li>
+            A separate Android client, built on the same core as the desktop app.
+          </li>
         </ul>
         <p>
           Everything else is Fractal 14.1, whose release notes remain the best description of the
