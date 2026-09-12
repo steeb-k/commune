@@ -4,8 +4,8 @@
 # Written by hooks/doc-freshness --fix and --published. The commit line
 # is how the hook tells a moving marker from a hash the prose cites on
 # purpose: it only ever rewrites the hash it last wrote.
-commit b9bfd544
-count 661
+commit 3e2799c4
+count 684
 sha256 282fba551f848e893ddaff90529f1d150c4099e179fe06c26d37850d27511c00 doc/client-comparison.html
 sha256 4da3e59899d42f9460015d68dfe85fab7d0d5030763baf3b6f2fb13127e2f559 doc/spec-gaps.html
 sha256 74168c1d3deb7466c3c1bb39436921d89efb324846279e7205836edc85156bcf doc/upstream-defects.html
