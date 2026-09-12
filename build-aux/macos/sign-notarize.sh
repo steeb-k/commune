@@ -168,19 +168,36 @@ fi
 # archiver Apple documents for this.
 ditto -c -k --keepParent "$bundle" "$work/notarize.zip"
 
+# Whichever credential is in play the call has the same shape, so build the
+# arguments once rather than duplicating the invocation twice over.
 if [ "$notarize" = "key" ]; then
     printf '%s' "$NOTARY_KEY" > "$work/notary.p8"
-    xcrun notarytool submit "$work/notarize.zip" \
-        --key "$work/notary.p8" \
-        --key-id "$NOTARY_KEY_ID" \
-        --issuer "$NOTARY_ISSUER_ID" \
-        --wait
+    set -- --key "$work/notary.p8" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID"
 else
-    xcrun notarytool submit "$work/notarize.zip" \
-        --apple-id "$NOTARY_APPLE_ID" \
-        --password "$NOTARY_PASSWORD" \
-        --team-id "$NOTARY_TEAM_ID" \
-        --wait
+    set -- --apple-id "$NOTARY_APPLE_ID" --password "$NOTARY_PASSWORD" --team-id "$NOTARY_TEAM_ID"
+fi
+
+# `--wait` waits for a verdict; it does not reliably fail on a bad one. A
+# rejected submission is not an error as far as the tool is concerned — the
+# submission completed, it simply says Invalid. Left alone, the next thing to
+# go wrong would be `stapler staple`, which reports only that it could not
+# find a ticket. The reason lives in the notary log and nowhere else, so ask
+# for it here rather than leaving somebody to find out that it exists.
+printf 'sign-notarize: submitting to the notary service; this takes minutes\n' >&2
+xcrun notarytool submit "$work/notarize.zip" "$@" --wait --output-format json \
+    > "$work/submit.json" || true
+cat "$work/submit.json" >&2
+
+submission_id="$(plutil -extract id raw -o - "$work/submit.json" 2>/dev/null || true)"
+status="$(plutil -extract status raw -o - "$work/submit.json" 2>/dev/null || true)"
+
+if [ "$status" != "Accepted" ]; then
+    printf 'sign-notarize: the notary service answered %s\n' "${status:-nothing}" >&2
+    if [ -n "$submission_id" ]; then
+        printf 'sign-notarize: --- the notary log, which says why ---\n' >&2
+        xcrun notarytool log "$submission_id" "$@" >&2 || true
+    fi
+    die "notarization did not succeed"
 fi
 
 # On the bundle, so that the ticket survives being put in a tarball.
