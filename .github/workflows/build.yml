@@ -254,17 +254,27 @@ jobs:
       - name: Install the Trusted Signing client
         if: env.SIGN_WINDOWS == 'true'
         shell: pwsh
-        # `sign.ps1` finds the signing library by searching the places the
-        # standalone client tools install to. The PowerShell module puts it
-        # somewhere else entirely, so the path is handed over explicitly
-        # rather than adding a module layout to that list — the script
-        # already reads ARTIFACT_SIGNING_DLIB first for exactly this case.
+        # The signing library comes from the NuGet package, not from the
+        # PowerShell module of the same name — that module wraps its own
+        # cmdlet and carries no dlib at all, which is what the first attempt
+        # at this discovered. A .nupkg is a zip, so no NuGet client is
+        # needed to open one.
+        #
+        # `sign.ps1` searches the places the standalone client tools install
+        # to, none of which this is, so the path is handed over through the
+        # variable the script already reads first for exactly this case.
         run: |
-          Install-Module -Name TrustedSigning -Force -AllowClobber -Scope CurrentUser
-          $dlib = Get-ChildItem -Path (Split-Path (Get-Module -ListAvailable TrustedSigning)[0].Path) `
-            -Recurse -Filter 'Azure.CodeSigning.Dlib.dll' -ErrorAction SilentlyContinue |
-            Select-Object -First 1
-          if (-not $dlib) { throw "no Azure.CodeSigning.Dlib.dll in the TrustedSigning module" }
+          $url = "https://www.nuget.org/api/v2/package/Microsoft.Trusted.Signing.Client"
+          $zip = Join-Path $env:RUNNER_TEMP "trusted-signing-client.zip"
+          $out = Join-Path $env:RUNNER_TEMP "trusted-signing-client"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath $out -Force
+          $dlib = Get-ChildItem -Path $out -Recurse -Filter 'Azure.CodeSigning.Dlib.dll' |
+            Where-Object { $_.FullName -match 'x64' } | Select-Object -First 1
+          if (-not $dlib) {
+            $dlib = Get-ChildItem -Path $out -Recurse -Filter 'Azure.CodeSigning.Dlib.dll' | Select-Object -First 1
+          }
+          if (-not $dlib) { throw "no Azure.CodeSigning.Dlib.dll in the NuGet package" }
           Write-Host "dlib: $($dlib.FullName)"
           "ARTIFACT_SIGNING_DLIB=$($dlib.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
