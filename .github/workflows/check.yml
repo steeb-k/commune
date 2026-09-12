@@ -170,3 +170,59 @@ jobs:
         # `--bin commune` rather than the whole target set: the `#[gtk::test]`
         # tests need a display, and this job has none.
         run: cargo test -j 2 --bin commune
+
+      - name: A display to start in
+        run: dnf install -y --setopt=install_weak_deps=False xorg-x11-server-Xvfb
+
+      - name: Start the application
+        # Because nothing above does. Every other step here compiles the
+        # application or runs unit tests against parts of it, and a
+        # `#[gtk::test]` is skipped for want of a display — so no step ever
+        # constructed a `GtkApplication` or ran its `startup()`.
+        #
+        # 1.rc1 shipped because of that gap. The updater read the core's
+        # configuration while the application was still being constructed,
+        # which panics by design, in a `constructed()` that cannot unwind. It
+        # aborted before its first window on all five platforms and the whole
+        # pipeline reported success: it compiled, clippy was clean, thirty
+        # unit tests passed, five artefacts were signed and published.
+        run: |
+          # Cargo rather than ninja, which would compile the application a
+          # second time into Meson's own target directory.
+          cargo build --bin commune
+
+          # The two files the application opens by absolute path at startup.
+          # That path is Meson's PKGDATADIR, baked into the generated
+          # `src/config.rs`, so read it from there rather than assuming the
+          # default prefix.
+          ninja -C _build data/resources/resources.gresource src/ui-resources.gresource
+          pkgdata="$(sed -n 's/.*RESOURCES_FILE.*concat!("\([^"]*\)".*/\1/p' src/config.rs)"
+          echo "PKGDATADIR is $pkgdata"
+          mkdir -p "$pkgdata"
+          cp _build/data/resources/resources.gresource "$pkgdata/"
+          cp _build/src/ui-resources.gresource "$pkgdata/"
+
+          # GSettings aborts outright on a schema it cannot find, and the
+          # schema is generated into the build directory rather than installed.
+          glib-compile-schemas _build/data
+          export GSETTINGS_SCHEMA_DIR="$PWD/_build/data"
+
+          # `timeout` answers 124 when it had to kill the process, which is
+          # the success case here: the application was still running. Any
+          # other code means it exited by itself, and an application that
+          # exits a second after starting has crashed.
+          set +e
+          timeout --signal=TERM 30 xvfb-run -a ./target/debug/commune > start.out 2> start.err
+          code=$?
+          set -e
+
+          echo "--- stdout ---"; tail -40 start.out || true
+          echo "--- stderr ---"; tail -40 start.err || true
+
+          if [ "$code" = 124 ]; then
+            echo "The application was still running after 30 seconds."
+            exit 0
+          fi
+
+          echo "::error::the application exited on its own with $code; it should still have been running"
+          exit 1
