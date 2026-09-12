@@ -199,8 +199,16 @@ xcrun notarytool submit "$work/notarize.zip" "$@" --wait --output-format json \
     > "$work/submit.json" || true
 cat "$work/submit.json" >&2
 
-submission_id="$(plutil -extract id raw -o - "$work/submit.json" 2>/dev/null || true)"
-status="$(plutil -extract status raw -o - "$work/submit.json" 2>/dev/null || true)"
+# `plutil` reads JSON as well as plists, but a parse that quietly came back
+# empty would report a successful notarization as a failure and throw away
+# the build. So try it, and fall back to a real JSON parser if it says
+# nothing. One of the two always works.
+notary_field() { # <field>
+    plutil -extract "$1" raw -o - "$work/submit.json" 2>/dev/null && return 0
+    python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get(sys.argv[2],""))' "$work/submit.json" "$1"
+}
+submission_id="$(notary_field id)"
+status="$(notary_field status)"
 
 if [ "$status" != "Accepted" ]; then
     printf 'sign-notarize: the notary service answered %s\n' "${status:-nothing}" >&2
