@@ -70,8 +70,25 @@ gh run view "$run" --json jobs --jq '
     (.steps[] | select(.conclusion == "failure") | "  failed at step: \(.name)")'
 
 echo
-echo "--- log tail of the failing jobs ---"
-gh run view "$run" --log-failed 2>/dev/null | tail -80 || \
+log="$(gh run view "$run" --log-failed 2>/dev/null || true)"
+if [ -z "$log" ]; then
     echo "(no failed-step log; the job was probably cancelled before it ran)"
+    exit 1
+fi
+
+# The lines that say what went wrong, rather than the last eighty lines of
+# whatever the step happened to be printing. A failing macOS build spends
+# forty minutes printing `Compiling <crate>`, so a blind tail showed a wall
+# of crate names and nothing about the failure — which meant grepping the
+# log by hand, which is the work this script exists to save.
+echo "--- what the log says went wrong ---"
+printf '%s\n' "$log" \
+    | grep -aiE 'error|fatal|fail|cannot|not found|no such|refused|denied|abort' \
+    | grep -avE 'pipefail|Compiling|Downloaded|Fresh |warning: unused|--retry|extraheader|safe\.directory|CACHE_ON_FAILURE|fail-on-cache-miss|Cache not found|spurious network|Cleaning up orphan|Node.js 20 is deprecated|continue-on-error|ContinueOnError|errors.py|quick-error|thiserror|gix-error' \
+    | tail -30
+
+echo
+echo "--- and the last lines before it stopped ---"
+printf '%s\n' "$log" | tail -15
 
 exit 1
