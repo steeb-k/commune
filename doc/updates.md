@@ -244,6 +244,28 @@ be exported. The team is what an installed copy compares, not the certificate,
 so a second one under the same team updates silently. It expires in September
 2031.
 
+It reaches a runner as `MACOS_CERTIFICATE_P12`, base64 of a `.p12` holding the
+private key, the certificate and Apple's intermediate — the intermediate
+because a runner has no keychain that already contains it, and `codesign`
+cannot build a chain without one. That is the usual reason a certificate that
+works on a Mac fails in CI.
+
+**The `.p12` has to be written with SHA-1 and 3DES**, which `make-p12.sh` now
+passes explicitly. OpenSSL 3 defaults to AES-256-CBC with a SHA-256 MAC, and
+Apple's Security framework cannot read that at all — `security import` rejects
+it with
+
+```text
+MAC verification failed during PKCS12 import (wrong password?)
+```
+
+with the password perfectly correct. That is as misleading as an error message
+gets, and it is what stopped the first macOS build that ever reached the
+signing step. The weak algorithms are not a weakness here: the file exists for
+the few seconds between a runner decoding it and importing it into a throwaway
+keychain, and what protects it is a 28-character random password in another
+secret.
+
 Notarizing needs a credential of its own, and `sign-notarize.sh` takes either:
 an App Store Connect team API key, or an app-specific password from
 appleid.apple.com. **Neither has anything to do with the App Store.**
