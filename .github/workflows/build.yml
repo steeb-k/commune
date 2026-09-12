@@ -44,6 +44,19 @@ on:
         required: false
         default: all
         type: string
+      ref:
+        description: >-
+          The commit to build. Defaults to whatever triggered the run, which
+          is right for a tag push and wrong for the one case that matters:
+          rebuilding a tag by hand after a CI bug. A reusable workflow called
+          by path runs at the caller's commit, so dispatching `release.yml`
+          from `main` gets `main`'s workflow — which is the point, that being
+          where the fix is — but every checkout below would also have taken
+          `main`'s source, quietly publishing something other than the tag.
+          Naming the ref is what keeps the workflow and the source separable.
+        required: false
+        default: ''
+        type: string
 
 # `azure/login` asks GitHub for an OIDC token, which is what replaces a stored
 # client secret for the Windows signing step.
@@ -64,6 +77,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
 
       - uses: actions/setup-java@v4
@@ -160,6 +174,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
 
       - name: Trust the checkout
@@ -235,6 +250,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ inputs.ref || github.ref }}
           # The build number is `git rev-list --count HEAD`, and a shallow
           # clone answers that wrongly.
           fetch-depth: 0
@@ -254,6 +270,10 @@ jobs:
           wix extension add --global WixToolset.UI.wixext/5.0.0
 
       - name: Sign in to Azure
+        # The first of two. This one exists so the probe below can run before
+        # the build, which is what makes a broken credential cost two minutes
+        # instead of forty. It is not the one that signs the installer: see
+        # the second login, further down.
         if: env.SIGN_WINDOWS == 'true'
         uses: azure/login@v2
         with:
@@ -394,6 +414,33 @@ jobs:
           meson setup _build -Dprofile=${{ inputs.meson-profile }} -Dklipy-api-key="$KLIPY_API_KEY"
           meson compile -C _build windows-bundle
 
+      - name: Sign in to Azure again
+        # Because the first sign-in has expired by now, and the failure it
+        # causes is unreadable. GitHub's OIDC token — the client assertion
+        # that stands in for a client secret — is valid for five minutes. The
+        # access token `az login` exchanges it for lasts about an hour, and
+        # when that runs out the CLI tries to refresh it using the assertion,
+        # which died fifty-five minutes earlier:
+        #
+        #     AADSTS700024: Client assertion is not within its valid time
+        #     range. Current time: 16:17:10Z, assertion valid from 15:06:39Z,
+        #     expiry time of assertion 15:11:39Z
+        #
+        # reaching signtool as `SignerSign() failed (0x80004005)`.
+        #
+        # Whether it happens depends only on how long the build took. The
+        # nightly is a debug build and finishes in about forty minutes, so it
+        # never saw this; a release is optimised, takes seventy, and fails
+        # every time. Signing a second time from a fresh token is the whole
+        # fix — and the two logins are not redundant, because the early one is
+        # what lets the probe fail fast.
+        if: env.SIGN_WINDOWS == 'true'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
       - name: Build the installer
         shell: pwsh
         env:
@@ -459,6 +506,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
 
       - uses: dtolnay/rust-toolchain@stable
@@ -597,6 +645,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
 
       - uses: actions/download-artifact@v4

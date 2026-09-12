@@ -34,6 +34,11 @@ jobs:
       # Always everything. A release that quietly dropped a platform would
       # publish a manifest telling that platform there is nothing to install.
       platforms: all
+      # The tag's source, even when this was dispatched from a branch. That
+      # combination is the recovery path for a CI bug: the workflow comes from
+      # wherever it was dispatched, so it carries the fix, while the code
+      # built and published stays exactly what the tag points at.
+      ref: ${{ inputs.tag || github.ref }}
     secrets: inherit
 
   publish:
