@@ -512,10 +512,33 @@ jobs:
             vtool -show-build "$binary" | grep -A2 minos || true
           done
 
+      - name: Pack the half
+        # Not `path: *.app`. `upload-artifact` does not preserve the
+        # executable bit and it resolves symlinks rather than storing them,
+        # and an application bundle is made of both: the thing in
+        # `Contents/MacOS` has to be executable to launch, and a GTK bundle's
+        # `lib` directory is mostly `libfoo.0.dylib -> libfoo.0.1.dylib`.
+        # Round-tripping one through an artifact therefore produces a bundle
+        # several times the size that cannot run and cannot be signed — and
+        # `lipo-bundles.sh` copies each input's permissions onto its output,
+        # so the damage would survive the merge.
+        #
+        # A tar holds both. This is the same reason the finished bundle ships
+        # as a tarball rather than a disk image, for once not about
+        # quarantine.
+        run: |
+          bundle="$(find _build/macos -maxdepth 1 -name '*.app' | head -1)"
+          if [ -z "$bundle" ]; then
+            echo "::error::meson produced no .app under _build/macos"
+            exit 1
+          fi
+          mkdir -p half
+          tar -czf half/bundle.tar.gz -C "$(dirname "$bundle")" "$(basename "$bundle")"
+
       - uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
-          path: _build/macos/*.app
+          path: half/bundle.tar.gz
           if-no-files-found: error
 
   macos:
@@ -542,11 +565,45 @@ jobs:
           name: macos-x86_64
           path: halves/x86_64
 
+      - name: Unpack the two halves
+        # See the packing step in the half job: the bundles travel as tars so
+        # that the executable bits and the symlinks arrive with them.
+        run: |
+          for arch in arm64 x86_64; do
+            tar -xzf "halves/$arch/bundle.tar.gz" -C "halves/$arch"
+          done
+          ls -la halves/arm64 halves/x86_64
+
       - name: Merge the two halves
         run: |
           arm64_bundle="$(find halves/arm64 -maxdepth 2 -name '*.app' | head -1)"
           x86_64_bundle="$(find halves/x86_64 -maxdepth 2 -name '*.app' | head -1)"
-          bash build-aux/macos/lipo-bundles.sh --arm64 "$arm64_bundle" --x86_64 "$x86_64_bundle" --output universal/Commune.app
+          for bundle in "$arm64_bundle" "$x86_64_bundle"; do
+            if [ -z "$bundle" ]; then
+              echo "::error::a half is missing its .app after unpacking"
+              exit 1
+            fi
+            # If this is not executable the tar did not do its job, and
+            # everything downstream would succeed while producing a bundle
+            # that cannot launch. Globbed rather than named: the binary is
+            # `commune` in lower case and the bundle around it is
+            # `Commune.app` only on the Stable profile — a nightly's is
+            # `Commune Devel.app`.
+            if ! find "$bundle/Contents/MacOS" -type f -perm -u+x | grep -q .; then
+              echo "::error::$bundle has no executable in Contents/MacOS"
+              ls -la "$bundle/Contents/MacOS" || true
+              exit 1
+            fi
+          done
+          # The bundle keeps the name the half had. `bundle.sh` calls it
+          # `Commune.app` only on the Stable profile; a nightly is
+          # `Commune Devel.app`, and that is what keeps a nightly installed
+          # beside a stable Commune in /Applications rather than on top of
+          # it. Hardcoding the stable name here would have undone, at the
+          # last step, what the Devel application id is for.
+          app="universal/$(basename "$arm64_bundle")"
+          echo "COMMUNE_APP=$app" >> "$GITHUB_ENV"
+          bash build-aux/macos/lipo-bundles.sh --arm64 "$arm64_bundle" --x86_64 "$x86_64_bundle" --output "$app"
 
       - name: Sign, notarize and staple
         # Signing happens after the merge, never before: a signature covers
@@ -571,7 +628,7 @@ jobs:
           # Set this repository variable to ship signed but un-notarized,
           # which the in-app updater installs and a browser download does not.
           ALLOW_UNNOTARIZED: ${{ vars.ALLOW_UNNOTARIZED }}
-        run: bash build-aux/macos/sign-notarize.sh universal/Commune.app
+        run: bash build-aux/macos/sign-notarize.sh "$COMMUNE_APP"
 
       - name: Make the tarball
         # A tarball rather than the disk image, because files a process
@@ -580,7 +637,7 @@ jobs:
         run: |
           version="$(bash build-aux/ci/project-version.sh)"
           mkdir -p dist
-          bash build-aux/macos/make-tarball.sh universal/Commune.app "dist/commune-$version-universal.tar.gz"
+          bash build-aux/macos/make-tarball.sh "$COMMUNE_APP" "dist/commune-$version-universal.tar.gz"
 
       - uses: actions/upload-artifact@v4
         with:
