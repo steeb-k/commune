@@ -7,6 +7,20 @@
 # See `doc/updates-plan.md` for what these artifacts are for: each is what an
 # installed Commune downloads to replace itself, so their names and their
 # signing matter as much as the builds do.
+#
+# # Why the platforms run in parallel
+#
+# They did not, at first. The jobs were chained android -> flatpak -> windows
+# -> macos, deliberately, so that the platform most likely to fail ran last
+# and a failure was cheap to reach. That was the right shape while none of
+# them had ever run: the first attempt at each found real defects, and there
+# was no point compiling macOS to learn that Android was broken.
+#
+# It is the wrong shape now that all of them pass. A release needs every
+# platform regardless of order, so ordering buys nothing and the chain costs
+# the sum of the jobs instead of the longest one — about two and a quarter
+# hours against fifty minutes. The one dependency left is real: the universal
+# bundle cannot be merged before the two halves exist.
 name: build
 
 on:
@@ -135,9 +149,7 @@ jobs:
   flatpak:
     if: >-
       !cancelled()
-      && !contains(needs.*.result, 'failure')
       && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' flatpak '))
-    needs: [android]
     name: Flatpak bundle
     runs-on: ubuntu-latest
     container:
@@ -202,9 +214,7 @@ jobs:
   windows:
     if: >-
       !cancelled()
-      && !contains(needs.*.result, 'failure')
       && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' windows '))
-    needs: [flatpak]
     name: Windows installer
     runs-on: windows-latest
     # Not a gate, a subject. A federated credential cannot have a wildcard
@@ -419,9 +429,7 @@ jobs:
   macos-half:
     if: >-
       !cancelled()
-      && !contains(needs.*.result, 'failure')
       && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' macos '))
-    needs: [windows]
     name: macOS ${{ matrix.arch }} bundle
     strategy:
       fail-fast: false
@@ -581,7 +589,6 @@ jobs:
   macos:
     if: >-
       !cancelled()
-      && !contains(needs.*.result, 'failure')
       && needs['macos-half'].result == 'success'
       && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' macos '))
     needs: [macos-half]
