@@ -556,7 +556,22 @@ SIGN_ERR="$OUT_DIR/.codesign-err"
 
 # Nested code first, the bundle last. `--deep` would do this in one call but is
 # deprecated, and it signs in an order codesign itself warns about.
+#
+# The bundle's main executable is deliberately not signed here. The
+# bundle-level call below signs it, with the entitlements, and doing it twice
+# is worse than redundant: codesign handed a bundle's main executable signs
+# the *bundle*, so it validates nested code — and at this point in the loop
+# most of the dylibs have not been signed yet. It fails with
+#
+#     code object is not signed at all
+#     In subcomponent: .../Contents/Frameworks/libharfbuzz-subset.0.dylib
+#
+# naming whichever dylib it happened to reach first. Whether it failed at all
+# came down to the order `find` returned, which is readdir order and therefore
+# luck: on the same tree and the same code, the arm64 half signed the dylibs
+# before the executable and passed, and the x86_64 half did not and did not.
 while read -r f; do
+    [ "$f" = "$CONTENTS/MacOS/$EXECUTABLE" ] && continue
     file "$f" | grep -q 'Mach-O' || continue
     # shellcheck disable=SC2086 -- SIGN_FLAGS is a flag list on purpose
     codesign --force $SIGN_FLAGS --sign "$IDENTITY" "$f" 2>"$SIGN_ERR" || {

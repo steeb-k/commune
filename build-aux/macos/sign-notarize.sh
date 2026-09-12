@@ -140,8 +140,19 @@ find "$bundle" -type f \( -name '*.dylib' -o -name '*.so' \) -print0 \
     | xargs -0 -n1 codesign --force --timestamp --options runtime \
         --sign "$CODESIGN_IDENTITY"
 
-find "$bundle/Contents/MacOS" "$bundle/Contents/Resources/libexec" -type f -perm -u+x 2>/dev/null \
+# The main executable is excluded here and left to the bundle-level call
+# below, for the reason `bundle.sh` gives at the same point: codesign handed
+# a bundle's main executable signs the bundle, which validates nested code —
+# and `gst-plugin-scanner` is nested code signed in this very pass. Whether
+# that mattered would come down to the order `find` returned, which is
+# readdir order and therefore luck. The same coin failed the x86_64 half of
+# the first real macOS build and spared the arm64 one.
+main="$(plutil -extract CFBundleExecutable raw -o - "$bundle/Contents/Info.plist")"
+find "$bundle/Contents/MacOS" "$bundle/Contents/Resources/libexec" -type f -perm -u+x \
     | while IFS= read -r executable; do
+        if [ "$executable" = "$bundle/Contents/MacOS/$main" ]; then
+            continue
+        fi
         codesign --force --timestamp --options runtime \
             --sign "$CODESIGN_IDENTITY" "$executable"
     done
