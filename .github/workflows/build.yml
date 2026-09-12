@@ -379,8 +379,9 @@ jobs:
             mingw-w64-ucrt-x86_64-ntldd mingw-w64-ucrt-x86_64-icoutils
             git
 
-      - name: Cache the Cargo registry and the build
-        uses: actions/cache@v4
+      - name: Restore the Cargo registry and the build
+        id: windows-cache
+        uses: actions/cache/restore@v4
         with:
           # `CARGO_HOME` stays the default one on purpose: doc/windows.md
           # records that rooting it inside the build directory pushes the
@@ -413,6 +414,25 @@ jobs:
           export PATH="$PATH:$(cygpath -u "$USERPROFILE")/.cargo/bin"
           meson setup _build -Dprofile=${{ inputs.meson-profile }} -Dklipy-api-key="$KLIPY_API_KEY"
           meson compile -C _build windows-bundle
+
+      - name: Save the Cargo registry and the build
+        # Split from the restore for the same reason the macOS environment
+        # was: `actions/cache` saves in a post step, and a post step is
+        # skipped when the job fails. The release build failed at signing —
+        # the last step, seventy minutes in — and threw away every compiled
+        # crate on the way out, so the rebuild started from nothing.
+        #
+        # Saving here rather than at the end is also what keeps a half-built
+        # tree from being cached: this only runs because the bundle step
+        # before it succeeded.
+        if: always() && steps.windows-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ steps.windows-cache.outputs.cache-primary-key }}
 
       - name: Sign in to Azure again
         # Because the first sign-in has expired by now, and the failure it
