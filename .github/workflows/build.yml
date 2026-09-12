@@ -432,6 +432,7 @@ jobs:
             conda-platform: osx-arm64
             conda-env: arm64
             conda-flags: ''
+            sass-arch: arm64
           - arch: x86_64
             # GitHub retires the Intel runner in autumn 2027. When it goes
             # this half either cross-builds under Rosetta or the universal
@@ -440,7 +441,12 @@ jobs:
             runner: macos-15-intel
             conda-platform: osx-64
             conda-env: x86
-            conda-flags: '--universal'
+            # NOT `--universal`. That builds the arm64 environment too, whose
+            # post-link scripts are arm64 binaries — and while Rosetta runs
+            # x86 on Apple Silicon, nothing runs arm64 on an Intel Mac. The
+            # first attempt died here, on gdk-pixbuf's loader cache.
+            conda-flags: '--x86-only'
+            sass-arch: x64
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v5
@@ -475,6 +481,17 @@ jobs:
         # flag. It costs that runner the from-source trio twice, which the
         # cache above pays for only once.
         run: bash build-aux/macos/setup-conda-macos.sh ${{ matrix.conda-flags }}
+
+      - name: A SASS compiler
+        # `data/resources/meson.build` wants `grass` or `sass`, and neither
+        # half had one. The first macOS attempt spent nine minutes building
+        # the whole conda environment before `meson setup` said so. The
+        # Linux gate downloads this same prebuilt dart-sass; the Windows job
+        # builds grass with cargo instead.
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/sass.tar.gz" "https://github.com/sass/dart-sass/releases/download/1.83.4/dart-sass-1.83.4-macos-${{ matrix.sass-arch }}.tar.gz"
+          tar -xzf "$RUNNER_TEMP/sass.tar.gz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/dart-sass" >> "$GITHUB_PATH"
 
       - name: Build the bundle
         env:
