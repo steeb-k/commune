@@ -96,17 +96,32 @@ while IFS= read -r -d '' file; do
     merged=$((merged + 1))
 done < <(find "$output" -type f -print0)
 
-# Anything the x86_64 bundle has and the arm64 one does not is just as much a
-# divergence as the other way round.
+# The same in the other direction. `ditto` seeded the output from the arm64
+# bundle, so a file only the x86_64 one has is not in the output at all yet
+# and has to be copied in — otherwise the x86_64 slice would be missing a
+# library it names, which is the one way this can produce a bundle that
+# launches on one architecture and not the other.
 while IFS= read -r -d '' file; do
     relative="${file#"$x86_64_bundle"/}"
+    [ -f "$output/$relative" ] && continue
 
-    if [ ! -f "$output/$relative" ]; then
-        die "$relative is in the x86_64 bundle but not the arm64 one"
-    fi
+    case "$(file -b "$file")" in
+    *Mach-O*)
+        mkdir -p "$(dirname "$output/$relative")"
+        cp -p "$file" "$output/$relative"
+        one_sided=$((one_sided + 1))
+        printf 'lipo-bundles: x86_64 only, kept single-arch: %s\n' "$relative" >&2
+        ;;
+    *)
+        # Not a binary, so there is no architecture to explain it away: the
+        # two builds produced different files.
+        die "$relative is in the x86_64 bundle but not the arm64 one, and is not a binary"
+        ;;
+    esac
 done < <(find "$x86_64_bundle" -type f -print0)
 
-printf 'lipo-bundles: merged %s binaries, carried %s other files\n' "$merged" "$copied" >&2
+printf 'lipo-bundles: merged %s binaries, carried %s other files, %s single-arch\n' \
+    "$merged" "$copied" "$one_sided" >&2
 
 # Worth stating in the log: this is the number that decides
 # `LSMinimumSystemVersion`, and the whole reason the bundle can run on macOS
