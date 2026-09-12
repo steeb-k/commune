@@ -820,6 +820,12 @@ mod imp {
             // A drop of several files arrives as a list; one file still
             // arrives on its own.
             target.set_types(&[gdk::FileList::static_type(), gio::File::static_type()]);
+            // The overlay covers the composer, whose text view has a drop
+            // target of its own for text. Claiming the drag on the way down
+            // keeps a file dropped onto the composer from landing there as
+            // its path; a drag that carries no file is left alone and still
+            // reaches the text view.
+            target.set_propagation_phase(gtk::PropagationPhase::Capture);
 
             target.connect_drop(clone!(
                 #[weak(rename_to = imp)]
