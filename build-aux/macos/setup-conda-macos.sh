@@ -3,7 +3,15 @@
 #
 #   build-aux/macos/setup-conda-macos.sh              # osx-arm64 env
 #   build-aux/macos/setup-conda-macos.sh --universal  # + osx-64 env, for lipo
+#   build-aux/macos/setup-conda-macos.sh --x86-only   # osx-64 env alone
 #   build-aux/macos/setup-conda-macos.sh --skip-extras
+#
+# `--universal` works on Apple Silicon, where Rosetta runs the osx-64
+# packages' post-link scripts. It does NOT work on an Intel Mac, because
+# nothing translates arm64 back to x86 — the osx-arm64 post-link scripts are
+# arm64 binaries that machine cannot execute, and the install dies on
+# gdk-pixbuf's loader cache. An Intel machine building its half of a universal
+# bundle therefore wants `--x86-only`, not `--universal`.
 #
 # Why conda-forge and not Homebrew: conda-forge builds its osx-arm64 packages
 # against the macOS 11 SDK and its osx-64 packages against ~10.13, so every
@@ -56,11 +64,13 @@ libwebp sqlite adwaita-icon-theme
 gobject-introspection pygobject meson ninja
 "
 
-UNIVERSAL=0
+# Which environments to create: arm, x86, or both.
+WHICH=arm
 SKIP_EXTRAS=0
 for arg in "$@"; do
     case "$arg" in
-    --universal) UNIVERSAL=1 ;;
+    --universal) WHICH=both ;;
+    --x86-only) WHICH=x86 ;;
     --skip-extras) SKIP_EXTRAS=1 ;;
     *)
         echo "setup-conda-macos: unknown argument: $arg" >&2
@@ -374,15 +384,28 @@ build_webrtc() { # <env-path>
     echo "setup-conda-macos: webrtcbin is available"
 }
 
-create_env osx-arm64 "$ARM_ENV"
-[ "$UNIVERSAL" = 1 ] && create_env osx-64 "$X86_ENV"
+# The environments this run is responsible for, as pairs.
+ENVS=()
+case "$WHICH" in
+arm) ENVS=(osx-arm64 "$ARM_ENV") ;;
+x86) ENVS=(osx-64 "$X86_ENV") ;;
+both) ENVS=(osx-arm64 "$ARM_ENV" osx-64 "$X86_ENV") ;;
+esac
+
+for ((i = 0; i < ${#ENVS[@]}; i += 2)); do
+    create_env "${ENVS[i]}" "${ENVS[i + 1]}"
+done
 
 if [ "$SKIP_EXTRAS" = 0 ]; then
-    build_extras "$ARM_ENV"
-    [ "$UNIVERSAL" = 1 ] && build_extras "$X86_ENV"
+    for ((i = 0; i < ${#ENVS[@]}; i += 2)); do
+        build_extras "${ENVS[i + 1]}"
+    done
 else
     echo "setup-conda-macos: skipping blueprint-compiler, gst-plugin-gtk4 and webrtcbin"
 fi
+
+# The closing advice should name an environment this run actually created.
+PRIMARY="${ENVS[1]}"
 
 cat <<EOF
 
@@ -390,14 +413,14 @@ setup-conda-macos: done.
 
 Point the build at the env, then check it:
 
-    export PKG_CONFIG_PATH=$ARM_ENV/lib/pkgconfig
-    export PKG_CONFIG_LIBDIR=$ARM_ENV/lib/pkgconfig
-    export PATH=$ARM_ENV/bin:\$PATH
-    export GI_TYPELIB_PATH=$ARM_ENV/lib/girepository-1.0
-    export XDG_DATA_DIRS=$ARM_ENV/share
+    export PKG_CONFIG_PATH=$PRIMARY/lib/pkgconfig
+    export PKG_CONFIG_LIBDIR=$PRIMARY/lib/pkgconfig
+    export PATH=$PRIMARY/bin:\$PATH
+    export GI_TYPELIB_PATH=$PRIMARY/lib/girepository-1.0
+    export XDG_DATA_DIRS=$PRIMARY/share
     export MACOSX_DEPLOYMENT_TARGET=11.0
 
-    sh build-aux/macos/probe-env.sh
+    bash build-aux/macos/probe-env.sh
 
 PKG_CONFIG_LIBDIR matters as much as PKG_CONFIG_PATH: it replaces the default
 search path, so nothing leaks in from the two Homebrew prefixes on this machine
