@@ -752,8 +752,41 @@ jobs:
           mkdir -p dist
           bash build-aux/macos/make-tarball.sh "$COMMUNE_APP" "dist/commune-$version-universal.tar.gz"
 
+      - name: Make the disk image
+        # Both shapes ship, because they are for different things and neither
+        # substitutes for the other.
+        #
+        # The disk image is what a person downloading from the release page
+        # expects: open it, drag the icon to Applications. The tarball is what
+        # the updater fetches, and it has to be a tarball — a process that
+        # extracts one never sets `com.apple.quarantine`, while anything a
+        # browser downloads carries it, and a quarantined app is checked by
+        # Gatekeeper on first launch. The feed keeps pointing at the tarball.
+        run: |
+          version="$(bash build-aux/ci/project-version.sh)"
+          bash build-aux/macos/make-dmg.sh "$COMMUNE_APP" "dist/commune-$version-universal.dmg"
+
+      - name: Notarize the disk image
+        # The app inside was notarized and stapled before the image was built,
+        # but Gatekeeper checks the image's own ticket first when a browser
+        # downloaded it — so the image needs one of its own.
+        if: inputs.sign
+        env:
+          NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          NOTARY_PASSWORD: ${{ secrets.MACOS_NOTARY_PASSWORD }}
+          NOTARY_APPLE_ID: ${{ secrets.MACOS_NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
+          ALLOW_UNNOTARIZED: ${{ vars.ALLOW_UNNOTARIZED }}
+        run: |
+          dmg="$(find dist -name '*.dmg' | head -1)"
+          bash build-aux/macos/sign-notarize.sh --notarize-only "$dmg"
+
       - uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: dist/*.tar.gz
+          path: |
+            dist/*.tar.gz
+            dist/*.dmg
           if-no-files-found: error

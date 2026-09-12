@@ -51,6 +51,23 @@
 
 set -euo pipefail
 
+# `--notarize-only <file>` notarizes and staples something already built and
+# already signed, rather than signing a bundle first. It exists for the disk
+# image: the `.app` inside it is signed and stapled by the ordinary path
+# above, but a `.dmg` a browser downloads is itself quarantined, and
+# Gatekeeper checks the image's own ticket before it ever looks inside. So the
+# image needs notarizing too.
+#
+# A mode of this script rather than a script of its own, because the
+# alternative is a second copy of the credential selection and the verdict
+# check below — and the verdict check exists precisely because the obvious way
+# to write it is wrong.
+notarize_only=0
+if [ "${1:-}" = '--notarize-only' ]; then
+    notarize_only=1
+    shift
+fi
+
 bundle="${1:-}"
 
 die() {
@@ -58,12 +75,19 @@ die() {
     exit 1
 }
 
-[ -n "$bundle" ] || die "usage: sign-notarize.sh path/to/Commune.app"
-[ -d "$bundle" ] || die "not a bundle: $bundle"
+if [ "$notarize_only" = 1 ]; then
+    [ -n "$bundle" ] || die "usage: sign-notarize.sh --notarize-only path/to/Commune.dmg"
+    [ -f "$bundle" ] || die "not a file: $bundle"
+else
+    [ -n "$bundle" ] || die "usage: sign-notarize.sh path/to/Commune.app"
+    [ -d "$bundle" ] || die "not a bundle: $bundle"
 
-for required in CODESIGN_IDENTITY CERTIFICATE_P12 CERTIFICATE_PASSWORD; do
-    [ -n "${!required:-}" ] || die "$required is not set"
-done
+    # Only the signing path needs a certificate. Notarizing something already
+    # signed needs the notary credential and nothing else.
+    for required in CODESIGN_IDENTITY CERTIFICATE_P12 CERTIFICATE_PASSWORD; do
+        [ -n "${!required:-}" ] || die "$required is not set"
+    done
+fi
 
 # How to authenticate to the notary service, or whether to at all.
 #
@@ -106,63 +130,66 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# A keychain of its own, deleted on the way out. The runner is thrown away
-# anyway; this is so that a local run of the same script cannot leave a
-# certificate behind in the login keychain.
-security create-keychain -p "$keychain_password" "$keychain"
-security set-keychain-settings -lut 21600 "$keychain"
-security unlock-keychain -p "$keychain_password" "$keychain"
+if [ "$notarize_only" = 0 ]; then
+    # A keychain of its own, deleted on the way out. The runner is thrown away
+    # anyway; this is so that a local run of the same script cannot leave a
+    # certificate behind in the login keychain.
+    security create-keychain -p "$keychain_password" "$keychain"
+    security set-keychain-settings -lut 21600 "$keychain"
+    security unlock-keychain -p "$keychain_password" "$keychain"
 
-printf '%s' "$CERTIFICATE_P12" | base64 --decode > "$work/certificate.p12"
-security import "$work/certificate.p12" \
-    -k "$keychain" \
-    -P "$CERTIFICATE_PASSWORD" \
-    -T /usr/bin/codesign \
-    -T /usr/bin/security
+    printf '%s' "$CERTIFICATE_P12" | base64 --decode > "$work/certificate.p12"
+    security import "$work/certificate.p12" \
+        -k "$keychain" \
+        -P "$CERTIFICATE_PASSWORD" \
+        -T /usr/bin/codesign \
+        -T /usr/bin/security
 
-# Without this, every `codesign` call stops on a GUI prompt that nothing on a
-# runner will ever answer.
-security set-key-partition-list -S apple-tool:,apple:,codesign: \
-    -s -k "$keychain_password" "$keychain" >/dev/null
+    # Without this, every `codesign` call stops on a GUI prompt that nothing on a
+    # runner will ever answer.
+    security set-key-partition-list -S apple-tool:,apple:,codesign: \
+        -s -k "$keychain_password" "$keychain" >/dev/null
 
-# Put it in front of the search list rather than replacing it, so the system
-# roots the chain is validated against are still reachable.
-security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+    # Put it in front of the search list rather than replacing it, so the system
+    # roots the chain is validated against are still reachable.
+    security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
 
-# Re-sign the whole bundle with the real identity. `bundle.sh` did this once
-# already with an ad-hoc one and, on the universal path, `lipo` replaced every
-# binary afterwards — so what is on disk now is unsigned as far as Gatekeeper
-# is concerned.
-#
-# Nested first and the bundle last, and never `--deep`, which Apple
-# deprecated: the same order `bundle.sh` uses.
-find "$bundle" -type f \( -name '*.dylib' -o -name '*.so' \) -print0 \
-    | xargs -0 -n1 codesign --force --timestamp --options runtime \
-        --sign "$CODESIGN_IDENTITY"
+    # Re-sign the whole bundle with the real identity. `bundle.sh` did this once
+    # already with an ad-hoc one and, on the universal path, `lipo` replaced every
+    # binary afterwards — so what is on disk now is unsigned as far as Gatekeeper
+    # is concerned.
+    #
+    # Nested first and the bundle last, and never `--deep`, which Apple
+    # deprecated: the same order `bundle.sh` uses.
+    find "$bundle" -type f \( -name '*.dylib' -o -name '*.so' \) -print0 \
+        | xargs -0 -n1 codesign --force --timestamp --options runtime \
+            --sign "$CODESIGN_IDENTITY"
 
-# The main executable is excluded here and left to the bundle-level call
-# below, for the reason `bundle.sh` gives at the same point: codesign handed
-# a bundle's main executable signs the bundle, which validates nested code —
-# and `gst-plugin-scanner` is nested code signed in this very pass. Whether
-# that mattered would come down to the order `find` returned, which is
-# readdir order and therefore luck. The same coin failed the x86_64 half of
-# the first real macOS build and spared the arm64 one.
-main="$(plutil -extract CFBundleExecutable raw -o - "$bundle/Contents/Info.plist")"
-find "$bundle/Contents/MacOS" "$bundle/Contents/Resources/libexec" -type f -perm -u+x \
-    | while IFS= read -r executable; do
-        if [ "$executable" = "$bundle/Contents/MacOS/$main" ]; then
-            continue
-        fi
-        codesign --force --timestamp --options runtime \
-            --sign "$CODESIGN_IDENTITY" "$executable"
-    done
+    # The main executable is excluded here and left to the bundle-level call
+    # below, for the reason `bundle.sh` gives at the same point: codesign handed
+    # a bundle's main executable signs the bundle, which validates nested code —
+    # and `gst-plugin-scanner` is nested code signed in this very pass. Whether
+    # that mattered would come down to the order `find` returned, which is
+    # readdir order and therefore luck. The same coin failed the x86_64 half of
+    # the first real macOS build and spared the arm64 one.
+    main="$(plutil -extract CFBundleExecutable raw -o - "$bundle/Contents/Info.plist")"
+    find "$bundle/Contents/MacOS" "$bundle/Contents/Resources/libexec" -type f -perm -u+x \
+        | while IFS= read -r executable; do
+            if [ "$executable" = "$bundle/Contents/MacOS/$main" ]; then
+                continue
+            fi
+            codesign --force --timestamp --options runtime \
+                --sign "$CODESIGN_IDENTITY" "$executable"
+        done
 
-entitlements="$(dirname "$0")/entitlements.plist"
-codesign --force --timestamp --options runtime \
-    --entitlements "$entitlements" \
-    --sign "$CODESIGN_IDENTITY" "$bundle"
+    entitlements="$(dirname "$0")/entitlements.plist"
+    codesign --force --timestamp --options runtime \
+        --entitlements "$entitlements" \
+        --sign "$CODESIGN_IDENTITY" "$bundle"
 
-codesign --verify --deep --strict --verbose=2 "$bundle"
+    codesign --verify --deep --strict --verbose=2 "$bundle"
+fi
+
 
 if [ "$notarize" = "no" ]; then
     # Deliberate, and worth saying loudly. A signed but un-notarized build
@@ -175,9 +202,15 @@ if [ "$notarize" = "no" ]; then
     exit 0
 fi
 
-# Notarization takes a zip, not a directory. `ditto -c -k` is the only
-# archiver Apple documents for this.
-ditto -c -k --keepParent "$bundle" "$work/notarize.zip"
+# What gets submitted. Notarization takes a file, so a bundle has to be
+# zipped first and `ditto -c -k` is the only archiver Apple documents for it.
+# A disk image is already a single file and is submitted as it stands.
+if [ "$notarize_only" = 1 ]; then
+    submit="$bundle"
+else
+    submit="$work/notarize.zip"
+    ditto -c -k --keepParent "$bundle" "$submit"
+fi
 
 # Whichever credential is in play the call has the same shape, so build the
 # arguments once rather than duplicating the invocation twice over.
@@ -195,7 +228,7 @@ fi
 # find a ticket. The reason lives in the notary log and nowhere else, so ask
 # for it here rather than leaving somebody to find out that it exists.
 printf 'sign-notarize: submitting to the notary service; this takes minutes\n' >&2
-xcrun notarytool submit "$work/notarize.zip" "$@" --wait --output-format json \
+xcrun notarytool submit "$submit" "$@" --wait --output-format json \
     > "$work/submit.json" || true
 cat "$work/submit.json" >&2
 

@@ -108,7 +108,7 @@ jobs:
           # except that it runs on half the Macs. They are build
           # intermediates and have no business here.
           find artifacts -type f \
-              \( -name '*.msi' -o -name '*.tar.gz' -o -name '*.apk' -o -name '*.flatpak' \) \
+              \( -name '*.msi' -o -name '*.tar.gz' -o -name '*.dmg' -o -name '*.apk' -o -name '*.flatpak' \) \
               -not -name 'bundle.tar.gz' \
               -exec cp {} dist/ ';'
           ls -la dist
