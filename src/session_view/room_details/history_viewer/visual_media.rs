@@ -529,6 +529,8 @@ mod imp {
         }
 
         /// Show the given media item in the media viewer.
+        // Only the Android arm below reaches for the viewer this widget owns.
+        #[cfg_attr(not(target_os = "android"), allow(clippy::unused_self))]
         pub(super) fn show_media_viewer(&self, item: &VisualMediaItem) {
             let Some(event) = item.event() else {
                 return;
