@@ -20,9 +20,13 @@ Which upstream tree a build came from is [`doc/fork.md`](doc/fork.md)'s job, not
   `.github/workflows/check.yml` runs the same `hooks/checks` binary on every push, so this is
   a second opinion rather than the whole gate it used to be — the inherited `.gitlab-ci.yml`
   still never runs anywhere.
-* Check that `hooks/doc-freshness` reports the pages level with the code, and that
-  [`doc/eyeball-tests.md`](doc/eyeball-tests.md) has no unstruck entries for anything the release
-  ships.
+* Check that `hooks/doc-freshness` reports the pages level with the code.
+* **For a stable release**, check that [`doc/eyeball-tests.md`](doc/eyeball-tests.md) has no
+  unstruck entries for anything the release ships. A release candidate ships without them, which
+  was decided on 12 September 2026 when 1.rc1 went out with all 90 unstruck: getting those checks
+  done on real installations is part of what a candidate is for, so requiring them beforehand
+  makes the candidate phase into the thing it exists to replace. The entries still have to be
+  struck before the plain release that follows.
 * Build both Flatpak manifests and check that the app starts, signs in, and that an existing
   session still restores. See [`doc/flatpak.md`](doc/flatpak.md).
 
