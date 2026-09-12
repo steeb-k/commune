@@ -119,6 +119,16 @@ while IFS= read -r -d '' file; do
     relative="${file#"$x86_64_bundle"/}"
     [ -f "$output/$relative" ] && continue
 
+    # The output's own ad-hoc signature was deleted above, so the x86_64
+    # bundle still having one is not a divergence between the builds — it is
+    # the thing that was just thrown away on purpose, and signing the merged
+    # bundle writes a new one. Without this the script reports
+    # `Contents/_CodeSignature/CodeResources is in the x86_64 bundle but not
+    # the arm64 one`, which is true and means nothing.
+    case "$relative" in
+    Contents/_CodeSignature/*) continue ;;
+    esac
+
     case "$(file -b "$file")" in
     *Mach-O*)
         mkdir -p "$(dirname "$output/$relative")"
