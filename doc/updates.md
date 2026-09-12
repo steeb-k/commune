@@ -18,6 +18,7 @@ changing what it does.
 * [When the updater stays quiet](#when-the-updater-stays-quiet)
 * [The keys](#the-keys)
 * [Continuous integration](#continuous-integration)
+* [Watching a run](#watching-a-run)
 * [Testing it without publishing a release](#testing-it-without-publishing-a-release)
 * [What has not been seen working](#what-has-not-been-seen-working)
 <!-- /toc -->
@@ -317,9 +318,36 @@ before the bundle takes about two minutes; the bundle itself takes forty. A
 credential that does not work should therefore say so at minute two, and the
 first version of this job said so at minute forty-three — having compiled the
 whole application to find out. The signing steps now come first and end with a
-real signature over a throwaway copy of a system binary, because nothing short
-of that exercises the endpoint, the federated identity, the signing library
-and `signtool` together.
+real signature, because nothing short of that exercises the endpoint, the
+federated identity, the signing library and `signtool` together.
+
+Getting that check to mean anything took three tries, and the two wrong ones
+are worth keeping. The first signed a copy of a system binary and then asked
+whether it was signed: it was, by Microsoft, before the job ever started, so
+the check passed without the credential working at all. The second tried to
+strip that signature first — which cannot be done, because system binaries are
+signed through a catalog and there is no embedded signature in the file to
+remove, so `signtool` answered `0x57` and the guard refused to continue. The
+third compiles a one-line C# program with the .NET Framework compiler, which
+sits at a fixed path on every Windows image. A binary that has existed for two
+seconds is one nobody has signed, and the step asserts both halves: not signed
+before, signed afterwards by a subject that is not Microsoft.
+
+## Watching a run
+
+`build-aux/ci/watch-run.sh` blocks until a run finishes and then prints the
+failing step and the tail of its log. It exists because of a failure of
+process rather than of code: runs were being started and then left, so the
+person who found out the build was broken was the one who had asked for it.
+
+```sh
+gh workflow run nightly.yml -f platforms=windows -f publish=false
+bash build-aux/ci/watch-run.sh
+```
+
+The rule it encodes: **a run nobody is waiting on is a run whose result
+arrives by complaint.** Do not call a build done until something has printed a
+conclusion.
 
 ## Testing it without publishing a release
 
@@ -328,7 +356,7 @@ manifest and a signature on it:
 
 ```sh
 export UPDATE_FEED_PRIVATE_KEY="$(cat feed-private.pem)"
-sh build-aux/ci/publish-feed.sh \
+bash build-aux/ci/publish-feed.sh \
     --channel stable --version 9.0.0 --build 99999 \
     --notes-url https://example.invalid/notes \
     --out-dir /tmp/feed \
