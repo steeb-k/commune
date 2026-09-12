@@ -298,6 +298,15 @@ a release build: GTK can move underneath the port without a commit changing.
 The Windows job uploads `probe-env.txt` as an artifact, and that is the audit
 trail for what a given build actually used.
 
+**The Windows job checks it can sign before it builds anything.** Everything
+before the bundle takes about two minutes; the bundle itself takes forty. A
+credential that does not work should therefore say so at minute two, and the
+first version of this job said so at minute forty-three — having compiled the
+whole application to find out. The signing steps now come first and end with a
+real signature over a throwaway copy of a system binary, because nothing short
+of that exercises the endpoint, the federated identity, the signing library
+and `signtool` together.
+
 ## Testing it without publishing a release
 
 `COMMUNE_UPDATE_FEED` points the check somewhere else — any HTTP server with a
