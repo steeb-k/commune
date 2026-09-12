@@ -196,11 +196,26 @@ jobs:
           # `src/config.rs`, so read it from there rather than assuming the
           # default prefix.
           ninja -C _build data/resources/resources.gresource src/ui-resources.gresource
-          pkgdata="$(sed -n 's/.*RESOURCES_FILE.*concat!("\([^"]*\)".*/\1/p' src/config.rs)"
+          # Anchored, and only the first answer. `UI_RESOURCES_FILE`
+          # contains `RESOURCES_FILE` as a substring, so an unanchored match
+          # returns the path twice — and `mkdir -p` on two lines makes a
+          # directory with a newline in its name, which is where the first
+          # version of this step put the data while the application looked
+          # in the real place and aborted.
+          pkgdata="$(sed -n 's/^pub(crate) const RESOURCES_FILE.*concat!("\([^"]*\)".*/\1/p' src/config.rs | head -1)"
           echo "PKGDATADIR is $pkgdata"
           mkdir -p "$pkgdata"
           cp _build/data/resources/resources.gresource "$pkgdata/"
           cp _build/src/ui-resources.gresource "$pkgdata/"
+
+          # Say so here rather than as an abort forty lines later.
+          for f in resources.gresource ui-resources.gresource; do
+            if [ ! -f "$pkgdata/$f" ]; then
+              echo "::error::$pkgdata/$f is missing; the application will not start"
+              ls -la "$pkgdata" || true
+              exit 1
+            fi
+          done
 
           # GSettings aborts outright on a schema it cannot find, and the
           # schema is generated into the build directory rather than installed.
