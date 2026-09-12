@@ -284,36 +284,44 @@ jobs:
         env:
           # The same metadata the real signing uses. Without it `sign.ps1`
           # finds no file, prints a warning and returns having signed
-          # nothing — which is exactly how the first version of this step
-          # passed while signing nothing at all.
+          # nothing — which is how the first version of this step passed
+          # while signing nothing at all.
           ARTIFACT_SIGNING_METADATA: build-aux/windows/artifact-signing-metadata.ci.json
         # Before the build, not after it. Everything above takes two minutes
         # and the bundle takes forty, so a credential that does not work
         # should say so now — which it did not, twice, having compiled the
         # whole application first.
         run: |
-          $probe = Join-Path $env:RUNNER_TEMP "signing-probe.exe"
-          Copy-Item "$env:SystemRoot\System32\where.exe" $probe -Force
+          # A freshly built binary, because the probe has to start out
+          # unsigned for the check at the end to mean anything. The first
+          # attempt copied a system binary, which Microsoft has already
+          # signed, and then asked whether it was signed — proving nothing.
+          # The second tried to strip that signature, which cannot be done:
+          # system binaries are catalog-signed, so there is no embedded
+          # signature to remove and signtool answers 0x57.
+          #
+          # So: compile one. The .NET Framework compiler is at a fixed path on
+          # every Windows image and needs no restore, so this costs a couple
+          # of seconds and produces a PE nobody has ever signed.
+          $dir = Join-Path $env:RUNNER_TEMP "signprobe"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $src = Join-Path $dir "probe.cs"
+          Set-Content $src "class P { static void Main() { } }"
+          $probe = Join-Path $dir "probe.exe"
+          $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+          if (-not (Test-Path $csc)) { throw "no C# compiler at $csc" }
+          & $csc /nologo /out:$probe $src
+          if (-not (Test-Path $probe)) { throw "the probe did not compile" }
 
-          # Strip Microsoft's signature first. The point is subtle and cost a
-          # run: a system binary arrives already signed, so checking "is it
-          # signed" afterwards proves nothing whatever. Stripping first means
-          # the only signature that can be there at the end is ours.
-          $signtool = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
-            Where-Object { $_.FullName -match "x64" } | Sort-Object FullName -Descending | Select-Object -First 1).FullName
-          & $signtool remove /s $probe | Out-Null
           $before = Get-AuthenticodeSignature $probe
-          if ($before.Status -eq "Valid") { throw "could not strip the probe signature; the check would prove nothing" }
           Write-Host "probe before: $($before.Status)"
+          if ($before.Status -eq "Valid") { throw "the probe is already signed; the check would prove nothing" }
 
           pwsh -File build-aux\windows\sign.ps1 -Files $probe
 
           $after = Get-AuthenticodeSignature $probe
           Write-Host "probe after:  $($after.Status) by $($after.SignerCertificate.Subject)"
           if ($after.Status -ne "Valid") { throw "the signing chain produced $($after.Status)" }
-          if ($after.SignerCertificate.Subject -match "Microsoft Corporation") {
-            throw "the probe still carries Microsoft's signature, so nothing was signed"
-          }
 
       - uses: msys2/setup-msys2@v2
         with:
