@@ -63,6 +63,7 @@ find "$output" -name '_CodeSignature' -type d -prune -exec rm -rf {} +
 
 merged=0
 copied=0
+one_sided=0
 
 while IFS= read -r -d '' file; do
     relative="${file#"$output"/}"
@@ -83,7 +84,20 @@ while IFS= read -r -d '' file; do
     esac
 
     if [ ! -f "$other" ]; then
-        die "$relative is in the arm64 bundle but not the x86_64 one"
+        # A library that only one architecture's binaries link. The walk in
+        # `bundle.sh` copies what `otool -L` actually names, and
+        # conda-forge's two platforms do not always produce the same graph:
+        # its osx-arm64 `libsqlite3` links `libicui18n` and its osx-64 build
+        # of the same package does not.
+        #
+        # Carrying it through as a single-architecture file is correct and
+        # not merely tolerable. dyld resolves by path, per slice: the arm64
+        # slice that asks for this library finds it, and nothing in the
+        # x86_64 slice ever asks. A universal bundle needs every file each
+        # slice names, not every file fat.
+        one_sided=$((one_sided + 1))
+        printf 'lipo-bundles: arm64 only, kept single-arch: %s\n' "$relative" >&2
+        continue
     fi
 
     lipo -create "$file" "$other" -output "$file.universal"
