@@ -50,7 +50,13 @@ mod imp {
         ///
         /// One per installation rather than per window: the settings row and
         /// the toast are two views of the same check.
-        pub(super) updates: Updates,
+        ///
+        /// Created in `startup()` rather than here: reading its stored
+        /// settings goes through the core, and the core is not configured
+        /// until `startup()` has told it who it is embedded in. Empty on a
+        /// second instance, which never gets a `startup()` and never shows a
+        /// window that could ask.
+        pub(super) updates: OnceCell<Updates>,
     }
 
     impl Default for Application {
@@ -62,7 +68,7 @@ mod imp {
                 intent_handler: Default::default(),
                 last_network_state: Default::default(),
                 paths: Default::default(),
-                updates: Updates::new(),
+                updates: Default::default(),
             }
         }
     }
@@ -149,26 +155,11 @@ mod imp {
             // has started it at construction time — `main()` builds the
             // `Application` before `startup()` has run. It is done there
             // instead, which is also the first place it could matter, since
-            // there is no window until `activate()`.
+            // there is no window until `activate()`. Neither is the updater,
+            // for the same reason with the core in the place of libadwaita.
 
             #[cfg(debug_assertions)]
             self.set_up_test_notification();
-
-            // Look for a newer release, on a timer that starts a minute and
-            // a half from now. Does nothing at all in a build that could not
-            // install one — see `updates::Updates::start`.
-            self.updates.start();
-            self.updates.connect_closure(
-                "update-announced",
-                false,
-                glib::closure_local!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_: Updates, version: String| {
-                        imp.show_update_toast(&version);
-                    }
-                ),
-            );
 
             // Watch the network to log its state.
             let network_monitor = gio::NetworkMonitor::default();
@@ -277,6 +268,26 @@ mod imp {
 
             // Needs libadwaita started, so it cannot be done at construction.
             self.set_up_color_scheme();
+
+            // Needs the core configured, so it cannot be done at construction
+            // either: the updater reads its stored settings through the core
+            // the moment it exists, and that read is the panic that stopped
+            // 1.rc1 from launching. Look for a newer release on a timer that
+            // starts a minute and a half from now. Does nothing at all in a
+            // build that could not install one — see `updates::Updates::start`.
+            let updates = self.updates.get_or_init(Updates::new);
+            updates.start();
+            updates.connect_closure(
+                "update-announced",
+                false,
+                glib::closure_local!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_: Updates, version: String| {
+                        imp.show_update_toast(&version);
+                    }
+                ),
+            );
 
             // Capture the Java VM while we are still on the thread GTK gave a
             // `JNIEnv` to. The secret store needs it from a tokio worker, which
@@ -722,7 +733,7 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
-                    imp.updates.install();
+                    imp.obj().updates().install();
                 }
             ));
 
@@ -732,7 +743,7 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
-                    imp.updates.skip();
+                    imp.obj().updates().skip();
                 }
             ));
 
@@ -1054,8 +1065,17 @@ impl Application {
     }
 
     /// Whether a newer release exists, and the fetching of it.
+    ///
+    /// # Panics
+    ///
+    /// Before `startup()`, or on an instance that lost registration and so
+    /// never had one. Nothing that asks exists in either case.
     pub(crate) fn updates(&self) -> Updates {
-        self.imp().updates.clone()
+        self.imp()
+            .updates
+            .get()
+            .expect("`startup()` creates the updater before anything can ask for it")
+            .clone()
     }
 
     /// Re-evaluate how messages are delivered while the app is not on screen.

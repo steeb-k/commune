@@ -385,7 +385,14 @@ impl UpdateSettings {
     /// Read them from the settings store.
     #[must_use]
     pub fn load() -> Self {
-        let Some(serialized) = config::settings_store().get(UPDATE_SETTINGS_KEY) else {
+        // An empty string is "never saved" as much as a missing key is: a
+        // `GSettings` string key always has a value, and the schema's
+        // default for this one is `''`. Parsing that would log an error on
+        // every launch of an installation that has never touched the settings.
+        let Some(serialized) = config::settings_store()
+            .get(UPDATE_SETTINGS_KEY)
+            .filter(|serialized| !serialized.is_empty())
+        else {
             return Self::default();
         };
 

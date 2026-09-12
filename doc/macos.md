@@ -706,30 +706,43 @@ between is the behaviour of the individual items and the Command keys, rows 2 to
 
 ## The 1.rc1 bundle does not launch
 
-Open as of 12 September 2026. The `v1.rc1` universal tarball does not open on
-a test Mac. Bundles built by hand on that Mac did. This is the first bundle
-that is `lipo`-merged from two halves, signed with a real Developer ID, and
-run under the hardened runtime, so any of those three is a candidate and the
-hand-built ones exercised none of them.
+Closed on 12 September 2026, the day it was opened. The `v1.rc1` universal
+tarball did not open on a test Mac, and bundles built by hand on that Mac did.
+It was the first bundle that was `lipo`-merged from two halves, signed with a
+real Developer ID and run under the hardened runtime, so the three of those
+were the suspects, and signing coverage, the executable bit and the shape of
+the universal binary were each inspected on the published artefact and ruled
+out before anyone ran it.
 
-Ruled out already, by inspecting the published artefact rather than by
-argument:
+Step 1 of the list below answered it in one line:
 
-* **Signing coverage.** All 154 Mach-O files in the bundle are matched by
-  `sign-notarize.sh`'s two passes. `lipo` destroys every signature, so a file
-  it missed would be unsigned, and the hardened runtime kills a process that
-  loads an unsigned library. Nothing is missed.
-* **The executable bit.** `Contents/MacOS/commune` is `-rwxr-xr-x` inside the
-  published tarball. The merge copies each input's mode onto its output, and
-  `chmod --reference` does not exist on macOS, so the fallback to
-  `stat -f '%Lp'` was the thing to doubt. It works.
-* **The universal binary.** Well-formed: two slices, both with valid Mach-O
-  magic, x86_64 at offset 16384 for 163,928,096 bytes and arm64 at
-  163,954,688 for 157,048,048, summing to the file's own size.
+```text
+thread 'main' panicked at commune-core/src/config.rs:256:10:
+commune_core::config::init() must be called before using the core
+```
 
-What is left needs a Mac, because it needs the error rather than a guess.
-Running the binary straight from a terminal is worth more than the other four
-put together: a dyld failure or a panic prints there and nowhere else.
+The backtrace named `updates::imp::Updates::constructed`, reached from
+`Application::default()`. The updater read its stored settings through the core
+the moment it was constructed, and the application constructed it as a plain
+field — in `main()`, before `startup()`, which is where the core is told who it
+is embedded in. The read panicked, `constructed` cannot unwind, and the process
+aborted before a window existed. None of the three suspects had anything to do
+with it, and neither did CI: the updater landed on 11 September, the day before
+the tag, and the hand-built bundles that worked were built from a tree that
+predated it. Every build of that commit did this, on every platform; macOS was
+only where somebody first ran one.
+
+The fix keeps the updater out of `Application::default()`. It lives in a
+`OnceCell` that `startup()` fills immediately after `config::init()`, next to
+the colour scheme, which is kept out of construction for the same reason with
+libadwaita in the place of the core. A second instance, which never gets a
+`startup()`, never has one, and never has a window that could ask.
+
+What the day was worth beyond the fix: the commands below are the order to try
+things in when a bundle does not open, and the first one is worth more than the
+other four put together. A dyld failure or a panic prints there and nowhere
+else; nothing that inspects the artefact from the outside would have found this
+one.
 
 ```sh
 # 1. The error itself.
@@ -751,12 +764,12 @@ ls -lt ~/Library/Logs/DiagnosticReports | head
 xattr -l "/Applications/Commune.app"
 ```
 
-The leading suspect is the hardened runtime. `entitlements.plist` carries only
-the microphone and camera, and library validation is on by default, so
-anything the app loads or maps that is not signed by this team is refused —
-a case no ad-hoc build can reach. If step 1 names a library, that is the
-answer. `com.apple.security.cs.disable-library-validation` would confirm it
-quickly, though it is a diagnosis rather than a fix.
+The hardened runtime remains untested as a suspect, because it never got its
+turn: `entitlements.plist` carries only the microphone and camera, library
+validation is on by default, and no ad-hoc build reaches that case. If a future
+bundle dies in step 1 naming a library rather than a panic, that is where to
+look, and `com.apple.security.cs.disable-library-validation` confirms it
+quickly — as a diagnosis rather than a fix.
 
 ## What differs from Linux
 
