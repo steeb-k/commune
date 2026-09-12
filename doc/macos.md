@@ -69,6 +69,7 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | `matrix:` URLs | Our own Apple Event handler, `src/utils/macos_url_events.rs` |
 | Notifications | `UNUserNotificationCenter`, `src/utils/macos_notifications.rs` |
 | Media viewer header | `use-native-controls` on its `GtkHeaderBar`, as libadwaita's already do |
+| Holes after fullscreen | `Window::repaint_after_fullscreen_change` and `_macos.scss` |
 
 ## The GTK environment
 
@@ -1051,6 +1052,31 @@ property too. On macOS that drops the GTK cluster and moves the back button to t
 traffic lights; on every other platform it is a no-op and the header is unchanged. The earlier
 note in [Not done yet](#not-done-yet) that the viewer's close button "reads as native as it
 stands" was about the button, not about what sat on top of it.
+
+**Leaving fullscreen can leave holes in the window.** Reported from the 1.rc1 bundle: open a
+picture, fullscreen it, leave fullscreen, and sometimes whatever is behind the window — a browser,
+most often — shows through parts of it. GTK's macOS backend (`gdk/macos/GdkMacosLayer.c`) draws
+the window as a grid of `CALayer` tiles, each pointing at a rectangle of the current IOSurface, and
+`swapBuffer:withDamage:` only refreshes the tiles the frame's damage region touches. The grid is
+rebuilt whenever the view's size or the window's opaque region changes, and a fullscreen
+transition changes both, over several frames, as AppKit animates the window and GTK catches up.
+A rebuild that lands on a frame with small damage — the header bar coming back, the picture
+re-centring — leaves every tile outside that damage with either no contents at all or the
+contents of the tile that used to be there. A tile with no contents is transparent, and the
+desktop shows through.
+
+Nothing public asks GDK for a full repaint: `gtk_widget_queue_draw` only schedules a frame, and
+GSK decides what to paint by diffing the render tree against the previous frame's. So
+`Window::repaint_after_fullscreen_change` manufactures a difference. On every change of
+`fullscreened` it toggles the `repaint-nudge` class on the window for one frame, at 100, 400, 800
+and 1300 ms — spaced to outlast the transition — and `_macos.scss` gives that class a window
+background one per cent darker than usual. A changed window background makes the whole window
+the diff, the whole window gets repainted, and every tile gets fresh contents. The colour has to
+stay opaque, because a translucent window background would change the opaque region and trigger
+the very relayout being papered over. Four extra full frames a second after a transition is the
+whole cost. This was written from the backend's source rather than from a reproduction, since the
+report is intermittent; if it still shows, the rebuild is happening later than 1.3 s after the
+state change, and the first thing to try is a longer run.
 
 ## Not done yet
 

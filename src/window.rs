@@ -239,6 +239,12 @@ mod imp {
                 move |_window| imp.install_native_frame()
             ));
 
+            // See `repaint_after_fullscreen_change`.
+            #[cfg(target_os = "macos")]
+            self.obj().connect_fullscreened_notify(|window| {
+                window.imp().repaint_after_fullscreen_change();
+            });
+
             self.load_window_size();
             self.update_forwarded_session_actions();
 
@@ -362,6 +368,61 @@ mod imp {
     impl AdwApplicationWindowImpl for Window {}
 
     impl Window {
+        /// Repaint the whole window a few times over the second after it
+        /// enters or leaves fullscreen.
+        ///
+        /// GTK's macOS backend shows the window as a grid of `CALayer` tiles,
+        /// and only hands a tile new pixels when the frame's damage region
+        /// touches it. The tiles are laid out again whenever the window's
+        /// size or opaque region changes, and a fullscreen transition changes
+        /// both, across several frames, as `AppKit` animates the window and
+        /// GTK follows. A frame whose damage is small — the header bar
+        /// coming back, the media viewer re-centring its picture — can land
+        /// after a relayout, and every tile it leaves alone then shows either
+        /// nothing at all or whatever it held before. A tile that shows
+        /// nothing is a hole in the window with the desktop behind it, which
+        /// is what a web page drawn over the timeline is.
+        ///
+        /// Nothing public asks GDK for a full repaint, so this makes one
+        /// happen: a CSS class that changes the window's background colour
+        /// by an amount nobody can see makes the whole window the difference
+        /// between two frames, and a difference is what gets repainted. The
+        /// class stays for one frame, and the run is spaced to outlast the
+        /// transition. See `doc/macos.md`.
+        #[cfg(target_os = "macos")]
+        fn repaint_after_fullscreen_change(&self) {
+            const CSS_CLASS: &str = "repaint-nudge";
+            const DELAYS_MS: [u64; 4] = [100, 400, 800, 1300];
+
+            for delay in DELAYS_MS {
+                glib::timeout_add_local_once(
+                    std::time::Duration::from_millis(delay),
+                    clone!(
+                        #[weak(rename_to = window)]
+                        self.obj(),
+                        move || {
+                            window.add_css_class(CSS_CLASS);
+
+                            // Tick callbacks run before a frame is painted, so
+                            // the first one sees the frame with the class
+                            // still to be drawn and the second removes it
+                            // before the next.
+                            let ticks = Cell::new(0);
+                            window.add_tick_callback(move |window, _| {
+                                ticks.set(ticks.get() + 1);
+                                if ticks.get() < 2 {
+                                    return glib::ControlFlow::Continue;
+                                }
+
+                                window.remove_css_class(CSS_CLASS);
+                                glib::ControlFlow::Break
+                            });
+                        }
+                    ),
+                );
+            }
+        }
+
         /// Go back one step through what is on screen, if there is a step to
         /// go back through.
         ///
