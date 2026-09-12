@@ -172,7 +172,7 @@ jobs:
         run: cargo test -j 2 --bin commune
 
       - name: A display to start in
-        run: dnf install -y --setopt=install_weak_deps=False xorg-x11-server-Xvfb
+        run: dnf install -y --setopt=install_weak_deps=False xorg-x11-server-Xvfb dbus-daemon
 
       - name: Start the application
         # Because nothing above does. Every other step here compiles the
@@ -211,13 +211,21 @@ jobs:
           # the success case here: the application was still running. Any
           # other code means it exited by itself, and an application that
           # exits a second after starting has crashed.
+          # `dbus-run-session` because a container has no session bus, and a
+          # desktop application assumes one: GSettings, the portals and the
+          # secret store all reach for it.
           set +e
-          timeout --signal=TERM 30 xvfb-run -a ./target/debug/commune > start.out 2> start.err
+          timeout --signal=TERM 30 dbus-run-session -- xvfb-run -a             ./target/debug/commune > start.out 2> start.err
           code=$?
           set -e
 
-          echo "--- stdout ---"; tail -40 start.out || true
-          echo "--- stderr ---"; tail -40 start.err || true
+          # `head`, not `tail`. A Rust panic prints its message first and then
+          # fifty frames of backtrace, so tailing the output shows the
+          # backtrace and hides the one line that says what went wrong — which
+          # is exactly what the first version of this step did.
+          echo "--- stdout ---"; head -40 start.out || true
+          echo "--- stderr, first 40 ---"; head -40 start.err || true
+          echo "--- stderr, last 15 ---"; tail -15 start.err || true
 
           if [ "$code" = 124 ]; then
             echo "The application was still running after 30 seconds."
