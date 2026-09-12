@@ -134,138 +134,140 @@ template $ContentRoomHistory: Adw.Bin {
       };
     }
 
-    content: Gtk.Box {
-      orientation: vertical;
+    content: $DragOverlay drag_overlay {
+      // The overlay spans the message bar too, so a file can be dropped
+      // onto the composer as well as onto the messages.
+      title: _("Drop Here to Send");
 
-      Adw.Banner {
-        title: _("Call room - other clients may not show messages you send in this room.");
-        revealed: bind template.timeline as <$Timeline>.room as <$Room>.is-call;
-      }
+      child: Gtk.Box {
+        orientation: vertical;
 
-      $ContentVerificationInfoBar verification_info_bar {
-        verification: bind template.timeline as <$Timeline>.room as <$Room>.verification;
-      }
-
-      Adw.Banner server_notice_banner {
-        // The body comes from the homeserver, so it is shown as plain text.
-        use-markup: false;
-        title: bind $unwrap_string_or_empty(
-          template.timeline as <$Timeline>.room as <$Room>.active-server-notice
-        ) as <string>;
-        revealed: bind $string_not_empty(
-          template.timeline as <$Timeline>.room as <$Room>.active-server-notice
-        ) as <bool>;
-        button-label: bind $server_notice_button_label(
-          template.timeline as <$Timeline>.room as <$Room>.server-notice-admin-contact
-        ) as <string>;
-        button-style: suggested;
-        button-clicked => $contact_server_administrator() swapped;
-      }
-
-      Adw.Banner pending_knocks_banner {
-        // Translators: This is a verb, as in 'View Room'.
-        button-label: _("View");
-        button-style: suggested;
-        button-clicked => $view_pending_knocks() swapped;
-      }
-
-      Adw.Banner thread_banner {
-        title: _("Viewing a thread");
-        button-label: _("Back to All Messages");
-        revealed: bind $thread_banner_revealed(
-          template.timeline as <$Timeline>.is-thread,
-          template.is-showing-threads
-        ) as <bool>;
-        button-clicked => $leave_thread() swapped;
-      }
-
-      Gtk.Stack stack {
-        transition-type: crossfade;
-
-        Gtk.StackPage {
-          name: "loading";
-          title: _("Loading");
-
-          child: Adw.Spinner loading {};
+        Adw.Banner {
+          title: _("Call room - other clients may not show messages you send in this room.");
+          revealed: bind template.timeline as <$Timeline>.room as <$Room>.is-call;
         }
 
-        Gtk.StackPage {
-          name: "error";
-          title: _("Could Not Load Room");
+        $ContentVerificationInfoBar verification_info_bar {
+          verification: bind template.timeline as <$Timeline>.room as <$Room>.verification;
+        }
 
-          child: Adw.StatusPage error {
-            visible: true;
-            hexpand: true;
-            vexpand: true;
-            icon-name: "error-symbolic";
+        Adw.Banner server_notice_banner {
+          // The body comes from the homeserver, so it is shown as plain text.
+          use-markup: false;
+          title: bind $unwrap_string_or_empty(
+            template.timeline as <$Timeline>.room as <$Room>.active-server-notice
+          ) as <string>;
+          revealed: bind $string_not_empty(
+            template.timeline as <$Timeline>.room as <$Room>.active-server-notice
+          ) as <bool>;
+          button-label: bind $server_notice_button_label(
+            template.timeline as <$Timeline>.room as <$Room>.server-notice-admin-contact
+          ) as <string>;
+          button-style: suggested;
+          button-clicked => $contact_server_administrator() swapped;
+        }
+
+        Adw.Banner pending_knocks_banner {
+          // Translators: This is a verb, as in 'View Room'.
+          button-label: _("View");
+          button-style: suggested;
+          button-clicked => $view_pending_knocks() swapped;
+        }
+
+        Adw.Banner thread_banner {
+          title: _("Viewing a thread");
+          button-label: _("Back to All Messages");
+          revealed: bind $thread_banner_revealed(
+            template.timeline as <$Timeline>.is-thread,
+            template.is-showing-threads
+          ) as <bool>;
+          button-clicked => $leave_thread() swapped;
+        }
+
+        Gtk.Stack stack {
+          transition-type: crossfade;
+
+          Gtk.StackPage {
+            name: "loading";
+            title: _("Loading");
+
+            child: Adw.Spinner loading {};
+          }
+
+          Gtk.StackPage {
+            name: "error";
             title: _("Could Not Load Room");
-            description: _("Check your network connection");
 
-            child: Gtk.Button {
-              can-shrink: true;
-              label: _("Try Again");
-              halign: center;
-              clicked => $load_more_events() swapped;
+            child: Adw.StatusPage error {
+              visible: true;
+              hexpand: true;
+              vexpand: true;
+              icon-name: "error-symbolic";
+              title: _("Could Not Load Room");
+              description: _("Check your network connection");
 
-              styles [
-                "pill",
-              ]
-            };
-          };
-        }
-
-        Gtk.StackPage {
-          name: "search";
-          title: _("Search Results");
-
-          child: $RoomHistorySearch search_view {};
-        }
-
-        Gtk.StackPage {
-          name: "pinned";
-          title: _("Pinned Messages");
-
-          child: $RoomHistoryPinned pinned_view {};
-        }
-
-        Gtk.StackPage {
-          name: "threads";
-          title: _("Threads");
-
-          child: $RoomHistoryThreads threads_view {};
-        }
-
-        Gtk.StackPage {
-          name: "content";
-          title: _("Room History");
-
-          child: Gtk.Overlay content {
-            [overlay]
-            Gtk.Revealer scroll_btn_revealer {
-              visible: false;
-              transition-type: crossfade;
-              valign: end;
-              halign: end;
-              margin-end: 24;
-              margin-bottom: 24;
-
-              Gtk.Button scroll_btn {
-                icon-name: "go-bottom-symbolic";
-                tooltip-text: _("Scroll to Bottom");
-                clicked => $scroll_btn_clicked() swapped;
+              child: Gtk.Button {
+                can-shrink: true;
+                label: _("Try Again");
+                halign: center;
+                clicked => $load_more_events() swapped;
 
                 styles [
-                  "osd",
-                  "circular",
-                  "overlaid",
+                  "pill",
                 ]
+              };
+            };
+          }
+
+          Gtk.StackPage {
+            name: "search";
+            title: _("Search Results");
+
+            child: $RoomHistorySearch search_view {};
+          }
+
+          Gtk.StackPage {
+            name: "pinned";
+            title: _("Pinned Messages");
+
+            child: $RoomHistoryPinned pinned_view {};
+          }
+
+          Gtk.StackPage {
+            name: "threads";
+            title: _("Threads");
+
+            child: $RoomHistoryThreads threads_view {};
+          }
+
+          Gtk.StackPage {
+            name: "content";
+            title: _("Room History");
+
+            child: Gtk.Overlay content {
+              [overlay]
+              Gtk.Revealer scroll_btn_revealer {
+                visible: false;
+                transition-type: crossfade;
+                valign: end;
+                halign: end;
+                margin-end: 24;
+                margin-bottom: 24;
+
+                Gtk.Button scroll_btn {
+                  icon-name: "go-bottom-symbolic";
+                  tooltip-text: _("Scroll to Bottom");
+                  clicked => $scroll_btn_clicked() swapped;
+
+                  styles [
+                    "osd",
+                    "circular",
+                    "overlaid",
+                  ]
+                }
               }
-            }
 
-            $DragOverlay drag_overlay {
-              title: _("Drop Here to Send");
-
-              child: Gtk.ScrolledWindow scrolled_window {
+              Gtk.ScrolledWindow scrolled_window {
                 vexpand: true;
                 hscrollbar-policy: never;
 
@@ -290,27 +292,27 @@ template $ContentRoomHistory: Adw.Bin {
                     accessible-role: log;
                   };
                 };
-              };
-            }
-          };
+              }
+            };
+          }
         }
-      }
 
-      Adw.Clamp {
-        vexpand: false;
-        maximum-size: 750;
-        tightening-threshold: 550;
-        // There is nothing to compose to while looking at search results.
-        visible: bind search_bar.search-mode-enabled inverted;
+        Adw.Clamp {
+          vexpand: false;
+          maximum-size: 750;
+          tightening-threshold: 550;
+          // There is nothing to compose to while looking at search results.
+          visible: bind search_bar.search-mode-enabled inverted;
 
-        $MessageToolbar message_toolbar {
-          // A thread timeline is composed into directly — it receives its own
-          // local echoes and scopes what is sent to the thread. Anything else
-          // defers to the live timeline: a focused timeline never receives
-          // local echoes, so a message sent through it would not appear.
-          timeline: bind $compose_timeline(template.timeline) as <$Timeline>;
+          $MessageToolbar message_toolbar {
+            // A thread timeline is composed into directly — it receives its own
+            // local echoes and scopes what is sent to the thread. Anything else
+            // defers to the live timeline: a focused timeline never receives
+            // local echoes, so a message sent through it would not appear.
+            timeline: bind $compose_timeline(template.timeline) as <$Timeline>;
+          }
         }
-      }
+      };
     };
   }
 }
