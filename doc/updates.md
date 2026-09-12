@@ -330,8 +330,9 @@ signed through a catalog and there is no embedded signature in the file to
 remove, so `signtool` answered `0x57` and the guard refused to continue. The
 third compiles a one-line C# program with the .NET Framework compiler, which
 sits at a fixed path on every Windows image. A binary that has existed for two
-seconds is one nobody has signed, and the step asserts both halves: not signed
-before, signed afterwards by a subject that is not Microsoft.
+seconds is one nobody has signed, which is what makes the check sound: the step
+asserts the probe is unsigned first and signed afterwards, so the signature at
+the end can only have come from the step in the middle.
 
 ## Watching a run
 
@@ -371,23 +372,27 @@ against a key of your own means rebuilding with it in `key.rs`.
 
 ## What has not been seen working
 
-Kept honest rather than hopeful:
+Kept honest rather than hopeful. Ticked off as each one actually runs, on
+11 September 2026:
 
-* **Every workflow is unrun.** They parse, and every script they call passes
-  `bash -n`, but no tag has been pushed. The first release candidate is their
-  test, and the Windows job is the one most likely to need a second go.
-* **The macOS install path has never run.** It was written without a Mac to
-  hand. `lipo-bundles.sh` and `sign-notarize.sh` have never been executed at
-  all, and `macos_update.rs` has only been compiled.
+* **Run.** The gate, the Android APK and the Flatpak bundle all pass on a
+  runner. Windows gets as far as proving it can sign before it builds.
+* **Unrun.** No `v*` tag has been pushed, so `release.yml` has never
+  executed; only `nightly.yml` has.
+* **The macOS path has never run anywhere.** It was written without a Mac to
+  hand. `lipo-bundles.sh` and `sign-notarize.sh` have never been executed,
+  and `macos_update.rs` has only ever been compiled. Reading it found three
+  defects that would each have failed the job or shipped a broken bundle —
+  the artifact round trip, the bundle name and the notary verdict — which is
+  a fair estimate of how much else is in there.
+* **The notary credential has never been exercised.** It is an app-specific
+  password, set 11 September 2026, and `notarytool` exists only on macOS, so
+  nothing on the development machine can test it.
 * **The Android APK has not been installed on the Pixel.** It builds and is
-  signed with the release key (SHA-256 `4E:C5:A0:98:…`), which means the first
-  install has to uninstall the debug-keyed copy and loses that device's adopted
-  session.
+  signed with the release key (SHA-256 `4E:C5:A0:98:…`), which means the
+  first install has to uninstall the debug-keyed copy and loses that
+  device's adopted session.
 * **The `updates` branch does not exist yet**, so every check 404s, which the
   app reads as "no update" and says nothing about.
-* **The notary credential has never been exercised.** It is an app-specific
-  password, set 11 September 2026, and `notarytool` exists only on macOS — so
-  nothing on the development machine can test it. The first release build is
-  what proves it, which is an argument for making the first tag a candidate.
 * The Windows install path is covered by unit tests for the script it writes,
   but no MSI has actually been installed over another one by the updater.
