@@ -237,6 +237,56 @@ jobs:
           Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name LongPathsEnabled -Value 1
           git config --global core.longpaths true
 
+      - name: Install the WiX toolset
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.*
+          wix extension add --global WixToolset.UI.wixext/5.0.0
+
+      - name: Sign in to Azure
+        if: env.SIGN_WINDOWS == 'true'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install the Trusted Signing client
+        if: env.SIGN_WINDOWS == 'true'
+        shell: pwsh
+        # `sign.ps1` finds the signing library by searching the places the
+        # standalone client tools install to. The PowerShell module puts it
+        # somewhere else entirely, so the path is handed over explicitly
+        # rather than adding a module layout to that list — the script
+        # already reads ARTIFACT_SIGNING_DLIB first for exactly this case.
+        run: |
+          Install-Module -Name TrustedSigning -Force -AllowClobber -Scope CurrentUser
+          $dlib = Get-ChildItem -Path (Split-Path (Get-Module -ListAvailable TrustedSigning)[0].Path) `
+            -Recurse -Filter 'Azure.CodeSigning.Dlib.dll' -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+          if (-not $dlib) { throw "no Azure.CodeSigning.Dlib.dll in the TrustedSigning module" }
+          Write-Host "dlib: $($dlib.FullName)"
+          "ARTIFACT_SIGNING_DLIB=$($dlib.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Prove the signing chain works
+        if: env.SIGN_WINDOWS == 'true'
+        shell: pwsh
+        # Before the build, not after it. Everything above takes two minutes
+        # and everything below takes forty, so a credential that does not
+        # work should say so now rather than at the end — which is what it
+        # used to do, having compiled the whole application first.
+        #
+        # A real signature over a throwaway copy of a real binary: nothing
+        # short of that exercises the endpoint, the federated identity, the
+        # dlib and signtool together.
+        run: |
+          $probe = Join-Path $env:RUNNER_TEMP "signing-probe.exe"
+          Copy-Item "$env:SystemRoot\System32\where.exe" $probe -Force
+          pwsh -File build-aux\windows\sign.ps1 -Files $probe
+          $sig = Get-AuthenticodeSignature $probe
+          Write-Host "probe signature: $($sig.Status) by $($sig.SignerCertificate.Subject)"
+          if ($sig.Status -ne "Valid") { throw "the signing chain produced $($sig.Status)" }
+
       - uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
@@ -297,25 +347,6 @@ jobs:
           export PATH="$PATH:$(cygpath -u "$USERPROFILE")/.cargo/bin"
           meson setup _build -Dprofile=${{ inputs.meson-profile }} -Dklipy-api-key="$KLIPY_API_KEY"
           meson compile -C _build windows-bundle
-
-      - name: Install the WiX toolset
-        shell: pwsh
-        run: |
-          dotnet tool install --global wix --version 5.*
-          wix extension add --global WixToolset.UI.wixext/5.0.0
-
-      - name: Sign in to Azure
-        if: env.SIGN_WINDOWS == 'true'
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Install the Trusted Signing client
-        if: env.SIGN_WINDOWS == 'true'
-        shell: pwsh
-        run: Install-Module -Name TrustedSigning -Force -AllowClobber -Scope CurrentUser
 
       - name: Build the installer
         shell: pwsh
