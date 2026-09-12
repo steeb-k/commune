@@ -1,0 +1,13 @@
+// A repaint nudge, on macOS.
+//
+// `Window::repaint_after_fullscreen_change` toggles this class on the window
+// for a frame at a time after the window enters or leaves fullscreen. The
+// colour only has to differ from the plain window background: GTK works out
+// what to repaint by comparing this frame's render tree with the last one,
+// and a window background that changed makes the whole window the difference.
+// It has to stay opaque, because a translucent window background would change
+// the window's opaque region, which is the very thing being worked around.
+// See `doc/macos.md`.
+window.repaint-nudge {
+  background-color: color-mix(in srgb, var(--window-bg-color) 99%, black);
+}
