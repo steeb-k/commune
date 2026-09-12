@@ -1,0 +1,24 @@
+{
+  "channel": "rc",
+  "version": "1.0.0-rc1",
+  "build": 3969,
+  "published": "2026-09-12T17:33:35Z",
+  "notes_url": "https://github.com/steeb-k/commune/releases/tag/v1.rc1",
+  "assets": {
+    "windows-x86_64-msi": {
+      "url": "https://github.com/steeb-k/commune/releases/download/v1.rc1/Commune-1.0.0-rc1-x64.msi",
+      "sha256": "917ef8c1ba22a774463da4951cfbb867128a805cca3f962558fbec36682aab6a",
+      "size": 98934784
+    },
+    "macos-universal-tar": {
+      "url": "https://github.com/steeb-k/commune/releases/download/v1.rc1/commune-1.0.0-rc1-universal.tar.gz",
+      "sha256": "9c78e1ff89801cea019d6cd7527e7cae13dc4e08644dc28031c50b2f6ad1679b",
+      "size": 197539197
+    },
+    "android-arm64-apk": {
+      "url": "https://github.com/steeb-k/commune/releases/download/v1.rc1/commune-1.0.0-rc1-arm64-v8a.apk",
+      "sha256": "1e5ee7a900291089ddaea9100f5cbf231658bb4ff2c2082bef4b56fc8007c274",
+      "size": 160415336
+    }
+  }
+}
