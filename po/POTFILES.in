@@ -161,6 +161,7 @@ src/session_view/room_details/history_viewer/file_row.blp
 src/session_view/room_details/history_viewer/file_row.rs
 src/session_view/room_details/history_viewer/visual_media.blp
 src/session_view/room_details/history_viewer/visual_media.rs
+src/session_view/room_details/history_viewer/visual_media_item.rs
 src/session_view/room_details/history_viewer/visual_media_row_model/age.rs
 src/session_view/room_details/history_visibility_subpage.blp
 src/session_view/room_details/history_visibility_subpage.rs

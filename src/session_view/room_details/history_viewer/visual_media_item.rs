@@ -1,6 +1,7 @@
+use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
-use tracing::debug;
+use tracing::{debug, warn};
 
 use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
 use crate::{
@@ -55,6 +56,8 @@ mod imp {
         picture: TemplateChild<gtk::Picture>,
         #[template_child]
         play_icon: TemplateChild<gtk::Image>,
+        #[template_child]
+        state_icon: TemplateChild<gtk::Image>,
         /// The event that is previewed.
         #[property(get, set = Self::set_event, explicit_notify, nullable)]
         event: RefCell<Option<HistoryViewerEvent>>,
@@ -135,6 +138,7 @@ mod imp {
             // Reset the preview.
             self.preview.take();
             self.picture.set_paintable(None::<&gdk::Paintable>);
+            self.state_icon.set_visible(false);
 
             self.event.replace(event);
 
@@ -195,7 +199,20 @@ mod imp {
                     )
                 );
                 self.tasks.borrow_mut().push(handle);
+            } else {
+                // Nothing will be loaded for this tile: say so, rather than leave it
+                // blank with no affordance.
+                self.set_state_icon("hide-symbolic", &gettext("Media previews are disabled"));
             }
+        }
+
+        /// Present the given icon over the media, instead of a blank tile.
+        fn set_state_icon(&self, icon_name: &str, tooltip: &str) {
+            self.state_icon.set_icon_name(Some(icon_name));
+            self.obj().set_tooltip_text(Some(tooltip));
+            self.state_icon.set_visible(true);
+            // Only one icon sits in the middle of a tile.
+            self.play_icon.set_visible(false);
         }
 
         /// Abort the tasks loading the preview, if there are any.
@@ -268,11 +285,23 @@ mod imp {
                 return;
             }
 
-            if let Ok(Some(image)) = result {
-                self.picture
-                    .set_paintable(Some(&gdk::Paintable::from(image)));
-                self.preview.set(MediaPreview::Thumbnail);
+            match result {
+                Ok(Some(image)) => {
+                    self.picture
+                        .set_paintable(Some(&gdk::Paintable::from(image)));
+                    self.preview.set(MediaPreview::Thumbnail);
+                    return;
+                }
+                Ok(None) => {}
+                Err(error) => warn!(
+                    "Could not load the thumbnail of {}: {error}",
+                    media_message.filename()
+                ),
             }
+            // Neither the thumbnail nor the fallback source could be loaded, and nothing
+            // will try again for this item: an empty tile would be indistinguishable from
+            // one that is still loading.
+            self.set_state_icon("error-symbolic", &gettext("Could not load this media"));
         }
 
         /// The item was activated.

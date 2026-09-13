@@ -30,5 +30,22 @@ template $ContentVisualMediaHistoryViewerItem: Gtk.Widget {
         measure: true;
       }
     }
+
+    [overlay]
+    Gtk.Image state_icon {
+      visible: false;
+      halign: center;
+      valign: center;
+      accessible-role: presentation;
+
+      styles [
+        "osd",
+        "circular",
+      ]
+
+      layout {
+        measure: true;
+      }
+    }
   }
 }
