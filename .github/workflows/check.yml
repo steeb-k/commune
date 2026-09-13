@@ -163,16 +163,22 @@ jobs:
         continue-on-error: true
         run: hooks/doc-freshness
 
-      - name: Test the core
-        run: cargo test -p commune-core
-
-      - name: Test the application
-        # `--bin commune` rather than the whole target set: the `#[gtk::test]`
-        # tests need a display, and this job has none.
-        run: cargo test -j 2 --bin commune
-
       - name: A display to start in
         run: dnf install -y --setopt=install_weak_deps=False xorg-x11-server-Xvfb dbus-daemon
+
+      - name: Test the core
+        # With the FFI surface: `facade.rs` is behind that feature, so its
+        # tests — the one that catches a foreign caller polling a future with
+        # no runtime under it, for instance — never ran here without it.
+        run: cargo test -p commune-core --features ffi
+
+      - name: Test the application
+        # `--lib`, under a display. The tests live in the library crate, so
+        # `--bin commune` ran none of them: 13 September 2026 found this gate
+        # green with zero application tests executed. The `#[gtk::test]`
+        # tests need a display and a session bus, the same two things the
+        # start-up step below needs, so they get the same ones.
+        run: dbus-run-session -- xvfb-run -a cargo test -j 2 --lib
 
       - name: Start the application
         # Because nothing above does. Every other step here compiles the
