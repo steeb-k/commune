@@ -41,17 +41,21 @@ use windows::{
     core::PCWSTR,
 };
 
-/// Do not let a window flash up when the helper script starts.
+/// Hide the helper's console instead of removing it.
 ///
 /// `CREATE_NO_WINDOW`. The script's own `msiexec` draws the progress bar the
-/// user is meant to see; the console that runs it is not.
+/// user is meant to see; the console that runs it is not — but the script
+/// still needs that console to exist. It pipes `tasklist` into `find` to
+/// wait for this process to exit, and a pipe is built out of the anonymous
+/// handles a console process gets at creation; take the console away
+/// (`DETACHED_PROCESS`, which this used to also pass, on the theory that the
+/// helper must outlive us) and the pipeline has nothing to run on, so the
+/// script hangs forever on its first iteration and the installer never runs.
+/// A `cmd.exe` started with `CreateProcess` is not a child in any sense that
+/// matters here — it is not in our job object, so it is not killed when we
+/// exit — `DETACHED_PROCESS` was never the thing keeping it alive; it only
+/// took away what the script needed. Hidden is fine. Absent is not.
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-
-/// Keep the helper alive after this process exits.
-///
-/// `DETACHED_PROCESS`, which is the point of the whole arrangement: the
-/// script has to outlive the application it is replacing.
-const DETACHED_PROCESS: u32 = 0x0000_0008;
 
 /// Whether this build is an installed one that may replace itself.
 ///
@@ -168,6 +172,13 @@ fn is_signed(path: &Path) -> bool {
 /// this starts is already waiting for that, and an upgrade cannot replace
 /// files this process has open.
 ///
+/// # Invariant
+///
+/// The helper script waits for us with a `tasklist | find` pipeline, so it
+/// needs a console to run that pipeline on. Any future change to how this is
+/// launched must keep that true: hidden is fine (`CREATE_NO_WINDOW`), absent
+/// is not (`DETACHED_PROCESS`, which is why this does not use it).
+///
 /// # Errors
 ///
 /// If the package is not signed, or the helper script could not be written or
@@ -193,7 +204,8 @@ pub(crate) fn install(msi: &Path) -> io::Result<()> {
     Command::new(cmd_exe())
         .arg("/c")
         .arg(&script_path)
-        .creation_flags(CREATE_NO_WINDOW | DETACHED_PROCESS)
+        // Hidden, not detached: see the invariant on this function.
+        .creation_flags(CREATE_NO_WINDOW)
         .spawn()?;
 
     Ok(())
@@ -207,6 +219,16 @@ fn cmd_exe() -> PathBuf {
     std::env::var_os("COMSPEC").map_or_else(|| PathBuf::from("cmd.exe"), PathBuf::from)
 }
 
+/// How many wait iterations to allow before installing anyway.
+///
+/// One `ping -n 2` per iteration is close enough to a second each (`ping`'s
+/// own delay plus the two pings) that this bounds the wait at about two
+/// minutes. A helper that waits forever for a process that will not exit —
+/// whatever the reason — is worse than an installer that runs while the
+/// app still appears to be running: `msiexec` reports that plainly and does
+/// not corrupt anything, whereas a wedged helper never upgrades at all.
+const MAX_WAIT_ITERATIONS: u32 = 120;
+
 /// The script that waits for this process to exit, upgrades, and restarts.
 ///
 /// Separated from [`install()`] so that it can be read — and tested — without
@@ -216,19 +238,31 @@ fn upgrade_script(pid: u32, msi: &Path, executable: &Path) -> String {
     // batch file: there is no `wait` for something that is not a child, and
     // this script is deliberately not a child of anything that will still be
     // alive. `ping` is the sleep, because `timeout` needs a console and this
-    // script is started without one.
+    // script is started without one (it does still need a console to run the
+    // `tasklist | find` pipeline on — see the invariant on `install()` — a
+    // console it does not draw a window for is not a console it lacks).
+    //
+    // The wait is bounded: past `MAX_WAIT_ITERATIONS` the script installs
+    // regardless of whether the old process is still around. The counter is
+    // incremented and checked outside any `(...)` block so that each read of
+    // `%COMMUNE_WAIT_COUNT%` is parsed fresh rather than frozen at the value
+    // from when the block started.
     format!(
         "@echo off\r\n\
          setlocal\r\n\
          set COMMUNE_PID={pid}\r\n\
+         set COMMUNE_WAIT_COUNT=0\r\n\
          :wait\r\n\
+         set /a COMMUNE_WAIT_COUNT+=1\r\n\
          tasklist /FI \"PID eq %COMMUNE_PID%\" 2>nul | find \"%COMMUNE_PID%\" >nul\r\n\
-         if not errorlevel 1 (\r\n\
-         \x20 ping -n 2 127.0.0.1 >nul\r\n\
-         \x20 goto wait\r\n\
-         )\r\n\
+         if errorlevel 1 goto install\r\n\
+         if %COMMUNE_WAIT_COUNT% geq {max_wait} goto install\r\n\
+         ping -n 2 127.0.0.1 >nul\r\n\
+         goto wait\r\n\
+         :install\r\n\
          msiexec /i \"{msi}\" /passive /norestart\r\n\
          start \"\" \"{executable}\"\r\n",
+        max_wait = MAX_WAIT_ITERATIONS,
         msi = escape_for_batch(msi),
         executable = escape_for_batch(executable),
     )
@@ -271,6 +305,27 @@ mod tests {
         assert!(script.contains(r#"start "" "C:\Programs\Commune\bin\commune.exe""#));
         // A batch file with Unix line endings does not run.
         assert!(!script.contains('\n') || script.contains("\r\n"));
+    }
+
+    #[test]
+    fn the_wait_is_bounded_and_installs_anyway() {
+        let script = upgrade_script(
+            1234,
+            Path::new(r"C:\cache\Commune-1.0.0-x64.msi"),
+            Path::new(r"C:\Programs\Commune\bin\commune.exe"),
+        );
+
+        assert!(script.contains("set COMMUNE_WAIT_COUNT=0"));
+        assert!(script.contains("set /a COMMUNE_WAIT_COUNT+=1"));
+        let bound = format!("if %COMMUNE_WAIT_COUNT% geq {MAX_WAIT_ITERATIONS} goto install");
+        assert!(script.contains(&bound));
+        // The bound check and the "still running" wait are both reachable
+        // without being frozen inside the same `(...)` block as the
+        // increment: neither line appears indented under a stray paren.
+        assert!(!script.contains("if not errorlevel 1 ("));
+        // `goto install` lands on the msiexec line even when the wait timed
+        // out, not only when the process is confirmed gone.
+        assert!(script.contains(":install\r\nmsiexec"));
     }
 
     #[test]
