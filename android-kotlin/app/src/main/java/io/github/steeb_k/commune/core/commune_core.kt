@@ -841,6 +841,8 @@ internal object IntegrityCheckingUniffiLib {
     }
     external fun uniffi_commune_core_checksum_func_core_version(
 ): Short
+external fun uniffi_commune_core_checksum_func_app_build_number(
+): Short
 external fun uniffi_commune_core_checksum_func_app_version(
 ): Short
 external fun uniffi_commune_core_checksum_func_check_for_update(
@@ -858,6 +860,8 @@ external fun uniffi_commune_core_checksum_func_parse_matrix_link(
 external fun uniffi_commune_core_checksum_func_set_update_channel(
 ): Short
 external fun uniffi_commune_core_checksum_func_set_update_check_automatically(
+): Short
+external fun uniffi_commune_core_checksum_func_set_update_feed(
 ): Short
 external fun uniffi_commune_core_checksum_func_set_update_skipped_version(
 ): Short
@@ -1652,6 +1656,8 @@ external fun uniffi_commune_core_fn_method_verificationlistener_on_cancelled(`pt
 ): Unit
 external fun uniffi_commune_core_fn_func_core_version(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
+external fun uniffi_commune_core_fn_func_app_build_number(uniffi_out_err: UniffiRustCallStatus, 
+): Long
 external fun uniffi_commune_core_fn_func_app_version(uniffi_out_err: UniffiRustCallStatus, 
 ): RustBuffer.ByValue
 external fun uniffi_commune_core_fn_func_check_for_update(
@@ -1669,6 +1675,8 @@ external fun uniffi_commune_core_fn_func_parse_matrix_link(`uri`: RustBuffer.ByV
 external fun uniffi_commune_core_fn_func_set_update_channel(`channel`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_func_set_update_check_automatically(`enabled`: Byte,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_commune_core_fn_func_set_update_feed(`base`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
 external fun uniffi_commune_core_fn_func_set_update_skipped_version(`version`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
 ): Unit
@@ -1796,6 +1804,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_func_core_version() != 14287.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_commune_core_checksum_func_app_build_number() != 48386.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_commune_core_checksum_func_app_version() != 10786.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -1821,6 +1832,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_func_set_update_check_automatically() != 60012.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_commune_core_checksum_func_set_update_feed() != 53029.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_func_set_update_skipped_version() != 15174.toShort()) {
@@ -18205,6 +18219,20 @@ public object FfiConverterSequenceTypeFfiTimelineItem: FfiConverterRustBuffer<Li
     
 
         /**
+         * The build number of this application, the same number the updater orders
+         * two builds of one version by.
+         */ fun `appBuildNumber`(): kotlin.ULong {
+            return FfiConverterULong.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_func_app_build_number(
+    
+        _status)
+}
+    )
+    }
+    
+
+        /**
          * The version of the core, which is the version of the application.
          */ fun `appVersion`(): kotlin.String {
             return FfiConverterString.lift(
@@ -18346,6 +18374,29 @@ public object FfiConverterSequenceTypeFfiTimelineItem: FfiConverterRustBuffer<Li
     UniffiLib.uniffi_commune_core_fn_func_set_update_check_automatically(
     
         FfiConverterBoolean.lower(`enabled`),_status)
+}
+    
+    
+
+        /**
+         * Point the feed somewhere other than the default for the rest of this
+         * process's life, or clear the override with `None`.
+         *
+         * For testing the updater on Android without publishing a release. A
+         * release APK is `arm64` code that an x86_64 emulator runs under
+         * translation, and `Os.setenv` in `CommuneApplication` writes to the
+         * environment of whichever libc that translation layer gives it — not
+         * necessarily the one `reqwest` reads its environment through when the
+         * override was tried first. Doing this entirely in-process, behind a lock
+         * this crate owns, sidesteps the environment altogether. Trailing slashes
+         * are trimmed, matching how the `COMMUNE_UPDATE_FEED` environment variable
+         * is handled on the desktop platforms.
+         */ fun `setUpdateFeed`(`base`: kotlin.String?)
+        = 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_commune_core_fn_func_set_update_feed(
+    
+        FfiConverterOptionalString.lower(`base`),_status)
 }
     
     
