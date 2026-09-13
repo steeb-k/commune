@@ -121,12 +121,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete nightly --yes --cleanup-tag 2>/dev/null || true
-          gh release create nightly dist/* \
+          bash build-aux/ci/publish-release.sh \
+            --tag nightly \
             --title "Nightly ${{ steps.nightly.outputs.version }} (${{ steps.nightly.outputs.sha }})" \
             --notes "An automatic build of main at ${{ steps.nightly.outputs.sha }}. Not a release: it installs beside a stable Commune rather than over it." \
             --prerelease \
-            --target "$GITHUB_SHA"
+            --target "$GITHUB_SHA" \
+            --replace \
+            -- dist/*
 
       - name: Write and sign the feed
         env:

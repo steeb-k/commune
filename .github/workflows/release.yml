@@ -122,10 +122,12 @@ jobs:
           else
             flag=""
           fi
-          gh release create "${{ steps.release.outputs.tag }}" dist/* \
+          # shellcheck disable=SC2086
+          bash build-aux/ci/publish-release.sh \
+            --tag "${{ steps.release.outputs.tag }}" \
             --title "Commune ${{ steps.release.outputs.version }}" \
             --notes "$notes" $flag \
-            || gh release upload "${{ steps.release.outputs.tag }}" dist/* --clobber
+            -- dist/*
 
       - name: Write and sign the feed
         env:
