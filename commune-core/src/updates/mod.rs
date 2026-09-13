@@ -601,15 +601,15 @@ pub async fn check(channel: Channel) -> Result<UpdateCheck, UpdateError> {
         // platform's artifact, which is a broken release rather than a
         // broken installation.
         warn!(
-            "Release {} is newer than {current_version} but carries no artifact for this platform",
-            release.version
+            "Release {} (build {}) is newer than {current_version} (build {current_build}) but carries no artifact for this platform",
+            release.version, release.build
         );
     }
 
     if newer && installable {
         info!(
-            "Release {} is newer than {current_version}",
-            release.version
+            "Release {} (build {}) is newer than {current_version} (build {current_build})",
+            release.version, release.build
         );
     }
 

@@ -36,6 +36,18 @@
                   DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
+    <!-- Every file is installed, whatever version of it is already there.
+         Windows Installer's default rule ("omus") skips a file whose installed
+         copy carries a higher version, and costing runs while the previous
+         product is still installed; the major upgrade then removes that
+         product's copy, so the component is registered and the file is gone.
+         Seen on 13 September 2026: a package built on a machine whose MSYS2
+         was older than the runner's left sixteen DLLs missing, msiexec
+         reported success, and the application could not start. The bundle
+         is private to this install, so replacing all of it is what an upgrade
+         means here. -->
+    <Property Id="REINSTALLMODE" Value="amus" />
+
     <Icon Id="AppIcon" SourceFile="$(IconFile)" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/steeb-k/commune" />
