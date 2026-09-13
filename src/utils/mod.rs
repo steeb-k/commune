@@ -47,6 +47,8 @@ pub(crate) mod macos_text_scale;
 pub(crate) mod macos_update;
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_url_events;
+#[cfg(target_os = "macos")]
+pub(crate) mod macos_window_buttons;
 mod macros;
 pub(crate) mod matrix;
 pub(crate) mod media;

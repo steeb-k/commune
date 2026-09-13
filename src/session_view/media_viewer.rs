@@ -35,6 +35,8 @@ mod imp {
         #[template_child]
         header_bar: TemplateChild<gtk::HeaderBar>,
         #[template_child]
+        back: TemplateChild<gtk::Button>,
+        #[template_child]
         menu: TemplateChild<gtk::MenuButton>,
         #[template_child]
         revealer: TemplateChild<ScaleRevealer>,
@@ -112,6 +114,26 @@ mod imp {
             let obj = self.obj();
 
             self.init_swipe_tracker();
+
+            // macOS draws the window's close, minimise and zoom buttons
+            // itself, at the top left, over whatever is there. GTK's own
+            // cluster would be a second one at the top right, and the back
+            // button would sit under the native one; so the header shows no
+            // buttons of GTK's and the back button starts where the native
+            // ones end. That is measured rather than asked of GTK's native
+            // controls, which would also move the buttons of the whole
+            // window: see `utils::macos_window_buttons`.
+            #[cfg(target_os = "macos")]
+            {
+                self.header_bar.set_show_title_buttons(false);
+                obj.connect_map(|obj| {
+                    let imp = obj.imp();
+                    let end = obj.root().and_downcast::<gtk::Window>().and_then(|window| {
+                        crate::utils::macos_window_buttons::native_controls_end(&window)
+                    });
+                    imp.back.set_margin_start(end.unwrap_or_default());
+                });
+            }
 
             // Bind `fullscreened` to the window property of the same name.
             obj.connect_root_notify(|obj| {

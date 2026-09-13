@@ -68,7 +68,7 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | Keyboard shortcuts | `<Primary>` throughout, so Command rather than Control |
 | `matrix:` URLs | Our own Apple Event handler, `src/utils/macos_url_events.rs` |
 | Notifications | `UNUserNotificationCenter`, `src/utils/macos_notifications.rs` |
-| Media viewer header | `use-native-controls` on its `GtkHeaderBar`, as libadwaita's already do |
+| Media viewer header | No GTK buttons; the back button clears the native ones, `src/utils/macos_window_buttons.rs` |
 | Document font | `src/utils/macos_document_font.rs`, quoted for libadwaita |
 | Holes after fullscreen | `Window::repaint_after_fullscreen_change` and `_macos.scss` |
 
@@ -1042,17 +1042,30 @@ platform-specific in it, so the Linux runs cover it. The other `#[gtk::test]` in
 `login::local_server`, never touches a GTK type and passes: the pool thread's failed
 `gtk::init()` is swallowed by the `catch_unwind` inside `glib::ThreadPool::push`.
 
-**The media viewer's header bar uses the native window buttons.** macOS draws close, minimise
-and zoom itself, at the top left of every window, and GTK 4.18 gave `GtkWindowControls` a
-`use-native-controls` property that makes room for them instead of drawing its own. libadwaita's
-header bar turns it on unconditionally, which is why the sidebar and the room history have looked
-right all along. The media viewer's header is a plain `GtkHeaderBar`, which does not, and the
-1.rc1 bundle showed the consequence: GTK's own minimise, maximise and close at the top right, and
-the back button at the top left underneath the native cluster. `media_viewer.blp` now sets the
-property too. On macOS that drops the GTK cluster and moves the back button to the right of the
-traffic lights; on every other platform it is a no-op and the header is unchanged. The earlier
-note in [Not done yet](#not-done-yet) that the viewer's close button "reads as native as it
-stands" was about the button, not about what sat on top of it.
+**The media viewer's header bar keeps clear of the native window buttons.** macOS draws close,
+minimise and zoom itself, at the top left of every window, over whatever GTK puts there. GTK 4.18
+gave `GtkWindowControls` a `use-native-controls` property for exactly this, and libadwaita's
+header bars turn it on unconditionally, which is why the sidebar and the room history have always
+looked right: the start of each holds a placeholder the size of the native cluster, and GTK draws
+no buttons of its own. The media viewer's header is a plain `GtkHeaderBar`, which does not, and
+the 1.rc1 bundle showed the consequence — GTK's own minimise, maximise and close at the top
+right, and the back button underneath the native cluster.
+
+Setting the property on the viewer's header was the first fix, and it moved the native buttons
+half out of the window. GTK's placeholder (`gtk/gtkwindowbuttonsquartz.c`) does more than take up
+room: every time it is allocated it calls the private `-[NSWindow setTitlebarHeight:]` with its
+own height, and the last placeholder allocated decides where the buttons sit for the whole
+window. libadwaita's header bars all agree on a height. The viewer's header slides away for
+fullscreen and is put away with the viewer, and the small heights it is allocated on the way
+stick, since nothing reallocates the sidebar's placeholder afterwards.
+
+So the viewer does what the placeholder does without the side effect. On macOS
+`MediaViewer::constructed()` turns the header's title buttons off, which drops the GTK cluster,
+and on every map asks `utils::macos_window_buttons` how far the native buttons reach — the frame
+of the zoom button through GDK's `gdk_macos_surface_get_native_window` — and gives the back
+button that as its start margin. The property is not set on any platform; on Linux and Windows
+the header keeps its close button, which is the only way to close the window while the viewer
+covers the header bar.
 
 **Leaving fullscreen can leave holes in the window.** Reported from the 1.rc1 bundle: open a
 picture, fullscreen it, leave fullscreen, and sometimes whatever is behind the window — a browser,
@@ -1130,7 +1143,7 @@ defines the variable again, quoted, from an application-priority provider, and f
   Left out of M3 deliberately: a File → Close Window item, which the muxer cannot reach, so it
   would be drawn insensitive next to a ⌘W that works. The media viewer's own close button was on
   this list too and has come off it — looked at on a Mac, it reads as native as it stands. Its
-  header bar did not, and now uses the native controls: see
+  header bar did not, and now keeps clear of the native buttons: see
   [What differs from Linux](#what-differs-from-linux).
 * **M4** — camera QR scanning through `avfvideosrc`. None of it exists.
 * **The sticker picker sometimes will not close on a click outside it.** Reported from a bundle,
