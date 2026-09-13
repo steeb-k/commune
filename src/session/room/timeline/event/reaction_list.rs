@@ -54,17 +54,20 @@ mod imp {
         pub(super) fn update(&self, new_reactions: Option<&ReactionsByKeyBySender>) {
             let mut pos = 0usize;
 
-            let (removed, added) = {
+            let (removed, added, updated, retired) = {
                 let mut reactions = self.reactions.borrow_mut();
 
-                // Update the first groups with identical keys.
+                // Update the first groups with identical keys. `group.update()` emits
+                // notifications, so it must not run while `reactions` is borrowed here:
+                // collect the groups to update and do that once the borrow is released.
+                let mut updated = Vec::new();
                 for ((new_key, group_reactions), (old_key, group)) in new_reactions
                     .iter()
                     .flat_map(|new_reactions| new_reactions.iter())
                     .zip(reactions.iter())
                 {
                     if new_key == old_key {
-                        group.update(group_reactions);
+                        updated.push((group.clone(), group_reactions));
                         pos += 1;
                     } else {
                         // Stop as soon as the keys do not match.
@@ -72,10 +75,17 @@ mod imp {
                     }
                 }
 
-                // Remove all the groups after the mismatch, if any.
+                // Remove all the groups after the mismatch, if any. The retired groups are
+                // collected instead of dropped here, and must not be dropped until after
+                // the borrow is released and the removal is signalled below.
                 let removed = reactions.len() - pos;
+                let mut retired = Vec::with_capacity(removed);
                 if removed > 0 {
-                    reactions.truncate(pos);
+                    for _ in 0..removed {
+                        if let Some(entry) = reactions.pop() {
+                            retired.push(entry);
+                        }
+                    }
                 }
 
                 // Add new groups for the new keys, if any.
@@ -98,13 +108,21 @@ mod imp {
                     );
                 }
 
-                (removed, added)
+                (removed, added, updated, retired)
             };
+
+            for (group, group_reactions) in updated {
+                group.update(group_reactions);
+            }
 
             if removed != 0 || added != 0 {
                 self.obj()
                     .items_changed(pos as u32, removed as u32, added as u32);
             }
+
+            // `retired`'s `ReactionGroup`s are only dropped now, after the borrow above
+            // was released and the removal was signalled.
+            drop(retired);
         }
 
         /// Get a reaction group by its key.

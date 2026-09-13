@@ -197,14 +197,19 @@ mod imp {
                 return;
             }
 
-            {
+            let retired = {
                 let mut rows = self.rows.borrow_mut();
-                rows.truncate(index);
+                let retired = rows.split_off(index);
                 rows.extend(new_rows);
-            }
+                retired
+            };
 
             self.obj()
                 .items_changed(index as u32, removed as u32, added as u32);
+
+            // `retired`'s `VisualMediaRow`s are only dropped now, after the borrow above
+            // was released and the change was signalled.
+            drop(retired);
         }
 
         /// Build the rows from the given index to the end of the underlying
