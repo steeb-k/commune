@@ -124,7 +124,14 @@ path — the new build if the upgrade worked, the old one if it did not, because
 a failed `MajorUpgrade` rolls back. Nothing in
 `build-aux/windows/commune.wxs` had to change: the package is already
 `perUser`, so there is no elevation, and its `UpgradeCode` has not moved since
-the first release.
+the first release. One thing did have to change there, on
+13 September 2026: the package sets `REINSTALLMODE` to `amus`, because the
+installer's default rule skips a file whose installed copy has a higher
+version, costs that decision while the previous product is still there, and
+then removes the previous product's copy. A package built where MSYS2 was
+older than the runner's left sixteen DLLs missing with `msiexec` reporting
+success, and the application could not start. Every file is installed now,
+whatever is already there.
 
 Revocation checking is deliberately off. It is a network round trip whose
 failure mode is the wrong one: behind a captive portal it calls a good package
@@ -451,15 +458,39 @@ discarded ad-hoc signature looked like a divergence, and the `.p12` was
 written in a format Apple cannot read. One of the eight was a bad edit of mine
 that shipped half a fix.
 
+**Released, on 12 and 13 September 2026.** `v1.rc1`, `v1.rc2` and `v1.rc3`
+went out through `release.yml`; the `updates` branch exists and carries the
+`rc` feed. The third of those sat as a draft for six hours after a green run,
+which is what `publish-release.sh` now exists to refuse.
+
+**Seen updating itself, on 13 September 2026.** Three of the four paths, each
+on a real installation, driven through the application's own rows:
+
+* **Windows.** An installed candidate checked the `rc` feed, downloaded the
+  signed MSI, verified it, quit, and the helper ran `msiexec` and started the
+  new build. The first attempt at this found the helper never reached
+  `msiexec` at all — started without a console, its `tasklist | find` wait
+  loop hung on the first iteration, twice out of twice — which is why the
+  first three candidates cannot update themselves on Windows: install 1.rc4
+  from the release page once, and it updates itself from then on.
+* **Android.** The check, the download with its percentage, the package
+  installer sheet and a new `versionCode` running with the session intact,
+  on the emulator against a locally signed feed, for the debug variant natively
+  and for the arm64 release variant under ARM translation. The first attempt
+  found the check itself dead on arrival — a UniFFI future polled with no
+  runtime under it — so the first three candidates' Android builds cannot
+  check at all; install 1.rc4 by hand once.
+* **The feed's answers.** Up to date, available, skipped, an unreachable
+  server, and a channel with no manifest on it, each with its sentence, on both
+  platforms.
+
 Still unrun or unseen:
 
-* **No `v*` tag has been pushed**, so `release.yml` has never executed and the
-  `updates` branch does not exist. Every update check therefore 404s, which
-  the app reads as "no update" and says nothing about. Publishing a nightly is
-  what creates that branch.
-* **Nothing has ever updated itself.** The Windows install path has unit tests
-  for the script it writes, but no MSI has been installed over another one by
-  the updater, and `macos_update.rs` has only ever been compiled.
+* **macOS.** `macos_update.rs` has only ever been compiled. No Mac has run the
+  updater; the first person to press Update on one is the test.
 * **The Android APK has not been installed on the Pixel.** It is signed with
   the release key (SHA-256 `4E:C5:A0:98:…`), so the first install has to
   uninstall the debug-keyed copy and loses that device's adopted session.
+* **A stable release.** No tag without a pre-release part has been pushed, so
+  the `stable` manifest has never been written; a candidate that follows
+  `stable` is told so in words rather than left thinking the server is down.
