@@ -73,6 +73,25 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="1~rc3" type="development" date="2026-09-13">
+      <description>
+        <p>
+          The third release candidate fixes the fault that closed the first two the moment a room
+          with more than two people was opened.
+        </p>
+        <ul>
+          <li>
+            Opening a room with more than two members no longer closes Commune on the spot. The
+            list of members let go of a member while it was still being counted, and every desktop
+            build of the first two candidates carried that.
+          </li>
+          <li>
+            Every other list Commune keeps, of rooms, accounts, reactions, media, sessions and
+            verifications, was checked for the same fault and hardened the same way.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="1~rc2" type="development" date="2026-09-12">
       <description>
         <p>
