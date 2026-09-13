@@ -831,7 +831,7 @@ dependencies = [
 
 [[package]]
 name = "commune"
-version = "1.0.0-rc1"
+version = "1.0.0-rc2"
 dependencies = [
  "aperture",
  "as_variant",
@@ -898,7 +898,7 @@ dependencies = [
 
 [[package]]
 name = "commune-core"
-version = "1.0.0-rc1"
+version = "1.0.0-rc2"
 dependencies = [
  "anyhow",
  "ashpd",

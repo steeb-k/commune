@@ -1,6 +1,6 @@
 project(
     'commune',
-    version: '1.rc1',
+    version: '1.rc2',
     license: 'GPL-3.0-or-later',
     meson_version: '>= 1.4',
 )
@@ -33,7 +33,7 @@ base_id = 'io.github.steeb_k.Commune'
 application_id = base_id
 
 major_version = '1'
-pre_release_version = 'rc1'
+pre_release_version = 'rc2'
 
 version = major_version
 if pre_release_version != ''
