@@ -102,8 +102,8 @@ mod imp {
 
             self.avatar_list.bind_model(Some(&self.list), |item| {
                 item.downcast_ref::<MemberTimestamp>()
-                    .and_then(MemberTimestamp::member)
-                    .expect("item should be a member timestamp with a member")
+                    .expect("item should be a member timestamp")
+                    .member()
                     .avatar_data()
             });
 
@@ -234,7 +234,7 @@ mod imp {
                     .list
                     .item(0)
                     .and_downcast::<MemberTimestamp>()
-                    .and_then(|r| r.member())
+                    .map(|r| r.member())
             {
                 // Listen to changes of the display name.
                 let handler_id = member.connect_display_name_notify(clone!(

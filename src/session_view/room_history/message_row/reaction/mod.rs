@@ -177,7 +177,7 @@ mod imp {
                     .list
                     .item(0)
                     .and_downcast::<MemberTimestamp>()
-                    .and_then(|r| r.member())
+                    .map(|r| r.member())
             {
                 // Listen to changes of the display name.
                 let handler_id = member.connect_display_name_notify(clone!(
