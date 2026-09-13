@@ -36,6 +36,7 @@ changing what it does.
 | Installing, macOS | `src/utils/macos_update.rs` |
 | The Kotlin state and the package-installer hand-off | `android-kotlin/app/src/main/java/io/github/steeb_k/commune/Updates.kt` |
 | The Kotlin rows | the About group of `.../ui/SettingsScreen.kt` |
+| Creating the GitHub release the feed points at | `build-aux/ci/publish-release.sh` |
 | Writing and signing a manifest | `build-aux/ci/publish-feed.sh` |
 | Publishing it | `build-aux/ci/commit-feed.sh` |
 | The workflows | `.github/workflows/{check,build,release,nightly}.yml` |
@@ -326,7 +327,17 @@ replaced. A build with platforms deselected does not publish, because a
 manifest written from a partial build tells every other platform there is
 nothing to install.
 
-Both end by writing the feed. The nightly release is a rolling tag, which is the one
+Both end by writing the feed. The release itself is created by
+`build-aux/ci/publish-release.sh`, not a bare `gh release create`: `gh`
+creates a release with files as a draft, uploads to it, then un-drafts it as
+three separate calls, and a 5xx from the first of those left a v1.rc3 release
+stuck as a draft while the step that created it still reported success. The
+script retries a failing call instead of falling back to one that cannot tell
+a draft from a published release, always un-drafts afterward in case an
+earlier attempt was interrupted partway, and refuses to return success until
+`gh release view` shows the release published with every asset uploaded and
+downloadable — so the feed step never writes a manifest pointing at a release
+nobody can see. The nightly release is a rolling tag, which is the one
 exception to [`RELEASING.md`](../RELEASING.md)'s rule that a tag is never
 moved, and it says so there.
 
