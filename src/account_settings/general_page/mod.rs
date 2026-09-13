@@ -195,10 +195,14 @@ mod imp {
             // than in `update_updates_row()`, which runs again every time the
             // updater's state moves.
             self.updates_status_row.set_title(&gettext_f(
-                // Translators: Do NOT translate the content between '{' and '}', this is a
-                // variable name.
-                "Version {version}",
-                &[("version", current_version())],
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names. `{build}` is the build number, which orders two builds of
+                // the same version.
+                "Version {version} (build {build})",
+                &[
+                    ("version", current_version()),
+                    ("build", &commune_core::config::build_number().to_string()),
+                ],
             ));
 
             if !updates.supported() {
