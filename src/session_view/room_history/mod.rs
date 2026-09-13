@@ -604,6 +604,21 @@ mod imp {
             self.obj().notify_is_showing_threads();
         }
 
+        /// Whether the composer should be presented.
+        ///
+        /// A list that takes the place of the timeline — search results, the
+        /// pinned messages, the list of threads — is not something a
+        /// message is sent to, so the composer goes away with the
+        /// timeline.
+        #[template_callback(function)]
+        fn show_message_toolbar(
+            is_searching: bool,
+            is_showing_pinned: bool,
+            is_showing_threads: bool,
+        ) -> bool {
+            !is_searching && !is_showing_pinned && !is_showing_threads
+        }
+
         /// Whether the banner naming the thread view should be revealed.
         ///
         /// Not over the list of threads: that is where somebody goes to switch
