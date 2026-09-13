@@ -66,7 +66,7 @@ mod imp {
                         .upgrade()
                         .and_then(|list| list.item(pos))
                         .and_downcast::<MemberTimestamp>()
-                        .and_then(|ts| ts.member())
+                        .map(|ts| ts.member())
                     else {
                         return;
                     };

@@ -6,7 +6,7 @@ pub mod row;
 use crate::session::Member;
 
 mod imp {
-    use std::cell::Cell;
+    use std::cell::{Cell, OnceCell};
 
     use super::*;
 
@@ -14,8 +14,13 @@ mod imp {
     #[properties(wrapper_type = super::MemberTimestamp)]
     pub struct MemberTimestamp {
         /// The room member.
+        ///
+        /// This is a strong reference, not a `WeakRef`: a member who left
+        /// the room can still be shown against a receipt or reaction on an
+        /// old message, and the member list is the core's, so it drops a
+        /// member it no longer holds. Held here, the member outlives that.
         #[property(get, construct_only)]
-        member: glib::WeakRef<Member>,
+        member: OnceCell<Member>,
         /// The timestamp, in seconds since Unix Epoch.
         ///
         /// A value of 0 means no timestamp.
