@@ -161,12 +161,19 @@ mod imp {
             // the list up.
             let diff = diff.map(|room| self.wrap(room));
 
-            let changes = apply_diff(&mut self.list.borrow_mut(), diff);
+            let applied = apply_diff(&mut self.list.borrow_mut(), diff);
 
             let obj = self.obj();
-            for change in &changes {
+            for change in &applied.changes {
                 obj.items_changed(change.position, change.removed, change.added);
             }
+
+            // The retired rooms drop here, after the borrow above is
+            // released and items_changed has been emitted: a room's
+            // finalize can re-enter this list (the sidebar's filter and
+            // sort models watch it), and a live RefCell borrow there
+            // aborts the process.
+            drop(applied.retired);
         }
 
         /// Join the room with the given identifier.

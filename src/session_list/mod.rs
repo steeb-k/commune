@@ -14,7 +14,7 @@ mod session_info;
 
 pub(crate) use self::{failed_session::*, new_session::*, session_info::*};
 use crate::{
-    core_bridge::list_model::{ItemsChange, apply_diff},
+    core_bridge::list_model::{Applied, ItemsChange, apply_diff},
     prelude::*,
     session::Session,
     spawn, spawn_tokio,
@@ -224,7 +224,7 @@ mod imp {
                 (key, wrapper)
             });
 
-            let changes = match diff {
+            let applied = match diff {
                 VectorDiff::Set {
                     index,
                     value: (key, wrapper),
@@ -233,7 +233,7 @@ mod imp {
             };
 
             let obj = self.obj();
-            for change in &changes {
+            for change in &applied.changes {
                 obj.items_changed(change.position, change.removed, change.added);
             }
 
@@ -242,26 +242,46 @@ mod imp {
             }
 
             self.changed.notify();
+
+            // The retired rows drop here, after every borrow above is
+            // released and items_changed has been emitted: a row's
+            // finalize can re-enter this list the same way a room or
+            // member's does, and a live RefCell borrow there aborts the
+            // process.
+            drop(applied.retired);
         }
 
         /// Replace the row at the given index, as one change.
         ///
         /// A session restored in place of the stored one it came from
         /// keeps the selection where it is, which two changes would not.
-        fn replace_at(&self, index: usize, key: RowKey, wrapper: SessionInfo) -> Vec<ItemsChange> {
+        fn replace_at(
+            &self,
+            index: usize,
+            key: RowKey,
+            wrapper: SessionInfo,
+        ) -> Applied<SessionInfo> {
             let mut list = self.list.borrow_mut();
 
             match list.get_index(index) {
-                Some((old_key, _)) if *old_key == key => Vec::new(),
+                Some((old_key, _)) if *old_key == key => Applied {
+                    changes: Vec::new(),
+                    retired: Vec::new(),
+                },
                 Some(_) => {
-                    list.shift_remove_index(index);
+                    let (_, old_wrapper) = list
+                        .shift_remove_index(index)
+                        .expect("the index was just looked up");
                     list.shift_insert(index, key, wrapper);
 
-                    vec![ItemsChange {
-                        position: index as u32,
-                        removed: 1,
-                        added: 1,
-                    }]
+                    Applied {
+                        changes: vec![ItemsChange {
+                            position: index as u32,
+                            removed: 1,
+                            added: 1,
+                        }],
+                        retired: vec![old_wrapper],
+                    }
                 }
                 None => apply_diff(
                     &mut list,

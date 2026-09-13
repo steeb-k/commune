@@ -143,23 +143,35 @@ mod imp {
         /// Apply a batch of changes from the core's list.
         fn apply_diffs(&self, diffs: Vec<VectorDiff<CoreMember>>) {
             let mut added = 0;
+            // The wrappers the diffs retire, kept alive across the whole
+            // batch: a member's finalize can re-enter this list (a
+            // `GtkFilterListModel` over a membership list watches its
+            // items, and looks a finalized one up by scanning
+            // `n_items`/`item`), and a live `RefCell` borrow at that point
+            // aborts the process. Dropped only once every borrow below is
+            // released and every `items_changed` has been emitted.
+            let mut retired = Vec::new();
 
             for diff in diffs {
                 // Wrap first, outside the borrow: a wrapper's constructor
                 // may look the list up.
                 let diff = diff.map(|member| self.wrap(&member));
-                let changes = apply_diff(&mut self.members.borrow_mut(), diff);
+                let applied = apply_diff(&mut self.members.borrow_mut(), diff);
 
                 let obj = self.obj();
-                for change in changes {
+                for change in applied.changes {
                     obj.items_changed(change.position, change.removed, change.added);
                     added += change.added;
                 }
+                retired.extend(applied.retired);
             }
 
             if added > 0 {
                 self.restore_latest_activity();
             }
+
+            // See the comment on `retired` above.
+            drop(retired);
         }
 
         /// Restore the members' activity according to the known live
