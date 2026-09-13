@@ -14,7 +14,7 @@ name = "commune-core"
 # agent carries it, so a core that numbered itself separately would make the
 # application claim a version nobody released. `RELEASING.md` bumps the two
 # together.
-version = "1.0.0-rc3"
+version = "1.0.0-rc4"
 license = "GPL-3.0-or-later"
 edition = "2024"
 rust-version = "1.95"

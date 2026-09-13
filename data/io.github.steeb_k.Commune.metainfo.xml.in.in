@@ -73,6 +73,55 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="1~rc4" type="development" date="2026-09-13">
+      <description>
+        <p>
+          The fourth release candidate is the first whose updater has been watched working on
+          every platform it runs on. On Windows, an installation of an earlier candidate cannot
+          update itself to this one: install it from the release page once, and it updates itself
+          from then on.
+        </p>
+        <ul>
+          <li>
+            On Windows, pressing Update downloaded the package and then nothing happened: the
+            helper that runs the installer was started without a console and waited forever. It
+            runs the installer now, and gives up waiting after two minutes rather than never.
+          </li>
+          <li>
+            On Windows, the package installs every one of its files. Windows Installer would
+            keep a library that carried a higher version than the one arriving, then remove it
+            with the old version, and report success over an application that could not start.
+          </li>
+          <li>
+            On Android, checking for updates failed with a sentence about a missing runtime. The
+            check and the download run where they should, and the rows say what actually went
+            wrong, in words.
+          </li>
+          <li>
+            A candidate follows the release-candidate channel by default. The first three followed
+            the stable channel, where nothing has been published yet, and reported that as an
+            unreachable server; a channel with nothing on it now says so.
+          </li>
+          <li>
+            The Version row says which version and which build is running, on both platforms.
+          </li>
+          <li>
+            On Android, a release can be skipped, the automatic check runs when the app starts
+            rather than only when Settings is open and says what it found, and an installer that
+            is cancelled hands the Update button back.
+          </li>
+          <li>
+            Opening a busy room no longer closes Commune a second time: a member the room list
+            was still placing could be dropped while a read receipt pointed at it.
+          </li>
+          <li>
+            The composer is hidden while the thread list or the pinned messages take the place of
+            the timeline, and a picture in the media history that cannot be loaded, or is not
+            shown because previews are off, says so with an icon instead of a dark tile.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="1~rc3" type="development" date="2026-09-13">
       <description>
         <p>
