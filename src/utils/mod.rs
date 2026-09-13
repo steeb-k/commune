@@ -42,6 +42,10 @@ pub(crate) mod macos_emoji_spacing;
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_notifications;
 #[cfg(target_os = "macos")]
+pub(crate) mod macos_quit_key;
+#[cfg(target_os = "macos")]
+pub(crate) mod macos_reopen;
+#[cfg(target_os = "macos")]
 pub(crate) mod macos_text_scale;
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_update;

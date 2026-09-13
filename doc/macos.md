@@ -69,6 +69,7 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | `matrix:` URLs | Our own Apple Event handler, `src/utils/macos_url_events.rs` |
 | Notifications | `UNUserNotificationCenter`, `src/utils/macos_notifications.rs` |
 | Media viewer header | No GTK buttons; the back button clears the native ones, `src/utils/macos_window_buttons.rs` |
+| Closing the window | Hides it; `src/utils/macos_reopen.rs` answers the Dock |
 | Document font | `src/utils/macos_document_font.rs`, quoted for libadwaita |
 | Holes after fullscreen | `Window::repaint_after_fullscreen_change` and `_macos.scss` |
 
@@ -572,8 +573,8 @@ RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune
 | 2 | Menu bar | Commune → About Commune | The About dialog, named Commune, not `commune` |
 | 3 | Menu bar | Commune → Preferences, and ⌘, | The account settings of the visible session |
 | 4 | Menu bar | Preferences while logged out | Greyed out |
-| 5 | Menu bar | Commune → Hide, Hide Others, Show All, Quit | The usual macOS behaviour |
-| 6 | Menu bar | File → each of the five items | The same dialogs the old hamburger menu opened — **verified** |
+| 5 | Menu bar | Commune → Hide, Hide Others, Show All, Quit | The usual macOS behaviour; Quit shows no shortcut |
+| 6 | Menu bar | File → each of the five items | The same dialogs the old hamburger menu opened — **verified**; Close Window hides the window |
 | 7 | Menu bar | File and View on the login page | Greyed out; sensitive again once a session is up |
 | 8 | Menu bar | Edit → Cut, Copy, Paste, Select All | Greyed, but showing ⌘X ⌘C ⌘V ⌘A |
 | 9 | Menu bar | ⌘X, ⌘C, ⌘V, ⌘A in the composer | They work, greyed menu items notwithstanding |
@@ -581,7 +582,7 @@ RUST_LOG=commune=debug _build/macos/"Commune Devel.app"/Contents/MacOS/commune
 | 11 | Menu bar | Window | Minimize, Zoom and the window list, from AppKit |
 | 12 | Menu bar | Help → Keyboard Shortcuts | The shortcuts dialog |
 | 13 | Sidebar | Look at the header bar | No hamburger button — **verified** |
-| 14 | Shortcuts | ⌘Q, ⌘W | Quit; close window |
+| 14 | Shortcuts | ⌘Q, ⌘W | Both close the window; the app stays in the Dock, and clicking its icon brings the window back — the keys **verified** by script, the Dock not yet |
 | 15 | Shortcuts | ⌘K, ⌘L, ⌘, | Room search; join room; account settings |
 | 16 | Shortcuts | ⌘Page Up, ⌘Page Down, and both with ⇧ | Previous/next room, then the unread ones |
 | 17 | Shortcuts | ⌘⇧8 (⌘\*) | Jumps to the first room with unread messages |
@@ -1091,6 +1092,48 @@ the very relayout being papered over. Four extra full frames a second after a tr
 whole cost. This was written from the backend's source rather than from a reproduction, since the
 report is intermittent; if it still shows, the rebuild is happening later than 1.3 s after the
 state change, and the first thing to try is a longer run.
+
+**Closing the window leaves the application running, and Command-Q closes the window.** A Mac
+application outlives its window, and a chat client in particular is expected to go on receiving
+messages from the Dock. `Window::close_request` on macOS saves the window state as everywhere
+else, then hides the window and stops the close, so `GtkApplication` keeps its one window and
+keeps running: the session syncs and the notifications keep coming. Quit — the item in the
+application menu, or the Dock's — ends the process: both reach `app.quit`, since GTK's
+`-applicationShouldTerminate:` activates that action when the application has one, and it closes
+the window first, for the saved state, and then quits whatever the close request returned.
+
+Getting the keys to do that took three pieces, because of how `AppKit` dispatches a Command
+key: it is matched against the menu bar first, and a combination no item carries goes nowhere —
+GTK never sees it, so an accelerator alone does nothing here. Measured with `System Events`
+before the change: Command-W, an accelerator on `window.close` and nothing else, did nothing at
+all, while Command-Q quit.
+
+* **Command-W** is File → Close Window, a `win.close-window` action of the window's own, since
+  GTK's `window.close` is not in the menu's muxer. Its key equivalent is the accelerator, and
+  the accelerator is spelled `<Meta>w`, not `<Primary>w`. GTK 4 parses `<Primary>` as Control
+  on every platform and relies on the macOS backend reporting the Command key as Control, which
+  is fine for keys GTK handles itself — but the quartz menu builds an item's key equivalent from
+  the parsed mask literally, so a `<Primary>w` item shows ⌃W and Command-W matches nothing.
+  Measured through the accessibility tree: with `<Primary>w` the item's modifier mask was
+  control, with `<Meta>w` it is command, and GTK's own macOS shortcuts (`<Meta>q`, `<Meta>z`,
+  `<Meta>x` …) are all spelled `<Meta>` for the same reason. This is also why the shortcuts in
+  rows 15 to 17 of [Testing by hand](#testing-by-hand) are still unverified: `set_up_accels`
+  spells them `<Primary>`, and none of them is on a menu item.
+* **Quit has no key.** GTK's quartz startup puts Command-Q on `app.quit` itself, after
+  `set_up_accels` ran, so `Application::startup` takes it away again once the parent startup is
+  done. The item's key equivalent follows the accelerator; Quit shows none.
+* **Command-Q** is then unmatched, which means dropped, so `src/utils/macos_quit_key.rs` takes it
+  before the menu bar looks: a local `NSEvent` monitor for key presses, which is `AppKit`'s hook
+  for exactly this. It swallows a bare Command-Q and closes the window, and touches nothing else.
+
+The way back is the Dock. Clicking the icon of a running application sends the `'rapp'` Apple
+Event, which `AppKit` hands to `-applicationShouldHandleReopen:hasVisibleWindows:` on a delegate
+that is GTK's and does not implement it, and its default for an application that is not
+document-based is to do nothing. `src/utils/macos_reopen.rs` takes the event from the Apple Event
+Manager the way `macos_url_events.rs` takes `'GURL'`, and activates the application, which
+presents the window. A notification tap, a `matrix:` URL and a second launch all present it too,
+through the paths they already had. The Dock path has not been exercised: a development run is
+not a bundle and has no Dock icon to click, so it is on the bundle's list.
 
 **The document font.** libadwaita defines `--document-font-family` at the root of its stylesheet
 from the platform's document font, and with no such setting on macOS falls back to GTK's
