@@ -49,7 +49,13 @@ val communeVersionName: String by lazy {
 //
 // Outside a git checkout there is no count to read, and 1 is the honest
 // answer: such a build cannot be part of an ordered series anyway.
+// `-PcommuneVersionCode=<n>` overrides the commit count: the updater orders
+// same-version builds by this number, so testing it against a local feed
+// (doc/updates.md) means building a second APK the running one reads as
+// newer without waiting on a real commit history to grow.
 val communeVersionCode: Int by lazy {
+    (project.findProperty("communeVersionCode") as String?)?.toIntOrNull()?.let { return@lazy it }
+
     val counted =
         runCatching {
             providers

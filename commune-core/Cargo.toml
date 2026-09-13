@@ -208,3 +208,8 @@ wildcard_imports = "allow"
 
 [dev-dependencies]
 anyhow = "1"
+# `block_on`, for the facade regression test that drives an exported async fn
+# from a plain thread with no tokio runtime entered — exactly how UniFFI polls
+# it from the foreign (Kotlin coroutine) side. `futures-util` (a dependency
+# already, not a dev-dependency) has no executor of its own.
+futures-executor = "0.3"

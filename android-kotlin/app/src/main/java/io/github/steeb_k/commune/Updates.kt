@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
+import io.github.steeb_k.commune.core.CoreException
 import io.github.steeb_k.commune.core.FfiRelease
 import io.github.steeb_k.commune.core.FfiUpdateSettings
 import io.github.steeb_k.commune.core.UpdateProgressListener
@@ -154,7 +155,13 @@ object Updates {
 
                 if (userInitiated) {
                     state = UpdateState.Failed
-                    status = error.message ?: "Could not check for updates."
+                    // `error.message` is not this: a `CoreException` other
+                    // than `Failed` carries whatever `.message` a bindings
+                    // internal-error class defaults to, and `Failed.message`
+                    // itself is a debug rendering ("msg=...") rather than the
+                    // core's user-facing sentence, which lives in `.msg`.
+                    status = (error as? CoreException.Failed)?.msg
+                        ?: "Could not check for updates."
                 } else {
                     state = UpdateState.Idle
                     status = ""
@@ -243,7 +250,8 @@ object Updates {
             } catch (error: Exception) {
                 Log.w(TAG, "Could not download the update", error)
                 state = UpdateState.Failed
-                status = error.message ?: "Could not download the update."
+                status = (error as? CoreException.Failed)?.msg
+                    ?: "Could not download the update."
             }
         }
     }
