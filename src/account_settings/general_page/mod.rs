@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use commune_core::updates::Channel;
+use commune_core::updates::{Channel, current_version};
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone};
 use ruma::{
@@ -189,6 +189,17 @@ mod imp {
                 .updates
                 .get_or_init(|| Application::default().updates())
                 .clone();
+
+            // The running version, not the one on offer: it does not change
+            // for the life of the process, so it is written once here rather
+            // than in `update_updates_row()`, which runs again every time the
+            // updater's state moves.
+            self.updates_status_row.set_title(&gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "Version {version}",
+                &[("version", current_version())],
+            ));
 
             if !updates.supported() {
                 self.updates_automatic_row.set_visible(false);

@@ -461,7 +461,7 @@ impl Updates {
             UpdateState::Downloading => gettext_f(
                 // Translators: Do NOT translate the content between '{' and '}', this is a
                 // variable name. {percent} is a whole number, like 40.
-                "Downloading Commune {version}… {percent}%",
+                "Downloading Commune {version} ({percent}%)…",
                 &[
                     ("version", &version),
                     ("percent", &format!("{:.0}", self.progress() * 100.0)),
