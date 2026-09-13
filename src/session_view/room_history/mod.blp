@@ -301,8 +301,9 @@ template $ContentRoomHistory: Adw.Bin {
           vexpand: false;
           maximum-size: 750;
           tightening-threshold: 550;
-          // There is nothing to compose to while looking at search results.
-          visible: bind search_bar.search-mode-enabled inverted;
+          // Nothing is composed to while a list takes the place of the timeline:
+          // search results, the pinned messages, or the list of threads.
+          visible: bind $show_message_toolbar(search_bar.search-mode-enabled, template.is-showing-pinned, template.is-showing-threads) as <bool>;
 
           $MessageToolbar message_toolbar {
             // A thread timeline is composed into directly — it receives its own
