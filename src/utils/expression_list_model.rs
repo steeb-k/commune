@@ -142,13 +142,22 @@ mod imp {
                 new_entries.push((item, item_watches));
             }
 
-            let mut watches = self.watches.borrow_mut();
             let removed_range = (pos as usize)..((pos + removed) as usize);
-            for watch in watches
-                .splice(removed_range, new_entries)
-                .flat_map(|(_, w)| w)
-            {
-                watch.unwatch();
+            // Collect the spliced-out entries before releasing the borrow: an item's
+            // `item_expr_changed` callback below reads `self.watches`, so nothing may be
+            // dropped while it is still borrowed here.
+            let retired: Vec<(glib::Object, Vec<gtk::ExpressionWatch>)> = {
+                let mut watches = self.watches.borrow_mut();
+                watches.splice(removed_range, new_entries).collect()
+            };
+
+            for (item, item_watches) in retired {
+                for watch in item_watches {
+                    watch.unwatch();
+                }
+                // `item` is only dropped here, once its watches have been unwatched and
+                // the borrow above has been released.
+                drop(item);
             }
         }
 

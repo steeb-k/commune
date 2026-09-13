@@ -107,7 +107,9 @@ mod imp {
                 self.items_changed(&model, 0, removed, model.n_items());
             } else {
                 let removed = self.n_items();
-                self.items.borrow_mut().clear();
+                // `RefCell::take` releases the borrow before the retired list items (and
+                // the `GroupingListGroup`s they may hold) drop.
+                self.items.take();
                 self.obj().items_changed(0, removed, 0);
             }
 
@@ -148,7 +150,7 @@ mod imp {
 
             let mut replaced_list_items = HashSet::new();
 
-            let mut list_items_removed =
+            let (mut list_items_removed, retired_removed) =
                 self.items_removed(position, removed, index_before_changes);
             let mut list_items_added = self.items_added(
                 model,
@@ -251,7 +253,16 @@ mod imp {
                 );
             }
 
+            // `retired_removed` is only dropped now, after the removal above has been
+            // signalled.
+            drop(retired_removed);
+
             // Change groups with a single item to singletons.
+            //
+            // The retired `GroupingListItem::Group`s (holding a `GroupingListGroup`, itself
+            // a list model) are kept alive until after the `items_changed` emissions below:
+            // dropping one while `self.items` is still borrowed could re-enter this list.
+            let mut retired_groups = Vec::new();
             for index in index_before_changes.into_iter().chain(index_after_changes) {
                 let mut items = self.items.borrow_mut();
                 let item = items
@@ -259,7 +270,9 @@ mod imp {
                     .expect("list item index should be valid");
 
                 if matches!(item, GroupingListItem::Group(_)) && item.len() == 1 {
-                    *item = GroupingListItem::Singleton(item.start());
+                    let start = item.start();
+                    retired_groups
+                        .push(std::mem::replace(item, GroupingListItem::Singleton(start)));
                     replaced_list_items.insert(index);
                 }
             }
@@ -267,6 +280,8 @@ mod imp {
             for index in replaced_list_items {
                 obj.items_changed(index as u32, 1, 1);
             }
+
+            drop(retired_groups);
 
             // Generate a list of groups before processing the batches, to avoid holding a
             // ref while we send signals about changed items.
@@ -298,17 +313,20 @@ mod imp {
 
         /// Handle when items were removed in the underlying model.
         ///
-        /// Returns a `(position, removed)` tuple if items were removed in this
-        /// list.
+        /// Returns the number of list items that were removed, and the retired
+        /// list items themselves: the caller must keep those alive
+        /// until after it has released any borrow of `self.items` and
+        /// emitted the corresponding `items_changed`, since dropping a
+        /// `GroupingListItem::Group` can re-enter this list.
         fn items_removed(
             &self,
             position: u32,
             removed: u32,
             index_before_changes: Option<usize>,
-        ) -> usize {
+        ) -> (usize, Vec<GroupingListItem>) {
             if removed == 0 {
                 // Nothing to do.
-                return 0;
+                return (0, Vec::new());
             }
 
             // Index of the list item that contains the item right after the changes in the
@@ -365,27 +383,32 @@ mod imp {
                 .zip(removal_end)
                 .filter(|(removal_start, removal_end)| removal_start <= removal_end)
             else {
-                return 0;
+                return (0, Vec::new());
             };
 
             let is_at_items_start = removal_start == 0;
             let is_at_items_end = removal_end == items.len().saturating_sub(1);
 
             // Try to optimize the removal by using the most appropriate `VecDeque` method.
-            if is_at_items_start && is_at_items_end {
+            // The removed list items are collected instead of simply dropped: the caller
+            // must not let them drop until `items`'s borrow is released and the removal has
+            // been signalled.
+            let retired: Vec<GroupingListItem> = if is_at_items_start && is_at_items_end {
                 // Remove all items.
-                items.clear();
+                items.drain(..).collect()
             } else if is_at_items_end {
                 // Remove the end of the items.
-                items.truncate(removal_start);
+                items.drain(removal_start..).collect()
             } else {
                 // We can only remove each item separately.
+                let mut retired = Vec::with_capacity(removal_end - removal_start + 1);
                 for i in (removal_start..=removal_end).rev() {
-                    items.remove(i);
+                    retired.push(items.remove(i).expect("list item index should be valid"));
                 }
-            }
+                retired
+            };
 
-            removal_end - removal_start + 1
+            (removal_end - removal_start + 1, retired)
         }
 
         /// Handle when items were added to the underlying model.

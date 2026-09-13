@@ -312,7 +312,7 @@ impl VerificationList {
     /// Drop the row of the verification with the given key, and its
     /// notification.
     fn remove_row(&self, key: &VerificationKey) {
-        let Some((pos, ..)) = self.imp().list.borrow_mut().shift_remove_full(key) else {
+        let Some((pos, _, retired)) = self.imp().list.borrow_mut().shift_remove_full(key) else {
             return;
         };
 
@@ -321,6 +321,10 @@ impl VerificationList {
         if let Some(session) = self.session() {
             session.notifications().withdraw_identity_verification(key);
         }
+
+        // `retired`, the removed `IdentityVerification`, is only dropped now, after the
+        // borrow above was released and the removal was signalled.
+        drop(retired);
     }
 
     /// Get the verification with the given key.

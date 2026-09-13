@@ -501,7 +501,9 @@ mod imp {
         /// optimized by the caller of the function. What was known about the
         /// ends of the history is the core's to forget.
         fn clear(&self) {
-            self.event_map.borrow_mut().clear();
+            // `RefCell::take` releases the borrow before the retired events drop, unlike
+            // `borrow_mut().clear()`.
+            self.event_map.take();
             self.set_has_room_create(false);
         }
 
@@ -737,28 +739,34 @@ mod imp {
         /// Remove the given item from this `Timeline`.
         fn remove_item(&self, item: &TimelineItem) {
             if let Some(event) = item.downcast_ref::<Event>() {
-                let mut removed_from_map = false;
-                let mut event_map = self.event_map.borrow_mut();
+                // `set_has_room_create` below emits `filter.changed`/`notify_has_room_create`,
+                // so it must run after the `event_map` borrow is released.
+                let removed_from_map = {
+                    let mut event_map = self.event_map.borrow_mut();
 
-                // We need to remove both the transaction ID and the event ID.
-                let identifiers = event
-                    .transaction_id()
-                    .map(TimelineEventItemId::TransactionId)
-                    .into_iter()
-                    .chain(event.event_id().map(TimelineEventItemId::EventId));
+                    // We need to remove both the transaction ID and the event ID.
+                    let identifiers = event
+                        .transaction_id()
+                        .map(TimelineEventItemId::TransactionId)
+                        .into_iter()
+                        .chain(event.event_id().map(TimelineEventItemId::EventId));
 
-                for id in identifiers {
-                    // We check if we are removing the right event, in case we receive a diff that
-                    // adds an existing event to another place, making us create a new event, before
-                    // another diff that removes it from its old place, making us remove the old
-                    // event.
-                    let found = event_map.get(&id).is_some_and(|e| e == event);
+                    let mut removed_from_map = false;
+                    for id in identifiers {
+                        // We check if we are removing the right event, in case we receive a diff
+                        // that adds an existing event to another place, making us create a new
+                        // event, before another diff that removes it from its old place, making
+                        // us remove the old event.
+                        let found = event_map.get(&id).is_some_and(|e| e == event);
 
-                    if found {
-                        event_map.remove(&id);
-                        removed_from_map = true;
+                        if found {
+                            event_map.remove(&id);
+                            removed_from_map = true;
+                        }
                     }
-                }
+
+                    removed_from_map
+                };
 
                 if removed_from_map && event.is_room_create() {
                     self.set_has_room_create(false);

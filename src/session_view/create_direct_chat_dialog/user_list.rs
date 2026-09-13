@@ -101,7 +101,8 @@ mod imp {
         /// Clear the list of results.
         fn clear_list(&self) {
             let removed = self.n_items();
-            self.list.borrow_mut().clear();
+            // `RefCell::take` releases the borrow before the retired users drop.
+            self.list.take();
 
             self.obj().items_changed(0, removed, 0);
         }

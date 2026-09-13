@@ -104,39 +104,50 @@ mod imp {
             }
 
             // Only new members are remaining.
+            //
+            // Collect the wrappers into a `Vec` before `add_members` takes the borrow
+            // below: constructing a `MemberPowerLevel` must not happen while `self.list`
+            // is borrowed, the same rule the other lists follow.
             let mut new_handlers = Vec::with_capacity(users.len());
-            let new_members = users.into_keys().map(|user_id| {
-                let user = members
-                    .get(&user_id)
-                    .and_upcast::<User>()
-                    .unwrap_or_else(|| {
-                        // Fallback to the remote cache if the user is not in the room anymore.
-                        session.remote_cache().user(user_id.clone()).upcast()
-                    });
-                let member = MemberPowerLevel::new(&user, &permissions);
+            let new_members = users
+                .into_keys()
+                .map(|user_id| {
+                    let user = members
+                        .get(&user_id)
+                        .and_upcast::<User>()
+                        .unwrap_or_else(|| {
+                            // Fallback to the remote cache if the user is not in the room anymore.
+                            session.remote_cache().user(user_id.clone()).upcast()
+                        });
+                    let member = MemberPowerLevel::new(&user, &permissions);
 
-                let handler = member.connect_power_level_changed(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |_| {
-                        imp.update_changed();
-                    }
-                ));
-                new_handlers.push(handler);
+                    let handler = member.connect_power_level_changed(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_changed();
+                        }
+                    ));
+                    new_handlers.push(handler);
 
-                (user_id, member)
-            });
+                    (user_id, member)
+                })
+                .collect::<Vec<_>>();
 
-            self.add_members(new_members);
+            self.add_members(new_members.into_iter());
         }
 
         /// Remove the member with the given user ID from the list.
         fn remove_member(&self, user_id: &OwnedUserId) {
-            let Some((pos, ..)) = self.list.borrow_mut().shift_remove_full(user_id) else {
+            let Some((pos, _, retired)) = self.list.borrow_mut().shift_remove_full(user_id) else {
                 return;
             };
 
             self.obj().items_changed(pos as u32, 1, 0);
+
+            // `retired`, the removed `MemberPowerLevel`, is only dropped now, after the
+            // borrow above was released and the removal was signalled.
+            drop(retired);
         }
 
         /// Add the given members to the list.

@@ -97,7 +97,7 @@ mod imp {
 
         /// Set the widgets to display.
         fn set_widgets<P: IsA<gtk::Widget>>(&self, widgets: Vec<P>) {
-            for widget in self.widgets.borrow_mut().drain(..) {
+            for widget in self.widgets.take() {
                 widget.unparent();
             }
 

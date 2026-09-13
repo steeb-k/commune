@@ -94,8 +94,9 @@ mod imp {
             let removed = self.n_items();
 
             self.own_server.take();
-            self.third_party_networks.borrow_mut().clear();
-            self.custom_servers.borrow_mut().clear();
+            // `RefCell::take` releases the borrow before the retired servers drop.
+            self.third_party_networks.take();
+            self.custom_servers.take();
 
             let Some(session) = self.session.upgrade() else {
                 self.obj().items_changed(0, removed, 0);

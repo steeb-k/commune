@@ -52,7 +52,8 @@ mod imp {
             // Optimization if the new list is empty.
             if devices.is_empty() {
                 if n_items != 0 {
-                    self.map.borrow_mut().clear();
+                    // `RefCell::take` releases the borrow before the retired sessions drop.
+                    self.map.take();
                     self.obj().items_changed(0, n_items, 0);
                 }
 
