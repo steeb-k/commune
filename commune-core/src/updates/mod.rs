@@ -132,11 +132,38 @@ impl Channel {
     /// follow; anything else came from a tag.
     #[must_use]
     pub fn default_for_profile() -> Self {
-        if config::profile() == "devel" {
-            Self::Nightly
-        } else {
-            Self::Stable
+        Self::default_channel(config::profile(), current_version())
+    }
+
+    /// The decision behind [`default_for_profile()`], with the profile and
+    /// the running version taken as plain arguments so it can be tested
+    /// without faking the process-global config or the compiled-in version.
+    ///
+    /// Devel always checks `Nightly`: a nightly is a different application
+    /// with a different id, so nothing else on that profile would even
+    /// install.
+    ///
+    /// Otherwise: the `rc` channel holds release candidates **and** the
+    /// stable releases that follow them (doc/updates.md), specifically so
+    /// that someone testing a candidate is carried forward to its release
+    /// rather than left on a channel that has stopped moving. A build whose
+    /// own version has a non-empty semver pre-release part — a candidate —
+    /// is itself evidence that this install came from `rc`, so its default
+    /// stays `rc` and picks up the release when it ships. A build with no
+    /// pre-release part — a tagged release, or a version that fails to
+    /// parse as semver at all — defaults to `stable`, since `rc` finding a
+    /// release is not proof the *install* went through `rc`, and a fresh
+    /// `stable` install must not default to a channel whose `stable.json`
+    /// does not exist until the first release is cut.
+    fn default_channel(profile: &str, version: &str) -> Self {
+        if profile == "devel" {
+            return Self::Nightly;
         }
+
+        let is_candidate =
+            semver::Version::parse(version).is_ok_and(|version| !version.pre.is_empty());
+
+        if is_candidate { Self::Rc } else { Self::Stable }
     }
 
     /// The channels an installation of this build may choose between.
@@ -333,6 +360,15 @@ pub enum UpdateError {
 impl UserFacingError for UpdateError {
     fn to_user_facing(&self) -> String {
         match self {
+            // A 404 means the server answered; it just has nothing on this
+            // channel yet, which is the ordinary state of `rc` and `stable`
+            // before their first candidate or release (doc/updates.md) and
+            // not the same problem as the feed being unreachable.
+            Self::Http(HttpError::Status(status))
+                if *status == matrix_sdk::reqwest::StatusCode::NOT_FOUND =>
+            {
+                "No release has been published on this channel yet.".to_owned()
+            }
             Self::Http(_) => "Could not reach the update server.".to_owned(),
             Self::Signature | Self::Malformed(_) => {
                 "The update information could not be verified.".to_owned()
@@ -894,6 +930,60 @@ mod tests {
             is_newer(&release("1.rc1", 1), "1.0.0", 1),
             Err(UpdateError::Malformed(_))
         ));
+    }
+
+    #[test]
+    fn a_404_reads_as_no_release_on_this_channel() {
+        let error = UpdateError::Http(HttpError::Status(
+            matrix_sdk::reqwest::StatusCode::NOT_FOUND,
+        ));
+
+        assert_eq!(
+            error.to_user_facing(),
+            "No release has been published on this channel yet."
+        );
+    }
+
+    #[test]
+    fn any_other_status_reads_as_unreachable() {
+        let error = UpdateError::Http(HttpError::Status(
+            matrix_sdk::reqwest::StatusCode::INTERNAL_SERVER_ERROR,
+        ));
+
+        assert_eq!(error.to_user_facing(), "Could not reach the update server.");
+    }
+
+    #[test]
+    fn devel_always_defaults_to_nightly() {
+        assert_eq!(Channel::default_channel("devel", "1.0.0"), Channel::Nightly);
+        assert_eq!(
+            Channel::default_channel("devel", "1.0.0-rc1"),
+            Channel::Nightly
+        );
+    }
+
+    #[test]
+    fn a_release_candidate_version_defaults_to_rc() {
+        assert_eq!(
+            Channel::default_channel("release", "1.0.0-rc1"),
+            Channel::Rc
+        );
+    }
+
+    #[test]
+    fn a_tagged_release_version_defaults_to_stable() {
+        assert_eq!(
+            Channel::default_channel("release", "1.0.0"),
+            Channel::Stable
+        );
+    }
+
+    #[test]
+    fn an_unparsable_version_defaults_to_stable() {
+        assert_eq!(
+            Channel::default_channel("release", "not-semver"),
+            Channel::Stable
+        );
     }
 
     #[test]

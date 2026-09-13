@@ -174,7 +174,9 @@ template $AccountSettingsGeneralPage: Adw.PreferencesPage {
     }
 
     Adw.ActionRow updates_status_row {
-      title: _("Version");
+      // Title is the running version, e.g. "Version 1.0.0-rc3"; set in
+      // mod.rs's set_up_updates() from commune_core::updates::current_version(),
+      // because a translatable template string cannot carry that in.
 
       [suffix]
       Gtk.Box {
