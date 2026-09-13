@@ -907,6 +907,7 @@ dependencies = [
  "ed25519-dalek",
  "eyeball",
  "eyeball-im",
+ "futures-executor",
  "futures-util",
  "hex",
  "indexmap",

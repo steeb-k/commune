@@ -7591,6 +7591,13 @@ fn ffi_timeline_item(
 // Installing is the Kotlin side's job — Android will only take an APK from
 // its own package installer, and it is the system, not this code, that checks
 // the new package is signed by the same key as the installed one.
+//
+// `check_for_update()` and `download_update()` run their whole body inside
+// `RUNTIME.spawn`, like every other async function in this facade: a UniFFI
+// future is polled from the foreign side (a Kotlin coroutine thread), which
+// never enters a tokio runtime of its own, and `crate::updates::check`/
+// `download` call `reqwest`, whose connector needs a reactor to be current on
+// the polling thread or it panics.
 // ---------------------------------------------------------------------------
 
 /// One downloadable artifact, over the FFI.
@@ -7739,30 +7746,35 @@ pub fn set_update_skipped_version(version: Option<String>) {
 /// never has to know what the profile's default is.
 #[uniffi::export]
 pub async fn check_for_update() -> Result<FfiUpdateCheck, CoreError> {
-    let channel = crate::updates::UpdateSettings::load().effective_channel();
-    let result = crate::updates::check(channel).await;
+    RUNTIME
+        .spawn(async move {
+            let channel = crate::updates::UpdateSettings::load().effective_channel();
+            let result = crate::updates::check(channel).await;
 
-    // Recorded whatever the answer was: a failed check that did not count
-    // would be retried on every launch.
-    let mut settings = crate::updates::UpdateSettings::load();
-    settings.last_check = Some(crate::updates::now());
-    settings.save();
+            // Recorded whatever the answer was: a failed check that did not
+            // count would be retried on every launch.
+            let mut settings = crate::updates::UpdateSettings::load();
+            settings.last_check = Some(crate::updates::now());
+            settings.save();
 
-    let check = result.map_err(|error| CoreError::Failed {
-        msg: crate::UserFacingError::to_user_facing(&error),
-    })?;
+            let check = result.map_err(|error| CoreError::Failed {
+                msg: crate::UserFacingError::to_user_facing(&error),
+            })?;
 
-    Ok(FfiUpdateCheck {
-        current_version: check.current_version,
-        current_build: check.current_build,
-        available: check.available.map(|release| FfiRelease {
-            asset: release.asset_for_current_platform().map(Into::into),
-            version: release.version,
-            build: release.build,
-            published: release.published,
-            notes_url: release.notes_url,
-        }),
-    })
+            Ok(FfiUpdateCheck {
+                current_version: check.current_version,
+                current_build: check.current_build,
+                available: check.available.map(|release| FfiRelease {
+                    asset: release.asset_for_current_platform().map(Into::into),
+                    version: release.version,
+                    build: release.build,
+                    published: release.published,
+                    notes_url: release.notes_url,
+                }),
+            })
+        })
+        .await
+        .expect("task was not aborted")
 }
 
 /// Fetch the given artifact into the given directory, checking its digest.
@@ -7775,20 +7787,69 @@ pub async fn download_update(
     dest_dir: String,
     listener: Option<Arc<dyn UpdateProgressListener>>,
 ) -> Result<String, CoreError> {
-    let asset = crate::updates::Asset {
-        url: asset.url,
-        sha256: asset.sha256,
-        size: asset.size,
-    };
-    let progress = listener.map(|listener| {
-        Arc::new(FfiDownloadProgress { listener }) as Arc<dyn crate::updates::DownloadProgress>
-    });
+    RUNTIME
+        .spawn(async move {
+            let asset = crate::updates::Asset {
+                url: asset.url,
+                sha256: asset.sha256,
+                size: asset.size,
+            };
+            let progress = listener.map(|listener| {
+                Arc::new(FfiDownloadProgress { listener })
+                    as Arc<dyn crate::updates::DownloadProgress>
+            });
 
-    let path = crate::updates::download(&asset, std::path::Path::new(&dest_dir), progress)
+            let path = crate::updates::download(&asset, std::path::Path::new(&dest_dir), progress)
+                .await
+                .map_err(|error| CoreError::Failed {
+                    msg: crate::UserFacingError::to_user_facing(&error),
+                })?;
+
+            Ok(path.to_string_lossy().into_owned())
+        })
         .await
-        .map_err(|error| CoreError::Failed {
-            msg: crate::UserFacingError::to_user_facing(&error),
-        })?;
+        .expect("task was not aborted")
+}
 
-    Ok(path.to_string_lossy().into_owned())
+#[cfg(test)]
+mod update_tests {
+    use super::*;
+
+    /// `UniFFI` polls an exported future from the foreign side — a Kotlin
+    /// coroutine thread — which never enters a tokio runtime of its own.
+    /// Before the fix, `check_for_update()`'s body called
+    /// `crate::updates::check(..).await` directly, and `reqwest`'s connector
+    /// panicked with "there is no reactor running, must be called from the
+    /// context of a Tokio 1.x runtime" the moment it was polled from such a
+    /// thread; the panic crossed a `nounwind` FFI boundary and aborted the
+    /// process rather than returning an error. This test drives the exported
+    /// function exactly that way: a plain `#[test]` (no `#[tokio::test]`, no
+    /// ambient runtime) driving the future with `futures_executor::block_on`.
+    ///
+    /// Sets `COMMUNE_UPDATE_FEED` for the whole process: this is the only
+    /// test in this crate that reads it, so there is no cross-test
+    /// interference to worry about.
+    #[test]
+    fn check_for_update_runs_without_an_ambient_runtime() {
+        crate::config::init_test_config();
+
+        // A closed local port: the connection is refused immediately, so the
+        // test does not depend on the network and fails fast either way.
+        // Safety: single-threaded effect on process state, set once by the
+        // only test in this crate that reads this variable.
+        unsafe {
+            std::env::set_var("COMMUNE_UPDATE_FEED", "http://127.0.0.1:9");
+        }
+
+        let result = futures_executor::block_on(check_for_update());
+
+        // `FfiUpdateCheck` (the `Ok` side) has no `Debug` impl, so the match
+        // does not try to format it.
+        match result {
+            Ok(_) => panic!("expected the check to fail against a closed port"),
+            Err(CoreError::Failed { msg }) => {
+                assert_eq!(msg, "Could not reach the update server.");
+            }
+        }
+    }
 }

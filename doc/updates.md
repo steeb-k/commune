@@ -403,6 +403,17 @@ COMMUNE_UPDATE_FEED=http://localhost:8000 ./commune
 The manifest has to be signed by a key the build trusts, so testing the check
 against a key of your own means rebuilding with it in `key.rs`.
 
+A release APK has no way to receive an env var. `CommuneApplication.onCreate()`
+looks for a file at `getExternalFilesDir(null)/update-feed` — on an emulator or
+a device that is `/sdcard/Android/data/io.github.steeb_k.commune/files/`,
+writable by `adb push` — and if it is there, sets `COMMUNE_UPDATE_FEED` from
+its first line before anything touches the core. The emulator reaches the
+host's `python3 -m http.server` at `http://10.0.2.2:8000`. Nobody has this
+file in production. Because the updater orders two builds of one version by
+`versionCode`, a locally-served manifest also needs a test APK the running
+one reads as newer: `./gradlew assembleRelease -PcommuneVersionCode=<n>`
+overrides the commit count that `versionCode` would otherwise use.
+
 ## What has not been seen working
 
 Kept honest rather than hopeful. Ticked off as each one actually runs.
