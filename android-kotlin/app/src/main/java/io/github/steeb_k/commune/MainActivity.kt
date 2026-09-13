@@ -7,11 +7,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import io.github.steeb_k.commune.ui.CommuneTheme
 import io.github.steeb_k.commune.ui.LoadingScreen
@@ -169,6 +176,17 @@ class MainActivity : ComponentActivity() {
         if (::state.isInitialized) state.uiVisible = false
     }
 
+    override fun onResume() {
+        super.onResume()
+        // `Updates.install()` hands the APK to the system package installer
+        // with `startActivity` and never learns whether it actually
+        // installed anything — the sheet can be cancelled, or open and
+        // close without a dialog. An app that gets resumed while it still
+        // thinks it is being replaced was not replaced, so the row is put
+        // back rather than left stuck on "Opening the installer…" forever.
+        Updates.installerReturned()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         // The state outlives this window now, so every hook that closes
@@ -274,16 +292,42 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    androidx.compose.foundation.layout.Column(
-                        Modifier.systemBarsPadding()
-                    ) {
-                        // A call put aside keeps a bar across the top of
-                        // every page, so it can always be got back to and
-                        // always be ended.
-                        if (state.call != null && state.callMinimized) {
-                            io.github.steeb_k.commune.ui.OngoingCallBar(state)
+                    // An automatic check nobody asked for is announced once,
+                    // outside Settings, rather than left for somebody to
+                    // stumble on there. `Updates.announcement` is cleared as
+                    // soon as this shows it, so a recomposition (a rotation,
+                    // say) does not show it twice.
+                    val snackbarHostState = remember { SnackbarHostState() }
+                    val announcement = Updates.announcement
+                    androidx.compose.runtime.LaunchedEffect(announcement) {
+                        val version = announcement ?: return@LaunchedEffect
+                        val result = snackbarHostState.showSnackbar(
+                            message = "Commune $version is available.",
+                            actionLabel = "View",
+                            duration = SnackbarDuration.Long,
+                        )
+                        Updates.dismissAnnouncement()
+                        if (result == SnackbarResult.ActionPerformed) {
+                            state.openSettings()
                         }
-                        CommuneApp(state)
+                    }
+
+                    Box(Modifier.fillMaxSize()) {
+                        androidx.compose.foundation.layout.Column(
+                            Modifier.systemBarsPadding()
+                        ) {
+                            // A call put aside keeps a bar across the top of
+                            // every page, so it can always be got back to and
+                            // always be ended.
+                            if (state.call != null && state.callMinimized) {
+                                io.github.steeb_k.commune.ui.OngoingCallBar(state)
+                            }
+                            CommuneApp(state)
+                        }
+                        SnackbarHost(
+                            hostState = snackbarHostState,
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        )
                     }
                 }
             }
