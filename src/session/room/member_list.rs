@@ -29,6 +29,20 @@ mod imp {
         /// Also the wrapper cache: the same `Member` for the same user
         /// across every diff.
         pub(super) members: RefCell<IndexMap<OwnedUserId, Member>>,
+        /// Wrappers created ahead of the core, waiting for the diff that
+        /// places them in `members`.
+        ///
+        /// `members` changes only through the core's own diffs: the core's
+        /// list holds the real order, and this list mirrors it index for
+        /// index, one wrapper per snapshot. If `get_or_create` inserted a
+        /// wrapper into `members` itself, right away, the two orders would
+        /// go out of step the moment the core's own `PushBack` diff for
+        /// that member arrived a tick later (from the batched stream, off
+        /// the main loop): the next `Set` diff would then find a
+        /// different key at its index and retire whoever is actually
+        /// sitting there. So a wrapper made ahead of the core waits here
+        /// until its own diff places it.
+        pub(super) pending: RefCell<HashMap<OwnedUserId, Member>>,
         /// The room these members belong to.
         #[property(get, set = Self::set_room, construct_only)]
         room: glib::WeakRef<Room>,
@@ -115,26 +129,29 @@ mod imp {
         }
 
         /// The wrapper for the given core member, brought up to date with
-        /// it: the one this list has, the room's own or direct member, or
-        /// a new one.
+        /// it: the one this list already has, one waiting in `pending`
+        /// for this diff (taken out of `pending` now that it is placed),
+        /// the room's own or direct member, or a new one.
         fn wrap(&self, member: &CoreMember) -> (OwnedUserId, Member) {
             let user_id = member.user_id.clone();
 
             let existing = self.members.borrow().get(&user_id).cloned();
-            let wrapper = existing.unwrap_or_else(|| {
-                let room = self.room.upgrade().expect("a member list outlives no room");
+            let wrapper = existing
+                .or_else(|| self.pending.borrow_mut().remove(&user_id))
+                .unwrap_or_else(|| {
+                    let room = self.room.upgrade().expect("a member list outlives no room");
 
-                if *room.own_member().user_id() == user_id {
-                    room.own_member()
-                } else if let Some(direct) = room
-                    .direct_member()
-                    .filter(|direct| *direct.user_id() == user_id)
-                {
-                    direct
-                } else {
-                    Member::new(&room, user_id.clone())
-                }
-            });
+                    if *room.own_member().user_id() == user_id {
+                        room.own_member()
+                    } else if let Some(direct) = room
+                        .direct_member()
+                        .filter(|direct| *direct.user_id() == user_id)
+                    {
+                        direct
+                    } else {
+                        Member::new(&room, user_id.clone())
+                    }
+                });
 
             wrapper.update_from_snapshot(member);
             (user_id, wrapper)
@@ -251,16 +268,29 @@ impl MemberList {
         }
     }
 
-    /// Returns the member with the given ID, if it exists in the list.
+    /// Returns the member with the given ID, if it exists in the list or is
+    /// waiting, in `pending`, for the core's diff that will place it.
     pub(crate) fn get(&self, user_id: &UserId) -> Option<Member> {
-        self.imp().members.borrow().get(user_id).cloned()
+        let imp = self.imp();
+
+        if let Some(member) = imp.members.borrow().get(user_id).cloned() {
+            return Some(member);
+        }
+
+        imp.pending.borrow().get(user_id).cloned()
     }
 
     /// Returns the member with the given ID.
     ///
-    /// Creates a new member first if there is no member with the given ID:
-    /// the core's list gets a placeholder it fills in from the store, and
-    /// this list gets the wrapper at the same index right away.
+    /// Creates a new member first if there is no member with the given ID
+    /// and none is already waiting for one: the wrapper is held in
+    /// `pending` and the core is asked to add a placeholder for it, which
+    /// it fills in from the store. Nothing but the core's own diff may
+    /// place the wrapper into the list itself: the core's list holds the
+    /// real order, and this list mirrors it index for index, so an
+    /// insertion made here, ahead of that diff, would put the two orders
+    /// out of step, and the diff that follows would retire whichever
+    /// member is actually at that index instead of the one meant.
     pub(crate) fn get_or_create(&self, user_id: OwnedUserId) -> Member {
         if let Some(member) = self.get(&user_id) {
             return member;
@@ -270,20 +300,11 @@ impl MemberList {
         let room = self.room().expect("room exists");
         let member = Member::new(&room, user_id.clone());
 
-        let index = imp
-            .core()
-            .map_or_else(|| imp.members.borrow().len(), |core| core.ensure(&user_id));
+        if let Some(core) = imp.core() {
+            let _ = core.ensure(&user_id);
+        }
 
-        let position = {
-            let mut members = imp.members.borrow_mut();
-            let position = index.min(members.len());
-            members.shift_insert(position, user_id, member.clone());
-            position
-        };
-
-        // We can't have the borrow active when items_changed is emitted because that
-        // will probably cause reads of the members field.
-        self.items_changed(position as u32, 0, 1);
+        imp.pending.borrow_mut().insert(user_id, member.clone());
 
         member
     }
