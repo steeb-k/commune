@@ -239,6 +239,17 @@ mod imp {
                 move |_window| imp.install_native_frame()
             ));
 
+            // For the macOS menu bar, which can reach the window's actions
+            // but not GTK's `window.close`: see `src/macos_menu_bar.blp`. An
+            // action of the window's action map rather than a class action,
+            // because GTK's quartz menu validates a key equivalent against
+            // the group the window exports, where `install_action` puts
+            // nothing -- the item would show ⌘W and ignore it.
+            self.obj()
+                .add_action_entries([gio::ActionEntry::builder("close-window")
+                    .activate(|window: &super::Window, _, _| window.close())
+                    .build()]);
+
             // See `repaint_after_fullscreen_change`.
             #[cfg(target_os = "macos")]
             self.obj().connect_fullscreened_notify(|window| {
@@ -346,6 +357,22 @@ mod imp {
             }
             if let Err(error) = self.save_current_visible_session() {
                 warn!("Could not save current session: {error}");
+            }
+
+            // A Mac application outlives its window: closing it, by its
+            // button, by Command-W (File → Close Window) or by Command-Q
+            // (`utils::macos_quit_key`), puts it away and leaves the
+            // application in the Dock, still syncing and still posting
+            // notifications. The Dock brings it back
+            // (`utils::macos_reopen`), and so does anything else that
+            // presents it -- a notification, a `matrix:` URL, a second
+            // launch. Only the Quit item and the Dock's Quit end the
+            // process, through `app.quit`, which closes the window first for
+            // the state saved above and then quits regardless of what this
+            // returns.
+            if cfg!(target_os = "macos") {
+                self.obj().set_visible(false);
+                return glib::Propagation::Stop;
             }
 
             glib::Propagation::Proceed

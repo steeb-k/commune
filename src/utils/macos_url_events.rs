@@ -33,7 +33,7 @@ const KEY_DIRECT_OBJECT: u32 = u32::from_be_bytes(*b"----");
 const TYPE_UTF8_TEXT: u32 = u32::from_be_bytes(*b"utf8");
 
 /// `noErr`.
-const NO_ERR: i16 = 0;
+pub(super) const NO_ERR: i16 = 0;
 
 /// The longest URL we will accept.
 ///
@@ -44,16 +44,18 @@ const MAX_URL_LEN: usize = 4096;
 /// An `AppleEvent`, which we never look inside: it is only ever passed back to
 /// the Apple Event Manager.
 #[repr(C)]
-struct AppleEvent {
+pub(super) struct AppleEvent {
     _private: [u8; 0],
 }
 
 /// The handler the Apple Event Manager calls.
-type AeEventHandler = unsafe extern "C" fn(*const AppleEvent, *mut AppleEvent, *mut c_void) -> i16;
+pub(super) type AeEventHandler =
+    unsafe extern "C" fn(*const AppleEvent, *mut AppleEvent, *mut c_void) -> i16;
 
 #[link(name = "CoreServices", kind = "framework")]
 unsafe extern "C" {
-    fn AEInstallEventHandler(
+    // Shared with `super::macos_reopen`, which installs a handler of its own.
+    pub(super) fn AEInstallEventHandler(
         event_class: u32,
         event_id: u32,
         handler: AeEventHandler,

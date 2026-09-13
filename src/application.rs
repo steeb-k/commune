@@ -373,6 +373,25 @@ mod imp {
             {
                 self.set_up_menu_bar();
                 crate::utils::macos_url_events::init();
+                crate::utils::macos_reopen::init();
+                crate::utils::macos_quit_key::init();
+
+                // Closing the window is what Command-W and Command-Q do on
+                // macOS (see `Window::close_request` and
+                // `utils::macos_quit_key`); quitting is for the Quit item and
+                // the Dock. GTK's quartz startup, in the parent above, put
+                // Command-Q on `app.quit` regardless of what `set_up_accels`
+                // said, which is why this is here and not there. The item's
+                // key equivalent follows the accelerator, so Quit shows none.
+                // And `window.close` is out of the menu bar's reach, so the
+                // File item is a `win.` action of the window's own. `<Meta>`,
+                // not `<Primary>`: GTK parses `<Primary>` as Control on every
+                // platform, and the quartz menu turns that into the Control
+                // key rather than Command, so a `<Primary>w` item shows ⌃W.
+                // GTK's own macOS shortcuts are all spelled `<Meta>`.
+                self.obj().set_accels_for_action("app.quit", &[]);
+                self.obj()
+                    .set_accels_for_action("win.close-window", &["<Meta>w"]);
             }
         }
 

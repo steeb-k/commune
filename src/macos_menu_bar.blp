@@ -55,6 +55,16 @@ menu macos_menu_bar {
         action: "win.close-room";
       }
     }
+
+    section {
+      // Hides the window and leaves the application running; see
+      // `Window::close_request`. GTK's own `window.close` is not in the
+      // muxer, so this is an action of the window's.
+      item {
+        label: _("Close _Window");
+        action: "win.close-window";
+      }
+    }
   }
 
   submenu {
