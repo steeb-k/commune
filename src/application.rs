@@ -354,6 +354,10 @@ mod imp {
             // size it is on every other platform.
             #[cfg(target_os = "macos")]
             crate::utils::macos_text_scale::init();
+            // And give libadwaita a document font family it can put in a
+            // stylesheet, before the first message body is styled.
+            #[cfg(target_os = "macos")]
+            crate::utils::macos_document_font::init();
 
             gtk::IconTheme::for_display(&gtk::gdk::Display::default().unwrap())
                 .add_resource_path("/org/gnome/Fractal/icons");

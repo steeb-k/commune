@@ -69,6 +69,7 @@ The environment it all needs is created by a script in `build-aux/macos/`.
 | `matrix:` URLs | Our own Apple Event handler, `src/utils/macos_url_events.rs` |
 | Notifications | `UNUserNotificationCenter`, `src/utils/macos_notifications.rs` |
 | Media viewer header | `use-native-controls` on its `GtkHeaderBar`, as libadwaita's already do |
+| Document font | `src/utils/macos_document_font.rs`, quoted for libadwaita |
 | Holes after fullscreen | `Window::repaint_after_fullscreen_change` and `_macos.scss` |
 
 ## The GTK environment
@@ -1077,6 +1078,15 @@ the very relayout being papered over. Four extra full frames a second after a tr
 whole cost. This was written from the backend's source rather than from a reproduction, since the
 report is intermittent; if it still shows, the rebuild is happening later than 1.3 s after the
 state change, and the first thing to try is a longer run.
+
+**The document font.** libadwaita defines `--document-font-family` at the root of its stylesheet
+from the platform's document font, and with no such setting on macOS falls back to GTK's
+`gtk-font-name`, which the backend reports as `.AppleSystemUIFont 13`. It writes the family into
+the CSS unquoted, and a family that starts with a full stop is not a CSS identifier, so every
+widget with the `document` class — every message body — logged four "Theme parser error" lines
+as its style was computed, over a thousand in an ordinary session. `src/utils/macos_document_font.rs`
+defines the variable again, quoted, from an application-priority provider, and follows
+`gtk-font-name` if it changes. The family is the same one; only the spelling changes.
 
 ## Not done yet
 
