@@ -403,16 +403,34 @@ COMMUNE_UPDATE_FEED=http://localhost:8000 ./commune
 The manifest has to be signed by a key the build trusts, so testing the check
 against a key of your own means rebuilding with it in `key.rs`.
 
-A release APK has no way to receive an env var. `CommuneApplication.onCreate()`
-looks for a file at `getExternalFilesDir(null)/update-feed` — on an emulator or
-a device that is `/sdcard/Android/data/io.github.steeb_k.commune/files/`,
-writable by `adb push` — and if it is there, sets `COMMUNE_UPDATE_FEED` from
-its first line before anything touches the core. The emulator reaches the
-host's `python3 -m http.server` at `http://10.0.2.2:8000`. Nobody has this
-file in production. Because the updater orders two builds of one version by
-`versionCode`, a locally-served manifest also needs a test APK the running
-one reads as newer: `./gradlew assembleRelease -PcommuneVersionCode=<n>`
-overrides the commit count that `versionCode` would otherwise use.
+A release APK has no way to receive an env var, and setting one would not
+reliably reach the core in any case: an `arm64`-only release build run under
+ARM translation on an x86_64 emulator has its `Os.setenv` write the guest
+libc's environment, which is not necessarily the one `reqwest` reads from on
+the other side of that translation. `CommuneApplication.onCreate()` instead
+looks for a file at `getExternalFilesDir(null)/update-feed` — on an emulator
+or a device that is `/sdcard/Android/data/io.github.steeb_k.commune/files/`,
+writable by `adb push` — and if it is there, reads its first line and calls
+`setUpdateFeed()`, an in-process override `commune_core::updates::feed_base()`
+consults before the environment variable, before anything touches the core.
+The emulator reaches the host's `python3 -m http.server` at
+`http://10.0.2.2:8000`. Nobody has this file in production. Because the
+updater orders two builds of one version by `versionCode`, a locally-served
+manifest also needs a test APK the running one reads as newer:
+`./gradlew assembleRelease -PcommuneVersionCode=<n>` (or `assembleDebug` with
+the same property) overrides the commit count that `versionCode` would
+otherwise use.
+
+The debug variant — `x86_64`, what an emulator runs natively — is what an
+emulator test of the updater itself actually wants; a release build is
+`arm64`-only and only runs on one at all through ARM translation. Either way,
+`build-core.sh` has to have produced a fresh `.so` for the ABI being tested:
+`app/src/main/jniLibs` is one directory shared by every Gradle variant, so an
+ABI a previous, narrower invocation (`--arm64`, say) did not rebuild is
+whatever was last written there, and the script now warns rather than
+silently packaging it. Plain `./build-core.sh --release` builds both ABIs
+already; reach for `--arm64` or `--x86_64` only when the other one
+genuinely does not matter for what is being tested.
 
 ## What has not been seen working
 

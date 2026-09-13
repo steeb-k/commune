@@ -7740,6 +7740,23 @@ pub fn set_update_skipped_version(version: Option<String>) {
     settings.save();
 }
 
+/// Point the feed somewhere other than the default for the rest of this
+/// process's life, or clear the override with `None`.
+///
+/// For testing the updater on Android without publishing a release. A
+/// release APK is `arm64` code that an `x86_64` emulator runs under
+/// translation, and `Os.setenv` in `CommuneApplication` writes to the
+/// environment of whichever libc that translation layer gives it — not
+/// necessarily the one `reqwest` reads its environment through when the
+/// override was tried first. Doing this entirely in-process, behind a lock
+/// this crate owns, sidesteps the environment altogether. Trailing slashes
+/// are trimmed, matching how the `COMMUNE_UPDATE_FEED` environment variable
+/// is handled on the desktop platforms.
+#[uniffi::export]
+pub fn set_update_feed(base: Option<String>) {
+    crate::updates::set_feed_override(base);
+}
+
 /// Ask the feed what the current release is, and record that we asked.
 ///
 /// Uses whichever channel the settings resolve to, so that the Kotlin side
@@ -7826,17 +7843,26 @@ mod update_tests {
     /// function exactly that way: a plain `#[test]` (no `#[tokio::test]`, no
     /// ambient runtime) driving the future with `futures_executor::block_on`.
     ///
-    /// Sets `COMMUNE_UPDATE_FEED` for the whole process: this is the only
-    /// test in this crate that reads it, so there is no cross-test
-    /// interference to worry about.
+    /// Sets `COMMUNE_UPDATE_FEED` for the whole process. Takes
+    /// `crate::updates::FEED_ENV_TEST_LOCK` because
+    /// `updates::tests::feed_base_prefers_the_override_then_the_env_var_then_the_default`
+    /// also sets it — without the lock, `cargo test`'s default
+    /// multi-threaded runner could interleave the two.
     #[test]
     fn check_for_update_runs_without_an_ambient_runtime() {
+        let _guard = crate::updates::FEED_ENV_TEST_LOCK
+            .lock()
+            .expect("feed env test lock poisoned");
+
         crate::config::init_test_config();
+
+        // No override should be live going into this test, so `feed_base()`
+        // falls through to the environment variable set just below.
+        crate::updates::set_feed_override(None);
 
         // A closed local port: the connection is refused immediately, so the
         // test does not depend on the network and fails fast either way.
-        // Safety: single-threaded effect on process state, set once by the
-        // only test in this crate that reads this variable.
+        // Safety: guarded by `FEED_ENV_TEST_LOCK` above.
         unsafe {
             std::env::set_var("COMMUNE_UPDATE_FEED", "http://127.0.0.1:9");
         }

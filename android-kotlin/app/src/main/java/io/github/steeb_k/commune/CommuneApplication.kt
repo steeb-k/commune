@@ -15,8 +15,8 @@
 package io.github.steeb_k.commune
 
 import android.app.Application
-import android.system.Os
 import android.util.Log
+import io.github.steeb_k.commune.core.setUpdateFeed
 import java.io.File
 
 private const val TAG = "CommuneApplication"
@@ -39,6 +39,12 @@ class CommuneApplication : Application() {
     /// `getExternalFilesDir(null)/update-feed`, which `adb push` can reach on
     /// an emulator or a device. Must run before anything touches the core.
     /// Nobody has this file in production.
+    ///
+    /// Goes through `setUpdateFeed()`, an in-process override the core
+    /// consults before the environment, rather than `Os.setenv`: an
+    /// `arm64`-only release APK on an x86_64 emulator runs under ARM
+    /// translation, and that writes the *guest* libc's environment, which
+    /// `reqwest` on the host side of the translation never sees.
     private fun applyUpdateFeedOverride() {
         val dir = getExternalFilesDir(null) ?: return
         val file = File(dir, "update-feed")
@@ -47,7 +53,7 @@ class CommuneApplication : Application() {
         val feed = file.readLines().firstOrNull()?.trim()
         if (feed.isNullOrEmpty()) return
 
-        Os.setenv("COMMUNE_UPDATE_FEED", feed, true)
+        setUpdateFeed(feed)
         Log.i(TAG, "Update feed overridden by $file: $feed")
     }
 }

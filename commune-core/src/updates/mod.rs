@@ -38,7 +38,7 @@ use std::{
     fmt,
     path::{Path, PathBuf},
     str::FromStr,
-    sync::Arc,
+    sync::{Arc, RwLock},
 };
 
 use ed25519_dalek::{Signature, VerifyingKey};
@@ -504,8 +504,50 @@ pub fn now() -> u64 {
         .map_or(0, |since| since.as_secs())
 }
 
+/// Guards the tests in this crate that set or read [`FEED_BASE_ENV`], which is
+/// process-wide state `cargo test`'s default multi-threaded runner would
+/// otherwise let two tests race on. Held for the duration of any mutation of
+/// the variable, in this module's own tests and in
+/// `facade::update_tests::check_for_update_runs_without_an_ambient_runtime`.
+#[cfg(test)]
+pub(crate) static FEED_ENV_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// A process-wide override for [`feed_base()`], set through the FFI.
+///
+/// A release APK is `arm64` running under a Kotlin process whose environment
+/// `Os.setenv` writes to the host's libc — but that libc is not necessarily
+/// the one `reqwest` reads from when the process runs under ARM translation
+/// on an `x86_64` emulator, and there is no guarantee of it on a real device
+/// either. An explicit, in-process override sidesteps the environment
+/// entirely: the Kotlin side reads its own test file and calls
+/// [`crate::facade::set_update_feed`], rather than setting an environment
+/// variable the core might never see.
+static FEED_OVERRIDE: RwLock<Option<String>> = RwLock::new(None);
+
+/// Point the feed somewhere else for the lifetime of the process, or clear
+/// the override.
+///
+/// Trailing slashes are trimmed, matching [`FEED_BASE_ENV`]'s handling, so a
+/// caller need not care which form it passes.
+pub fn set_feed_override(base: Option<String>) {
+    let base = base.map(|base| base.trim_end_matches('/').to_owned());
+    *FEED_OVERRIDE.write().expect("feed override lock poisoned") = base;
+}
+
 /// Where the feed is being read from.
+///
+/// Checked in this order: the in-process override ([`set_feed_override()`]),
+/// then the environment variable (for the desktop platforms, where it is set
+/// before the process starts and always visible to it), then the default.
 fn feed_base() -> String {
+    if let Some(base) = FEED_OVERRIDE
+        .read()
+        .expect("feed override lock poisoned")
+        .clone()
+    {
+        return base;
+    }
+
     std::env::var(FEED_BASE_ENV).map_or_else(
         |_| DEFAULT_FEED_BASE.to_owned(),
         |base| base.trim_end_matches('/').to_owned(),
@@ -1110,6 +1152,48 @@ mod tests {
             serde_json::from_str::<UpdateSettings>("{}").expect("an empty object is the defaults"),
             UpdateSettings::default()
         );
+    }
+
+    /// The override takes precedence over the environment variable, which in
+    /// turn takes precedence over the default, and clearing the override
+    /// (`None`) falls back to whichever of those is next in line.
+    ///
+    /// Takes [`FEED_ENV_TEST_LOCK`] because it sets and clears
+    /// `FEED_BASE_ENV`, process-global state that
+    /// `facade::update_tests::check_for_update_runs_without_an_ambient_runtime`
+    /// also sets; without the lock, `cargo test`'s default multi-threaded
+    /// runner could interleave the two and make either fail spuriously.
+    #[test]
+    fn feed_base_prefers_the_override_then_the_env_var_then_the_default() {
+        let _guard = FEED_ENV_TEST_LOCK
+            .lock()
+            .expect("feed env test lock poisoned");
+
+        set_feed_override(None);
+        // Safety: guarded by `FEED_ENV_TEST_LOCK` above.
+        unsafe {
+            std::env::remove_var(FEED_BASE_ENV);
+        }
+
+        assert_eq!(feed_base(), DEFAULT_FEED_BASE);
+
+        // Safety: see above.
+        unsafe {
+            std::env::set_var(FEED_BASE_ENV, "http://env.example/feed/");
+        }
+        assert_eq!(feed_base(), "http://env.example/feed");
+
+        set_feed_override(Some("http://override.example/feed/".to_owned()));
+        assert_eq!(feed_base(), "http://override.example/feed");
+
+        set_feed_override(None);
+        assert_eq!(feed_base(), "http://env.example/feed");
+
+        // Safety: see above.
+        unsafe {
+            std::env::remove_var(FEED_BASE_ENV);
+        }
+        assert_eq!(feed_base(), DEFAULT_FEED_BASE);
     }
 
     /// A manifest signed by the real release key, and its signature.
