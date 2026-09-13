@@ -221,6 +221,17 @@ class CommuneState(context: Context) {
                 klipyApiKey = BuildConfig.KLIPY_API_KEY.ifEmpty { null },
             )
         )
+        // The core is up as soon as `initCore()` returns, and that is the
+        // only thing the updater needs: it reads its own settings straight
+        // through the core, not through the session. Started here rather
+        // than only from `SettingsScreen`'s `UpdateRows()` so an
+        // installation nobody opens Settings on still checks — mirrors the
+        // GTK application, which starts its `Updates` object immediately
+        // after `commune_core::config::init()` in `application.rs`, not
+        // after the session restores. `Updates.start()` is idempotent, so
+        // `UpdateRows()` calling it again is harmless.
+        Updates.start()
+
         app = CoreApp()
 
         app.setRoomListListener(roomListListener)

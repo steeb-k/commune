@@ -27,6 +27,7 @@ import io.github.steeb_k.commune.core.CoreException
 import io.github.steeb_k.commune.core.FfiRelease
 import io.github.steeb_k.commune.core.FfiUpdateSettings
 import io.github.steeb_k.commune.core.UpdateProgressListener
+import io.github.steeb_k.commune.core.appBuildNumber
 import io.github.steeb_k.commune.core.appVersion
 import io.github.steeb_k.commune.core.checkForUpdate
 import io.github.steeb_k.commune.core.downloadUpdate
@@ -97,18 +98,43 @@ object Updates {
     var settings by mutableStateOf<FfiUpdateSettings?>(null)
         private set
 
+    /// The version of a release an automatic check found and has not yet
+    /// been shown for outside Settings — a Snackbar's cue, cleared by
+    /// [dismissAnnouncement] once it has been shown. `null` most of the
+    /// time: only a check nobody asked for, that found a release nobody
+    /// skipped, sets this.
+    var announcement by mutableStateOf<String?>(null)
+        private set
+
     /// The version this build reports as its own.
     val version: String by lazy { appVersion() }
 
+    /// The build number this build reports as its own — the number the
+    /// updater orders two builds of one version by.
+    val buildNumber: ULong by lazy { appBuildNumber() }
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var release: FfiRelease? = null
+
+    /// Whether [start] has already run once.
+    ///
+    /// `start()` is called from the main activity as soon as the core is up
+    /// so that an installation nobody opens Settings on still checks, and
+    /// `UpdateRows()` also calls it (so Settings works even if that call
+    /// somehow never ran) — this makes the second call a no-op instead of a
+    /// second check racing the first.
+    private var started = false
 
     /// Read the settings, and check if one is due.
     ///
     /// Called once the core is up. An automatic check that cannot reach the
     /// feed says nothing: a phone with no signal is not a problem the user
-    /// needs to be told about.
+    /// needs to be told about. Safe to call more than once; only the first
+    /// call does anything.
     fun start() {
+        if (started) return
+        started = true
+
         scope.launch {
             val current = withContext(Dispatchers.IO) { updateSettings() }
             settings = current
@@ -134,10 +160,19 @@ object Updates {
         scope.launch {
             try {
                 val result = checkForUpdate()
-                settings = withContext(Dispatchers.IO) { updateSettings() }
+                val current = withContext(Dispatchers.IO) { updateSettings() }
+                settings = current
 
                 val available = result.available
-                if (available?.asset == null) {
+                // A release the user asked not to hear about again is not
+                // announced by a check nobody asked for — but a press of
+                // "Check Now" always gets an answer, skipped or not, which
+                // is what makes the skip reversible rather than permanent.
+                val isSkipped = !userInitiated &&
+                    available != null &&
+                    current.skippedVersion == available.version
+
+                if (available?.asset == null || isSkipped) {
                     release = null
                     availableVersion = null
                     releaseNotesUrl = null
@@ -149,6 +184,10 @@ object Updates {
                     releaseNotesUrl = available.notesUrl
                     state = UpdateState.Available
                     status = "Commune ${available.version} is available."
+
+                    if (!userInitiated) {
+                        announcement = available.version
+                    }
                 }
             } catch (error: Exception) {
                 Log.w(TAG, "Could not check for updates", error)
@@ -170,14 +209,27 @@ object Updates {
         }
     }
 
-    /// Stop offering the release the last check found.
+    /// Stop offering the release the last check found, and put the row back
+    /// to up to date — the same thing a check that found this version
+    /// skipped would show.
     fun skip() {
         val version = release?.version ?: return
 
         scope.launch {
             withContext(Dispatchers.IO) { setUpdateSkippedVersion(version) }
             settings = withContext(Dispatchers.IO) { updateSettings() }
+            release = null
+            availableVersion = null
+            releaseNotesUrl = null
+            state = UpdateState.UpToDate
+            status = "Commune is up to date."
         }
+    }
+
+    /// The last automatic-check announcement has been shown; do not show it
+    /// again.
+    fun dismissAnnouncement() {
+        announcement = null
     }
 
     /// Turn automatic checks on or off.
@@ -254,6 +306,32 @@ object Updates {
                     ?: "Could not download the update."
             }
         }
+    }
+
+    /// The activity that handed an APK to the package installer has been
+    /// resumed.
+    ///
+    /// `install()` starts the installer with `startActivity` and never
+    /// learns what happened to it: the sheet can be cancelled, or opened and
+    /// closed without a dialog, and neither tells this object anything.
+    /// Before this existed, the row was then stuck on "Opening the
+    /// installer…" with both buttons dead (`check()` returns early while
+    /// `state == Installing`) until the process was killed and restarted. An
+    /// app that is resumed while it still thinks it is being replaced was not
+    /// replaced, so the release stays available — it is still held in
+    /// [release] — and the row goes back to announcing it rather than
+    /// staying stuck.
+    fun installerReturned() {
+        if (state != UpdateState.Installing) return
+
+        val version = release?.version ?: run {
+            state = UpdateState.Idle
+            status = ""
+            return
+        }
+
+        state = UpdateState.Available
+        status = "Commune $version is available."
     }
 
     /// Hand the downloaded APK to the system package installer.

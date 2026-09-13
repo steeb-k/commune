@@ -241,7 +241,7 @@ private fun UpdateRows() {
         Column(modifier = Modifier.weight(1f)) {
             Text("Version", style = MaterialTheme.typography.bodyLarge)
             Text(
-                Updates.version,
+                "${Updates.version} (build ${Updates.buildNumber})",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
