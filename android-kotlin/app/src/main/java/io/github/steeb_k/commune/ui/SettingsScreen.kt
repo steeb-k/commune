@@ -298,9 +298,17 @@ private fun UpdateRows() {
         }
 
         when (Updates.state) {
-            UpdateState.Available -> TextButton(
-                onClick = { activity?.let { Updates.install(it) } },
-            ) { Text("Update") }
+            UpdateState.Available -> {
+                // The GTK app's equivalent (src/updates.rs:249) leaves this
+                // release out of what an automatic check announces once
+                // skipped, but a manual "Check Now" still reports it — see
+                // `Updates.check()`. Skipping here is what makes that
+                // possible to ask for again later.
+                TextButton(onClick = { Updates.skip() }) { Text("Skip This Version") }
+                TextButton(
+                    onClick = { activity?.let { Updates.install(it) } },
+                ) { Text("Update") }
+            }
             UpdateState.Checking, UpdateState.Downloading, UpdateState.Installing ->
                 TextButton(onClick = {}, enabled = false) { Text("Working…") }
             else -> TextButton(

@@ -10,6 +10,16 @@
 # Order matters for the last one: --release sets both ABIs, and --arm64 after
 # it narrows them back down.
 #
+# `app/src/main/jniLibs` is one directory shared by every Gradle variant, not
+# one per profile or ABI selection: a debug build and a release build both
+# package whatever is sitting there. A run that only asks for one ABI (or an
+# `--arm64`-only release run, say) leaves the other ABI's copy exactly as an
+# earlier, possibly quite different, invocation left it. This script warns
+# at the end when that happens, but does not rebuild the untouched one: run
+# `--all` (debug) or plain `--release` (both ABIs, the default) rather than
+# an ABI-narrowed flag when the other ABI's freshness actually matters, e.g.
+# testing an x86_64 emulator build right after a device-only `--arm64` run.
+#
 # The Kotlin bindings are generated separately (see README.md): they
 # change when the facade changes, the .so on every core change.
 #
@@ -61,6 +71,8 @@ for arg in "$@"; do
   esac
 done
 
+built_abis=()
+
 for target in "${targets[@]}"; do
   case "$target" in
     x86_64-linux-android) abi=x86_64; prefix=x86_64-linux-android ;;
@@ -84,4 +96,24 @@ for target in "${targets[@]}"; do
     -o "$JNILIBS_DIR/$abi/libcommune_core.so" \
     "$CARGO_TARGET_DIR/$target/$profile/libcommune_core.so"
   ls -la "$JNILIBS_DIR/$abi/libcommune_core.so"
+  built_abis+=("$abi")
+done
+
+# `jniLibs` is one directory shared by every Gradle variant: a debug build
+# and a release build both package whatever is sitting in it, regardless of
+# which profile or ABI selection last wrote there. Asking for one ABI (or
+# one profile) leaves the other ABI's copy exactly as some earlier, possibly
+# quite different, invocation left it — which is how a stale x86_64 library
+# ended up inside an otherwise-fresh `--release` test build. Nothing here
+# rebuilds the untouched one; this just makes sure that is not silent.
+for abi in x86_64 arm64-v8a; do
+  lib="$JNILIBS_DIR/$abi/libcommune_core.so"
+  built=false
+  for done_abi in "${built_abis[@]}"; do
+    [ "$done_abi" = "$abi" ] && built=true
+  done
+  if [ "$built" = false ] && [ -f "$lib" ]; then
+    echo "build-core: NOT rebuilt this run, left over from an earlier build: $lib" >&2
+    ls -la "$lib" >&2
+  fi
 done
