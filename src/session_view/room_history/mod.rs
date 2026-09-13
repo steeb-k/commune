@@ -217,6 +217,13 @@ mod imp {
         window_active_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The handler watching the dialog presented over the window.
         window_dialog_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// The window the handlers above are actually connected to.
+        ///
+        /// The root can change - including becoming `None`, on unroot - without
+        /// `dispose()` running, so the handlers must be disconnected from the
+        /// window they were connected to, not from whatever `parent_window()`
+        /// returns when we get around to disconnecting.
+        watched_window: RefCell<Option<Window>>,
     }
 
     #[glib::object_subclass]
@@ -411,6 +418,11 @@ mod imp {
             self.obj().connect_root_notify(|obj| {
                 let imp = obj.imp();
 
+                // Whatever was watched before is not necessarily the current root
+                // anymore - including on unroot, where there is no new window to
+                // take its place - so always disconnect first.
+                imp.disconnect_window_handlers();
+
                 let Some(window) = imp.parent_window() else {
                     return;
                 };
@@ -447,20 +459,14 @@ mod imp {
                     ));
                     imp.window_dialog_handler.replace(Some(dialog_handler));
                 }
+
+                imp.watched_window.replace(Some(window));
             });
         }
 
         fn dispose(&self) {
             self.disconnect_all();
-
-            if let Some(window) = self.parent_window() {
-                if let Some(handler) = self.window_active_handler.take() {
-                    window.disconnect(handler);
-                }
-                if let Some(handler) = self.window_dialog_handler.take() {
-                    window.disconnect(handler);
-                }
-            }
+            self.disconnect_window_handlers();
         }
     }
 
@@ -1774,6 +1780,24 @@ mod imp {
         /// The ancestor window of the room history.
         fn parent_window(&self) -> Option<Window> {
             self.obj().root().and_downcast()
+        }
+
+        /// Disconnect the handlers watching the window, if any are connected.
+        ///
+        /// Disconnects from the window they were actually connected to
+        /// (`watched_window`), not from `parent_window()`: the root can have
+        /// changed, or gone away entirely, since they were connected.
+        fn disconnect_window_handlers(&self) {
+            let Some(window) = self.watched_window.take() else {
+                return;
+            };
+
+            if let Some(handler) = self.window_active_handler.take() {
+                window.disconnect(handler);
+            }
+            if let Some(handler) = self.window_dialog_handler.take() {
+                window.disconnect(handler);
+            }
         }
 
         /// Whether the room history is active.
