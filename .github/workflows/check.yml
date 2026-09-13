@@ -172,6 +172,12 @@ jobs:
         # no runtime under it, for instance — never ran here without it.
         run: cargo test -p commune-core --features ffi
 
+      - name: The resource bundles
+        # The tests that build a widget load the compiled resources from the
+        # path Meson baked in, the same way the application does; the first
+        # run of the step below found that out with a missing-file panic.
+        run: ninja -C _build data/resources/resources.gresource src/ui-resources.gresource
+
       - name: Test the application
         # `--lib`, under a display. The tests live in the library crate, so
         # `--bin commune` ran none of them: 13 September 2026 found this gate
