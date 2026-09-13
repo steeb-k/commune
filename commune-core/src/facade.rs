@@ -7690,6 +7690,14 @@ pub fn app_version() -> String {
     crate::updates::current_version().to_owned()
 }
 
+/// The build number of this application, the same number the updater orders
+/// two builds of one version by.
+#[uniffi::export]
+#[must_use]
+pub fn app_build_number() -> u64 {
+    crate::config::build_number()
+}
+
 /// The update settings as they stand.
 #[uniffi::export]
 #[must_use]
