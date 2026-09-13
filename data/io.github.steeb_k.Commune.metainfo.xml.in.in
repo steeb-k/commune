@@ -73,6 +73,37 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="1~rc2" type="development" date="2026-09-12">
+      <description>
+        <p>
+          The second release candidate answers what the first one got wrong on a Mac, and one
+          thing it got wrong everywhere.
+        </p>
+        <ul>
+          <li>
+            A file can be dropped onto the message bar as well as onto the messages, on every
+            platform.
+          </li>
+          <li>
+            On macOS, the media viewer no longer draws a second set of window buttons over the
+            picture, and its back button sits to the right of the real ones.
+          </li>
+          <li>
+            On macOS, leaving a fullscreened picture no longer leaves parts of the window showing
+            whatever was behind it.
+          </li>
+          <li>
+            On macOS, closing the window puts it away and leaves Commune running in the Dock,
+            where it keeps receiving messages and posting notifications. Command-W and Command-Q
+            both close the window; Quit, from the menu or the Dock, is what ends it. Clicking the
+            Dock icon brings the window back.
+          </li>
+          <li>
+            On macOS, a run no longer logs a theme parser error for every message body.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="1~rc1" type="development" date="2026-09-12">
       <description>
         <p>
