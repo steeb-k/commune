@@ -226,6 +226,20 @@ jobs:
           manifest-path: ${{ inputs.meson-profile == 'default' && 'build-aux/io.github.steeb_k.Commune.json' || 'build-aux/io.github.steeb_k.Commune.Devel.json' }}
           cache-key: flatpak-${{ hashFiles('build-aux/*.json') }}
 
+      # The repository the bundle above was made from, for apps.kznjk.com.
+      # Only a release's: `release.yml` attaches it, and steeb-k/kznjk-flatpak
+      # signs and publishes it from there. See `doc/flatpak.md`.
+      - name: Pack the Flatpak repository
+        if: inputs.meson-profile == 'default'
+        run: tar -C repo -cf flatpak-build.tar .
+
+      - uses: actions/upload-artifact@v4
+        if: inputs.meson-profile == 'default'
+        with:
+          name: flatpak-build
+          path: flatpak-build.tar
+          retention-days: 7
+
   windows:
     if: >-
       !cancelled()

@@ -89,6 +89,23 @@ If a rebase raises those minimums past what GNOME 50 provides, bump
 
 ## Publishing
 
+### To apps.kznjk.com
+
+This one is automatic. A release's Flatpak job keeps the `flatpak-builder
+--repo` output, and `release.yml` attaches it as `flatpak-build.tar` and then
+`flatpak-build.json`. [steeb-k/kznjk-flatpak](https://github.com/steeb-k/kznjk-flatpak)
+picks that up, commits it on the `beta` branch for a release candidate or
+`stable` for a release, whichever branch it was built on, and signs and
+publishes it. Its README covers the rest, including what happens when two apps
+release at once. The Flatpak job builds from the tag's checkout, so the `dir`
+source below is reproducible there without pinning.
+
+To publish a tag again, run `release.yml` by hand with that tag. The new
+`flatpak-build.json` has a new checksum, and that's enough for kznjk-flatpak to
+publish it again.
+
+### Anywhere else
+
 Both manifests use a `"type": "dir"` source pointing at `../`, which builds
 whatever is in the working tree. That is right for developing and wrong for
 distributing: a published build has to be reproducible from a commit.
