@@ -2,22 +2,22 @@
   "channel": "rc",
   "version": "1.0.0-rc4",
   "build": 4009,
-  "published": "2026-09-13T18:35:46Z",
+  "published": "2026-09-14T21:35:15Z",
   "notes_url": "https://github.com/steeb-k/commune/releases/tag/v1.rc4",
   "assets": {
     "windows-x86_64-msi": {
       "url": "https://github.com/steeb-k/commune/releases/download/v1.rc4/Commune-1.0.0-rc4-x64.msi",
-      "sha256": "958c4e03f5d98f9cb9c241c609ec09601accb9356c379b3855e403de7f2accf1",
-      "size": 98942976
+      "sha256": "c8a3f21fe3e4dfb2412628642b6c37eb0fcaa3165e562a58abf4117297f73c91",
+      "size": 98934784
     },
     "macos-universal-tar": {
       "url": "https://github.com/steeb-k/commune/releases/download/v1.rc4/commune-1.0.0-rc4-universal.tar.gz",
-      "sha256": "00f5b564738e276b94471ead85008d5f1d5d90fd38e06fa16f4ac72561628c71",
-      "size": 197539647
+      "sha256": "2eec96e2cf191b76adaf6eb7d6ae7bcb336e5ef3755ab5dc77e8743aa95158da",
+      "size": 197548834
     },
     "android-arm64-apk": {
       "url": "https://github.com/steeb-k/commune/releases/download/v1.rc4/commune-1.0.0-rc4-arm64-v8a.apk",
-      "sha256": "05ac868013a5a0fcf12999e8b8730ecceee56e20486edc8f5caa71055c1a4449",
+      "sha256": "4835e4d9fa6b283f9f690a0b38ab18f97914bc0f972bebb7d0fa89efabcc7c9d",
       "size": 160480872
     }
   }
