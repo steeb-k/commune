@@ -129,6 +129,41 @@ jobs:
             --notes "$notes" $flag \
             -- dist/*
 
+      - name: Hand the Flatpak to apps.kznjk.com
+        # steeb-k/kznjk-flatpak polls this release, signs flatpak-build.tar and
+        # publishes it: a release candidate on the `beta` branch, a release on
+        # `stable`. It only takes a build once flatpak-build.json is there, so
+        # that goes up after the tarball, never beside it.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tar="artifacts/flatpak-build/flatpak-build.tar"
+          if [ ! -f "$tar" ]; then
+            echo "::warning::no Flatpak repository was built, so apps.kznjk.com keeps the previous release"
+            exit 0
+          fi
+          notes="Commune ${{ steps.release.outputs.version }}."
+          if [ "${{ steps.release.outputs.prerelease }}" = "true" ]; then
+            flag="--prerelease"
+            branch="beta"
+          else
+            flag=""
+            branch="stable"
+          fi
+          mkdir -p flatpak
+          mv "$tar" flatpak/flatpak-build.tar
+          sha="$(sha256sum flatpak/flatpak-build.tar | cut -d' ' -f1)"
+          printf '{"app_id": "io.github.steeb_k.Commune", "branch": "%s", "tar_sha256": "%s"}\n' \
+            "$branch" "$sha" > flatpak/flatpak-build.json
+          for file in flatpak/flatpak-build.tar flatpak/flatpak-build.json; do
+            # shellcheck disable=SC2086
+            bash build-aux/ci/publish-release.sh \
+              --tag "${{ steps.release.outputs.tag }}" \
+              --title "Commune ${{ steps.release.outputs.version }}" \
+              --notes "$notes" $flag \
+              -- "$file"
+          done
+
       - name: Write and sign the feed
         env:
           UPDATE_FEED_PRIVATE_KEY: ${{ secrets.UPDATE_FEED_PRIVATE_KEY }}

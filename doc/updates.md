@@ -161,18 +161,31 @@ so.
 remote it was installed from, and the Updates group says so rather than hiding
 the question.
 
-Which remote that will be is **undecided**, and one option is closed:
-**Flathub is ruled out, because it rejects LLM-generated code.** The plan is a
+That remote is **apps.kznjk.com**, decided on 14 September 2026. **Flathub is
+ruled out, because it rejects LLM-generated code.** apps.kznjk.com is a
 self-hosted OSTree repository on the maintainer's own server behind a reverse
-proxy — `RELEASING.md` already sketches the shape, and OSTree being
-content-addressed means each publish moves only the objects that changed. How
-CI reaches that server, and whether the repository is public, are open
-questions as of 12 September 2026.
+proxy, shared with the maintainer's other apps:
 
-Until then CI publishes a single `.flatpak` bundle, and a bundle has **no
+```sh
+flatpak remote-add --if-not-exists kznjk https://apps.kznjk.com/kznjk.flatpakrepo
+flatpak install kznjk io.github.steeb_k.Commune//beta    # release candidates
+flatpak install kznjk io.github.steeb_k.Commune          # releases, from 1.0
+```
+
+CI never reaches the server, and nothing here holds its signing key.
+`release.yml` attaches the Flatpak job's repository to the release as
+`flatpak-build.tar` plus `flatpak-build.json`, which names the branch: `beta`
+for a release candidate, `stable` for a release. The public
+[steeb-k/kznjk-flatpak](https://github.com/steeb-k/kznjk-flatpak) polls every
+app's releases, signs new builds and publishes them; the server polls that
+repository in turn. From tag to installable is about half an hour.
+
+The nightly is not published there. It has the Devel application id and stays
+a GitHub download.
+
+The release still carries the single `.flatpak` bundle too. A bundle has **no
 update path at all**: it carries no remote, so `flatpak update` has nothing to
-check. Fine for handing somebody a build, useless as a channel, and worth
-saying in the release notes of anything that ships that way.
+check. Fine for handing somebody a build, useless as a channel.
 
 ## When the updater stays quiet
 

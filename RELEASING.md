@@ -36,9 +36,10 @@ Which upstream tree a build came from is [`doc/fork.md`](doc/fork.md)'s job, not
 2. [Create a tag](#creating-a-tag) on that commit and push it.
 3. Wait. `.github/workflows/release.yml` builds every platform, creates the GitHub release,
    attaches the artefacts, and writes the [update feed](doc/updates.md) that tells installed
-   copies the release exists. Nothing else is needed for the desktop and Android builds.
-4. [Publish the Flatpak](#publishing-the-flatpak), which is still by hand because Flathub
-   takes a pull request rather than an artefact.
+   copies the release exists. It also attaches the Flatpak repository, which
+   [steeb-k/kznjk-flatpak](https://github.com/steeb-k/kznjk-flatpak) publishes to apps.kznjk.com
+   within about half an hour: `beta` for a release candidate, `stable` for a release. Nothing
+   else is needed.
 
 ## Release commit content
 
@@ -96,6 +97,9 @@ With `V` being the version, in the `major_version.pre_release_version` format. Y
 prompted for a tag message; something like `Release Commune V` suffices.
 
 ## Publishing the Flatpak
+
+apps.kznjk.com needs nothing by hand; see step 3 above and [`doc/flatpak.md`](doc/flatpak.md).
+The rest of this section is for publishing anywhere else.
 
 Both manifests in `build-aux/` build the working tree. A published build must instead come from the
 tag, so swap the `commune` module's source for a pinned Git source before building — the exact form
