@@ -1,0 +1,24 @@
+{
+  "channel": "nightly",
+  "version": "1.0.0-rc4",
+  "build": 4011,
+  "published": "2026-09-20T09:59:23Z",
+  "notes_url": "https://github.com/steeb-k/commune/commits/main",
+  "assets": {
+    "windows-x86_64-msi": {
+      "url": "https://github.com/steeb-k/commune/releases/download/nightly/Commune-Devel-1.0.0-rc4-x64.msi",
+      "sha256": "b4d5758c786c2ba217a0479199b5fc6e98503153222b3b684b0018db1f17837b",
+      "size": 105672704
+    },
+    "macos-universal-tar": {
+      "url": "https://github.com/steeb-k/commune/releases/download/nightly/commune-1.0.0-rc4-universal.tar.gz",
+      "sha256": "f3f1459ffc05e05fb56e436124d3a568e186caba76bef039d3e34c4d7f456edc",
+      "size": 217742981
+    },
+    "android-arm64-apk": {
+      "url": "https://github.com/steeb-k/commune/releases/download/nightly/commune-1.0.0-rc4-arm64-v8a.apk",
+      "sha256": "a32c6800655ed50d82bcdbe87f2476c927ff4db922e79761476d19f5b7774752",
+      "size": 160497256
+    }
+  }
+}
