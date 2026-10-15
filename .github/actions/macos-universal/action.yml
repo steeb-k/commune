@@ -1,0 +1,243 @@
+# The two macOS halves made into one universal bundle, signed, and shipped.
+#
+# Everything that happens after both halves exist: download them, unpack
+# them, merge them with `lipo`, sign, notarize and staple the result, make
+# the tarball and the disk image, notarize the image, and upload the two as
+# the `macos` artifact. It takes about two minutes against the hour and a
+# half it takes to make the halves, and it is the step most likely to fail —
+# so it lives here, once, where two callers can reach it:
+#
+#   * `build.yml`'s `macos` job, against the halves of its own run;
+#   * `assemble.yml`, against the halves of an earlier run, which is what lets
+#     a failure here be retried in minutes rather than by rebuilding all five
+#     platforms. On 15 October 2026 the merge failed twice on something that
+#     takes seconds, and each retry cost ninety minutes of building because
+#     nothing could reach a past run's artifacts.
+#
+# It expects the source being packaged to be checked out at the workspace
+# root: the scripts it runs come from there, from `build-aux/`. Which source
+# that is stays the caller's decision, because it is the tag's when a tag is
+# being released, and a tag's scripts are what the tag ships with.
+#
+# A composite action cannot read `secrets`, so the signing credentials come in
+# as inputs. They are still secrets on the way in, so the runner masks them in
+# the log exactly as it would have.
+name: macOS universal bundle
+description: Merge the two macOS halves, sign and notarize the result, and upload the tarball and disk image.
+
+inputs:
+  run-id:
+    description: >-
+      The run whose `macos-arm64` and `macos-x86_64` artifacts to merge. Empty
+      means this run, which is what `build.yml` wants; `assemble.yml` passes an
+      earlier one.
+    required: false
+    default: ''
+  github-token:
+    description: The token that can read another run's artifacts. Only used when `run-id` is set.
+    required: false
+    default: ''
+  sign:
+    description: Whether to sign, notarize and staple. "true" or "false".
+    required: false
+    default: 'true'
+  codesign-identity:
+    description: secrets.MACOS_CODESIGN_IDENTITY
+    required: false
+    default: ''
+  certificate-p12:
+    description: secrets.MACOS_CERTIFICATE_P12
+    required: false
+    default: ''
+  certificate-password:
+    description: secrets.MACOS_CERTIFICATE_PASSWORD
+    required: false
+    default: ''
+  notary-key:
+    description: secrets.MACOS_NOTARY_KEY
+    required: false
+    default: ''
+  notary-key-id:
+    description: secrets.MACOS_NOTARY_KEY_ID
+    required: false
+    default: ''
+  notary-issuer-id:
+    description: secrets.MACOS_NOTARY_ISSUER_ID
+    required: false
+    default: ''
+  notary-password:
+    description: secrets.MACOS_NOTARY_PASSWORD
+    required: false
+    default: ''
+  notary-apple-id:
+    description: secrets.MACOS_NOTARY_APPLE_ID
+    required: false
+    default: ''
+  notary-team-id:
+    description: secrets.MACOS_NOTARY_TEAM_ID
+    required: false
+    default: ''
+  allow-unnotarized:
+    description: vars.ALLOW_UNNOTARIZED
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    # `download-artifact` reads the current run when it is given no token,
+    # and the run named by `run-id` when it is given one — so the token is
+    # passed only when a run was named, and an empty `run-id` behaves exactly
+    # as the two downloads in `build.yml` always did.
+    - uses: actions/download-artifact@v4
+      with:
+        name: macos-arm64
+        path: halves/arm64
+        run-id: ${{ inputs.run-id || github.run_id }}
+        github-token: ${{ inputs.run-id != '' && inputs.github-token || '' }}
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: macos-x86_64
+        path: halves/x86_64
+        run-id: ${{ inputs.run-id || github.run_id }}
+        github-token: ${{ inputs.run-id != '' && inputs.github-token || '' }}
+
+    - name: Unpack the two halves
+      # See the packing step in `build.yml`'s half job: the bundles travel as
+      # tars so that the executable bits and the symlinks arrive with them.
+      # `upload-artifact` keeps neither, and an application bundle is made of
+      # both.
+      shell: bash
+      run: |
+        for arch in arm64 x86_64; do
+          tar -xzf "halves/$arch/bundle.tar.gz" -C "halves/$arch"
+        done
+        ls -la halves/arm64 halves/x86_64
+
+    - name: Merge the two halves
+      shell: bash
+      run: |
+        arm64_bundle="$(find halves/arm64 -maxdepth 2 -name '*.app' | head -1)"
+        x86_64_bundle="$(find halves/x86_64 -maxdepth 2 -name '*.app' | head -1)"
+        for bundle in "$arm64_bundle" "$x86_64_bundle"; do
+          if [ -z "$bundle" ]; then
+            echo "::error::a half is missing its .app after unpacking"
+            exit 1
+          fi
+          # If this is not executable the tar did not do its job, and
+          # everything downstream would succeed while producing a bundle
+          # that cannot launch. Globbed rather than named: the binary is
+          # `commune` in lower case and the bundle around it is
+          # `Commune.app` only on the Stable profile — a nightly's is
+          # `Commune Devel.app`.
+          if ! find "$bundle/Contents/MacOS" -type f -perm -u+x | grep -q .; then
+            echo "::error::$bundle has no executable in Contents/MacOS"
+            ls -la "$bundle/Contents/MacOS" || true
+            exit 1
+          fi
+        done
+        # The bundle keeps the name the half had. `bundle.sh` calls it
+        # `Commune.app` only on the Stable profile; a nightly is
+        # `Commune Devel.app`, and that is what keeps a nightly installed
+        # beside a stable Commune in /Applications rather than on top of
+        # it. Hardcoding the stable name here would have undone, at the
+        # last step, what the Devel application id is for.
+        app="universal/$(basename "$arm64_bundle")"
+        echo "COMMUNE_APP=$app" >> "$GITHUB_ENV"
+        # The halves must agree about every file that is not a binary, and
+        # the merge refuses otherwise. A dependency's translation catalogs
+        # are the one thing they legitimately do not: conda-forge builds
+        # glib's per platform, and the nn catalog differed by a string on
+        # 15 October 2026. The x86_64 half takes the arm64 half's catalogs
+        # here, so that the merge sees agreement. `lipo-bundles.sh` has
+        # learned to accept that difference on its own — but a release
+        # re-dispatched for an existing tag builds the tag's checkout, so
+        # it runs the tag's script, and 1.rc5's predates the lesson. This
+        # is what reaches a tag that is already cut.
+        if [ -d "$arm64_bundle/Contents/Resources/share/locale" ]; then
+          rm -rf "$x86_64_bundle/Contents/Resources/share/locale"
+          cp -R "$arm64_bundle/Contents/Resources/share/locale" "$x86_64_bundle/Contents/Resources/share/locale"
+        fi
+        bash build-aux/macos/lipo-bundles.sh --arm64 "$arm64_bundle" --x86_64 "$x86_64_bundle" --output "$app"
+
+    - name: Sign, notarize and staple
+      # Signing happens after the merge, never before: a signature covers
+      # all of a binary's slices at once, so signing the halves and then
+      # merging them produces a bundle whose signature does not check out.
+      if: inputs.sign == 'true'
+      shell: bash
+      env:
+        CODESIGN_IDENTITY: ${{ inputs.codesign-identity }}
+        CERTIFICATE_P12: ${{ inputs.certificate-p12 }}
+        CERTIFICATE_PASSWORD: ${{ inputs.certificate-password }}
+        # Either an App Store Connect API key or an app-specific password;
+        # sign-notarize.sh takes whichever is present. Notarization is not
+        # the App Store — it is the other half of Developer ID, and this
+        # project could not be listed in any case, being GPL-3 with many
+        # copyright holders.
+        NOTARY_KEY: ${{ inputs.notary-key }}
+        NOTARY_KEY_ID: ${{ inputs.notary-key-id }}
+        NOTARY_ISSUER_ID: ${{ inputs.notary-issuer-id }}
+        NOTARY_PASSWORD: ${{ inputs.notary-password }}
+        NOTARY_APPLE_ID: ${{ inputs.notary-apple-id }}
+        NOTARY_TEAM_ID: ${{ inputs.notary-team-id }}
+        # Set the ALLOW_UNNOTARIZED repository variable to ship signed but
+        # un-notarized, which the in-app updater installs and a browser
+        # download does not.
+        ALLOW_UNNOTARIZED: ${{ inputs.allow-unnotarized }}
+      run: bash build-aux/macos/sign-notarize.sh "$COMMUNE_APP"
+
+    - name: Make the tarball
+      # A tarball rather than the disk image, because files a process
+      # extracts from one are never quarantined and a quarantined bundle is
+      # refused on first launch. This is what the updater downloads.
+      shell: bash
+      run: |
+        version="$(bash build-aux/ci/project-version.sh)"
+        mkdir -p dist
+        bash build-aux/macos/make-tarball.sh "$COMMUNE_APP" "dist/commune-$version-universal.tar.gz"
+
+    - name: Make the disk image
+      # Both shapes ship, because they are for different things and neither
+      # substitutes for the other.
+      #
+      # The disk image is what a person downloading from the release page
+      # expects: open it, drag the icon to Applications. The tarball is what
+      # the updater fetches, and it has to be a tarball — a process that
+      # extracts one never sets `com.apple.quarantine`, while anything a
+      # browser downloads carries it, and a quarantined app is checked by
+      # Gatekeeper on first launch. The feed keeps pointing at the tarball.
+      shell: bash
+      run: |
+        version="$(bash build-aux/ci/project-version.sh)"
+        bash build-aux/macos/make-dmg.sh "$COMMUNE_APP" "dist/commune-$version-universal.dmg"
+
+    - name: Notarize the disk image
+      # The app inside was notarized and stapled before the image was built,
+      # but Gatekeeper checks the image's own ticket first when a browser
+      # downloaded it — so the image needs one of its own.
+      if: inputs.sign == 'true'
+      shell: bash
+      env:
+        NOTARY_KEY: ${{ inputs.notary-key }}
+        NOTARY_KEY_ID: ${{ inputs.notary-key-id }}
+        NOTARY_ISSUER_ID: ${{ inputs.notary-issuer-id }}
+        NOTARY_PASSWORD: ${{ inputs.notary-password }}
+        NOTARY_APPLE_ID: ${{ inputs.notary-apple-id }}
+        NOTARY_TEAM_ID: ${{ inputs.notary-team-id }}
+        ALLOW_UNNOTARIZED: ${{ inputs.allow-unnotarized }}
+      run: |
+        dmg="$(find dist -name '*.dmg' | head -1)"
+        bash build-aux/macos/sign-notarize.sh --notarize-only "$dmg"
+
+    # Always this run's artifact, whichever run the halves came from: the
+    # publishing that follows reads `macos` from the run doing the publishing.
+    - uses: actions/upload-artifact@v4
+      with:
+        name: macos
+        path: |
+          dist/*.tar.gz
+          dist/*.dmg
+        if-no-files-found: error
+        retention-days: 30

@@ -15,11 +15,37 @@
 #   bash build-aux/ci/watch-run.sh 34665639379    # a particular one
 #
 # Exits 0 if every job succeeded, 1 otherwise — so it can gate a `&&`.
+#
+# Every question it asks GitHub is asked up to five times, thirty seconds
+# apart, before it gives up. On 15 October 2026 one `failed to get run` — a
+# blip in the API, the run itself perfectly healthy — ended the watch partway
+# through a release, and the person waiting on it lost the thing this script
+# is for. A watch has to outlast the API's bad minutes, and a run that
+# genuinely cannot be read still ends it, two minutes later.
 set -euo pipefail
+
+# `gh` with patience. Prints what `gh` printed on the attempt that worked;
+# what it said on the ones that did not goes to stderr, so a retried blip is
+# visible without ending up inside the answer.
+gh_retry() {
+    local attempt out err
+    err="$(mktemp)"
+    for attempt in 1 2 3 4 5; do
+        if out="$(gh "$@" 2>"$err")"; then
+            rm -f "$err"
+            printf '%s\n' "$out"
+            return 0
+        fi
+        printf 'watch-run: gh %s failed (attempt %d of 5): %s\n' "$1" "$attempt" "$(cat "$err")" >&2
+        [ "$attempt" = 5 ] || sleep 30
+    done
+    rm -f "$err"
+    return 1
+}
 
 run="${1:-}"
 if [ -z "$run" ]; then
-    run="$(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')"
+    run="$(gh_retry run list --limit 1 --json databaseId --jq '.[0].databaseId')"
 fi
 
 # How long to keep asking before giving up. The longest real build is the
@@ -30,14 +56,13 @@ deadline=$(( $(date +%s) + 3 * 60 * 60 ))
 echo "watching run $run"
 last=""
 while :; do
-    read -r status conclusion < <(
-        gh run view "$run" --json status,conclusion \
-            --jq '[.status, (.conclusion // "-")] | @tsv'
-    )
+    state="$(gh_retry run view "$run" --json status,conclusion \
+        --jq '[.status, (.conclusion // "-")] | @tsv')"
+    read -r status conclusion <<<"$state"
 
     # One line per job, and only when it changes: a poll loop that reprints
     # the same table every fifteen seconds buries the transition that matters.
-    now="$(gh run view "$run" --json jobs \
+    now="$(gh_retry run view "$run" --json jobs \
         --jq '.jobs[] | [.name, .status, (.conclusion // "-")] | @tsv')"
     if [ "$now" != "$last" ]; then
         printf '\n--- %s ---\n%s\n' "$(date -u +%H:%M:%S)" "$now"
@@ -57,14 +82,14 @@ echo
 echo "=== run $run: $conclusion ==="
 
 if [ "$conclusion" = "success" ]; then
-    gh run view "$run" --json jobs \
+    gh_retry run view "$run" --json jobs \
         --jq '.jobs[] | "\(.conclusion)\t\(.name)"'
     exit 0
 fi
 
 # The whole reason to wait: land on the step that broke rather than on the
 # job that contained it.
-gh run view "$run" --json jobs --jq '
+gh_retry run view "$run" --json jobs --jq '
     .jobs[] | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != null) |
     "\nJOB \(.name) -> \(.conclusion)",
     (.steps[] | select(.conclusion == "failure") | "  failed at step: \(.name)")'

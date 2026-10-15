@@ -39,7 +39,8 @@ changing what it does.
 | Creating the GitHub release the feed points at | `build-aux/ci/publish-release.sh` |
 | Writing and signing a manifest | `build-aux/ci/publish-feed.sh` |
 | Publishing it | `build-aux/ci/commit-feed.sh` |
-| The workflows | `.github/workflows/{check,build,release,nightly}.yml` |
+| The workflows | `.github/workflows/{check,build,release,nightly,publish,assemble}.yml` |
+| Merging, signing and packing the universal Mac bundle | `.github/actions/macos-universal/action.yml` |
 
 ## The feed
 
@@ -308,18 +309,87 @@ therefore a decision about new users, not about updates.
 `check.yml` on every push and pull request: the same `hooks/checks` binary the
 pre-commit hook runs, plus `hooks/template-checks` and the tests.
 
-`build.yml` is called by the other two and builds everything: the Android APK,
-the Flatpak bundle, the Windows bundle and MSI in MSYS2, and two macOS bundles
-merged with `lipo` and then signed and notarized. It takes the profile as an
-input, which is the only thing that differs between a release and a nightly.
+`build.yml` is called by `release.yml` and `nightly.yml` and builds
+everything: the Android APK, the Flatpak bundle, the Windows bundle and MSI in
+MSYS2, and two macOS bundles merged with `lipo` and then signed and notarized.
+It takes the profile as an input, which is the only thing that differs between
+a release and a nightly.
 
-**They run in that order, one after another, rather than at once.** Android
-first because it is the client most people run, macOS last because it is the
-one most likely to fail — so a failure stops the chain before the expensive
-half of it, instead of four platforms failing in parallel for one reason. Each
-job runs when the one before it succeeded _or was skipped_, which is what keeps
-the platform picker working; a job whose predecessor actually failed does not
-run at all.
+**The platforms run at once.** They were chained at first — Android, Flatpak,
+Windows, macOS — so that the platform most likely to fail ran last and a
+failure was cheap to reach, which was right while none of them had ever
+passed. Once all of them did, the chain only cost the sum of the jobs instead
+of the longest one, and the one dependency left is the real one: the universal
+Mac bundle is merged after both halves exist. Each job skips itself when the
+platform picker leaves it out.
+
+What that costs, measured on 15 October 2026 in run 38804550514, a release
+build with its caches cold:
+
+| Job | Time | Where it goes |
+| --- | --- | --- |
+| Android | 18 min | 12 the core, 4½ Gradle |
+| Flatpak | 36 min | 4 pulling the container image, 31 the build |
+| Windows | 1 h 12 | 59 compiling, 3 MSYS2 |
+| macOS arm64 | 36 min | 8½ the conda environment, 26 the bundle |
+| **macOS x86_64** | **1 h 26** | 20 the environment, 61 the bundle |
+| Universal merge | seconds | then signing and notarizing, a minute or two |
+
+The Intel half is the critical path; nothing else decides when a release is
+ready.
+
+**Publishing is a workflow of its own, `publish.yml`**, and the universal
+bundle's steps are a composite action, `.github/actions/macos-universal`.
+Both used to be steps inside the workflows that use them, and that is what
+made a failure after the platform builds so expensive: the publish job read
+the artifacts of its own run and nothing else, so retrying a merge or a
+publish meant building all five platforms again. 1.rc5 did that three times
+on 15 October 2026 — ninety minutes each, for a merge step that takes seconds.
+
+`publish.yml` takes a `kind` (`release` or `nightly`), the `tag`, the `ref`
+whose version is being published, and optionally `source-run-id`: another
+run whose artifacts to publish, in which case the `macos` artifact is still
+taken from the current run, because that is the one just assembled. The
+channels are worked out inside it from the version rather than passed in — a
+version with a pre-release part goes to `rc`, one without to `stable` and
+`rc`, a nightly to `nightly` — so that the build's own version is what decides
+and not a caller that might disagree. `release.yml` and `nightly.yml` call
+it; so does `assemble.yml`.
+
+**`assemble.yml` is the recovery path.** Dispatched by hand with the id of a
+`release.yml` or `nightly.yml` run whose five platform jobs succeeded, it
+merges that run's halves, signs and notarizes the bundle, and — unless
+`publish` is off — publishes the release and the feed from that run's
+artifacts. It costs minutes. Its inputs:
+
+| Input | Meaning |
+| --- | --- |
+| `run-id` | the run that built the platforms |
+| `tag` | the release tag, or `nightly` |
+| `kind` | `release` or `nightly`: which workflow's run it must be, and how it publishes |
+| `publish` | off stops after uploading the universal bundle as this run's `macos` artifact |
+
+A first job refuses a run of the wrong workflow — a nightly's Devel bundle
+published as a release would install as the wrong application — and a run in
+which any of the five platform jobs did not succeed; `publish.yml` then
+refuses a run whose APK is named for a version other than the tag's. The
+source a release is assembled from is the tag's checkout; a nightly's is the
+commit the source run built, not wherever `main` has got to since, because
+the version, build number and commit the nightly release names should
+describe the binaries. The action itself is checked out a second time from
+the workflow's own commit, in `.ci`, because a tag cut before the action
+existed does not have it — `build.yml`'s `macos` job does the same.
+
+What it recovers from is everything after the platform builds that lives in
+the YAML: the merge step, signing, notarizing, packing, publishing, the feed.
+It does not recover from a bug in a `build-aux/` script, for the same reason
+a re-dispatched `release.yml` does not: the scripts are the tag's. Its other
+limit is how long artifacts live. The halves, the MSI, the APK and the
+universal bundle are kept for thirty days — they were kept for the default
+ninety, which is two months longer than anybody would assemble from rather
+than rebuild — and the Flatpak repository for seven, so a release assembled
+from a run more than a week old publishes everything but the hand-off to
+apps.kznjk.com, with a warning saying so.
 
 **Every build embeds the KLIPY key**, from the `KLIPY_API_KEY` secret: a Meson
 option on the desktop platforms, a `local.properties` line on Android, and an
@@ -335,9 +405,9 @@ so a Flatpak installed from Flathub has no GIF search.
 
 `release.yml` on a `v*` tag. `nightly.yml` on a press, with a platform picker,
 plus one scheduled build a week — deliberately **not** on every push, because
-five platforms take the better part of two hours and most commits touch code
-three of them do not compile. Free minutes on a public repository make that
-affordable rather than useful.
+a build takes as long as the Intel Mac half, about an hour and a half, and
+most commits touch code three of the five platforms do not compile. Free
+minutes on a public repository make that affordable rather than useful.
 
 The press matters more than it looks: there is no Mac, so CI is the only way a
 macOS build gets made at all. Tying that to release tags alone would mean
@@ -403,7 +473,35 @@ The rule it encodes: **a run nobody is waiting on is a run whose result
 arrives by complaint.** Do not call a build done until something has printed a
 conclusion.
 
+Every `gh` call in it is retried five times, thirty seconds apart, before it
+gives up. A single transient `failed to get run` ended a watch partway through
+the 1.rc5 release, and a watch that the API's bad minute can end is a watch
+the person waiting has to notice has stopped — which is the failure the script
+was written to remove.
+
 ## Testing it without publishing a release
+
+The CI half first. `assemble.yml` with `publish` off merges, signs and
+notarizes an earlier run's halves and uploads the result as an artifact,
+without creating a release or touching the feed — which is how a change to
+the merge, the signing or the packing is proved without spending an hour and a
+half building the halves again:
+
+```sh
+gh workflow run assemble.yml --ref <branch> \
+    -f run-id=38804550514 -f tag=v1.rc5 -f kind=release -f publish=false
+bash build-aux/ci/watch-run.sh
+```
+
+`--ref` is where the workflow and the action come from; the scripts they run
+come from the tag. With `publish` on, the same dispatch is how a release whose
+merge or publish failed is finished — and it _does_ publish, so it is for a run
+that is meant to ship. A change to `build.yml` itself still needs a build:
+`nightly.yml` with `-f platforms=android -f publish=false` is the cheapest one
+that exercises the reusable workflow at all, about fifteen minutes, and proves
+nothing about the platforms it skipped.
+
+Then the updater itself.
 
 `COMMUNE_UPDATE_FEED` points the check somewhere else — any HTTP server with a
 manifest and a signature on it:
@@ -478,7 +576,10 @@ of `build.yml` for the present — because the first re-dispatch for the same
 tag failed on the same line: a dispatch runs the workflow from where it was
 dispatched, but builds and runs the scripts of the tag's checkout, so a fix in
 `build-aux/` never reaches a tag already cut. `workflow_dispatch` on
-`release.yml` recovers from a bug in the YAML, and only from that.
+`release.yml` recovers from a bug in the YAML, and only from that — and only
+by building all five platforms again, which is what `assemble.yml` now exists
+to avoid: it recovers from the same class of bug against the artifacts the
+failed run already made.
 
 **Released, on 12 and 13 September 2026.** `v1.rc1`, `v1.rc2` and `v1.rc3`
 went out through `release.yml`; the `updates` branch exists and carries the
