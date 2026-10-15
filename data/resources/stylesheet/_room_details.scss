@@ -99,7 +99,13 @@ members-list {
   }
 }
 
-dragoverlay statuspage {
+// The "Drop Here to Send" page the overlay reveals over its child while a
+// file is dragged across it. Only that page: the overlay wraps the whole room
+// history, and the message search pane inside it is a status page too — with
+// the old `dragoverlay statuspage` this painted the search pane accent from
+// edge to edge (doc/search.md). The selector follows the overlay's own tree,
+// `src/components/drag_overlay.rs`: overlay, revealer, page.
+dragoverlay > overlay > revealer > statuspage {
   background-color: color-mix(in srgb, var(--accent-bg-color) var(--dim-opacity), transparent);
   color: var(--accent-fg-color);
 }
