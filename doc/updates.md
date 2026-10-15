@@ -473,8 +473,12 @@ that shipped half a fix. A ninth came on 15 October 2026, with 1.rc5: the two
 halves' glib translation catalogs for one locale differed by a string, and the
 merge, which refuses any non-binary difference, stopped the release with every
 platform built. Catalogs under `share/locale` are now taken from the arm64
-half with a notice; the release was re-dispatched for the same tag from the
-fixed workflow, which is what `workflow_dispatch` on `release.yml` is for.
+half with a notice, in `lipo-bundles.sh` for the future and in the merge step
+of `build.yml` for the present — because the first re-dispatch for the same
+tag failed on the same line: a dispatch runs the workflow from where it was
+dispatched, but builds and runs the scripts of the tag's checkout, so a fix in
+`build-aux/` never reaches a tag already cut. `workflow_dispatch` on
+`release.yml` recovers from a bug in the YAML, and only from that.
 
 **Released, on 12 and 13 September 2026.** `v1.rc1`, `v1.rc2` and `v1.rc3`
 went out through `release.yml`; the `updates` branch exists and carries the
