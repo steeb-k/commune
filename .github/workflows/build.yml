@@ -21,6 +21,22 @@
 # the sum of the jobs instead of the longest one — about two and a quarter
 # hours against fifty minutes. The one dependency left is real: the universal
 # bundle cannot be merged before the two halves exist.
+#
+# Fifty minutes was the figure then. Measured on 15 October 2026 (run
+# 38804550514), with the caches cold: Android 18 minutes, Flatpak 36, Windows
+# 1h12, macOS arm64 36 and macOS x86_64 1h26 — the critical path, twenty
+# minutes of conda environment and an hour of bundle on the Intel runner —
+# then seconds for the merge.
+#
+# # Why the merge is not only here
+#
+# The universal bundle's steps are a composite action,
+# `.github/actions/macos-universal`, rather than steps of the `macos` job, and
+# `publish.yml` is a workflow of its own rather than a job in each caller.
+# Both are so that `assemble.yml` can run them against the artifacts of a run
+# that already built every platform. A failure after the platform builds used
+# to cost all five again; on 15 October 2026 it cost them three times, ninety
+# minutes each, for a merge step that takes seconds. See `doc/updates.md`.
 name: build
 
 on:
@@ -159,6 +175,9 @@ jobs:
           name: android
           path: dist/*.apk
           if-no-files-found: error
+          # Kept for `assemble.yml` to republish; the release holds the copy
+          # people download. See the halves below.
+          retention-days: 30
 
   flatpak:
     if: >-
@@ -506,6 +525,7 @@ jobs:
             _build/windows/*.msi
             probe-env.txt
           if-no-files-found: error
+          retention-days: 30
 
   macos-half:
     if: >-
@@ -667,6 +687,10 @@ jobs:
           name: macos-${{ matrix.arch }}
           path: half/bundle.tar.gz
           if-no-files-found: error
+          # A month, not the default three. A half is an intermediate that
+          # nothing but `assemble.yml` ever reads again, and a recovery more
+          # than a month after the build is a rebuild anyway.
+          retention-days: 30
 
   macos:
     if: >-
@@ -682,139 +706,31 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      # The steps live in `.github/actions/macos-universal`, so that
+      # `assemble.yml` can run them against an earlier run's halves — see the
+      # top of that file. They are checked out a second time, from the
+      # workflow's own commit, because the checkout above is the source being
+      # packaged: when a release is re-dispatched for a tag that was cut
+      # before the action existed, the tag has no `.github/actions` at all,
+      # and a step that looked for it there would fail for the reason the
+      # 1.rc5 re-dispatch did — the fix living somewhere the run was not
+      # reading.
+      - uses: actions/checkout@v5
         with:
-          name: macos-arm64
-          path: halves/arm64
+          ref: ${{ github.sha }}
+          path: .ci
+          sparse-checkout: .github/actions
 
-      - uses: actions/download-artifact@v4
+      - uses: ./.ci/.github/actions/macos-universal
         with:
-          name: macos-x86_64
-          path: halves/x86_64
-
-      - name: Unpack the two halves
-        # See the packing step in the half job: the bundles travel as tars so
-        # that the executable bits and the symlinks arrive with them.
-        run: |
-          for arch in arm64 x86_64; do
-            tar -xzf "halves/$arch/bundle.tar.gz" -C "halves/$arch"
-          done
-          ls -la halves/arm64 halves/x86_64
-
-      - name: Merge the two halves
-        run: |
-          arm64_bundle="$(find halves/arm64 -maxdepth 2 -name '*.app' | head -1)"
-          x86_64_bundle="$(find halves/x86_64 -maxdepth 2 -name '*.app' | head -1)"
-          for bundle in "$arm64_bundle" "$x86_64_bundle"; do
-            if [ -z "$bundle" ]; then
-              echo "::error::a half is missing its .app after unpacking"
-              exit 1
-            fi
-            # If this is not executable the tar did not do its job, and
-            # everything downstream would succeed while producing a bundle
-            # that cannot launch. Globbed rather than named: the binary is
-            # `commune` in lower case and the bundle around it is
-            # `Commune.app` only on the Stable profile — a nightly's is
-            # `Commune Devel.app`.
-            if ! find "$bundle/Contents/MacOS" -type f -perm -u+x | grep -q .; then
-              echo "::error::$bundle has no executable in Contents/MacOS"
-              ls -la "$bundle/Contents/MacOS" || true
-              exit 1
-            fi
-          done
-          # The bundle keeps the name the half had. `bundle.sh` calls it
-          # `Commune.app` only on the Stable profile; a nightly is
-          # `Commune Devel.app`, and that is what keeps a nightly installed
-          # beside a stable Commune in /Applications rather than on top of
-          # it. Hardcoding the stable name here would have undone, at the
-          # last step, what the Devel application id is for.
-          app="universal/$(basename "$arm64_bundle")"
-          echo "COMMUNE_APP=$app" >> "$GITHUB_ENV"
-          # The halves must agree about every file that is not a binary, and
-          # the merge refuses otherwise. A dependency's translation catalogs
-          # are the one thing they legitimately do not: conda-forge builds
-          # glib's per platform, and the nn catalog differed by a string on
-          # 15 October 2026. The x86_64 half takes the arm64 half's catalogs
-          # here, so that the merge sees agreement. `lipo-bundles.sh` has
-          # learned to accept that difference on its own — but a release
-          # re-dispatched for an existing tag builds the tag's checkout, so
-          # it runs the tag's script, and 1.rc5's predates the lesson. This
-          # is what reaches a tag that is already cut.
-          if [ -d "$arm64_bundle/Contents/Resources/share/locale" ]; then
-            rm -rf "$x86_64_bundle/Contents/Resources/share/locale"
-            cp -R "$arm64_bundle/Contents/Resources/share/locale" "$x86_64_bundle/Contents/Resources/share/locale"
-          fi
-          bash build-aux/macos/lipo-bundles.sh --arm64 "$arm64_bundle" --x86_64 "$x86_64_bundle" --output "$app"
-
-      - name: Sign, notarize and staple
-        # Signing happens after the merge, never before: a signature covers
-        # all of a binary's slices at once, so signing the halves and then
-        # merging them produces a bundle whose signature does not check out.
-        if: inputs.sign
-        env:
-          CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
-          CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
-          CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          # Either an App Store Connect API key or an app-specific password;
-          # sign-notarize.sh takes whichever is present. Notarization is not
-          # the App Store — it is the other half of Developer ID, and this
-          # project could not be listed in any case, being GPL-3 with many
-          # copyright holders.
-          NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
-          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-          NOTARY_PASSWORD: ${{ secrets.MACOS_NOTARY_PASSWORD }}
-          NOTARY_APPLE_ID: ${{ secrets.MACOS_NOTARY_APPLE_ID }}
-          NOTARY_TEAM_ID: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
-          # Set this repository variable to ship signed but un-notarized,
-          # which the in-app updater installs and a browser download does not.
-          ALLOW_UNNOTARIZED: ${{ vars.ALLOW_UNNOTARIZED }}
-        run: bash build-aux/macos/sign-notarize.sh "$COMMUNE_APP"
-
-      - name: Make the tarball
-        # A tarball rather than the disk image, because files a process
-        # extracts from one are never quarantined and a quarantined bundle is
-        # refused on first launch. This is what the updater downloads.
-        run: |
-          version="$(bash build-aux/ci/project-version.sh)"
-          mkdir -p dist
-          bash build-aux/macos/make-tarball.sh "$COMMUNE_APP" "dist/commune-$version-universal.tar.gz"
-
-      - name: Make the disk image
-        # Both shapes ship, because they are for different things and neither
-        # substitutes for the other.
-        #
-        # The disk image is what a person downloading from the release page
-        # expects: open it, drag the icon to Applications. The tarball is what
-        # the updater fetches, and it has to be a tarball — a process that
-        # extracts one never sets `com.apple.quarantine`, while anything a
-        # browser downloads carries it, and a quarantined app is checked by
-        # Gatekeeper on first launch. The feed keeps pointing at the tarball.
-        run: |
-          version="$(bash build-aux/ci/project-version.sh)"
-          bash build-aux/macos/make-dmg.sh "$COMMUNE_APP" "dist/commune-$version-universal.dmg"
-
-      - name: Notarize the disk image
-        # The app inside was notarized and stapled before the image was built,
-        # but Gatekeeper checks the image's own ticket first when a browser
-        # downloaded it — so the image needs one of its own.
-        if: inputs.sign
-        env:
-          NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
-          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
-          NOTARY_PASSWORD: ${{ secrets.MACOS_NOTARY_PASSWORD }}
-          NOTARY_APPLE_ID: ${{ secrets.MACOS_NOTARY_APPLE_ID }}
-          NOTARY_TEAM_ID: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
-          ALLOW_UNNOTARIZED: ${{ vars.ALLOW_UNNOTARIZED }}
-        run: |
-          dmg="$(find dist -name '*.dmg' | head -1)"
-          bash build-aux/macos/sign-notarize.sh --notarize-only "$dmg"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: macos
-          path: |
-            dist/*.tar.gz
-            dist/*.dmg
-          if-no-files-found: error
+          sign: ${{ inputs.sign }}
+          codesign-identity: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+          certificate-p12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          certificate-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          notary-key: ${{ secrets.MACOS_NOTARY_KEY }}
+          notary-key-id: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          notary-issuer-id: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          notary-password: ${{ secrets.MACOS_NOTARY_PASSWORD }}
+          notary-apple-id: ${{ secrets.MACOS_NOTARY_APPLE_ID }}
+          notary-team-id: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
+          allow-unnotarized: ${{ vars.ALLOW_UNNOTARIZED }}

@@ -1,0 +1,171 @@
+# Finish an earlier run: merge its macOS halves, sign them, and publish.
+#
+# The recovery path for anything that fails after the platform builds. A
+# release or a nightly spends an hour and a half building five platforms and
+# then a couple of minutes merging, signing and publishing them, and until
+# this existed a failure in those last minutes could only be retried by
+# building everything again — because the publish job read artifacts of its
+# own run and nothing else. On 15 October 2026 the merge failed twice on
+# something that takes seconds to run, and 1.rc5 cost three full builds.
+#
+# This takes the run that built the platforms, and does the rest:
+#
+#   universal  the `macos-universal` action against that run's two halves,
+#              signed and notarized, uploaded as this run's `macos`.
+#   publish    `publish.yml` with that run's artifacts for everything else.
+#
+# It costs minutes. Its limits are the artifacts' lifetimes: the halves, the
+# MSI and the APK are kept for thirty days, and the Flatpak repository for
+# seven — so a release assembled after a week publishes everything except the
+# hand-off to apps.kznjk.com, and says so in a warning, and after a month there
+# is nothing to assemble and the answer is a rebuild.
+#
+# The workflow comes from wherever it is dispatched; the source is the tag's
+# (or, for a nightly, the commit the source run built). That separation is the
+# same one `release.yml` makes, for the same reason: the fix is in the
+# workflow, and what ships stays what the tag says. It is also the separation's
+# limit — a bug in a `build-aux/` script is the tag's bug, and assembling
+# again runs the same script. The YAML, including the merge step in the
+# action, is what this can fix after the fact.
+#
+#   gh workflow run assemble.yml -f run-id=38804550514 -f tag=v1.rc5 \
+#       -f kind=release -f publish=false
+#
+# `publish=false` stops after uploading the universal bundle, which is how to
+# prove a fix to the merge without publishing anything. See `doc/updates.md`.
+name: assemble
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: 'The release.yml or nightly.yml run whose five platform jobs succeeded.'
+        required: true
+        type: string
+      tag:
+        description: 'The tag to publish under: the release tag, or nightly.'
+        required: true
+        type: string
+      kind:
+        description: 'release signs and publishes like release.yml; nightly like nightly.yml.'
+        required: true
+        default: release
+        type: choice
+        options:
+          - release
+          - nightly
+      publish:
+        description: 'Publish the release and the feed. Off assembles and uploads the universal bundle only.'
+        required: false
+        default: true
+        type: boolean
+
+# Never two assemblies of one tag at once: both would race to create the same
+# release and to push the same feed. Not shared with `nightly.yml`'s group,
+# whose cancel-in-progress would let either one kill the other.
+concurrency:
+  group: assemble-${{ inputs.tag }}
+  cancel-in-progress: false
+
+# `actions: read` is what reading another run's jobs and artifacts takes.
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  source:
+    name: Check the source run
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.check.outputs.sha }}
+    steps:
+      - name: Check the source run
+        id: check
+        # Everything below trusts this run's artifacts to be a whole, signed
+        # build of the thing being published. A run of the other workflow
+        # carries the other profile — a nightly's Devel bundle published as a
+        # release would install as the wrong application — and a run with a
+        # platform missing would write a manifest telling that platform there
+        # is nothing to install. Both are cheaper to refuse here than to undo.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ inputs.run-id }}
+          KIND: ${{ inputs.kind }}
+        run: |
+          set -euo pipefail
+          path="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN" --jq .path)"
+          sha="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN" --jq .head_sha)"
+          echo "run $RUN is $path at $sha"
+          case "$KIND" in
+            release) want=".github/workflows/release.yml" ;;
+            nightly) want=".github/workflows/nightly.yml" ;;
+          esac
+          if [ "$path" != "$want" ]; then
+            echo "::error::run $RUN is $path; a $KIND is assembled from $want"
+            exit 1
+          fi
+
+          jobs="$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/jobs?filter=latest" \
+            --jq '.jobs[] | "\(.conclusion) | \(.name)"')"
+          printf '%s\n' "$jobs"
+          for job in 'Android APK' 'Flatpak bundle' 'Windows installer' 'macOS arm64 bundle' 'macOS x86_64 bundle'; do
+            if ! printf '%s\n' "$jobs" | grep -qE "^success \| (.* / )?$job\$"; then
+              echo "::error::run $RUN has no successful '$job' job"
+              exit 1
+            fi
+          done
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+  universal:
+    name: macOS universal bundle
+    needs: source
+    runs-on: macos-15
+    steps:
+      # The source being packaged. A release's is its tag. A nightly's is the
+      # commit the source run built, not wherever `main` has got to since:
+      # the version, the build number and the commit the nightly release
+      # points at all come from this checkout, and they should describe the
+      # binaries rather than the branch.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.kind == 'release' && inputs.tag || needs.source.outputs.sha }}
+          fetch-depth: 0
+
+      # The action, from this workflow's own commit. A tag cut before the
+      # action existed does not have it — see the same step in `build.yml`.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          path: .ci
+          sparse-checkout: .github/actions
+
+      - uses: ./.ci/.github/actions/macos-universal
+        with:
+          run-id: ${{ inputs.run-id }}
+          github-token: ${{ github.token }}
+          # Both kinds sign: `release.yml` and `nightly.yml` both pass
+          # `sign: true`, and an unsigned universal bundle is one the updater
+          # refuses.
+          sign: 'true'
+          codesign-identity: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+          certificate-p12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          certificate-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          notary-key: ${{ secrets.MACOS_NOTARY_KEY }}
+          notary-key-id: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          notary-issuer-id: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          notary-password: ${{ secrets.MACOS_NOTARY_PASSWORD }}
+          notary-apple-id: ${{ secrets.MACOS_NOTARY_APPLE_ID }}
+          notary-team-id: ${{ secrets.MACOS_NOTARY_TEAM_ID }}
+          allow-unnotarized: ${{ vars.ALLOW_UNNOTARIZED }}
+
+  publish:
+    name: Publish ${{ inputs.tag }}
+    needs: [source, universal]
+    if: inputs.publish
+    uses: ./.github/workflows/publish.yml
+    with:
+      kind: ${{ inputs.kind }}
+      tag: ${{ inputs.tag }}
+      ref: ${{ inputs.kind == 'release' && inputs.tag || needs.source.outputs.sha }}
+      source-run-id: ${{ inputs.run-id }}
+    secrets: inherit

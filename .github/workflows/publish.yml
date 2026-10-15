@@ -1,0 +1,310 @@
+# The artifacts of a build, made into a GitHub release and a signed feed.
+#
+# This was a job in `release.yml` and a near copy of it in `nightly.yml`, and
+# it is a workflow of its own now for one reason: so that it can be pointed at
+# the artifacts of a run other than the one it is part of. `assemble.yml` does
+# that, and it is how a failure after the platform builds gets retried in
+# minutes rather than in the hour and a half it takes to build them again. One
+# copy is also one copy — the step that keeps the macOS halves out of a
+# release had been fixed twice, once in each file.
+#
+# Two kinds, which differ in nearly everything after the artifacts are
+# collected:
+#
+#   release   a `v*` tag. The tag has to agree with the version the checkout
+#             releases under. A version with a pre-release part is a GitHub
+#             pre-release and goes to the `rc` channel only; one without goes
+#             to `stable` and to `rc`, so that somebody testing candidates is
+#             not left behind when the real thing arrives. The Flatpak
+#             repository is handed to apps.kznjk.com.
+#   nightly   the rolling `nightly` release, replaced each time, pointed at
+#             the commit that was built, and the `nightly` channel.
+#
+# The channels are worked out here from the version rather than passed in, so
+# that the thing deciding which channel a build goes to is the build's own
+# version and not a caller that could disagree with it.
+name: publish
+
+on:
+  workflow_call:
+    inputs:
+      kind:
+        description: 'release or nightly.'
+        required: true
+        type: string
+      tag:
+        description: 'The release tag: a v* tag for a release, nightly for a nightly.'
+        required: true
+        type: string
+      ref:
+        description: >-
+          The commit whose version and build number are published, and whose
+          scripts publish it. A release passes its tag. Empty means the commit
+          the run is at, which is right for a nightly built in the same run
+          and wrong for anything assembled from an earlier one.
+        required: false
+        default: ''
+        type: string
+      source-run-id:
+        description: >-
+          Publish another run's platform artifacts instead of this run's. Empty
+          for a build that publishes itself. When set, the `macos` artifact is
+          still taken from this run: `assemble.yml` has just made it, and it is
+          the reason the assembly exists.
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  publish:
+    name: Publish ${{ inputs.tag }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+
+      # Given no token, `download-artifact` reads this run; given one, it
+      # reads the run named by `run-id` — so the token goes in only when a
+      # source run was named.
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          run-id: ${{ inputs.source-run-id || github.run_id }}
+          github-token: ${{ inputs.source-run-id != '' && github.token || '' }}
+
+      - name: Take the universal bundle from this run
+        # The source run's `macos`, if it has one at all, is the bundle whose
+        # making failed or whose publishing did, and the one this run just
+        # assembled is the one to ship.
+        if: inputs.source-run-id != ''
+        run: rm -rf artifacts/macos
+
+      - uses: actions/download-artifact@v4
+        if: inputs.source-run-id != ''
+        with:
+          name: macos
+          path: artifacts/macos
+
+      - name: Work out what this is
+        id: release
+        env:
+          KIND: ${{ inputs.kind }}
+          TAG: ${{ inputs.tag }}
+          SOURCE_RUN: ${{ inputs.source-run-id }}
+        run: |
+          version="$(bash build-aux/ci/project-version.sh)"
+          build="$(git rev-list --count HEAD)"
+          sha="$(git rev-parse HEAD)"
+
+          case "$KIND" in
+            release)
+              # The tag is the authority on what was released; if it disagrees
+              # with Cargo.toml then the release commit was wrong and publishing
+              # would put a version nobody can find behind a tag nobody expects.
+              # The tag carries the Meson spelling of the version, which
+              # RELEASING.md describes: 1.0.0-rc1 is tagged v1.rc1, and a plain
+              # 1.0.0 is tagged v1. Both spellings are accepted, nothing else.
+              major="${version%%.*}"
+              case "$version" in
+                *-*) meson_version="$major.${version#*-}" ;;
+                *)   meson_version="$major" ;;
+              esac
+
+              if [ "$TAG" != "v$version" ] && [ "$TAG" != "v$meson_version" ]; then
+                echo "::error::tag $TAG is neither v$version nor v$meson_version"
+                exit 1
+              fi
+
+              # A release candidate is a pre-release on GitHub and goes to the
+              # `rc` channel only; a plain release goes to `stable` and to `rc`,
+              # so that somebody testing candidates is not left behind when the
+              # real thing arrives.
+              case "$version" in
+                *-*) channels="rc"; prerelease=true ;;
+                *)   channels="stable rc"; prerelease=false ;;
+              esac
+              ;;
+            nightly)
+              if [ "$TAG" != "nightly" ]; then
+                echo "::error::a nightly publishes to the nightly tag, not $TAG"
+                exit 1
+              fi
+              channels="nightly"
+              prerelease=true
+              ;;
+            *)
+              echo "::error::unknown kind $KIND"
+              exit 1
+              ;;
+          esac
+
+          {
+            echo "tag=$TAG"
+            echo "version=$version"
+            echo "build=$build"
+            echo "sha=$sha"
+            echo "short=$(git rev-parse --short HEAD)"
+            echo "channels=$channels"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Collect the artifacts
+        env:
+          SOURCE_RUN: ${{ inputs.source-run-id }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          mkdir -p dist
+          # Not a blanket `*.tar.gz`. The two macOS halves travel as
+          # `bundle.tar.gz` so that the artifact store keeps their executable
+          # bits and symlinks, and a blanket glob attached one of them to the
+          # v1.rc1 release: 105 MB, indistinguishable from the real download
+          # except that it runs on half the Macs. They are build
+          # intermediates and have no business here.
+          find artifacts -type f \
+              \( -name '*.msi' -o -name '*.tar.gz' -o -name '*.dmg' -o -name '*.apk' -o -name '*.flatpak' \) \
+              -not -name 'bundle.tar.gz' \
+              -exec cp {} dist/ ';'
+          ls -la dist
+
+          # Artifacts from another run carry no proof of which commit they
+          # were built from, and nothing else here would notice a run of the
+          # wrong version: the feed would happily point 1.rc6's channel at
+          # 1.rc5's APK. The APK is named after the version it was built as,
+          # so it is the witness. `assemble.yml` also checks the run's
+          # workflow and that every platform job in it succeeded.
+          if [ -n "$SOURCE_RUN" ]; then
+            if ! find dist -name "commune-$VERSION-*.apk" | grep -q .; then
+              echo "::error::run $SOURCE_RUN has no APK for $VERSION; it built something other than this checkout"
+              exit 1
+            fi
+          fi
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KIND: ${{ inputs.kind }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          SHA: ${{ steps.release.outputs.sha }}
+          SHORT: ${{ steps.release.outputs.short }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+        run: |
+          if [ "$KIND" = "nightly" ]; then
+            # The one place `RELEASING.md`'s rule that a tag is never moved
+            # does not hold, and it says so: this tag is a pointer to "the
+            # newest build of main", which is the only thing a nightly channel
+            # can mean. Every other tag in the repository is still permanent.
+            bash build-aux/ci/publish-release.sh \
+              --tag nightly \
+              --title "Nightly $VERSION ($SHORT)" \
+              --notes "An automatic build of main at $SHORT. Not a release: it installs beside a stable Commune rather than over it." \
+              --prerelease \
+              --target "$SHA" \
+              --replace \
+              -- dist/*
+            exit 0
+          fi
+
+          if [ "$PRERELEASE" = "true" ]; then
+            flag="--prerelease"
+          else
+            flag=""
+          fi
+          # shellcheck disable=SC2086
+          bash build-aux/ci/publish-release.sh \
+            --tag "$TAG" \
+            --title "Commune $VERSION" \
+            --notes "Commune $VERSION." $flag \
+            -- dist/*
+
+      - name: Hand the Flatpak to apps.kznjk.com
+        # steeb-k/kznjk-flatpak polls this release, signs flatpak-build.tar and
+        # publishes it: a release candidate on the `beta` branch, a release on
+        # `stable`. It only takes a build once flatpak-build.json is there, so
+        # that goes up after the tarball, never beside it.
+        #
+        # A release only: a nightly does not build the repository at all. The
+        # artifact is kept for a week, so assembling a release from a run
+        # older than that publishes everything except this, and says so.
+        if: inputs.kind == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          PRERELEASE: ${{ steps.release.outputs.prerelease }}
+        run: |
+          tar="artifacts/flatpak-build/flatpak-build.tar"
+          if [ ! -f "$tar" ]; then
+            echo "::warning::no Flatpak repository was built, so apps.kznjk.com keeps the previous release"
+            exit 0
+          fi
+          notes="Commune $VERSION."
+          if [ "$PRERELEASE" = "true" ]; then
+            flag="--prerelease"
+            branch="beta"
+          else
+            flag=""
+            branch="stable"
+          fi
+          mkdir -p flatpak
+          mv "$tar" flatpak/flatpak-build.tar
+          sha="$(sha256sum flatpak/flatpak-build.tar | cut -d' ' -f1)"
+          printf '{"app_id": "io.github.steeb_k.Commune", "branch": "%s", "tar_sha256": "%s"}\n' \
+            "$branch" "$sha" > flatpak/flatpak-build.json
+          for file in flatpak/flatpak-build.tar flatpak/flatpak-build.json; do
+            # shellcheck disable=SC2086
+            bash build-aux/ci/publish-release.sh \
+              --tag "$TAG" \
+              --title "Commune $VERSION" \
+              --notes "$notes" $flag \
+              -- "$file"
+          done
+
+      - name: Write and sign the feed
+        env:
+          UPDATE_FEED_PRIVATE_KEY: ${{ secrets.UPDATE_FEED_PRIVATE_KEY }}
+          KIND: ${{ inputs.kind }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          BUILD: ${{ steps.release.outputs.build }}
+          CHANNELS: ${{ steps.release.outputs.channels }}
+        run: |
+          base="https://github.com/${{ github.repository }}/releases/download/$TAG"
+          if [ "$KIND" = "nightly" ]; then
+            notes_url="https://github.com/${{ github.repository }}/commits/main"
+          else
+            notes_url="https://github.com/${{ github.repository }}/releases/tag/$TAG"
+          fi
+
+          # Only the artifacts that exist. A platform whose job failed is left
+          # out of the manifest, which tells an installation there is nothing
+          # to install rather than sending it at a URL that 404s.
+          assets=""
+          msi="$(find dist -name '*.msi' | head -1)"
+          # Named, not `head -1`. With the halves excluded above there is only
+          # one tarball left, but picking the first of a glob is how the feed
+          # for that release came to point at the right file by luck rather
+          # than by construction.
+          tarball="$(find dist -name 'commune-*-universal.tar.gz' | head -1)"
+          apk="$(find dist -name '*.apk' | head -1)"
+          [ -n "$msi" ] && assets="$assets --asset windows-x86_64-msi|$msi|$base/$(basename "$msi")"
+          [ -n "$tarball" ] && assets="$assets --asset macos-universal-tar|$tarball|$base/$(basename "$tarball")"
+          [ -n "$apk" ] && assets="$assets --asset android-arm64-apk|$apk|$base/$(basename "$apk")"
+
+          for channel in $CHANNELS; do
+            # shellcheck disable=SC2086
+            bash build-aux/ci/publish-feed.sh \
+              --channel "$channel" \
+              --version "$VERSION" \
+              --build "$BUILD" \
+              --notes-url "$notes_url" \
+              --out-dir feed \
+              $assets
+          done
+
+      - name: Commit the feed
+        env:
+          LABEL: ${{ inputs.kind == 'nightly' && format('nightly {0}', steps.release.outputs.short) || steps.release.outputs.tag }}
+        run: bash build-aux/ci/commit-feed.sh feed "$LABEL"
