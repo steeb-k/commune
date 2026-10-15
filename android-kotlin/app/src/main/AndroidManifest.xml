@@ -21,6 +21,16 @@
          application to install packages, once, in system settings. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- "Take Photo" in the composer's attach menu hands the shot to whatever
+         camera app is installed. From API 30 an application only sees the
+         packages it declares an interest in, and without this the camera
+         intent resolves to nothing even on a phone that has one. -->
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
+
     <application
         android:name=".CommuneApplication"
         android:icon="@mipmap/ic_launcher"
@@ -117,7 +127,8 @@
             android:exported="false" />
         <!-- Hands the downloaded APK to the package installer, which runs
              in another process and so cannot read a path inside this
-             application. Only `cache/updates/` is exposed; see
+             application. Only `cache/updates/` is exposed for that, and
+             `cache/outgoing/camera/` for the composer's "Take Photo"; see
              res/xml/updates_paths.xml. -->
         <provider
             android:name="androidx.core.content.FileProvider"

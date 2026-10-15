@@ -1,7 +1,8 @@
 package io.github.steeb_k.commune.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,7 +34,16 @@ import io.github.steeb_k.commune.core.FfiUrlPreview
 /// room — and the homeserver describes the page; nothing is fetched from
 /// the site itself.
 @Composable
-fun UrlPreviewCard(state: CommuneState, url: String) {
+@OptIn(ExperimentalFoundationApi::class)
+fun UrlPreviewCard(
+    state: CommuneState,
+    url: String,
+    // The long press of the message the card sits under. Without it the
+    // card's own tap took the whole gesture, and a long press on the card
+    // opened nothing; with it, the card answers as the rest of the bubble
+    // does — and while messages are being selected, a tap selects too.
+    onLongClick: (() -> Unit)? = null,
+) {
     var preview by remember(url) { mutableStateOf<FfiUrlPreview?>(null) }
     var imagePath by remember(url) { mutableStateOf<String?>(null) }
     LaunchedEffect(url) {
@@ -50,17 +60,24 @@ fun UrlPreviewCard(state: CommuneState, url: String) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f))
-            .clickable {
-                try {
-                    context.startActivity(
-                        android.content.Intent(
-                            android.content.Intent.ACTION_VIEW,
-                            android.net.Uri.parse(card.url),
-                        ),
-                    )
-                } catch (_: Exception) {
-                }
-            }
+            .combinedClickable(
+                onClick = {
+                    if (state.selectMode && onLongClick != null) {
+                        onLongClick()
+                    } else {
+                        try {
+                            context.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse(card.url),
+                                ),
+                            )
+                        } catch (_: Exception) {
+                        }
+                    }
+                },
+                onLongClick = onLongClick,
+            )
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -37,9 +37,11 @@ was abandoned). The GTK app is the desktop target and is now a view over
    without the GTK: bounded wait for the sessions of a push-started process,
    `NotificationClient` (`MultipleProcesses`, `/context`, 25 s timeout), the
    `NotificationBody` the core already words. `fetch_pushed_notification` on
-   the facade; `Push.kt` takes that route when the payload has no body or is
-   `m.room.encrypted`, and words it with the GTK sentences. The payload format
-   stays full (the 1 Sep decision), so unencrypted pushes are still instant.
+   the facade; `Push.kt` takes that route for every message push since 15
+   Oct (before that, only when the payload had no body or was
+   `m.room.encrypted`), and words it with the GTK sentences; the payload is
+   the fallback when the fetch fails — `doc/android-notifications.md`. The
+   payload format stays full (the 1 Sep decision).
    Not verifiable on the emulator (no UnifiedPush distributor): needs the
    Pixel with ntfy and an encrypted room.
 3. **DONE 3 Sep — Search in encrypted rooms.** `search_room` already went to

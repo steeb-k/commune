@@ -1834,7 +1834,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_commune_core_checksum_func_set_update_check_automatically() != 60012.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_commune_core_checksum_func_set_update_feed() != 53029.toShort()) {
+    if (lib.uniffi_commune_core_checksum_func_set_update_feed() != 38226.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_commune_core_checksum_func_set_update_skipped_version() != 15174.toShort()) {
@@ -12391,6 +12391,28 @@ data class FfiRoom (
     var `latestEventIsOwn`: kotlin.Boolean
     , 
     /**
+     * The event ID of the latest message, when one is known and readable.
+     *
+     * The body alone cannot say which message it is: two people can send
+     * the same "ok", and a body seen twice is either the same message seen
+     * on two syncs or a new one. The embedder announces messages by this ID
+     * so that a message it has already shown — from a push or from an
+     * earlier sync — is never raised a second time.
+     */
+    var `latestEventId`: kotlin.String?
+    , 
+    /**
+     * When the server received the latest message, in milliseconds since
+     * the Unix epoch, or 0 when there is no readable latest message.
+     *
+     * This is the message's own `origin_server_ts`, not the room's
+     * `latest_activity`, which also moves for state changes and our own
+     * sends. The embedder uses it to drop a preview older than the newest
+     * message it has already announced for the room.
+     */
+    var `latestEventTimestamp`: kotlin.ULong
+    , 
+    /**
      * Whether the room is encrypted.
      */
     var `isEncrypted`: kotlin.Boolean
@@ -12424,6 +12446,8 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterBoolean.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterULong.read(buf),
             FfiConverterBoolean.read(buf),
         )
     }
@@ -12443,6 +12467,8 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterOptionalString.allocationSize(value.`latestEventSender`) +
             FfiConverterOptionalString.allocationSize(value.`latestEventBody`) +
             FfiConverterBoolean.allocationSize(value.`latestEventIsOwn`) +
+            FfiConverterOptionalString.allocationSize(value.`latestEventId`) +
+            FfiConverterULong.allocationSize(value.`latestEventTimestamp`) +
             FfiConverterBoolean.allocationSize(value.`isEncrypted`)
     )
 
@@ -12461,6 +12487,8 @@ public object FfiConverterTypeFfiRoom: FfiConverterRustBuffer<FfiRoom> {
             FfiConverterOptionalString.write(value.`latestEventSender`, buf)
             FfiConverterOptionalString.write(value.`latestEventBody`, buf)
             FfiConverterBoolean.write(value.`latestEventIsOwn`, buf)
+            FfiConverterOptionalString.write(value.`latestEventId`, buf)
+            FfiConverterULong.write(value.`latestEventTimestamp`, buf)
             FfiConverterBoolean.write(value.`isEncrypted`, buf)
     }
 }
@@ -18383,7 +18411,7 @@ public object FfiConverterSequenceTypeFfiTimelineItem: FfiConverterRustBuffer<Li
          * process's life, or clear the override with `None`.
          *
          * For testing the updater on Android without publishing a release. A
-         * release APK is `arm64` code that an x86_64 emulator runs under
+         * release APK is `arm64` code that an `x86_64` emulator runs under
          * translation, and `Os.setenv` in `CommuneApplication` writes to the
          * environment of whichever libc that translation layer gives it — not
          * necessarily the one `reqwest` reads its environment through when the

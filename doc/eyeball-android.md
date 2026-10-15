@@ -125,7 +125,10 @@ since. The S-step that first proved each is named where it helps.
       desktop: a notification arrives anyway (UnifiedPush endpoint as pusher),
       and its tap opens the room in a freshly started app.
 * [ ] **One notification per conversation.** Three messages in one room while
-      backgrounded stack into one conversation notification, not three cards.
+      backgrounded make one conversation notification, not three cards.
+      Since 15 October 2026 it shows only the newest message with the rest
+      counted above it — the section of that date at the end of this sheet
+      has the full set.
 * [ ] **A room read on the desktop leaves the phone shade.** In both
       delivery modes: with a message notification showing on the phone,
       read that room on the desktop. Sync mode clears it at the next sync.
@@ -1509,3 +1512,61 @@ built like GtkEmojiChooser from the same emojibase dataset.
       quick row above it is unaffected by picks it does not make.
 * [ ] **The section bar follows the scroll.** Scrolling the grid moves the
       highlight along the bar; tapping Flags jumps to the flags heading.
+
+## Notifications, long press, swipe to reply and the camera — 15 October 2026
+
+Five changes to the Kotlin app, none of them yet seen on a device. The
+notification shape is `doc/android-notifications.md`; the other three are
+`doc/android-room-screen.md`. Run the notification checks with Commune in
+the background and bob writing from the desktop or the harness; each starts
+from a room with nothing unread and nothing in the shade.
+
+* [ ] **Three messages, one notification, the newest.** Bob sends three
+      messages in one room while the app is in the background: one
+      notification for the room, showing only the third message, titled
+      "2 more" above it, and a launcher badge of 3. None of the first
+      two bodies appears, collapsed or expanded, and the "· 2 more" is still
+      there when another room's notification makes Android bundle the two.
+* [ ] **A swiped notification stays swiped.** Swipe that notification away,
+      then have bob send a fourth: the notification that arrives shows only
+      the fourth message, titled "3 more", and none of the earlier
+      bodies anywhere in it.
+* [ ] **Swiped messages do not come back after a restart.** Swipe the room's
+      notification away, force-stop the app from system settings, have bob
+      send another message, then open the app: at most the new message is
+      announced, and none of the swiped ones is raised again, at launch or
+      at the next sync.
+* [ ] **Mark as Read clears it, and the next starts clean.** Press Mark as
+      read on the notification: it goes, and the room reads as read on the
+      desktop. Bob's next message arrives as a notification of its own with
+      no "more" line above it.
+* [ ] **Read elsewhere takes it down.** With the notification showing, read
+      the room on the desktop: the phone's notification goes within a sync
+      or two, without the phone being touched.
+* [ ] **The push path does the same.** On the Pixel with UnifiedPush through
+      ntfy, repeat the first three checks with the app asleep, so the
+      notifications come from pushes rather than the sync: the same single
+      newest message, swiped messages never returning. The "N more" figure
+      may run from the shade's own count until the next sync corrects it;
+      that is expected. The emulator has no distributor and cannot exercise
+      this.
+* [ ] **A long press on a photo opens the sheet.** Long-press the picture in
+      an image message, not the bubble around it: the action sheet opens,
+      and Save to Downloads is in it. The same on a video's poster, a map, a
+      link preview card. In select mode, a tap on any of them selects the
+      message instead of opening it.
+* [ ] **Swipe a message to reply.** In a room, drag a message towards the
+      end edge: it follows the finger, a reply arrow fades in behind it, the
+      phone ticks once at the threshold, and letting go there arms the reply
+      bar for that message; the reply sends into the main timeline. Letting
+      go short of the threshold does nothing. The same swipe in a thread
+      view, or in the pinned list, does nothing at all.
+* [ ] **The attach menu keeps the keyboard.** With the keyboard up, tap the
+      attach button: the menu opens above the composer, next to the button,
+      and the keyboard stays up. A tap outside closes it; a second tap on
+      the attach button while it is open closes it rather than reopening it.
+* [ ] **Take Photo sends a photo.** Attach ▸ Take Photo: the first time, the
+      camera permission is asked for; then the system camera opens, and
+      after the shot the "Send File?" preview shows it; sending puts the
+      photo in the room. Rotating the phone inside the camera still brings
+      the shot back, and cancelling the camera sends nothing.
