@@ -73,6 +73,50 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="1~rc5" type="development" date="2026-10-15">
+      <description>
+        <p>
+          The fifth release candidate is about the phone's notifications and a few things the
+          phone and the desktop did not do yet. Every change on the phone was run on an emulator
+          against a local homeserver before this went out; the push path and the desktop search
+          change were not.
+        </p>
+        <ul>
+          <li>
+            On Android, a notification shows the newest message and the number of unread ones
+            above it, and a notification that was swiped away never comes back: the message a
+            push had already shown was announced again by the next sync, with the new message
+            underneath it.
+          </li>
+          <li>
+            On Android, a long press anywhere on a picture, a video, a map or a link card opens
+            the message's actions, including Save to Downloads; it used to work only on the
+            caption.
+          </li>
+          <li>
+            On Android, swiping a message to the right replies to it in the room, the way the
+            Reply action does.
+          </li>
+          <li>
+            On Android, the attach button no longer closes the keyboard, so its menu opens where
+            the composer is rather than at the bottom of the screen, and the menu can take a
+            photo with the camera and show it before it is sent.
+          </li>
+          <li>
+            On the desktop, searching an encrypted room finds the older messages that were
+            decrypted after they loaded, without pressing Re-index This Room.
+          </li>
+          <li>
+            On the desktop, the message search pane is no longer painted with the accent colour.
+          </li>
+          <li>
+            Security updates to the TLS library (rustls 0.23.45 for GHSA-2mjx-qc3c-rqvc, then
+            0.23.46 for four more advisories), and Flatpak release builds are published through
+            apps.kznjk.com.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="1~rc4" type="development" date="2026-09-13">
       <description>
         <p>
