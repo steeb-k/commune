@@ -403,7 +403,9 @@ impl RoomSearch {
     ///
     /// This is the only way to search an encrypted room, since the server
     /// cannot read its content. It can only find messages that this device
-    /// has received and indexed.
+    /// has received; the ones the room has loaded are handed to the index
+    /// on the first page of every search, so that a message decrypted after
+    /// it arrived is found too.
     async fn load_local(
         &self,
         search_term: String,
@@ -424,6 +426,15 @@ impl RoomSearch {
 
         let matrix_room = self.inner.room.matrix_room().clone();
         let handle = spawn_tokio!(async move {
+            // The index misses the events that were decrypted after they were
+            // loaded, so hand it what the room has loaded before asking it.
+            // This runs once per search, on its first page; the next pages
+            // come from `pending`. A failure here still leaves the index to
+            // search, with whatever it had.
+            if let Err(error) = Self::index_loaded_events(&matrix_room).await {
+                warn!("Could not index the loaded messages before searching: {error}");
+            }
+
             // The error type of the index belongs to a crate that is not a direct
             // dependency, so it cannot be named here.
             let results = matrix_room
@@ -514,6 +525,10 @@ impl RoomSearch {
     /// the room has loaded over after the fact; loading more of the history
     /// and doing it again covers more of it.
     ///
+    /// The first page of every local search does the same on its own, so
+    /// this is the explicit form of it, for the pages that have nothing
+    /// else to offer.
+    ///
     /// The search is restarted afterwards, so that the messages that were
     /// just added are presented: the caller loads the first page again.
     pub async fn reindex(&self) -> Result<(), SearchError> {
@@ -527,39 +542,7 @@ impl RoomSearch {
             .loading_state
             .set_if_not_eq(LoadingState::Loading);
 
-        let handle = spawn_tokio!(async move {
-            let client = matrix_room.client();
-            let room_id = matrix_room.room_id();
-
-            let (room_cache, _drop_handles) = client
-                .event_cache()
-                .room(room_id)
-                .await
-                .map_err(|error| error.to_string())?;
-            let events = room_cache
-                .events()
-                .await
-                .map_err(|error| error.to_string())?;
-            let redaction_rules = matrix_room
-                .clone_info()
-                .room_version_rules_or_default()
-                .redaction;
-
-            // The error type of the index belongs to a crate that is not a direct
-            // dependency, so it cannot be named here.
-            client
-                .search_index()
-                .lock()
-                .await
-                .bulk_handle_timeline_event(
-                    events.into_iter(),
-                    &room_cache,
-                    room_id,
-                    &redaction_rules,
-                )
-                .await
-                .map_err(|error| error.to_string())
-        });
+        let handle = spawn_tokio!(async move { Self::index_loaded_events(&matrix_room).await });
 
         if let Err(error) = handle.await.expect("task was not aborted") {
             // Leaving the state as it is would show a spinner that never stops.
@@ -586,6 +569,50 @@ impl RoomSearch {
         if is_empty {
             self.inner.loading_state.set_if_not_eq(LoadingState::Ready);
         }
+    }
+
+    /// Hand the events that the room has loaded in its event cache to its
+    /// local search index.
+    ///
+    /// The SDK feeds the index only as the event cache stores an event, and
+    /// skips an event it cannot decrypt yet. When the event is decrypted
+    /// later — which is how the history of an encrypted room usually
+    /// arrives, since keys are fetched from the backup only after a
+    /// decryption failure — the event cache replaces it without telling the
+    /// index, so it is never indexed. Events that were stored before the
+    /// index existed are in the same situation. This covers both, for
+    /// whatever the room has loaded.
+    ///
+    /// Adding an event that is already indexed does nothing, so this can run
+    /// as often as needed. It does not touch the loading state; it must run
+    /// on the tokio runtime.
+    async fn index_loaded_events(matrix_room: &matrix_sdk::room::Room) -> Result<(), String> {
+        let client = matrix_room.client();
+        let room_id = matrix_room.room_id();
+
+        let (room_cache, _drop_handles) = client
+            .event_cache()
+            .room(room_id)
+            .await
+            .map_err(|error| error.to_string())?;
+        let events = room_cache
+            .events()
+            .await
+            .map_err(|error| error.to_string())?;
+        let redaction_rules = matrix_room
+            .clone_info()
+            .room_version_rules_or_default()
+            .redaction;
+
+        // The error type of the index belongs to a crate that is not a direct
+        // dependency, so it cannot be named here.
+        client
+            .search_index()
+            .lock()
+            .await
+            .bulk_handle_timeline_event(events.into_iter(), &room_cache, room_id, &redaction_rules)
+            .await
+            .map_err(|error| error.to_string())
     }
 
     /// The mutable search state.

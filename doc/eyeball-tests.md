@@ -1519,3 +1519,36 @@ not in the source.
       restore previous sessions" must be the translated "The collection or
       item is locked.", not English. Fifteen sentences take this path; one is
       enough to prove the wiring.
+
+## Search finds what was decrypted after it arrived — `doc/search.md`
+
+Two reports from the same pane. The first is the index: in an encrypted room,
+old messages were never searchable even after scrolling back to them, because
+they arrive undecryptable, are decrypted a moment later from the key backup,
+and the SDK never tells its search index about the decryption. The first page
+of every search now hands the room's loaded events to the index itself. The
+second is paint: the pane was tinted with the accent colour edge to edge,
+because a stylesheet rule meant for the drop target matched the search pane's
+status pages too.
+
+* [ ] **An old message in an encrypted room is found without Re-index.** Pick
+      an encrypted room whose history shows "Unable to decrypt" when first
+      loaded — a fresh login on a second device, with key backup enabled, is
+      the easiest way to get one. Scroll back until those messages decrypt,
+      then open search (`<primary>F`) and search for a word that is only in
+      one of them. It must come up as a result **without pressing Re-index
+      This Room**. Before this change it came back empty.
+* [ ] **The search itself is not visibly slower.** In the same room, with a
+      few hundred messages loaded, the first page of results should arrive in
+      about the time it did before. Every search now re-offers the loaded
+      events to the index first; on a long-scrolled room that is the cost to
+      watch for.
+* [ ] **Re-index This Room still works.** On the empty page of an encrypted
+      room, press it: the spinner runs and stops, and nothing errors.
+* [ ] **The search pane is not accent-tinted.** Open message search in any
+      room. The background behind the "Search Messages" status page — and
+      behind the no-results and error pages — is the plain view background,
+      not a wash of the accent colour.
+* [ ] **The drop target still is.** Drag a file over the room: the "Drop Here
+      to Send" page is still accent-tinted, with accent-coloured text, as it
+      was.

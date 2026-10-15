@@ -48,9 +48,10 @@ they can act on: in an encrypted room there is no server option, and in an
 unencrypted one the server strictly dominates.
 
 The consequence worth knowing: in an encrypted room, search only finds what
-this device has received and indexed. A message the device never saw is not
-findable here at all. A message it saw but never indexed can be recovered —
-see the next section, which is the subtler half of the same problem.
+this device has received. A message the device never saw is not findable here
+at all. A message it saw but the SDK never indexed is handed to the index by
+the search itself — see the next two sections, which are the subtler half of
+the same problem.
 
 ## The index is encrypted, and lives in the cache
 
@@ -75,6 +76,11 @@ nothing on every launch. That is the failure mode to watch for if this line is
 ever lost in a rebase: search still works, it is just silently useless on a
 cold start.
 
+**On Windows it is in memory on purpose**, which is now `commune-core`'s
+`matrix/mod.rs`, not this tree's. That build gets an empty index on every
+launch, and what the search-time sweep below gives back is whatever the room
+has loaded since — no more.
+
 ## The index only knows what it was handed
 
 The index is fed by the event cache, as it stores an event, and by nothing
@@ -92,7 +98,43 @@ scrolling back makes old messages findable while the recent ones stay missing.
 The index looks like it is working at random, or like it only has old history,
 which is the opposite of the truth.
 
-**Re-index This Room** is the remedy: `RoomSearch::reindex()` takes the events
+### Decrypted late, never indexed
+
+The upgrade hole is not the only way an event misses the index, and it is not
+the common one. The SDK's indexing task skips an event it cannot decrypt
+(`parse_timeline_event()` returns nothing for a UTD), and when the redecryptor
+later decrypts it, the event cache swaps it in place with
+`replace_in_memory_utds()` — which drains the linked-chunk updates rather than
+broadcasting them, so the indexing task never hears of it. The client asks the
+key backup only `AfterDecryptionFailure`, which means old history in an
+encrypted room routinely arrives undecryptable and is decrypted a moment
+later. Every such message was unsearchable, and scrolling back to it did not
+help: it was the user report "search doesn't find old messages in encrypted
+chats, even if we scroll back and load them".
+
+So **the first page of every local search re-offers the room's loaded events
+to the index** before querying it — `RoomSearch::index_loaded_events()`, the
+same body `reindex()` always had, called from `load_local()` inside the task
+that runs the query. Later pages come from `pending` and do not repeat it. The
+SDK's add is idempotent (the index checks `contains` before writing a
+document), so a sweep over events that are already indexed costs a parse, one
+relation lookup per message for its latest edit, and a commit. A failure is
+logged and the query runs against whatever the index already had: a search
+that could have half-worked is not turned into an error page.
+
+The other way to close this was to index at the moment of decryption, from the
+timeline's diff stream in `timeline.rs`. It was not taken: a `Set` diff does
+not say what the item was before, so telling "decrypted" from "a reaction or a
+receipt changed" means indexing on every one of them; the item is the UI's
+`EventTimelineItem`, not the `TimelineEvent` the index takes, so each would be
+a cache lookup; every one would be a tantivy commit; and the stream only runs
+while a view is subscribed, so it would not cover more than the sweep does.
+The sweep is one pass, at the one moment the index is read.
+
+### Re-index This Room
+
+**Re-index This Room** is the remedy for the upgrade hole, and now the explicit
+form of what every search does: `RoomSearch::reindex()` takes the events
 the room has loaded from the event cache and hands them to the index through
 `bulk_handle_timeline_event`, then restarts the search so the results appear
 without the term being retyped. Load more history and press it again to cover
@@ -267,6 +309,21 @@ Both were pre-existing, and both are why the feature is bigger than it looks.
   until now, the chip above the composer while replying, which is why nobody
   noticed.
 
+## The pane was painted with the accent colour
+
+The search pane came up tinted edge to edge in the accent colour. The cause
+was not in the pane: `_room_details.scss` styled the "Drop Here to Send" page
+with a descendant selector, `dragoverlay statuspage`, giving it an accent
+background at `--dim-opacity` and accent text. But the room history's
+`DragOverlay` wraps the whole room content, and the search pane's empty,
+no-results and error states are `Adw.StatusPage` too — so they all matched.
+
+The rule is now scoped to the overlay's own tree, from
+`src/components/drag_overlay.rs`: `dragoverlay > overlay > revealer >
+statuspage`. Anything inside the wrapped child is a descendant of the
+`dragoverlay` but not on that path. The rule is upstream's, which is the thing
+to know on a rebase.
+
 ## Files
 
 New:
@@ -294,6 +351,8 @@ Integration points, which are where a rebase will conflict:
 | `src/utils/grouping_list_model/mod.rs` | The position conversion fix |
 | `data/resources/stylesheet/_room_history.scss` | Focused-event highlight |
 | `src/shortcuts-dialog.blp` | Search Messages, `<primary>F` |
+| `data/resources/stylesheet/_room_details.scss` | The drop target's `statuspage` rule scoped to `dragoverlay > overlay > revealer > statuspage`. Upstream owns the rule |
+| `commune-core/src/session/room/search.rs` | Where both backends, `index_loaded_events()` and `reindex()` live now; `src/session/room/search.rs` wraps it |
 
 ## Rebase guide
 
@@ -318,7 +377,19 @@ Integration points, which are where a rebase will conflict:
    renamed or reshaped by an SDK bump. Its error type belongs to a crate that
    is not a direct dependency, which is why the result is mapped to `String`
    rather than named.
-6. Any new `.rs` file here calls `gettext`, so it belongs in `po/POTFILES.in`,
+6. The search-time sweep is `index_loaded_events()` in
+   `commune-core/src/session/room/search.rs`, called from `load_local()` and
+   from `reindex()`. It exists because the SDK does not index an event that is
+   decrypted after it is stored. **On an SDK bump, check whether that is still
+   true** — `replace_in_memory_utds()` in the event cache's room state, and
+   whether `search_indexing_task` now hears about redecryptions. If it does,
+   the sweep is redundant but harmless; do not remove it until a test shows a
+   message decrypted late being found without it.
+7. `dragoverlay > overlay > revealer > statuspage` in `_room_details.scss`.
+   The rule is upstream's, and a rebase that takes their version of that file
+   brings back the descendant selector and the accent-purple search pane. The
+   compiler says nothing; only looking at the pane does.
+8. Any new `.rs` file here calls `gettext`, so it belongs in `po/POTFILES.in`,
    alphabetically. `hooks/checks-bin` catches it, but read its message with
    care: the two for that check are swapped, so "Found N file(s) in
    POTFILES.in without translatable strings" in fact means those files _have_
@@ -332,10 +403,15 @@ Integration points, which are where a rebase will conflict:
   instead.
 * Searching state events, membership changes or attachment filenames.
 * Any explanation, in an encrypted room, of _why_ results are limited to what
-  this device has seen. "Re-index This Room" offers the remedy but says nothing
-  about the cause, and a room that has never been scrolled back still cannot
-  find what it never loaded.
-* Re-indexing every room at once, or on upgrade. It is per-room and manual, so
-  a device coming from a build without an index stays mostly unsearchable until
-  each room is visited.
+  this device has seen.
+* Searching what was never loaded. Every search now indexes what the room has
+  loaded, decrypted late or not — so scrolling back and searching works, with
+  no button. But a room that has never been scrolled back still cannot find
+  what it never loaded; nothing paginates on the search's behalf.
+* Re-indexing every room at once, or on upgrade. The sweep is per room, at
+  search time, so a device coming from a build without an index stays
+  unsearchable in a room until that room is searched — which is now the same
+  moment it is needed, rather than a second visit to press a button.
+* A persistent index on Windows. It is in memory there, so every launch starts
+  from nothing and only the history loaded since is searchable.
 * Highlighting the matched terms within a result row.
