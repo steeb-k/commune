@@ -730,6 +730,20 @@ jobs:
           # last step, what the Devel application id is for.
           app="universal/$(basename "$arm64_bundle")"
           echo "COMMUNE_APP=$app" >> "$GITHUB_ENV"
+          # The halves must agree about every file that is not a binary, and
+          # the merge refuses otherwise. A dependency's translation catalogs
+          # are the one thing they legitimately do not: conda-forge builds
+          # glib's per platform, and the nn catalog differed by a string on
+          # 15 October 2026. The x86_64 half takes the arm64 half's catalogs
+          # here, so that the merge sees agreement. `lipo-bundles.sh` has
+          # learned to accept that difference on its own — but a release
+          # re-dispatched for an existing tag builds the tag's checkout, so
+          # it runs the tag's script, and 1.rc5's predates the lesson. This
+          # is what reaches a tag that is already cut.
+          if [ -d "$arm64_bundle/Contents/Resources/share/locale" ]; then
+            rm -rf "$x86_64_bundle/Contents/Resources/share/locale"
+            cp -R "$arm64_bundle/Contents/Resources/share/locale" "$x86_64_bundle/Contents/Resources/share/locale"
+          fi
           bash build-aux/macos/lipo-bundles.sh --arm64 "$arm64_bundle" --x86_64 "$x86_64_bundle" --output "$app"
 
       - name: Sign, notarize and staple
