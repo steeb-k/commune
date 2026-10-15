@@ -58,6 +58,9 @@ timeline, `doc/chat-bubbles.md` for the bubbled timeline layout,
 `doc/room-tags.md` for the order of the favorites,
 `doc/policy-lists.md` for reading the moderation policy rules,
 `doc/guardrails.md` for the small guards from the SDK audit,
+`doc/android-notifications.md` for the Android message notifications,
+`doc/android-room-screen.md` for long press, swipe to reply and Take Photo
+in the Android room,
 and `doc/calls.md` for one-to-one
 voice and video calls — that last one answers every event in its module, and
 its top says which parts have never been put in front of a second client.

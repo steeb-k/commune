@@ -66,6 +66,80 @@ class MainActivity : ComponentActivity() {
             if (uris.isNotEmpty()) state.queueAttachmentsFromUris(uris)
         }
 
+    /// The file the camera app was last asked to fill, until it answers.
+    /// `TakePicture` reports only whether a picture was taken, not where,
+    /// so the activity has to remember the URI it handed over; it is also
+    /// kept across a recreation in `onSaveInstanceState`, because rotating
+    /// the phone inside the camera app recreates this window behind it.
+    private var cameraUri: android.net.Uri? = null
+
+    /// The composer's "Take Photo". A shot that came back goes through
+    /// `queueAttachmentsFromUris` exactly as a picked file does, so it
+    /// lands in the same "Send File?" preview and nothing is sent until
+    /// that is confirmed. A cancelled shot leaves behind the empty file the
+    /// camera was given, and that is removed here rather than left to sit
+    /// in the cache.
+    private val photoTaker =
+        registerForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
+            val uri = cameraUri ?: return@registerForActivityResult
+            cameraUri = null
+            if (taken) {
+                state.queueAttachmentsFromUris(listOf(uri))
+            } else {
+                cameraFile(uri)?.delete()
+            }
+        }
+
+    /// Where the camera's shots are written: under `outgoing/` with every
+    /// other file on its way out, in a directory of its own because it is
+    /// the one directory the FileProvider exposes for writing.
+    private fun cameraDir() = java.io.File(cacheDir, "outgoing/camera")
+
+    /// The file behind a URI this activity minted for the camera: its last
+    /// path segment is the name it was given in `cameraDir()`.
+    private fun cameraFile(uri: android.net.Uri): java.io.File? =
+        uri.lastPathSegment?.let { java.io.File(cameraDir(), it) }
+
+    /// Ask the camera app for one photo, after the CAMERA permission. The
+    /// permission is needed even though this app never touches the camera
+    /// itself: CAMERA is declared in the manifest for calls and the QR
+    /// scanner, and an application that declares it and has not been
+    /// granted it is refused IMAGE_CAPTURE with a SecurityException.
+    private fun takePhoto() {
+        val ensure = state.ensureCameraPermission ?: return
+        ensure { granted ->
+            if (!granted) {
+                state.toast("Taking a photo needs the camera permission")
+                return@ensure
+            }
+            val dir = cameraDir()
+            // The previous shot has long been copied into `outgoing/` by
+            // the time another is taken — `queueAttachmentsFromUris` copies
+            // it on the spot — so the originals are cleared here rather
+            // than tracked until that copy finishes.
+            dir.listFiles()?.forEach { it.delete() }
+            dir.mkdirs()
+            val stamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US)
+                .format(java.util.Date())
+            val file = java.io.File(dir, "IMG_$stamp.jpg")
+            val uri = androidx.core.content.FileProvider
+                .getUriForFile(this, "$packageName.updates", file)
+            cameraUri = uri
+            try {
+                photoTaker.launch(uri)
+            } catch (_: android.content.ActivityNotFoundException) {
+                cameraUri = null
+                file.delete()
+                state.toast("There is no camera app to take a photo with")
+            }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        cameraUri?.let { outState.putString("camera_uri", it.toString()) }
+    }
+
     private val avatarPicker =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let { state.setAvatarFromUri(it) }
@@ -196,6 +270,7 @@ class MainActivity : ComponentActivity() {
         // onCreate, which Android runs after this.
         if (::state.isInitialized) {
             state.pickAttachment = null
+            state.takePhoto = null
             state.pickAvatar = null
             state.pickRoomAvatar = null
             state.pickImagePackFile = null
@@ -214,6 +289,10 @@ class MainActivity : ComponentActivity() {
         // activity to run on.
         state = (application as CommuneApplication).state
         state.pickAttachment = { attachmentPicker.launch(arrayOf("*/*")) }
+        state.takePhoto = { takePhoto() }
+        savedInstanceState?.getString("camera_uri")?.let {
+            cameraUri = android.net.Uri.parse(it)
+        }
         state.pickAvatar = { avatarPicker.launch("image/*") }
         state.pickRoomAvatar = { roomAvatarPicker.launch("image/*") }
         state.pickImagePackFile = { packImagePicker.launch("image/*") }

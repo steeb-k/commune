@@ -7,9 +7,21 @@
     provider exists because the system package installer runs in another
     process and cannot read this application's files by path, so the APK has
     to be offered as a content URI with a one-shot read grant.
+
+    It also serves `outgoing/camera/`, the file a "Take Photo" from the
+    composer's attach menu hands the system camera app to write into. That is
+    the same problem the other way round: the camera runs in another process
+    and cannot write to a path inside this application, so it is given a
+    content URI with a one-shot write grant. It is this provider rather than a
+    second one because two FileProviders in one manifest each need their own
+    subclass, and the authority keeps the name "updates" because Updates.kt
+    and doc/updates.md both name it; it is only a name.
 -->
 <paths>
     <cache-path
         name="updates"
         path="updates/" />
+    <cache-path
+        name="camera"
+        path="outgoing/camera/" />
 </paths>

@@ -16,8 +16,10 @@ Batch facade work inside a chunk into one bindings cycle.
 ## 1. Pusher privacy (tiny — do first)
 
 Keep pushing full content (the gateway hop is TLS), and let the OS
-redact: both notification builders (`Notifier.build`, `Push.
-postFromPayload`) set `setVisibility(VISIBILITY_PRIVATE)` and a
+redact: the notification builder (`postRoomMessage` in
+`MessageNotifications.kt` since 15 Oct, which both `Notifier.update` and
+`Push.kt` post through — `doc/android-notifications.md`) sets
+`setVisibility(VISIBILITY_PRIVATE)` and a
 `setPublicVersion(...)` notification that says only "New message" with
 the app name. Android shows the public version on the lock screen when
 the user hides sensitive content, the full one otherwise. Verify on the

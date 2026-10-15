@@ -90,6 +90,10 @@ class CommuneState(context: Context) {
     /// Set by the activity: opens the system file picker for an attachment.
     var pickAttachment: (() -> Unit)? = null
 
+    /// Set by the activity: hands the system camera app a file to fill,
+    /// and queues the shot through `queueAttachmentsFromUris` like a pick.
+    var takePhoto: (() -> Unit)? = null
+
     /// Set by the activity: opens the QR scanner for verification.
     var scanQrCode: (() -> Unit)? = null
 
@@ -396,8 +400,6 @@ class CommuneState(context: Context) {
             val list = app.sessions()
             main.post {
                 accounts = list
-                // Notification bookkeeping is per-account.
-                notifier.accountKey = list.find { it.active }?.sessionId.orEmpty()
             }
         }
     }

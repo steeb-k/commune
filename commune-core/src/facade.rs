@@ -655,6 +655,22 @@ pub struct FfiRoom {
     /// room list carried before the message that raised the count settled.
     /// The embedder uses this to keep our own message out of the preview.
     pub latest_event_is_own: bool,
+    /// The event ID of the latest message, when one is known and readable.
+    ///
+    /// The body alone cannot say which message it is: two people can send
+    /// the same "ok", and a body seen twice is either the same message seen
+    /// on two syncs or a new one. The embedder announces messages by this ID
+    /// so that a message it has already shown — from a push or from an
+    /// earlier sync — is never raised a second time.
+    pub latest_event_id: Option<String>,
+    /// When the server received the latest message, in milliseconds since
+    /// the Unix epoch, or 0 when there is no readable latest message.
+    ///
+    /// This is the message's own `origin_server_ts`, not the room's
+    /// `latest_activity`, which also moves for state changes and our own
+    /// sends. The embedder uses it to drop a preview older than the newest
+    /// message it has already announced for the room.
+    pub latest_event_timestamp: u64,
     /// Whether the room is encrypted.
     pub is_encrypted: bool,
 }
@@ -677,7 +693,9 @@ impl From<&Room> for FfiRoom {
             topic: room.topic(),
             latest_event_sender: latest.as_ref().map(|preview| preview.sender.clone()),
             latest_event_body: latest.as_ref().map(|preview| preview.body.clone()),
-            latest_event_is_own: latest.is_some_and(|preview| preview.is_own),
+            latest_event_is_own: latest.as_ref().is_some_and(|preview| preview.is_own),
+            latest_event_id: latest.as_ref().map(|preview| preview.event_id.clone()),
+            latest_event_timestamp: latest.map_or(0, |preview| preview.timestamp),
             is_encrypted: room.is_encrypted(),
         }
     }
@@ -692,6 +710,10 @@ struct LatestPreview {
     body: String,
     /// Whether our own user sent it.
     is_own: bool,
+    /// Its event ID.
+    event_id: String,
+    /// Its `origin_server_ts`, in milliseconds since the Unix epoch.
+    timestamp: u64,
 }
 
 /// The room's latest message, when the stored latest event is a readable
@@ -709,6 +731,8 @@ fn latest_preview(room: &Room) -> Option<LatestPreview> {
         sender: message.sender.to_string(),
         body: message.content.msgtype.body().to_owned(),
         is_own,
+        event_id: message.event_id.to_string(),
+        timestamp: message.origin_server_ts.0.into(),
     })
 }
 

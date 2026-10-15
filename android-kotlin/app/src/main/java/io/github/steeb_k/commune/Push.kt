@@ -5,8 +5,9 @@
 //
 // The homeserver pushes through the distributor's Matrix gateway (ntfy
 // serves one at /_matrix/push/v1/notify), and the payload it delivers is
-// the gateway notification itself — enough to post from directly, no
-// sync required while the app sleeps.
+// the gateway notification itself. A message push is shown from the event
+// it names, fetched on the device — no sync required while the app sleeps
+// — and from the payload only when that fetch breaks.
 package io.github.steeb_k.commune
 
 import android.app.Notification
@@ -148,55 +149,74 @@ private fun postFromPayload(context: Context, payload: String) {
     val body = notification?.optJSONObject("content")?.optString("body")
         ?.takeIf { it.isNotBlank() }
 
-    // An encrypted room's push carries ciphertext and no body: the event
-    // is fetched and decrypted on the device, as the GTK Android build
-    // does, and shown from what it says. That takes a request, so it
-    // leaves this callback for a thread of its own.
-    if (body == null || eventType == "m.room.encrypted") {
-        thread {
-            val app = (context.applicationContext as CommuneApplication).state.app
-            var failed = false
-            val words = try {
-                runBlocking { app.fetchPushedNotification(roomId, eventId) }
-            } catch (_: Exception) {
-                failed = true
-                null
-            }
-            when {
-                // The fetch itself broke: say what the payload allows.
-                words == null && failed ->
-                    postMessage(context, roomId, roomName ?: senderName ?: senderId ?: "Commune", null, "New message")
-                // Nothing to show: filtered, redacted, gone, or a call.
-                words == null -> {}
-                // Our own message from another device is not news.
-                words.isOwn -> {}
-                else -> {
-                    val sentence = pushedSentence(words)
-                    // An emote already reads as the sender followed by
-                    // the body; naming them again would double it.
-                    val from = if (words.body is FfiNotificationBody.Emote) {
-                        null
-                    } else {
-                        senderPerson(app, roomId, words.senderId, words.senderName)
-                    }
-                    postMessage(context, roomId, words.roomName, from, sentence, words.isDirect)
-                }
-            }
-        }
-        return
-    }
-
-    // A push names the room only when it is not a direct chat; one
-    // without a room name is taken as direct, its sender the title. The
-    // sender is looked up as the room's member — their current name and
-    // picture, keyed by ID like the sidebar's posts — which reads the
-    // store, so it leaves this callback too.
-    val direct = roomName == null
+    // Every message push is fetched, not only the encrypted ones whose
+    // payload carries ciphertext: the fetched event is what has a
+    // timestamp, which the bookkeeping shared with the sidebar's counts
+    // orders announcements by, and it names the sender and the room the
+    // way the sidebar does. Element X fetches every pushed event the same
+    // way. The payload's own body is the fallback for when the fetch
+    // breaks. Fetching takes a request, so it leaves this callback for a
+    // thread of its own.
     thread {
         val app = (context.applicationContext as CommuneApplication).state.app
-        val from = senderId?.let { senderPerson(app, roomId, it, senderName) }
-        val title = roomName ?: from?.name?.toString() ?: "Commune"
-        postMessage(context, roomId, title, from, body, direct)
+        var failed = false
+        val words = try {
+            runBlocking { app.fetchPushedNotification(roomId, eventId) }
+        } catch (_: Exception) {
+            failed = true
+            null
+        }
+        // Asked for after the fetch, which is what waits for the session.
+        val account = app.sessionUserId().orEmpty()
+        when {
+            // The fetch itself broke: say what the payload allows, stamped
+            // with now since it carries no time of its own. A late sync
+            // preview of the same message is then older and stays quiet.
+            words == null && failed -> {
+                if (!AnnouncedMessages.claim(context, account, roomId, eventId, System.currentTimeMillis())) {
+                    return@thread
+                }
+                if (body != null) {
+                    // A push names the room only when it is not a direct
+                    // chat; one without a room name is taken as direct, its
+                    // sender the title.
+                    val from = senderId?.let { senderPerson(app, roomId, it, senderName) }
+                    val title = roomName ?: from?.name?.toString() ?: "Commune"
+                    postRoomMessage(context, roomId, title, roomName == null, from, body, null)
+                } else {
+                    postRoomMessage(
+                        context,
+                        roomId,
+                        roomName ?: senderName ?: senderId ?: "Commune",
+                        false,
+                        null,
+                        "New message",
+                        null,
+                    )
+                }
+            }
+            // Nothing to show: filtered, redacted, gone, or a call.
+            words == null -> {}
+            // Our own message from another device is not news.
+            words.isOwn -> {}
+            else -> {
+                val timestamp = words.timestamp.toLong()
+                if (!AnnouncedMessages.claim(context, account, roomId, eventId, timestamp)) {
+                    return@thread
+                }
+                val sentence = pushedSentence(words)
+                // An emote already reads as the sender followed by the
+                // body; naming them again would double it.
+                val from = if (words.body is FfiNotificationBody.Emote) {
+                    null
+                } else {
+                    senderPerson(app, roomId, words.senderId, words.senderName)
+                }
+                // The push does not carry the room's count; the shade's
+                // figure plus one stands in until the next sync.
+                postRoomMessage(context, roomId, words.roomName, words.isDirect, from, sentence, null, timestamp)
+            }
+        }
     }
 }
 
@@ -236,17 +256,4 @@ private fun pushedSentence(words: FfiPushedNotification): String = when (val bod
             "Incoming call from ${words.senderName}. Use another client to answer."
         }
     }
-}
-
-/// Add one message to the room's notification, in the conversation
-/// shape every message notification takes.
-private fun postMessage(
-    context: Context,
-    roomId: String,
-    title: String,
-    sender: android.app.Person?,
-    text: String,
-    isDirect: Boolean = false,
-) {
-    postRoomMessage(context, roomId, title, isDirect, sender, text)
 }

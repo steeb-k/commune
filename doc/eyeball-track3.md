@@ -375,9 +375,12 @@ The message, invite and call bodies are the core's `NotificationBody`;
 the sentences are unchanged.
 
 * [ ] **A text, an image, an emote.** With the room in the background, have
-      bob send a text, an image and an emote in a group room: three
-      notifications, the text prefixed with his name, the image saying he
-      sent an image, the emote reading as his name followed by the body.
+      bob send a text, an image and an emote in a group room: on the
+      desktop three notifications, the text prefixed with his name, the
+      image saying he sent an image, the emote reading as his name followed
+      by the body. On the phone, since 15 October 2026, one notification
+      showing the newest — the emote — with "2 more messages" above it; the
+      shape is `doc/android-notifications.md`.
 * [ ] **In a direct room, no name.** The same three in the direct chat: the
       text has no name prefix, the others read as before.
 * [ ] **An invite's notification.** Bob invites alice to a room: the

@@ -10,6 +10,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.translate
+import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -115,6 +121,10 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
                 items = state.timeline,
                 modifier = Modifier.weight(1f),
                 onOpenThread = { state.openThread(it) },
+                // Only the room's own timeline swipes to reply: the reply it
+                // arms is the one the room composer sends. A thread's
+                // composer and the pinned list have no use for it.
+                onSwipeReply = { state.startReply(it) },
                 live = true,
             )
         }
@@ -131,6 +141,7 @@ fun RoomScreen(state: CommuneState, room: FfiRoom) {
                     onSend = { state.sendFromComposer(it) },
                     onTyping = { state.setTyping(it) },
                     onAttach = state.pickAttachment,
+                    onTakePhoto = state.takePhoto,
                     onGif = { state.openGifPicker() },
                     onVoice = { state.startVoiceRecording() },
                     onLocation = { state.shareLocation() },
@@ -741,6 +752,7 @@ internal fun Timeline(
     items: List<FfiTimelineItem>,
     modifier: Modifier,
     onOpenThread: ((String) -> Unit)? = null,
+    onSwipeReply: ((FfiTimelineItem.Event) -> Unit)? = null,
     live: Boolean = false,
 ) {
     val listState = rememberLazyListState()
@@ -911,6 +923,7 @@ internal fun Timeline(
                             item,
                             showHeader = item.sender != previousSender,
                             onOpenThread = onOpenThread,
+                            onSwipeReply = onSwipeReply,
                             gallery = items,
                         )
                     } else {
@@ -1042,6 +1055,102 @@ internal fun stateSentence(event: FfiTimelineItem.Event): String {
     }
 }
 
+/// Swipe a message towards the end edge to reply to it, as WhatsApp,
+/// Telegram and Signal all do: the row follows the finger, a reply arrow
+/// fades in at the start edge behind it, the phone ticks once when the
+/// swipe has gone far enough to count, and letting go there arms the reply
+/// before the row springs back. Letting go short of it does nothing.
+///
+/// Only horizontal drags are claimed, so the timeline above still scrolls
+/// on a vertical one; a drag that starts on a code block's own sideways
+/// scroll moves the code rather than the message, which is the right
+/// winner. The distance is tracked from the start edge, so in a
+/// right-to-left layout the swipe and the arrow both mirror.
+///
+/// With [onReply] null this is no modifier at all — no drag handler, no
+/// drawing — which is what keeps the thread view, the pinned list and
+/// selection mode exactly as they were.
+@Composable
+private fun Modifier.swipeToReply(key: String, onReply: (() -> Unit)?): Modifier {
+    if (onReply == null) return this
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val rtl = androidx.compose.ui.platform.LocalLayoutDirection.current ==
+        androidx.compose.ui.unit.LayoutDirection.Rtl
+    val currentOnReply by androidx.compose.runtime.rememberUpdatedState(onReply)
+    // Past 64dp the swipe counts; the row follows the finger one for one up
+    // to there and then at a third of the pace, stopping at 96dp, so the
+    // point of no return is felt as the row getting heavier.
+    val threshold = with(density) { 64.dp.toPx() }
+    val limit = with(density) { 96.dp.toPx() }
+    // The finger's travel, and the row's, which lags it past the threshold.
+    var travel by remember(key) { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    var shown by remember(key) { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    var armed by remember(key) { mutableStateOf(false) }
+    val arrow = androidx.compose.ui.graphics.vector.rememberVectorPainter(
+        Icons.AutoMirrored.Filled.Reply
+    )
+    val arrowTint = MaterialTheme.colorScheme.primary
+    val arrowSize = with(density) { 24.dp.toPx() }
+    val arrowInset = with(density) { 20.dp.toPx() }
+
+    val dragState = androidx.compose.foundation.gestures.rememberDraggableState { delta ->
+        travel = (travel + delta).coerceAtLeast(0f)
+        shown = if (travel <= threshold) {
+            travel
+        } else {
+            (threshold + (travel - threshold) / 3f).coerceAtMost(limit)
+        }
+        val past = shown >= threshold
+        if (past && !armed) {
+            haptics.performHapticFeedback(
+                androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress
+            )
+        }
+        armed = past
+    }
+
+    return this
+        // Drawn before the offset, so the arrow stays where the row was and
+        // is uncovered as the row moves away from it.
+        .drawBehind {
+            val progress = (shown / threshold).coerceIn(0f, 1f)
+            if (progress > 0f) {
+                val x = if (rtl) size.width - arrowInset - arrowSize else arrowInset
+                translate(left = x, top = (size.height - arrowSize) / 2f) {
+                    with(arrow) {
+                        draw(
+                            androidx.compose.ui.geometry.Size(arrowSize, arrowSize),
+                            alpha = progress,
+                            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(arrowTint),
+                        )
+                    }
+                }
+            }
+        }
+        .draggable(
+            state = dragState,
+            orientation = androidx.compose.foundation.gestures.Orientation.Horizontal,
+            reverseDirection = rtl,
+            onDragStopped = {
+                if (armed) currentOnReply()
+                armed = false
+                travel = 0f
+                androidx.compose.animation.core.animate(shown, 0f) { value, _ ->
+                    shown = value
+                }
+            },
+        )
+        // The lambda form of offset is not mirrored for right-to-left
+        // layouts the way the Dp form is, so the end edge is named here.
+        .offset {
+            androidx.compose.ui.unit.IntOffset(
+                if (rtl) -shown.roundToInt() else shown.roundToInt(),
+                0,
+            )
+        }
+}
+
 /// One message bubble, per doc/chat-bubbles.md: 12dp radius, own messages
 /// accent at 25% on the right with the timestamp outermost, others neutral
 /// on the left.
@@ -1053,6 +1162,10 @@ internal fun MessageBubble(
     event: FfiTimelineItem.Event,
     showHeader: Boolean,
     onOpenThread: ((String) -> Unit)? = null,
+    // Swiping the message towards the end edge arms a reply to it, the
+    // gesture every other chat application has taught people. Null where a
+    // reply would go nowhere, so the bubble does not move at all there.
+    onSwipeReply: ((FfiTimelineItem.Event) -> Unit)? = null,
     // The list the bubble sits in: a picture opens with the list's other
     // pictures a swipe away.
     gallery: List<FfiTimelineItem> = emptyList(),
@@ -1082,8 +1195,40 @@ internal fun MessageBubble(
         event.kind !is FfiEventKind.Location
 
     val selected = state.selectMode && event.uniqueId in state.selectedIds
+
+    // What a long press on the message does, wherever on it the finger
+    // lands. The picture, the video, the map and the link card all answer a
+    // tap of their own, and a plain clickable on a child takes the whole
+    // gesture — long press included — so the bubble's own handler never
+    // heard it and the only way to reach "Save to Downloads" for a picture
+    // was to find the sliver of bubble around it. Every one of those
+    // children now hands its long press here instead.
+    val onBubbleLongPress: () -> Unit = {
+        if (state.selectMode) {
+            state.toggleSelected(event.uniqueId)
+        } else {
+            state.showActionSheet(event)
+        }
+    }
+    // A child's tap, for the same reason: while messages are being
+    // selected, a tap anywhere on one selects it, as a tap on the bubble's
+    // padding already did, rather than opening the picture underneath.
+    val childTap: (() -> Unit) -> () -> Unit = { open ->
+        {
+            if (state.selectMode) state.toggleSelected(event.uniqueId) else open()
+        }
+    }
+
+    val swipeReply: (() -> Unit)? = if (
+        onSwipeReply != null && event.eventId != null && !state.selectMode && !muted
+    ) {
+        { onSwipeReply(event) }
+    } else {
+        null
+    }
     Row(
         modifier = Modifier
+            .swipeToReply(event.uniqueId, swipeReply)
             .fillMaxWidth()
             .background(
                 if (selected) {
@@ -1110,13 +1255,7 @@ internal fun MessageBubble(
                         onClick = {
                             if (state.selectMode) state.toggleSelected(event.uniqueId)
                         },
-                        onLongClick = {
-                            if (state.selectMode) {
-                                state.toggleSelected(event.uniqueId)
-                            } else {
-                                state.showActionSheet(event)
-                            }
-                        },
+                        onLongClick = onBubbleLongPress,
                     )
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalAlignment = if (own) Alignment.End else Alignment.Start,
@@ -1195,7 +1334,10 @@ internal fun MessageBubble(
                             modifier = Modifier
                                 .padding(bottom = 4.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { state.openMediaPlayer(event.uniqueId) },
+                                .combinedClickable(
+                                    onClick = childTap { state.openMediaPlayer(event.uniqueId) },
+                                    onLongClick = onBubbleLongPress,
+                                ),
                             contentAlignment = Alignment.Center,
                         ) {
                             MediaImage(
@@ -1228,7 +1370,10 @@ internal fun MessageBubble(
                                 .padding(bottom = 4.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .clickable { state.openMediaPlayer(event.uniqueId) }
+                                .combinedClickable(
+                                    onClick = childTap { state.openMediaPlayer(event.uniqueId) },
+                                    onLongClick = onBubbleLongPress,
+                                )
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                         ) {
                             Icon(
@@ -1274,9 +1419,12 @@ internal fun MessageBubble(
                                 .fillMaxWidth()
                                 .heightIn(max = 420.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable {
-                                    state.openTimelineImage(gallery, event.uniqueId, path)
-                                }
+                                .combinedClickable(
+                                    onClick = childTap {
+                                        state.openTimelineImage(gallery, event.uniqueId, path)
+                                    },
+                                    onLongClick = onBubbleLongPress,
+                                )
                                 .padding(bottom = 4.dp),
                         )
                     }
@@ -1356,10 +1504,25 @@ internal fun MessageBubble(
                         ShieldIcon(shield)
                     }
                 }
-                event.previewUrl?.let { url -> UrlPreviewCard(state, url) }
+                event.previewUrl?.let { url ->
+                    UrlPreviewCard(state, url, onLongClick = onBubbleLongPress)
+                }
 
                 (event.kind as? FfiEventKind.Location)?.let { location ->
                     val context = androidx.compose.ui.platform.LocalContext.current
+                    val openInMaps = childTap {
+                        try {
+                            context.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse(location.geoUri),
+                                )
+                            )
+                        } catch (_: Exception) {
+                            // No maps app; the coordinates in the body are
+                            // all there is to offer.
+                        }
+                    }
                     // The place itself, the way the GTK location viewer shows
                     // it. Tapping either the map or the row below opens it in
                     // whatever maps application is installed.
@@ -1367,18 +1530,10 @@ internal fun MessageBubble(
                         location.geoUri,
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable {
-                                try {
-                                    context.startActivity(
-                                        android.content.Intent(
-                                            android.content.Intent.ACTION_VIEW,
-                                            android.net.Uri.parse(location.geoUri),
-                                        )
-                                    )
-                                } catch (_: Exception) {
-                                    // No maps app; the row below still shows.
-                                }
-                            },
+                            .combinedClickable(
+                                onClick = openInMaps,
+                                onLongClick = onBubbleLongPress,
+                            ),
                     )
                     Spacer(Modifier.size(4.dp))
                     Row(
@@ -1386,19 +1541,10 @@ internal fun MessageBubble(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .clickable {
-                                try {
-                                    context.startActivity(
-                                        android.content.Intent(
-                                            android.content.Intent.ACTION_VIEW,
-                                            android.net.Uri.parse(location.geoUri),
-                                        )
-                                    )
-                                } catch (_: Exception) {
-                                    // No maps app; the coordinates in the body
-                                    // are all there is to offer.
-                                }
-                            }
+                            .combinedClickable(
+                                onClick = openInMaps,
+                                onLongClick = onBubbleLongPress,
+                            )
                             .padding(horizontal = 10.dp, vertical = 8.dp),
                     ) {
                         Icon(
@@ -1818,6 +1964,9 @@ internal fun Composer(
     onSend: (String) -> Unit,
     onTyping: (Boolean) -> Unit,
     onAttach: (() -> Unit)? = null,
+    // A photo from the system camera app, which comes back through the
+    // same "Send File?" preview a picked file does.
+    onTakePhoto: (() -> Unit)? = null,
     onGif: (() -> Unit)? = null,
     onVoice: (() -> Unit)? = null,
     onLocation: (() -> Unit)? = null,
@@ -1958,10 +2107,21 @@ internal fun Composer(
         verticalAlignment = Alignment.Bottom,
     ) {
         var attachMenuOpen by remember { mutableStateOf(false) }
+        // When the menu last closed on a tap outside it. A popup that does
+        // not take focus also does not swallow that tap: it goes on to
+        // whatever is under it, and when that is this button, the menu
+        // closed by the press would be opened again by the release. A press
+        // on the button that lands within a moment of an outside dismissal
+        // is read as "close the menu", which is what was meant.
+        var attachMenuDismissedAt by remember { mutableStateOf(0L) }
         Box {
             IconButton(
-                onClick = { attachMenuOpen = true },
-                enabled = onAttach != null || onLocation != null,
+                onClick = {
+                    val justDismissed =
+                        android.os.SystemClock.uptimeMillis() - attachMenuDismissedAt < 300
+                    if (!justDismissed) attachMenuOpen = true
+                },
+                enabled = onAttach != null || onTakePhoto != null || onLocation != null,
             ) {
                 Icon(
                     androidx.compose.ui.res.painterResource(
@@ -1970,9 +2130,29 @@ internal fun Composer(
                     contentDescription = "Attach",
                 )
             }
+            // The menu does not take focus. A DropdownMenu is a popup window,
+            // and a focusable one takes window focus from the activity when
+            // it opens; the text field loses it, the keyboard closes, the
+            // `imePadding()` on the room's column collapses, and the
+            // composer drops to the bottom of the screen — taking the menu,
+            // which hangs off the attach button, down with it, so it ends up
+            // somewhere other than where the user just tapped. Left
+            // unfocused, the keyboard stays up and the menu opens where the
+            // button is. It still closes on a tap outside it and on choosing
+            // an item. What it gives up is the back key, which a
+            // non-focusable window never receives; with the keyboard up the
+            // first back closes the keyboard anyway, and with it down the
+            // back goes to the room, which leaves it and the menu together.
             androidx.compose.material3.DropdownMenu(
                 expanded = attachMenuOpen,
-                onDismissRequest = { attachMenuOpen = false },
+                onDismissRequest = {
+                    attachMenuOpen = false
+                    attachMenuDismissedAt = android.os.SystemClock.uptimeMillis()
+                },
+                properties = androidx.compose.ui.window.PopupProperties(
+                    focusable = false,
+                    dismissOnClickOutside = true,
+                ),
             ) {
                 if (onAttach != null) {
                     androidx.compose.material3.DropdownMenuItem(
@@ -1980,6 +2160,15 @@ internal fun Composer(
                         onClick = {
                             attachMenuOpen = false
                             onAttach()
+                        },
+                    )
+                }
+                if (onTakePhoto != null) {
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Take Photo") },
+                        onClick = {
+                            attachMenuOpen = false
+                            onTakePhoto()
                         },
                     )
                 }
