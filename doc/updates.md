@@ -469,7 +469,12 @@ SASS compiler, codesign was being handed the bundle's main executable before
 the dylibs it encloses, the two halves legitimately differ by one library, the
 discarded ad-hoc signature looked like a divergence, and the `.p12` was
 written in a format Apple cannot read. One of the eight was a bad edit of mine
-that shipped half a fix.
+that shipped half a fix. A ninth came on 15 October 2026, with 1.rc5: the two
+halves' glib translation catalogs for one locale differed by a string, and the
+merge, which refuses any non-binary difference, stopped the release with every
+platform built. Catalogs under `share/locale` are now taken from the arm64
+half with a notice; the release was re-dispatched for the same tag from the
+fixed workflow, which is what `workflow_dispatch` on `release.yml` is for.
 
 **Released, on 12 and 13 September 2026.** `v1.rc1`, `v1.rc2` and `v1.rc3`
 went out through `release.yml`; the `updates` branch exists and carries the

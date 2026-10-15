@@ -74,8 +74,24 @@ while IFS= read -r -d '' file; do
         *)
             # Not a binary. It must be byte-for-byte what the other build
             # produced, or the two builds are not the same build.
+            #
+            # Except a dependency's translation catalog. conda-forge builds
+            # glib's catalogs on each platform, and on 15 October 2026 the
+            # two halves' `nn/LC_MESSAGES/glib20.mo` differed by a string,
+            # which stopped the 1.rc5 release at this line. A catalog is
+            # data the program reads by language at runtime; either half's
+            # copy is a correct one, and a mismatch between them says
+            # nothing about the build. The arm64 half's copy is the one
+            # already in place, so it is the one kept, and said so.
             if [ -f "$other" ] && ! cmp -s "$file" "$other"; then
-                die "the two builds disagree about $relative, which is not a binary"
+                case "$relative" in
+                    Contents/Resources/share/locale/*/LC_MESSAGES/*.mo)
+                        printf 'lipo-bundles: translation catalogs differ, kept arm64 copy: %s\n' "$relative" >&2
+                        ;;
+                    *)
+                        die "the two builds disagree about $relative, which is not a binary"
+                        ;;
+                esac
             fi
 
             copied=$((copied + 1))
