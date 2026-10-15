@@ -483,7 +483,11 @@ dispatched, but builds and runs the scripts of the tag's checkout, so a fix in
 **Released, on 12 and 13 September 2026.** `v1.rc1`, `v1.rc2` and `v1.rc3`
 went out through `release.yml`; the `updates` branch exists and carries the
 `rc` feed. The third of those sat as a draft for six hours after a green run,
-which is what `publish-release.sh` now exists to refuse.
+which is what `publish-release.sh` now exists to refuse. `v1.rc5` went out on
+15 October 2026 on the third run for its tag — the first two stopped at the
+macOS merge, above — with all seven assets on the release and the `rc` feed at
+1.0.0-rc5, build 4014, signed; that cost three full builds, which is why the
+assemble-and-publish workflow described under _Continuous integration_ exists.
 
 **Seen updating itself, on 13 September 2026.** Three of the four paths, each
 on a real installation, driven through the application's own rows:
