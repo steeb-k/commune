@@ -37,6 +37,15 @@
 # that already built every platform. A failure after the platform builds used
 # to cost all five again; on 15 October 2026 it cost them three times, ninety
 # minutes each, for a merge step that takes seconds. See `doc/updates.md`.
+#
+# # Which caches save, and from where
+#
+# Only a run on `main` writes a cache; every other run reads `main`'s. GitHub
+# scopes a cache to the ref that saved it, and a tag push or a branch can read
+# its own and the default branch's but nothing else's — so the v1.rc5 tag
+# push saved 2.5 GB that no later run could ever read, and the repository is
+# over its 10 GB ceiling, where every save evicts the least recently used
+# entry. A cache that only one run can read is a cost to every other.
 name: build
 
 on:
@@ -101,13 +110,29 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Gradle's own cache: the distribution the wrapper downloads and every
+      # plugin and library it resolves, part of the four and a half minutes
+      # Gradle took starting cold every time. Written from `main` only, like
+      # every cache in this file — the action's own default is nearly that,
+      # spelled out so the rule reads the same everywhere — and pruned of
+      # what a build no longer uses before it is saved, so the entry does not
+      # grow without end.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,x86_64-linux-android
 
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: android
+          # Renamed from `android` so that the first run on `main` saves:
+          # the old key restores as a full match, and rust-cache never saves
+          # over a full match, so the registry-only entry it holds would have
+          # been kept until the lock file next changed. See the build step.
+          shared-key: android-core
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install cargo-ndk
         run: cargo install --locked cargo-ndk
@@ -127,6 +152,13 @@ jobs:
           # spent producing debug info is a minute spent on bytes that are
           # thrown away.
           CARGO_PROFILE_RELEASE_DEBUG: 'false'
+          # Into the workspace's `target`, which is the directory rust-cache
+          # saves. `build-core.sh` defaults to one under the home directory
+          # for a developer's machine, so the cache above held the registry
+          # and nothing else: on 15 October 2026 it restored as a full match
+          # and the core still compiled four hundred crates, ten minutes of
+          # the job.
+          CARGO_TARGET_DIR: ${{ github.workspace }}/target
         # arm64 only: it is the one ABI the release variant packages, and
         # building the emulator's as well doubles the slowest step here.
         run: cd android-kotlin && ./build-core.sh --release --arm64
@@ -244,6 +276,10 @@ jobs:
           bundle: io.github.steeb_k.Commune.flatpak
           manifest-path: ${{ inputs.meson-profile == 'default' && 'build-aux/io.github.steeb_k.Commune.json' || 'build-aux/io.github.steeb_k.Commune.Devel.json' }}
           cache-key: flatpak-${{ hashFiles('build-aux/*.json') }}
+          # Read everywhere, written from `main` only — see the top of this
+          # file. The tag push for v1.rc5 saved a second copy of this, 437 MB
+          # in a scope nothing else can read.
+          save-cache: ${{ github.ref == 'refs/heads/main' }}
 
       # The repository the bundle above was made from, for apps.kznjk.com.
       # Only a release's: `release.yml` attaches it, and steeb-k/kznjk-flatpak
@@ -390,6 +426,14 @@ jobs:
         with:
           msystem: UCRT64
           update: true
+          # Off. The action's package cache is keyed on the package files
+          # themselves, and MSYS2 is a rolling release, so nearly every run
+          # saved a new 470 MB entry: three of them were in the cache on 15
+          # October 2026, two from that day alone, in a repository already
+          # past GitHub's 10 GB ceiling and evicting. What it saved was the
+          # download of packages from a mirror, a minute or so; what it cost
+          # was a fifth of the space every other cache here competes for.
+          cache: false
           # The list from doc/windows.md. MSYS2 is a rolling release with no
           # pinning mechanism, which is a real risk for a release build: GTK
           # can move underneath the port without a commit changing here. The
@@ -412,6 +456,16 @@ jobs:
             mingw-w64-ucrt-x86_64-ntldd mingw-w64-ucrt-x86_64-icoutils
             git
 
+      - name: Which compiler
+        # MSYS2's rustc, which moves whenever the rolling release does. Its
+        # version is part of the cache key below because a build directory
+        # from another compiler is worth nothing — cargo recompiles every
+        # crate in it — and restoring one only to rebuild it costs the
+        # download and then saves a bigger entry.
+        id: rustc
+        shell: msys2 {0}
+        run: echo "version=$(rustc -vV | sha256sum | cut -c1-12)" >> "$GITHUB_OUTPUT"
+
       - name: Restore the Cargo registry and the build
         id: windows-cache
         uses: actions/cache/restore@v4
@@ -419,12 +473,25 @@ jobs:
           # `CARGO_HOME` stays the default one on purpose: doc/windows.md
           # records that rooting it inside the build directory pushes the
           # SDK's test fixtures past the path limit.
+          #
+          # `_build/cargo-target`, not `target`. Meson points CARGO_TARGET_DIR
+          # inside its own build directory, so `target` was always empty and
+          # this cache held the registry alone: the 15 October 2026 release
+          # restored nothing compiled and spent fifty-nine minutes compiling.
+          # Meson is content to set up a build directory that exists already
+          # and holds only this.
+          #
+          # `~/.cargo/bin` and its two manifests are there for grass, which
+          # `cargo install` otherwise compiles again every run.
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: windows-${{ inputs.windows-profile }}-${{ hashFiles('Cargo.lock') }}
-          restore-keys: windows-${{ inputs.windows-profile }}-
+            ~/.cargo/bin
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            _build/cargo-target
+          key: windows-${{ inputs.windows-profile }}-${{ steps.rustc.outputs.version }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: windows-${{ inputs.windows-profile }}-${{ steps.rustc.outputs.version }}-
 
       - name: Install grass
         # The stylesheet compiler: a cargo binary rather than an MSYS2
@@ -458,13 +525,24 @@ jobs:
         # Saving here rather than at the end is also what keeps a half-built
         # tree from being cached: this only runs because the bundle step
         # before it succeeded.
-        if: always() && steps.windows-cache.outputs.cache-hit != 'true'
+        #
+        # From `main` only, like every cache in this file. A tag push saving
+        # here put a copy in the tag's scope, which nothing but a re-run of
+        # that same tag push can read — and the re-dispatch that followed it
+        # on 15 October 2026 ran from `main`, could not see it, and missed.
+        if: >-
+          always()
+          && steps.windows-cache.outputs.cache-hit != 'true'
+          && github.ref == 'refs/heads/main'
         uses: actions/cache/save@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
+            ~/.cargo/bin
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            _build/cargo-target
           key: ${{ steps.windows-cache.outputs.cache-primary-key }}
 
       - name: Sign in to Azure again
@@ -565,25 +643,47 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      - name: Which month
+        # Part of the environment's cache key, so that it is rebuilt once a
+        # month even when the script has not changed. The packages it
+        # installs are not pinned — conda-forge resolves them fresh — and a
+        # cache that was only ever replaced by an edit to the script would
+        # keep a month-old OpenSSL and GLib for as long as nobody touched it.
+        id: month
+        run: echo "month=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+
       - name: Restore the conda environment and the from-source libraries
         id: conda-cache
         uses: actions/cache/restore@v4
         with:
-          # The three from-source projects — libsrtp2, libnice and a rebuilt
-          # gst-plugins-bad — are the slow part of the setup and are pinned by
-          # version, so they are identical on every run until a pin changes.
+          # The from-source projects — blueprint-compiler, gst-plugin-gtk4,
+          # libsrtp2, libnice and a rebuilt gst-plugins-bad — are the slow
+          # part of the setup and are pinned by version, so they are
+          # identical on every run until a pin changes.
           path: .conda-gtk
-          key: conda-${{ matrix.arch }}-${{ hashFiles('build-aux/macos/setup-conda-macos.sh') }}
+          key: conda-${{ matrix.arch }}-${{ steps.month.outputs.month }}-${{ hashFiles('build-aux/macos/setup-conda-macos.sh') }}
 
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: macos-${{ matrix.arch }}
-          # A build that fails has still compiled several hundred
-          # dependencies, and throwing those away means the next attempt at
-          # the same bug pays for them again.
-          cache-on-failure: true
+          # Meson's target directory, not the workspace's `target`. Meson
+          # sets CARGO_TARGET_DIR inside its build directory, so for as long
+          # as this cache pointed at `target` it saved the registry and
+          # cargo-c and not one compiled crate — on 15 October 2026 the arm64
+          # half restored a full match and compiled 969 crates regardless.
+          workspaces: '. -> _build/cargo-target'
+          # By profile, because a nightly is a debug build and a release is
+          # not: one key for both meant whichever saved first was restored as
+          # a full match by the other, which then compiled everything and
+          # could not save, since rust-cache never saves over a full match.
+          shared-key: macos-${{ matrix.arch }}-${{ inputs.meson-profile }}
+          # `cache-on-failure` is gone for the same rule. A half that failed
+          # early saved a nearly empty directory under the very key a
+          # successful build would have used, and every later run restored
+          # that as a full match and declined to replace it.
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install micromamba
+        if: steps.conda-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p "$PWD/bin"
           curl -Ls "https://micro.mamba.pm/api/micromamba/${{ matrix.conda-platform }}/latest" | tar -xvjO bin/micromamba > "$PWD/bin/micromamba"
@@ -591,10 +691,16 @@ jobs:
           echo "COMMUNE_CONDA_BIN=$PWD/bin/micromamba" >> "$GITHUB_ENV"
 
       - name: Build the environment
-        # `--universal` on the Intel half because the script's single-env path
-        # always builds the osx-arm64 one; the x86 env only exists under that
-        # flag. It costs that runner the from-source trio twice, which the
-        # cache above pays for only once.
+        # Only when the cache missed. The script starts by deleting the
+        # environment and creating it again, which is right on a developer's
+        # machine and meant that a hit here restored 280 MB and then threw it
+        # away: four minutes on arm64 even on a hit, rebuilding from source
+        # everything the cache had just restored. The environment is only
+        # ever saved complete — see the next step — so a hit is one that
+        # needs nothing done to it.
+        #
+        # The Intel half passes `--x86-only`, for the reason in the matrix.
+        if: steps.conda-cache.outputs.cache-hit != 'true'
         run: bash build-aux/macos/setup-conda-macos.sh ${{ matrix.conda-flags }}
 
       - name: Save the conda environment
@@ -606,7 +712,11 @@ jobs:
         # exists, which is also the only moment it is known to be complete:
         # running here rather than at the end means a half-built environment
         # from a failed setup is never what gets cached.
-        if: steps.conda-cache.outputs.cache-hit != 'true'
+        #
+        # From `main` only; see the top of this file.
+        if: >-
+          steps.conda-cache.outputs.cache-hit != 'true'
+          && github.ref == 'refs/heads/main'
         uses: actions/cache/save@v4
         with:
           path: .conda-gtk

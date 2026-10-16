@@ -336,7 +336,83 @@ build with its caches cold:
 | Universal merge | seconds | then signing and notarizing, a minute or two |
 
 The Intel half is the critical path; nothing else decides when a release is
-ready.
+ready. What the caches do about it is the next part.
+
+**The caches, and the ceiling they share.** GitHub gives a repository 10 GB of
+Actions cache and evicts the least recently used entry when a save would pass
+it. On 15 October 2026 this one was past it, and most of what it held was not
+earning its place. Reading the logs of runs 38804550514 and 38815729247 found
+four things wrong, and they explain most of the hour Windows and the Intel Mac
+spend compiling:
+
+* **Two of the Rust caches pointed at a directory nothing builds into.** Meson
+  sets `CARGO_TARGET_DIR` inside its own build directory, so the Windows
+  cache's `target` and the macOS rust-cache's `target` were always empty: they
+  saved the registry and nothing compiled. The arm64 half restored a full match
+  and compiled 969 crates anyway. Android had the same defect by another route
+  — `build-core.sh` builds into a directory under the home directory — and
+  compiled four hundred crates after a full match. All three now cache the
+  directory the compiler actually writes to: `_build/cargo-target` on the
+  desktop, the workspace `target` (by setting `CARGO_TARGET_DIR`) on Android.
+* **A tag push saved into a scope nothing else can read.** A cache belongs to
+  the ref that saved it, and a run can read its own ref's and the default
+  branch's. The v1.rc5 tag push saved 2.5 GB under the tag, and the
+  re-dispatches that followed ran from `main` and could see none of it — which
+  is why the Windows build in 38804550514 missed its cache completely rather
+  than falling back to an older one: there was no `windows-Stable` entry on
+  `main` to fall back to. Every save is now gated on `github.ref ==
+  'refs/heads/main'`, in `build.yml` and in `check.yml`'s gate, and every
+  other run reads `main`'s.
+* **MSYS2's package cache churned.** `setup-msys2` keys its cache on the
+  package files, and MSYS2 is a rolling release, so nearly every run saved a
+  new 470 MB entry — three on `main`, two of them from that day. It saved a
+  minute of downloading from a mirror. It is off.
+* **The conda environment was restored and then rebuilt.**
+  `setup-conda-macos.sh` deletes the environment and creates it again before
+  anything else, so a cache hit still cost four minutes on arm64, rebuilding
+  from source what had just been restored. The step is now skipped on a hit;
+  the environment is only ever saved complete, straight after it is built.
+  The key carries the month, so it is rebuilt once a month even when the
+  script has not changed: conda-forge's packages are not pinned, and a cache
+  replaced only by an edit to the script would keep a month-old OpenSSL for as
+  long as nobody touched it.
+
+And three keys changed for reasons of their own. The macOS rust-cache is keyed
+by profile as well as by architecture, because a nightly is a debug build and
+a release is not, and one key for both meant whichever saved first was
+restored as a full match by the other — and rust-cache never saves over a full
+match. `cache-on-failure` is gone for the same rule: a half that failed early
+saved a nearly empty directory under the very key a successful build would
+have used. The Windows key carries a hash of `rustc -vV`, because MSYS2's
+compiler moves with the rolling release and a build directory from another
+compiler is worth nothing. Android's rust-cache is renamed `android-core` so
+that its first save on `main` is not blocked by the registry-only entry under
+the old name.
+
+What exists now, and what it buys:
+
+| Cache | Key | Saved from | Pays for |
+| --- | --- | --- | --- |
+| Gate (`check.yml`) | rust-cache default | `main` | clippy, tests and a debug build on every push, about 1 GB |
+| Android | rust-cache `android-core` | `main` | the core's dependencies, about seven of its ten minutes |
+| Gradle | `setup-gradle`'s own | `main` | the wrapper's distribution and the dependencies |
+| Flatpak | `flatpak-` + the manifests | `main` | flatpak-builder's per-module cache |
+| Windows | profile, rustc, `Cargo.lock` | `main` | registry, grass, and the compiled dependencies |
+| macOS conda | arch, month, the setup script | `main` | the environment and its five from-source projects |
+| macOS Rust | rust-cache `macos-<arch>-<profile>` | `main` | the compiled dependencies |
+
+Not cached, on purpose: the Flatpak job's four-minute container image pull,
+which is a `docker pull` the cache cannot hold, and MSYS2's packages, above.
+The gate's gigabyte is the largest entry and stays: it is the cache used most
+often, by the job that runs on every push.
+
+What is not known yet is what the compiled-dependency caches weigh. A release
+build's `_build/cargo-target` keeps debug information on Windows, where
+`[profile.release] debug = true` applies, and those entries could be large
+enough to crowd the others; the first run on `main` after this change is the
+one that will say. If it does crowd them, choose what to drop with that run's
+timings in hand rather than these: with the Intel Mac's environment no longer
+rebuilt and its dependencies cached, Windows may well be the critical path.
 
 **Publishing is a workflow of its own, `publish.yml`**, and the universal
 bundle's steps are a composite action, `.github/actions/macos-universal`.

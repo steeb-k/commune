@@ -127,7 +127,15 @@ jobs:
           cargo +nightly fmt --version
           cargo clippy --version
 
+      # The biggest entry in the repository's cache, at about a gigabyte, and
+      # the one that earns it: this is the job that runs on every push, and
+      # it holds clippy's, the tests' and the debug build's dependencies
+      # together. Written from `main` only, as `build.yml`'s are, so that a
+      # pull request's run reads it without adding a second copy in a scope
+      # nothing else can read.
       - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: A SASS compiler
         # `data/resources/meson.build` wants `grass` or `sass`. The prebuilt
