@@ -324,6 +324,32 @@ statuspage`. Anything inside the wrapped child is a descendant of the
 `dragoverlay` but not on that path. The rule is upstream's, which is the thing
 to know on a rebase.
 
+## Esc closes the search before it closes the room
+
+The session view binds Esc to `session.close-room`, as a class shortcut on
+`SessionView`, which sits above the room history. The search entry answers Esc
+itself (`Gtk.SearchEntry`'s `stop-search`, which the bar is connected to), but
+only while it has the focus. With the focus on a result, or anywhere else in the
+room, Esc went straight to the session view: the room closed and the search
+stayed open — and since closing a room only hides the room history and keeps
+its timeline, opening the same room again landed back in the search.
+
+Fixed on 16 October 2026, in two places:
+
+* `RoomHistory::init_search()` adds an `EventControllerKey` on the room history
+  that, while search mode is on, turns it off, gives the focus back to the room
+  (`grab_focus()`, which is the composer) and stops the event. It is in the
+  **bubble** phase, not the capture phase, deliberately: a popover, the
+  completion or the composer's own Esc (cancelling a reply) is nearer the focus
+  and still wins. The session view only ever sees an Esc that arrived with the
+  search already closed, so the second Esc closes the room as before. The
+  entry's own `stop-search` now also hands the focus back, rather than leaving
+  it on an entry that is about to be hidden.
+* `Content::set_item()` calls `RoomHistory::close_search()` whenever the shown
+  item changes. Switching to another room was already covered by
+  `set_timeline()`; closing the room and reopening the same one was not,
+  because `set_timeline()` returns early for the timeline it already has.
+
 ## Files
 
 New:
@@ -343,9 +369,9 @@ Integration points, which are where a rebase will conflict:
 | `src/session/room/mod.rs` | `mod search;` and its re-exports |
 | `src/session/room/timeline/mod.rs` | Focused mode: `new_focused()`, `is_focused()`, forward pagination, the guards |
 | `src/session/room/timeline/virtual_item.rs` | The end-of-timeline spinner |
-| `src/session_view/room_history/mod.rs`, `.blp` | Swapping timelines, the search pane, `<primary>F`, and `focus_on_event()` preferring the live timeline with a pending highlight |
+| `src/session_view/room_history/mod.rs`, `.blp` | Swapping timelines, the search pane, `<primary>F`, the Esc controller in `init_search()`, `close_search()`, and `focus_on_event()` preferring the live timeline with a pending highlight |
 | `src/session_view/mod.rs` | Permalinks open on the event |
-| `src/session_view/content.rs` | Passing the focused event through |
+| `src/session_view/content.rs` | Passing the focused event through; closing the search when the shown item changes |
 | `src/session_view/room_details/history_viewer/event.rs` | Uses the event's own timeline, which may be focused |
 | `src/session_view/room_history/event_row.rs` | Highlighting the focused event, and now the highlighted one too |
 | `src/utils/grouping_list_model/mod.rs` | The position conversion fix |
@@ -394,6 +420,14 @@ Integration points, which are where a rebase will conflict:
    care: the two for that check are swapped, so "Found N file(s) in
    POTFILES.in without translatable strings" in fact means those files _have_
    translatable strings and are _missing_ from POTFILES.in.
+9. The Esc controller and the `stop-search` handler sit at the end of
+   `init_search()` in `room_history/mod.rs`, and `close_search()` next to
+   `header_bar()` in the public impl; `search_bar` is `pub(super)` for it. The
+   conflict will be there and in `Content::set_item()`, both upstream's. If
+   upstream changes how Esc closes a room — the `session.close-room` binding
+   in `session_view/mod.rs` — check the controller is still nearer the focus
+   than whatever does it now: a capture-phase handler above the room history
+   would take Esc back from the search, and nothing but pressing it shows that.
 
 ## Not done
 

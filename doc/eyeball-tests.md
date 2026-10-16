@@ -995,6 +995,25 @@ is unfocused — two accounts, or a phone.
       the room's unread count reaching zero withdraws what was shown for it;
       only notifications shown since the desktop app started are known.
 
+### Esc in the search — fix of 16 October 2026
+
+Before this, Esc with the focus on a result closed the room and left the
+search open behind it.
+
+* [ ] **Open the search (`<primary>F`), type something, click a result row
+      without activating it or Tab into the results, press Esc once.** The
+      timeline comes back, the composer has the focus, and you are still in
+      the room.
+* [ ] **Press Esc again.** The room closes as it always did.
+* [ ] **Esc with the focus still in the search field** does the same: one Esc
+      closes the search, the composer gets the focus, and it takes a second Esc
+      to leave the room.
+* [ ] **Open the search, switch to another room, come back.** The timeline is
+      showing, not the search. Then the same with closing the room from the
+      sidebar (or Esc from the sidebar) and opening it again.
+* [ ] **With a reply set in the composer, open the search, close it, press
+      Esc.** The reply is cancelled, the room stays open.
+
 ## Threads: the chip, the view, and the list — `doc/threads.md`
 
 A message that roots a thread carries a chip under its content — a thread

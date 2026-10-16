@@ -136,7 +136,7 @@ mod imp {
         #[template_child]
         stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        search_bar: TemplateChild<gtk::SearchBar>,
+        pub(super) search_bar: TemplateChild<gtk::SearchBar>,
         #[template_child]
         search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
@@ -784,6 +784,41 @@ mod imp {
                     imp.obj().focus_on_event(event_id);
                 }
             ));
+
+            // The entry closes the search on Esc by itself, but leaves the focus on
+            // a widget that is about to be hidden; hand it to the composer instead.
+            self.search_entry.connect_stop_search(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.obj().grab_focus();
+                }
+            ));
+
+            // Esc belongs to the search before it belongs to the room. The session
+            // view binds it to closing the room, above this widget, so with the
+            // focus anywhere but the entry the first Esc threw the user out of the
+            // room and left the search open for when they came back. This runs in
+            // the bubble phase so that a popover or anything else inside the room
+            // that answers Esc still gets it first, and the session view only sees
+            // it once the search is already closed.
+            let key_events = gtk::EventControllerKey::new();
+            key_events.connect_key_pressed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                #[upgrade_or]
+                glib::Propagation::Proceed,
+                move |_, key, _, _| {
+                    if key != gdk::Key::Escape || !imp.search_bar.is_search_mode() {
+                        return glib::Propagation::Proceed;
+                    }
+
+                    imp.search_bar.set_search_mode(false);
+                    imp.obj().grab_focus();
+                    glib::Propagation::Stop
+                }
+            ));
+            self.obj().add_controller(key_events);
         }
 
         /// Initialize the view of the pinned messages of the room.
@@ -2258,6 +2293,11 @@ impl RoomHistory {
     /// The header bar of the room history.
     pub(crate) fn header_bar(&self) -> &adw::HeaderBar {
         &self.imp().header_bar
+    }
+
+    /// Close the search of the messages of the room, if it is open.
+    pub(crate) fn close_search(&self) {
+        self.imp().search_bar.set_search_mode(false);
     }
 
     /// The message toolbar of the room history.
