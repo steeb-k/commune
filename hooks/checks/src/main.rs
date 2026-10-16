@@ -30,6 +30,23 @@ fn is_verbose() -> bool {
     VERBOSE.load(Ordering::Relaxed)
 }
 
+/// The rustfmt this project formats with, by date — the same one
+/// `.github/workflows/check.yml` pins, so that a developer's pre-commit hook
+/// and the gate agree. It was `+nightly` until 16 October 2026, which on this
+/// machine meant whichever nightly rustup had most recently fetched: a newer
+/// one wrapped comments differently and failed the style check on lines nobody
+/// had touched, in every file, while the gate was green. A macro rather than a
+/// const so that `concat!` can spell the fix-it hint with it. Bump both places
+/// together.
+macro_rules! rustfmt_toolchain {
+    () => {
+        "nightly-2026-08-23"
+    };
+}
+
+/// The same, as the `+toolchain` argument cargo takes.
+const RUSTFMT_TOOLCHAIN_ARG: &str = concat!("+", rustfmt_toolchain!());
+
 fn main() -> ExitCode {
     let result = ScriptCommand::parse_args().and_then(|cmd| cmd.run());
     println!();
@@ -213,15 +230,24 @@ impl CheckCmd {
 
     /// Check code style with rustfmt nightly.
     fn code_style(&self) -> Result<(), ScriptError> {
-        let mut check = Check::start("code style")
-            .with_fix("either manually or by running: cargo +nightly fmt --all");
+        let mut check = Check::start("code style").with_fix(concat!(
+            "either manually or by running: cargo +",
+            rustfmt_toolchain!(),
+            " fmt --all"
+        ));
 
         CheckDependency {
             name: "rustfmt",
-            version: CommandData::new("cargo", &["+nightly", "fmt", "--version"]),
+            version: CommandData::new("cargo", &[RUSTFMT_TOOLCHAIN_ARG, "fmt", "--version"]),
             install: InstallationCommand::Custom(CommandData::new(
                 "rustup",
-                &["component", "add", "--toolchain", "nightly", "rustfmt"],
+                &[
+                    "component",
+                    "add",
+                    "--toolchain",
+                    rustfmt_toolchain!(),
+                    "rustfmt",
+                ],
             )),
         }
         .check(self.force_install, self.cargo_install_method)?;
@@ -230,7 +256,7 @@ impl CheckCmd {
             let cmd = CommandData::new(
                 "cargo",
                 &[
-                    "+nightly",
+                    RUSTFMT_TOOLCHAIN_ARG,
                     "fmt",
                     "--check",
                     "--",
@@ -245,9 +271,10 @@ impl CheckCmd {
                 check.merge_output(output);
             }
         } else {
-            let output = CommandData::new("cargo", &["+nightly", "fmt", "--check", "--all"])
-                .print_output()
-                .run()?;
+            let output =
+                CommandData::new("cargo", &[RUSTFMT_TOOLCHAIN_ARG, "fmt", "--check", "--all"])
+                    .print_output()
+                    .run()?;
             check.merge_output(output);
         }
 
@@ -285,9 +312,12 @@ impl CheckCmd {
         check.merge_output(output);
 
         // We should have already checked that rustfmt is installed.
-        let output = CommandData::new("cargo", &["+nightly", "fmt", "--check", "--manifest-path"])
-            .print_output()
-            .run_with_args(&[&manifest_path])?;
+        let output = CommandData::new(
+            "cargo",
+            &[RUSTFMT_TOOLCHAIN_ARG, "fmt", "--check", "--manifest-path"],
+        )
+        .print_output()
+        .run_with_args(&[&manifest_path])?;
         check.merge_output(output);
 
         check.end()
