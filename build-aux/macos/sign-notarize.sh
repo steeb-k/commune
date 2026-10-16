@@ -253,7 +253,25 @@ if [ "$status" != "Accepted" ]; then
 fi
 
 # On the bundle, so that the ticket survives being put in a tarball.
-xcrun stapler staple "$bundle"
-xcrun stapler validate "$bundle"
+#
+# Retried, because stapling is a network fetch of the ticket from Apple's
+# CloudKit, and that fetch fails on its own: on 16 October 2026 an
+# assembly of 1.rc5 had the notary answer `Accepted` and then lost the
+# connection fetching the ticket — "The network connection was lost",
+# error 68 — on three attempts in a row, twice at `staple` and once at
+# `validate`, which fetches it again, minutes after a release had stapled
+# the same way without trouble. The notarization is already done by then;
+# failing the build over a fetch that would work a minute later throws it
+# away for nothing. So the two are retried together.
+stapled=0
+for attempt in 1 2 3 4 5; do
+    if xcrun stapler staple "$bundle" && xcrun stapler validate "$bundle"; then
+        stapled=1
+        break
+    fi
+    printf 'sign-notarize: stapling failed (attempt %d of 5); trying again in 30 seconds\n' "$attempt" >&2
+    [ "$attempt" = 5 ] || sleep 30
+done
+[ "$stapled" = 1 ] || die "could not staple the notarization ticket to $bundle"
 
 printf 'sign-notarize: %s is signed, notarized and stapled\n' "$bundle" >&2
