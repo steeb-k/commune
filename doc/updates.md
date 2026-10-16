@@ -587,8 +587,12 @@ bash build-aux/ci/watch-run.sh
 ```
 
 `--ref` is where the workflow and the action come from; the scripts they run
-come from the tag. With `publish` on, the same dispatch is how a release whose
-merge or publish failed is finished — and it _does_ publish, so it is for a run
+come from the tag. GitHub will only dispatch a workflow that exists on the
+default branch, so until `assemble.yml` is on `main` the dispatch answers
+`404`, and the way it was first tested was a temporary push-triggered copy
+with these inputs written in, dropped from the branch afterwards. With
+`publish` on, the same dispatch is how a release whose merge or publish failed
+is finished — and it _does_ publish, so it is for a run
 that is meant to ship. A change to `build.yml` itself still needs a build:
 `nightly.yml` with `-f platforms=android -f publish=false` is the cheapest one
 that exercises the reusable workflow at all, about fifteen minutes, and proves
@@ -704,8 +708,38 @@ on a real installation, driven through the application's own rows:
   server, and a channel with no manifest on it, each with its sentence, on both
   platforms.
 
+**Assembled, on 16 October 2026.** `assemble.yml`'s universal job ran against
+the halves of run 38804550514 — the 1.rc5 run whose merge had failed — from a
+branch, with publishing off, as run 38828827562: it read the other run's
+artifacts, checked that run's workflow and its five platform jobs, merged the
+halves with the catalog fix, signed, notarized and stapled the app and the
+disk image, and uploaded `macos`. Nothing was published; the v1.rc5 release
+was untouched. It took three attempts before that one, each failing on Apple's
+side after the notary had said `Accepted`: stapling or validating fetches the
+ticket from CloudKit, and that fetch lost its connection three times in a row,
+which is why `sign-notarize.sh` now retries the two together. The last attempt
+ran with the branch's script copied over the tag's, and Apple answered first
+time, so the retry has never actually fired. The same day an Android-only
+`nightly.yml` run from the branch, 38827162223, proved that `build.yml` and
+the new `nightly.yml` still run, and that `setup-gradle` accepts the
+wrapper.
+
 Still unrun or unseen:
 
+* **`publish.yml` has not published anything.** Every publishing step moved
+  into it unchanged, but no release or nightly has gone through it yet, nor an
+  assembly with `publish` on. The first release after this merge is the test
+  of the release path, and the first scheduled nightly of the nightly one.
+* **`build.yml`'s `macos` job, as rewritten**, has not run: the action it calls
+  ran from `assemble.yml`, with the second checkout the job also does, but
+  the job itself only runs in a full macOS build.
+* **The caches.** Every save is from `main` now, so no branch run can show a
+  hit. Whether the macOS, Windows and Android target directories restore and
+  cut the compile times, and what they weigh against the 10 GB ceiling, is
+  for the second run on `main` after the merge — the first only fills them.
+  The conda step being skipped on a hit is the same.
+* **The kznjk-flatpak dispatch.** The `KZNJK_FLATPAK_TOKEN` secret does not
+  exist yet, so the step has only ever been read, never run with a token.
 * **macOS.** `macos_update.rs` has only ever been compiled. No Mac has run the
   updater; the first person to press Update on one is the test.
 * **The Android APK has not been installed on the Pixel.** It is signed with
