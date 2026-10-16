@@ -209,6 +209,11 @@ mod imp {
 
             self.item.disconnect_signals();
 
+            // Closing a room only hides the room history, which keeps its timeline,
+            // so a search left open would still be showing when the same room is
+            // opened again. Whatever is shown next, the search is over.
+            self.room_history.close_search();
+
             if let Some(item) = item {
                 let handler = if let Some(room) = item.downcast_ref::<Room>() {
                     let category_handler = room.connect_category_notify(clone!(
