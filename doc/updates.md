@@ -179,7 +179,12 @@ CI never reaches the server, and nothing here holds its signing key.
 for a release candidate, `stable` for a release. The public
 [steeb-k/kznjk-flatpak](https://github.com/steeb-k/kznjk-flatpak) polls every
 app's releases, signs new builds and publishes them; the server polls that
-repository in turn. From tag to installable is about half an hour.
+repository in turn. The poll is a fifteen-minute cron, which GitHub runs when
+it gets round to it — every few hours, on the day 1.rc5 went out — so
+`publish.yml` also dispatches the publisher the moment the release is up,
+when the `KZNJK_FLATPAK_TOKEN` secret is set (see _The keys_). With it, the
+build is on its way as soon as the release is; without it, it waits for that
+cron, and the run says so in a warning.
 
 The nightly is not published there. It has the Devel application id and stays
 a GitHub download.
@@ -206,7 +211,7 @@ question than which operating system it is:
 
 ## The keys
 
-Three, and none of them is in this repository.
+Three, and none of them is in this repository — and one optional token.
 
 **The feed key** signs the manifest. Its public half is
 `commune-core/src/updates/key.rs`, compiled into every build; the private half
@@ -303,6 +308,18 @@ installs is never quarantined and Gatekeeper never asks. What breaks is the
 _first_ install by somebody who downloads the tarball in a browser and unpacks
 it in Finder: that copy is refused on launch. Shipping un-notarized is
 therefore a decision about new users, not about updates.
+
+**The kznjk-flatpak token**, `KZNJK_FLATPAK_TOKEN`, is optional. It is a
+fine-grained personal access token with Actions: write on
+steeb-k/kznjk-flatpak and nothing else, and its only use is the step at the
+end of a release's publish that dispatches that repository's `publish.yml`, so
+that apps.kznjk.com takes the release at once rather than whenever GitHub next
+runs that repository's cron. A run's own token cannot dispatch a workflow in
+another repository, which is why it has to be a separate secret. Without it a
+release is still whole — the step warns and the publisher's schedule picks
+the build up later — so it is never worth failing a release over, and the
+step never does. Nothing has dispatched with it yet: the secret did not exist
+when the step was written.
 
 ## Continuous integration
 

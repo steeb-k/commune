@@ -262,6 +262,38 @@ jobs:
               -- "$file"
           done
 
+      - name: Tell kznjk-flatpak there is a release
+        # steeb-k/kznjk-flatpak is what signs the repository uploaded above
+        # and publishes it on apps.kznjk.com, and it finds out about a release
+        # by polling for one: a `*/15` cron. GitHub treats a schedule as a
+        # suggestion, and on 15 October 2026 it ran that one every few hours,
+        # so 1.rc5 sat finished and unpublished there until somebody
+        # dispatched the publisher by hand. This does the same dispatch, the
+        # moment the release and its `flatpak-build.json` exist.
+        #
+        # It needs a token of its own, `KZNJK_FLATPAK_TOKEN` — a fine-grained
+        # one with Actions: write on that repository — because this run's
+        # token cannot reach another repository at all. Without one, or if
+        # the dispatch fails, the release is still complete: the publisher's
+        # own schedule picks it up whenever GitHub next runs it. So this warns
+        # and never fails. A release only — the nightly attaches no
+        # repository, and the publisher reads only `flatpak-build.json`.
+        if: inputs.kind == 'release'
+        env:
+          GH_TOKEN: ${{ secrets.KZNJK_FLATPAK_TOKEN }}
+        run: |
+          if [ ! -f flatpak/flatpak-build.json ]; then
+            echo "no Flatpak repository was attached, so there is nothing for kznjk-flatpak to publish"
+            exit 0
+          fi
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::warning::KZNJK_FLATPAK_TOKEN is not set, so apps.kznjk.com will pick this release up when kznjk-flatpak's own schedule next runs, which GitHub runs irregularly. Setting the secret makes it immediate."
+            exit 0
+          fi
+          if ! gh workflow run publish.yml -R steeb-k/kznjk-flatpak; then
+            echo "::warning::dispatching kznjk-flatpak failed; apps.kznjk.com will pick this release up when that repository's own schedule next runs"
+          fi
+
       - name: Write and sign the feed
         env:
           UPDATE_FEED_PRIVATE_KEY: ${{ secrets.UPDATE_FEED_PRIVATE_KEY }}

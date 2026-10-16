@@ -92,12 +92,18 @@ If a rebase raises those minimums past what GNOME 50 provides, bump
 ### To apps.kznjk.com
 
 This one is automatic. A release's Flatpak job keeps the `flatpak-builder
---repo` output, and `release.yml` attaches it as `flatpak-build.tar` and then
+--repo` output, and `publish.yml` attaches it as `flatpak-build.tar` and then
 `flatpak-build.json`. [steeb-k/kznjk-flatpak](https://github.com/steeb-k/kznjk-flatpak)
 picks that up, commits it on the `beta` branch for a release candidate or
 `stable` for a release, whichever branch it was built on, and signs and
-publishes it. Its README covers the rest, including what happens when two apps
-release at once. The Flatpak job builds from the tag's checkout, so the `dir`
+publishes it. How soon depends on a secret. With `KZNJK_FLATPAK_TOKEN` set,
+`publish.yml` dispatches kznjk-flatpak's publisher as its last Flatpak step,
+and the build goes out straight away. Without it, the build waits for that
+repository's fifteen-minute cron, which GitHub runs irregularly — every few
+hours on 15 October 2026, when 1.rc5 waited until somebody dispatched it by
+hand. `doc/updates.md` describes the token. The publisher's README covers
+the rest, including what happens when two apps release at once. The Flatpak
+job builds from the tag's checkout, so the `dir`
 source below is reproducible there without pinning.
 
 To publish a tag again, run `release.yml` by hand with that tag. The new
