@@ -327,8 +327,9 @@ when the step was written.
 pre-commit hook runs, plus `hooks/template-checks` and the tests.
 
 `build.yml` is called by `release.yml` and `nightly.yml` and builds
-everything: the Android APK, the Flatpak bundles for x86_64 and aarch64, the Windows bundle and MSI in
-MSYS2, and two macOS bundles merged with `lipo` and then signed and notarized.
+everything: the Android APK, the Flatpak bundles for x86_64 and aarch64, the
+Windows bundle and MSI in MSYS2, and two macOS bundles merged with `lipo` and
+then signed and notarized.
 It takes the profile as an input, which is the only thing that differs between
 a release and a nightly.
 
