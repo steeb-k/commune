@@ -73,6 +73,25 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="1~rc6" type="development" date="2026-11-01">
+      <description>
+        <p>
+          The sixth release candidate is about where Commune can run. The Flatpak is now built
+          for aarch64 as well as x86_64, so it installs on a phone running a mobile Linux such as
+          Droidian, from apps.kznjk.com like any other machine.
+        </p>
+        <ul>
+          <li>
+            On the desktop, Esc closes the room search before it closes the room.
+          </li>
+          <li>
+            Security update to the certificate verifier (rustls-webpki 0.103.16 for
+            RUSTSEC-2026-0382), with tokio, ctutils, pulldown-cmark and zstd-sys moved to the
+            releases that close their own advisories.
+          </li>
+        </ul>
+      </description>
+    </release>
     <release version="1~rc5" type="development" date="2026-10-15">
       <description>
         <p>
