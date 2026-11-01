@@ -13,6 +13,12 @@ ignore = [
     { id = "RUSTSEC-2026-0247", reason = "bitmaps is unmaintained but used by dependencies of matrix-sdk" },
     { id = "RUSTSEC-2026-0319", reason = "anymap2 is unmaintained but used by matrix-sdk itself" },
     { id = "RUSTSEC-2026-0292", reason = "imbl-sized-chunks 0.1 is pinned by imbl 6, which eyeball-im and matrix-sdk pin; the fix is imbl 7, which only an SDK bump can take. Re-check at the next rebase." },
+    { id = "RUSTSEC-2026-0391", reason = "zstd 0.13 is pinned by tantivy 0.26, which matrix-sdk-search pins; the fix is zstd 0.14, which only an SDK bump can take. Re-check at the next rebase." },
+    { id = "RUSTSEC-2026-0398", reason = "zstd-safe 7 comes with zstd 0.13, above; the fix is zstd-safe 8. Re-check at the next rebase." },
+    { id = "RUSTSEC-2026-0403", reason = "zstd-safe 7 comes with zstd 0.13, above; the fix is zstd-safe 8. Re-check at the next rebase." },
+    { id = "RUSTSEC-2026-0370", reason = "zvariant 5 is part of zbus 5, which ashpd 0.13 (the newest there is) and oo7 use; zbus 6 folded it in. Re-check when ashpd moves to zbus 6." },
+    { id = "RUSTSEC-2026-0371", reason = "zbus_names 4 is part of zbus 5, above. Re-check when ashpd moves to zbus 6." },
+    { id = "RUSTSEC-2026-0372", reason = "zvariant_derive 5 is part of zbus 5, above. Re-check when ashpd moves to zbus 6." },
 ]
 
 [bans]
