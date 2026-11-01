@@ -91,9 +91,11 @@ If a rebase raises those minimums past what GNOME 50 provides, bump
 
 ### To apps.kznjk.com
 
-This one is automatic. A release's Flatpak job keeps the `flatpak-builder
---repo` output, and `publish.yml` attaches it as `flatpak-build.tar` and then
-`flatpak-build.json`. [steeb-k/kznjk-flatpak](https://github.com/steeb-k/kznjk-flatpak)
+This one is automatic. A release's Flatpak jobs, one per arch (x86_64 on an
+ordinary runner, aarch64 natively on one of GitHub's arm64 runners, for
+phones), each keep their `flatpak-builder --repo` output; `publish.yml` pulls
+the two into one OSTree repository and attaches it as `flatpak-build.tar` and
+then `flatpak-build.json`. [steeb-k/kznjk-flatpak](https://github.com/steeb-k/kznjk-flatpak)
 picks that up, commits it on the `beta` branch for a release candidate or
 `stable` for a release, whichever branch it was built on, and signs and
 publishes it. How soon depends on a secret. With `KZNJK_FLATPAK_TOKEN` set,

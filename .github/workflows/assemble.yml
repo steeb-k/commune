@@ -108,7 +108,7 @@ jobs:
           jobs="$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/jobs?filter=latest" \
             --jq '.jobs[] | "\(.conclusion) | \(.name)"')"
           printf '%s\n' "$jobs"
-          for job in 'Android APK' 'Flatpak bundle' 'Windows installer' 'macOS arm64 bundle' 'macOS x86_64 bundle'; do
+          for job in 'Android APK' 'Flatpak bundle \(x86_64\)' 'Flatpak bundle \(aarch64\)' 'Windows installer' 'macOS arm64 bundle' 'macOS x86_64 bundle'; do
             if ! printf '%s\n' "$jobs" | grep -qE "^success \| (.* / )?$job\$"; then
               echo "::error::run $RUN has no successful '$job' job"
               exit 1

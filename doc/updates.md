@@ -189,7 +189,7 @@ cron, and the run says so in a warning.
 The nightly is not published there. It has the Devel application id and stays
 a GitHub download.
 
-The release still carries the single `.flatpak` bundle too. A bundle has **no
+The release still carries a `.flatpak` bundle per arch too. A bundle has **no
 update path at all**: it carries no remote, so `flatpak update` has nothing to
 check. Fine for handing somebody a build, useless as a channel.
 
@@ -327,7 +327,7 @@ when the step was written.
 pre-commit hook runs, plus `hooks/template-checks` and the tests.
 
 `build.yml` is called by `release.yml` and `nightly.yml` and builds
-everything: the Android APK, the Flatpak bundle, the Windows bundle and MSI in
+everything: the Android APK, the Flatpak bundles for x86_64 and aarch64, the Windows bundle and MSI in
 MSYS2, and two macOS bundles merged with `lipo` and then signed and notarized.
 It takes the profile as an input, which is the only thing that differs between
 a release and a nightly.
@@ -346,7 +346,7 @@ build with its caches cold:
 | Job | Time | Where it goes |
 | --- | --- | --- |
 | Android | 18 min | 12 the core, 4½ Gradle |
-| Flatpak | 36 min | 4 pulling the container image, 31 the build |
+| Flatpak | 36 min | 4 pulling the container image, 31 the build (x86_64; aarch64 was added later and runs beside it) |
 | Windows | 1 h 12 | 59 compiling, 3 MSYS2 |
 | macOS arm64 | 36 min | 8½ the conda environment, 26 the bundle |
 | **macOS x86_64** | **1 h 26** | 20 the environment, 61 the bundle |

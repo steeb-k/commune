@@ -215,8 +215,21 @@ jobs:
     if: >-
       !cancelled()
       && (inputs.platforms == 'all' || contains(format(' {0} ', inputs.platforms), ' flatpak '))
-    name: Flatpak bundle
-    runs-on: ubuntu-latest
+    name: Flatpak bundle (${{ matrix.arch }})
+    strategy:
+      # Both arches, each built natively: GitHub's arm64 runners are free for
+      # a public repository, and a native build is what makes aarch64 cost
+      # the same as x86_64 rather than hours under emulation. aarch64 is for
+      # phones (Droidian and the like). One arch failing must not cancel the
+      # other: the merge in `publish.yml` takes whatever was built.
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     container:
       image: quay.io/gnome_infrastructure/gnome-runtime-images:gnome-50
       # Root inside it: the image defines a non-root user, which cannot write
@@ -273,8 +286,13 @@ jobs:
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
-          bundle: io.github.steeb_k.Commune.flatpak
+          bundle: io.github.steeb_k.Commune-${{ matrix.arch }}.flatpak
+          # Given verbatim: the default tags the bundle name with the arch again.
+          artifact-name: io.github.steeb_k.Commune-${{ matrix.arch }}.flatpak
           manifest-path: ${{ inputs.meson-profile == 'default' && 'build-aux/io.github.steeb_k.Commune.json' || 'build-aux/io.github.steeb_k.Commune.Devel.json' }}
+          arch: ${{ matrix.arch }}
+          # The action adds the arch to this key itself, so the two arches
+          # never read each other's cache.
           cache-key: flatpak-${{ hashFiles('build-aux/*.json') }}
           # Read everywhere, written from `main` only — see the top of this
           # file. The tag push for v1.rc5 saved a second copy of this, 437 MB
@@ -282,17 +300,18 @@ jobs:
           save-cache: ${{ github.ref == 'refs/heads/main' }}
 
       # The repository the bundle above was made from, for apps.kznjk.com.
-      # Only a release's: `release.yml` attaches it, and steeb-k/kznjk-flatpak
-      # signs and publishes it from there. See `doc/flatpak.md`.
+      # Only a release's: `publish.yml` merges the two arches' repositories
+      # into one, attaches it, and steeb-k/kznjk-flatpak signs and publishes
+      # it from there. See `doc/flatpak.md`.
       - name: Pack the Flatpak repository
         if: inputs.meson-profile == 'default'
-        run: tar -C repo -cf flatpak-build.tar .
+        run: tar -C repo -cf flatpak-build-${{ matrix.arch }}.tar .
 
       - uses: actions/upload-artifact@v4
         if: inputs.meson-profile == 'default'
         with:
-          name: flatpak-build
-          path: flatpak-build.tar
+          name: flatpak-build-${{ matrix.arch }}
+          path: flatpak-build-${{ matrix.arch }}.tar
           retention-days: 7
 
   windows:

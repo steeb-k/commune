@@ -219,6 +219,39 @@ jobs:
             --notes "Commune $VERSION." $flag \
             -- dist/*
 
+      - name: Merge the Flatpak repositories
+        # One per arch comes out of `build.yml`; the publisher takes one
+        # repository per release and publishes every arch it finds in it, so
+        # they are pulled into one here. An arch that did not build is left
+        # out with a warning rather than failing the release: the publisher
+        # commits ref by ref, so that arch just keeps its previous release.
+        if: inputs.kind == 'release'
+        run: |
+          found=0
+          for tar in artifacts/flatpak-build-*/flatpak-build-*.tar; do
+            [ -f "$tar" ] || continue
+            if [ "$found" = 0 ]; then
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends ostree
+              ostree init --repo=flatpak-repo --mode=archive-z2
+            fi
+            found=$((found + 1))
+            arch="$(basename "$tar" .tar | sed 's/^flatpak-build-//')"
+            mkdir "flatpak-$arch"
+            tar -C "flatpak-$arch" -xf "$tar"
+            ostree pull-local --repo=flatpak-repo "flatpak-$arch"
+            rm -rf "flatpak-$arch"
+          done
+          case "$found" in
+            0) echo "::warning::no Flatpak repository was built, so apps.kznjk.com keeps the previous release" ;;
+            1) echo "::warning::only one arch's Flatpak repository was built; the other keeps its previous release on apps.kznjk.com" ;;
+          esac
+          if [ "$found" != 0 ]; then
+            ostree refs --repo=flatpak-repo
+            mkdir -p artifacts/flatpak-build
+            tar -C flatpak-repo -cf artifacts/flatpak-build/flatpak-build.tar .
+          fi
+
       - name: Hand the Flatpak to apps.kznjk.com
         # steeb-k/kznjk-flatpak polls this release, signs flatpak-build.tar and
         # publishes it: a release candidate on the `beta` branch, a release on
@@ -237,7 +270,7 @@ jobs:
         run: |
           tar="artifacts/flatpak-build/flatpak-build.tar"
           if [ ! -f "$tar" ]; then
-            echo "::warning::no Flatpak repository was built, so apps.kznjk.com keeps the previous release"
+            echo "no Flatpak repository to hand over"
             exit 0
           fi
           notes="Commune $VERSION."
