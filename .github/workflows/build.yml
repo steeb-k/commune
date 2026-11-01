@@ -525,6 +525,25 @@ jobs:
         shell: msys2 {0}
         run: bash build-aux/windows/probe-env.sh | tee probe-env.txt
 
+      - name: Make blueprint-compiler runnable
+        # MSYS2's blueprint-compiler 0.22.2-3 (22 October 2026) ships the
+        # script with the shebang `#!D:\M\msys64\ucrt64\bin/python3.exe`,
+        # the python of the machine that built the package, where 0.18.0-3
+        # had `#!/usr/bin/env python3`. Meson runs a script through its
+        # shebang, so `find_program('blueprint-compiler')` resolved to a
+        # python that does not exist here and the first nightly after the
+        # update died at `blueprint-compiler --version`. Put the portable
+        # shebang back: meson maps `env python3` to its own interpreter on
+        # Windows, which is what the good builds did. Drop this once the
+        # package is fixed.
+        shell: msys2 {0}
+        run: |
+          bp="$(command -v blueprint-compiler)"
+          echo "before: $(head -1 "$bp")"
+          sed -i '1s|^#!.*python.*$|#!/usr/bin/env python3|' "$bp"
+          echo "after:  $(head -1 "$bp")"
+          blueprint-compiler --version
+
       - name: Build the bundle
         env:
           KLIPY_API_KEY: ${{ secrets.KLIPY_API_KEY }}
