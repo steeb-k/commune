@@ -1,24 +1,24 @@
 {
   "channel": "nightly",
-  "version": "1.0.0-rc5",
-  "build": 4025,
-  "published": "2026-10-18T09:59:10Z",
+  "version": "1.0.0-rc6",
+  "build": 4030,
+  "published": "2026-11-08T11:41:26Z",
   "notes_url": "https://github.com/steeb-k/commune/commits/main",
   "assets": {
     "windows-x86_64-msi": {
-      "url": "https://github.com/steeb-k/commune/releases/download/nightly/Commune-Devel-1.0.0-rc5-x64.msi",
-      "sha256": "bdd7fffa8102dc6472628354f97bd967b6135f2086b311bf7d0ea430a76c45fe",
-      "size": 104996864
+      "url": "https://github.com/steeb-k/commune/releases/download/nightly/Commune-Devel-1.0.0-rc6-x64.msi",
+      "sha256": "5841b7f3cc3d55b5bdaeee93dac0f6ee2ca45e7ef4b243d86cb1c1fc739896ee",
+      "size": 103796736
     },
     "macos-universal-tar": {
-      "url": "https://github.com/steeb-k/commune/releases/download/nightly/commune-1.0.0-rc5-universal.tar.gz",
-      "sha256": "77f02432f9f5691452f476dada75d5083d0f4073aef5167601b0c3544054d7f7",
-      "size": 215370175
+      "url": "https://github.com/steeb-k/commune/releases/download/nightly/commune-1.0.0-rc6-universal.tar.gz",
+      "sha256": "4ff65f89c13c7a47caa5675cdb97ae8654b43ab354d7757d4e32e6eac3711835",
+      "size": 216032268
     },
     "android-arm64-apk": {
-      "url": "https://github.com/steeb-k/commune/releases/download/nightly/commune-1.0.0-rc5-arm64-v8a.apk",
-      "sha256": "49b77ba20b26d013cca6874e7f975c4b079831814bd6ac3699dc1818f3864313",
-      "size": 160376796
+      "url": "https://github.com/steeb-k/commune/releases/download/nightly/commune-1.0.0-rc6-arm64-v8a.apk",
+      "sha256": "201452f5c64ecb5c36d7fb5a86ff061838574895bd8870056b8d27d68a5b9325",
+      "size": 160753628
     }
   }
 }
